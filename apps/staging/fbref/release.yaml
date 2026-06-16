@@ -43,8 +43,21 @@ spec:
       # fbref databases overlay (fbref namespace).
       imagePullSecrets:
         - name: ghcr-pull-secret
-    # No scraper.proxies here → Cloudflare will block the staging IP. Add a
-    # residential proxy entry (see k8s/charts/fbref/README.md) to ingest data.
+    # fbref's Cloudflare managed challenge is cleared by FlareSolverr (Camoufox cannot,
+    # server-side). Two content lanes scrape in parallel — the direct/home IP + the rsp-asp
+    # residential proxy IP — both via one shared FlareSolverr (each lane's PROXY_URL is
+    # forwarded into the solve). Validated on-cluster: both egress IPs clear fbref (476 links).
+    flaresolverr:
+      enabled: true
+      replicas: 2 # one solve per replica → the direct + proxy lanes solve in parallel
+      proxyEgressPorts: [8888] # let FlareSolverr reach the Tailscale egress proxy
+    scraper:
+      proxies:
+        # Route through the in-cluster Tailscale egress proxy → rsp-asp (100.100.98.5:8888).
+        # REQUIRES the tailscale-proxy-00 egress pod Ready (kubectl -n tailscale get pods);
+        # revert url to http://100.100.98.5:8888 if the proxy is down.
+        - name: tailscale
+          url: "http://tailscale-proxy-00.tailscale.svc.cluster.local:8888"
     adminUi:
       service:
         # Publish on the tailnet via the Tailscale operator — authed, off-LAN,
