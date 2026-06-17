@@ -1,0 +1,47 @@
+# asp analysis lab — JupyterLab pod in the central `lab` ns, reading the asp
+# read-only DB replica across namespaces. Chart: k8s/charts/lab in the asp repo
+# (synced via the `lab` GitRepository, clusters/staging/lab-source.yaml).
+# OFF by default (replicas: 0). Scale up when you want to work:
+#   kubectl -n lab scale deploy/lab-asp --replicas=1
+#   kubectl -n lab port-forward svc/lab-asp 8888:8888   # http://localhost:8888
+#   kubectl -n lab logs deploy/lab-asp | grep -m1 token  # random Jupyter token
+#   kubectl -n lab scale deploy/lab-asp --replicas=0     # done
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: lab-asp
+  namespace: flux-system
+spec:
+  targetNamespace: lab
+  interval: 30m
+  chart:
+    spec:
+      chart: k8s/charts/lab
+      sourceRef:
+        kind: GitRepository
+        name: lab
+      interval: 12h
+      # Roll out on every commit to the chart path (CI image-tag bumps + template
+      # changes), same as the asp/fbref app releases.
+      reconcileStrategy: Revision
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    name: lab-asp
+    db:
+      host: asp-db-ro.asp.svc.cluster.local
+      namespace: asp
+      secretName: asp-db-app # pragma: allowlist secret
+      podSelector:
+        cnpg.io/cluster: asp-db
+    # PRIVATE lab image? Make ghcr.io/eliorion/lab-jupyterlab public (it bakes no
+    # secrets) OR reflect a pull secret into the lab ns (apps/staging/lab/secrets.yaml)
+    # and uncomment:
+    # imagePullSecrets:
+    #   - name: ghcr-pull-secret

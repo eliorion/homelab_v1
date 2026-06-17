@@ -1,0 +1,8 @@
+# Central analysis-sandbox namespace. One lab pod per project lives here
+# (lab-asp, lab-fbref, …), each reading its project's read-only DB replica across
+# namespaces. The lab pods are non-root / read-only-rootfs / drop-ALL-caps, so the
+# Talos baseline PodSecurity (cluster default) admits them — no PSA opt-out label.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab
