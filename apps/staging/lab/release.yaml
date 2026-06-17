@@ -1,0 +1,45 @@
+# Central analysis-sandbox — ONE HelmRelease, one lab pod per entry in the
+# `projects` list (chart k8s/charts/lab in the asp repo, via the `lab`
+# GitRepository). The chart derives each lab's DB coords from the CNPG
+# convention and generates its reflect-stub Secret. OFF by default (replicas: 0).
+#
+# Scale a lab up when you want it:
+#   kubectl -n lab scale deploy/lab-asp --replicas=1
+#   kubectl -n lab port-forward svc/lab-asp 8888:8888    # http://localhost:8888
+#   kubectl -n lab logs deploy/lab-asp | grep -m1 token  # random Jupyter token
+#   kubectl -n lab scale deploy/lab-asp --replicas=0
+#
+# ADD A PROJECT: append its name below + add the reflector permit annotation to
+# its CNPG cluster (apps/staging/databases/<project>/cluster-reflector-patch.yaml).
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: lab
+  namespace: flux-system
+spec:
+  targetNamespace: lab
+  interval: 30m
+  chart:
+    spec:
+      chart: k8s/charts/lab
+      sourceRef:
+        kind: GitRepository
+        name: lab
+      interval: 12h
+      reconcileStrategy: Revision
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    projects:
+      - asp
+      - fbref
+    # PRIVATE lab image? Make ghcr.io/eliorion/lab-jupyterlab public (bakes no
+    # secrets) OR reflect a pull secret into the lab ns and uncomment:
+    # imagePullSecrets:
+    #   - name: ghcr-pull-secret
