@@ -18,3 +18,8 @@ patches:
     target:
       kind: Cluster
       name: fbref-db
+  # Permit kubernetes-reflector to mirror the -app secret into the `lab` ns.
+  - path: cluster-reflector-patch.yaml
+    target:
+      kind: Cluster
+      name: fbref-db

@@ -1,0 +1,25 @@
+# Source for the lab Helm chart (k8s/charts/lab in the asp repo) — a generic
+# in-cluster analysis sandbox (JupyterLab + data stack) deployed once per project
+# into the central `lab` namespace. Scoped to the chart path so unrelated asp
+# commits don't churn the artifact (the lab HelmReleases use reconcileStrategy:
+# Revision). Reuses the read-only asp-deploy-key Secret (same repo as the asp
+# source — see asp-source.yaml for the one-time deploy-key setup).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: lab
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: ssh://git@github.com/eliorion/asp
+  ref:
+    branch: main
+  secretRef:
+    name: asp-deploy-key
+  ignore: |
+    /*
+    !/k8s/
+    /k8s/*
+    !/k8s/charts/
+    /k8s/charts/*
+    !/k8s/charts/lab/
