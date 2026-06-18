@@ -36,9 +36,19 @@ spec:
       retries: 3
       strategy: rollback
   values:
+    # Always-on so the labs are reachable on the tailnet without scaling.
+    replicas: 1
     projects:
       - asp
       - fbref
+    # Publish each lab on the tailnet via the Tailscale operator — reach at
+    #   http://lab-asp.<tailnet>.ts.net:8888  /  http://lab-fbref.<tailnet>.ts.net:8888
+    tailscale:
+      expose: true
+    # No Jupyter token: the tailnet identity is the auth boundary (same model as
+    # the admin UIs). Anyone on the tailnet gets the lab's read-only DB access.
+    auth:
+      disableToken: true
     # PRIVATE lab image? Make ghcr.io/eliorion/lab-jupyterlab public (bakes no
     # secrets) OR reflect a pull secret into the lab ns and uncomment:
     # imagePullSecrets:
