@@ -1,0 +1,128 @@
+# Backup failure + staleness (dead-man's-switch) alerts for the Garage backup
+# tier (doc 09 §9, doc 10 Phase 6).
+#
+# INERT until the parent `garage-backup` Flux Kustomization is un-suspended
+# (clusters/staging/infrastructure.yaml, suspend: true) AND this file is
+# uncommented in the staging kustomization. While suspended Flux applies nothing
+# here, so these rules will not load into Prometheus and cannot fire.
+#
+# ── ALERTMANAGER ROUTING (doc 05, doc 09 §9) ──────────────────────────────────
+# These alerts route to Telegram via the EXISTING Alertmanager `telegram` receiver
+# — the default route in the kube-prometheus-stack HelmRelease
+# (monitoring/controllers/base/kube-prometheus-stack/release.yaml) already sends
+# all non-Watchdog alerts to `telegram`, so severity-tagged backup alerts reach
+# Telegram automatically with NO Alertmanager edit. Only if the operator wants a
+# DEDICATED route (e.g. a different chat_id or grouping for backups) must they add
+# a route under alertmanager.config.route.routes[] matching e.g.
+# `matchers: [ group = "garage-backup" ]` — that is a SEPARATE tier
+# (monitoring/controllers/base/...), described in the WIRING notes, NOT edited here.
+#
+# These alerts CANNOT go through the Flux notification-controller `Alert`
+# (monitoring/configs/staging/flux-alerts/alert.yaml) — its eventSources match
+# only Flux kinds (HelmRelease/Kustomization). A CronJob, a Velero Backup CR, or
+# the Garage process emit no Flux events, so the PrometheusRule → Alertmanager →
+# Telegram path is the ONLY one that works for backup-job failures (doc 09 §9).
+#
+# Label trap (doc 05): MUST carry `release: kube-prometheus-stack` or Prometheus'
+# ruleSelector ignores the rule entirely.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: garage-backup-alerts
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: garage-backups
+      rules:
+        # ── Per-job FAILURE ───────────────────────────────────────────────────
+        - alert: EtcdBackupFailed
+          # The most recent etcd-backup Job ended in failure (kube-state-metrics).
+          expr: |
+            max by (namespace, job_name) (
+              kube_job_status_failed{namespace="backup", job_name=~"etcd-backup.*"}
+            ) > 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "etcd backup job failed (backup/{{ $labels.job_name }})"
+            description: "The etcd-snapshot CronJob job {{ $labels.job_name }} in ns backup has failed pods. etcd is the cluster brain — investigate: kubectl -n backup logs job/{{ $labels.job_name }}. Check Talos API access (kubernetesTalosAPIAccess) and the Garage S3 endpoint."
+        - alert: CNPGGarageBackupFailed
+          # CNPG plugin: last failed base backup is newer than the last successful
+          # one (the metric is cluster-wide; scoped to the asp namespace).
+          expr: |
+            max by (namespace) (
+              cnpg_collector_last_failed_backup_timestamp{namespace="asp"}
+            )
+            >
+            max by (namespace) (
+              cnpg_collector_last_available_backup_timestamp{namespace="asp"}
+            )
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CNPG base backup to Garage failed (ns {{ $labels.namespace }})"
+            description: "A CNPG base backup failed more recently than the last successful one. NOTE: Garage is base-backup-only (R2 is the live WAL archiver) — this does not affect PITR, but a failing base backup means no recent Garage base. Check: kubectl -n asp get backups."
+        - alert: VeleroGarageBackupFailed
+          expr: |
+            sum(velero_backup_failure_total) > 0
+            or sum(velero_backup_partial_failure_total) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Velero backup failed/partially failed"
+            description: "Velero reports failed or partially-failed backups to the Garage BSL. Check: velero backup get / velero backup logs <name>."
+
+        # ── STALENESS (dead-man's-switch) ─────────────────────────────────────
+        # The dangerous failure mode is a job that STOPS and goes unnoticed. Alert
+        # when time-since-last-success exceeds a threshold, OR when the success
+        # metric is entirely absent (the job never ran / kube-state-metrics gap).
+        - alert: EtcdBackupStale
+          # Schedule is "0 */6 * * *" (every 6h). 24h with no success = ~4 misses.
+          expr: |
+            (
+              time() - max(kube_job_status_completion_time{namespace="backup", job_name=~"etcd-backup.*"})
+              > 86400
+            )
+            or
+            absent(kube_job_status_completion_time{namespace="backup", job_name=~"etcd-backup.*"})
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: "etcd backup is STALE (>24h since last success)"
+            description: "No successful etcd-snapshot job in over 24h (schedule is every 6h), or the success metric is absent — the dead-man's-switch. The backup may have silently stopped. Verify the CronJob is un-suspended and running: kubectl -n backup get cronjob etcd-backup."
+        - alert: CNPGGarageBackupStale
+          # Base backup runs daily (0 0 4 * * *). 48h with no success = ~2 misses.
+          expr: |
+            (
+              time() - max by (namespace) (cnpg_collector_last_available_backup_timestamp{namespace="asp"})
+              > 172800
+            )
+            or
+            absent(cnpg_collector_last_available_backup_timestamp{namespace="asp"})
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CNPG Garage base backup is STALE (>48h since last success)"
+            description: "No successful CNPG base backup in over 48h (daily schedule), or the metric is absent. The Garage base-backup chain may have stopped. Check: kubectl -n asp get scheduledbackup asp-db-garage-base."
+        - alert: VeleroGarageBackupStale
+          expr: |
+            (
+              time() - max(velero_backup_last_successful_timestamp{schedule!=""})
+              > 172800
+            )
+            or
+            absent(velero_backup_last_successful_timestamp{schedule!=""})
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Velero backup is STALE (>48h since last success)"
+            description: "No successful scheduled Velero backup in over 48h, or the metric is absent. The PVC backup chain may have stopped. Check: velero schedule get / velero backup get."

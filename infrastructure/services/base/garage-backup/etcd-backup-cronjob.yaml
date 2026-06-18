@@ -1,0 +1,108 @@
+# etcd snapshot -> client-side age encryption -> Garage S3 (restic-style object).
+#
+# Tool: Sidero Labs `talos-backup` (the reference etcd-snapshot tool, doc 09 §6).
+# It runs `talosctl etcd snapshot` against a healthy CP node, zstd-compresses,
+# age-encrypts CLIENT-SIDE, and uploads to an S3-compatible endpoint (Garage).
+#
+# ──────────────────────────────────────────────────────────────────────────────
+# SAFETY — this CronJob ships SUSPENDED (spec.suspend: true) on TWO levels:
+#   1. The whole `garage-backup` Flux Kustomization is committed suspended in
+#      clusters/staging/infrastructure.yaml (WIRING) — Flux applies NOTHING here
+#      until the operator flips suspend:false in Phase 4 once Garage is reachable.
+#   2. This CronJob ALSO carries spec.suspend: true (belt-and-braces): even after
+#      the parent Kustomization is un-suspended, the job will not run on schedule
+#      until the operator clears THIS flag too.
+#
+# CROSS-SUBSTRATE ORDERING GATE (documentations/10 Phase 4a):
+#   This pod can only reach the Talos API if `kubernetesTalosAPIAccess` is enabled
+#   in machine.features (WIRING adds it to bootstraping/talconfig.yaml, with
+#   allowedRoles: [os:etcd:backup] and allowedKubernetesNamespaces: [backup]) AND
+#   that change has been rendered (talhelper genconfig) + `talosctl apply-config`
+#   ROLLED TO ALL THREE CP NODES and confirmed. etcd runs on every control plane,
+#   so the access must be live on all three before the first run. Do NOT un-suspend
+#   this CronJob until that rollout is verified — every run would otherwise fail to
+#   reach the Talos API.
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-backup
+  namespace: backup
+spec:
+  # Belt-and-braces: stays suspended even after the parent Kustomization is
+  # un-suspended. Operator clears this in Phase 4a AFTER the talconfig rollout.
+  suspend: true
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # Don't retry forever on a misconfigured run; the staleness alert catches
+      # a job that stops succeeding (documentations/10 Phase 6).
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: talos-backup
+              # Renovate keeps this pinned. talos-backup is the Sidero reference
+              # etcd-snapshot tool. Pin a real digest/tag before un-suspending.
+              image: ghcr.io/siderolabs/talos-backup:v0.1.0-beta.3
+              env:
+                # Env names below are exactly the ones talos-backup reads, per
+                # its upstream cronjob.sample.yaml. Do NOT rename them.
+
+                # Garage is path-style (MinIO-style), NOT virtual-hosted-style.
+                - name: USE_PATH_STYLE
+                  value: "true"
+                # In-cluster S3 endpoint = the NEW tailscale egress proxy to
+                # node-D (the Garage gateway). WIRING/operator creates
+                # tailscale-proxy-garage in the tailscale namespace pointed at
+                # node-D's real tailnet IP (NOT a repoint of tailscale-proxy-00,
+                # which serves rsp-asp). PLACEHOLDER endpoint — confirm in Phase 0.
+                - name: CUSTOM_S3_ENDPOINT
+                  value: "http://tailscale-proxy-garage.tailscale.svc.cluster.local:3900"
+                - name: BUCKET
+                  value: "etcd-snapshots"
+                - name: CLUSTER_NAME
+                  value: "homelab-staging"
+                # CLIENT-SIDE encryption recipient. MUST be this exact name —
+                # with the wrong name talos-backup uploads UNENCRYPTED snapshots,
+                # silently defeating the client-side-encryption guarantee
+                # (doc 09 §6, doc 10 Phase 4a). The age PUBLIC key is supplied by
+                # the operator-created etcd-backup-age Secret (template:
+                # staging/garage-backup/secret-etcd-backup.sops.yaml.example).
+                - name: AGE_RECIPIENT_PUBLIC_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: etcd-backup-age
+                      key: pub
+                # S3 credentials for the Garage `etcd-backup-writer` key
+                # (write grant on the etcd-snapshots bucket). Supplied by the
+                # operator-created garage-etcd-credentials Secret (template:
+                # staging/garage-backup/secret-etcd-backup.sops.yaml.example).
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: garage-etcd-credentials
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: garage-etcd-credentials
+                      key: AWS_SECRET_ACCESS_KEY
+                # Garage's S3 region (doc 10 Addressing).
+                - name: AWS_REGION
+                  value: "garage"
+              volumeMounts:
+                # Scoped talosconfig (os:etcd:backup role ONLY, never os:admin —
+                # a pod-mounted admin token is a cluster-takeover credential).
+                # Supplied by the operator-created etcd-backup-talosconfig Secret.
+                - name: talosconfig
+                  mountPath: /var/run/secrets/talos.dev
+                  readOnly: true
+          volumes:
+            - name: talosconfig
+              secret:
+                secretName: etcd-backup-talosconfig

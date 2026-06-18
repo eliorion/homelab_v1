@@ -1,0 +1,144 @@
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║ INERT CNPG-to-Garage backup option (doc 09 §6, doc 10 Phase 4b).          ║
+# ║ DO NOT APPLY while R2 is the live WAL archiver — see the FORK below.       ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# This file is an ACTIVE resource of the garage-backup component (listed in
+# infrastructure/services/staging/garage-backup/kustomization.yaml) but is gated
+# by the SUSPENDED top-level `garage-backup` Flux Kustomization
+# (clusters/staging/infrastructure.yaml, suspend: true). While that parent is
+# suspended Flux does NOT reconcile or apply anything here.
+#
+# ── TWO GATES, like the etcd CronJob (belt-and-braces) ────────────────────────
+#   1. The parent `garage-backup` Kustomization is suspended. Un-suspending it in
+#      Phase 4 makes Flux apply this ObjectStore + ScheduledBackup.
+#   2. The ScheduledBackup below ALSO carries spec.suspend: true. So even after
+#      the parent is un-suspended the schedule does NOT run base backups against
+#      the LIVE asp-db Cluster until the operator clears that flag too — after
+#      confirming Garage is reachable, the garage-cnpg-credentials Secret exists,
+#      and the tailscale-proxy-garage egress proxy is created (Phase 4b).
+#
+# ⚠️ NAMESPACE asp IS A LIVE PRODUCTION-DATA NAMESPACE. Un-suspending writes these
+#    CRs into ns asp and (once the ScheduledBackup is also un-suspended) registers
+#    a base-backup schedule against the production asp-db Cluster — this is the
+#    ONLY part of the component that touches the live asp DB object graph, not the
+#    inert `backup` namespace. Confirm garage-cnpg-credentials + the egress proxy
+#    are correct FIRST (a missing/wrong target makes every base backup fail and
+#    trips the CNPGGarageBackup* alerts on the live asp-db cluster).
+#
+# ── THE SINGLE-WAL-ARCHIVER FORK (doc 09 §6 "WAL-archiver constraint") ─────────
+# CNPG's Barman Cloud Plugin marks exactly ONE ObjectStore as isWALArchiver:true.
+# A Postgres cluster CANNOT have two simultaneous live WAL archivers — adding a
+# second live archiver BREAKS Postgres WAL archiving. The asp-db cluster ALREADY
+# has a live archiver: apps/staging/databases/asp/cluster-backup-patch.yaml points
+# isWALArchiver:true at the R2 `r2-store` ObjectStore (it survived the 2026-06-11
+# volume-loss recovery — DO NOT disturb it). So there are two mutually-exclusive
+# options:
+#
+#   (a) Garage REPLACES R2 as the WAL archiver. Then R2's cluster-backup-patch is
+#       demoted to base-only or removed and the Garage ObjectStore below gains a
+#       Cluster plugin patch with isWALArchiver:true / barmanObjectName: garage-store.
+#       Garage then holds the full PITR chain (WAL + base) → a Garage-only PITR
+#       restore drill is valid (doc 10 Phase 7). NOT the default — requires editing
+#       the LIVE apps/staging/databases/asp wiring, out of scope for this inert file.
+#
+#   (b) DEFAULT (this file): R2 STAYS the WAL archiver; Garage receives INDEPENDENT
+#       scheduled BASE BACKUPS ONLY. No second WAL archiver is registered, so the
+#       live R2 archiving is untouched. A Garage-only restore is BASE-ONLY, NOT true
+#       PITR (the WAL chain lives only on R2) — the Phase 7 restore drill against
+#       Garage must be scoped to a base restore, no recoveryTarget.targetTime.
+#
+# This file implements (b): an ObjectStore + a ScheduledBackup that take base
+# backups against Garage WITHOUT marking Garage as a WAL archiver. It deliberately
+# adds NO Cluster plugin patch with isWALArchiver:true — that is the only thing
+# that would create a second live archiver. To switch to (a), edit the LIVE asp
+# wiring (apps/staging/databases/asp), not this component.
+#
+# Namespace `asp`: these CRs MUST be co-located with the asp-db Cluster (which
+# lives in ns asp). The rest of this component lives in ns `backup`; CNPG is the
+# exception because ObjectStore/ScheduledBackup are namespace-scoped to the Cluster.
+---
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: garage-store
+  namespace: asp
+spec:
+  # Independent retention from R2 — base backups only on this target.
+  retentionPolicy: "7d"
+  configuration:
+    # Distinct bucket from R2 (asp-cnpg-staging) and from the etcd/velero buckets.
+    destinationPath: "s3://cnpg-staging"
+    # In-cluster S3 endpoint = the NEW tailscale egress proxy to node-D (the Garage
+    # gateway). PLACEHOLDER — the operator creates tailscale-proxy-garage pointed at
+    # node-D's real tailnet IP in Phase 0 (NOT a repoint of tailscale-proxy-00).
+    # HTTP-only over the tailnet → endpointCA intentionally OMITTED.
+    endpointURL: "http://tailscale-proxy-garage.tailscale.svc.cluster.local:3900"
+    s3Credentials:
+      accessKeyId:
+        name: garage-cnpg-credentials
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: garage-cnpg-credentials
+        key: ACCESS_KEY_SECRET
+    # ⚠️ DELIBERATE DIVERGENCE FROM THE LIVE R2 PATTERN (doc 09 §6, doc 10 Phase 4b):
+    #   - `encryption: AES256` is OMITTED. The live R2 stores
+    #     (apps/staging/databases/asp/objectstore.yaml,
+    #     infrastructure/services/staging/keycloak/database/objectstore.yaml) set
+    #     it on wal+data, but AES256 there is S3 SERVER-SIDE encryption and Garage
+    #     may not honour the header. Omit pending an SSE-honouring check; CNPG
+    #     backups therefore land PLAINTEXT-at-rest on Garage (gzip is COMPRESSION,
+    #     not encryption), protected only by tailnet transit + ZFS-at-rest. Unlike
+    #     the etcd/Velero paths, do NOT claim "ciphertext only" for Postgres.
+    #   - The R2 instanceSidecarConfiguration.env
+    #     (AWS_REQUEST_CHECKSUM_CALCULATION / AWS_RESPONSE_CHECKSUM_VALIDATION =
+    #     when_required) is OMITTED. That block is a Cloudflare-R2-only workaround
+    #     (boto3≥1.36 checksums, plugin issue #411). Garage is MinIO-style and
+    #     accepts those checksums — add it back ONLY if a checksum error is actually
+    #     observed.
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+      jobs: 2
+---
+# Scheduled BASE backups to Garage (fork (b)). method: plugin, but the
+# pluginConfiguration names the GARAGE ObjectStore (barmanObjectName:
+# garage-store), NOT R2. This is a base-backup schedule only — it does NOT and
+# MUST NOT set isWALArchiver:true anywhere, so the live R2 WAL archiver is
+# untouched (the single-WAL-archiver constraint is respected).
+#
+# A different schedule time than the live R2 ScheduledBackup (asp-db-daily,
+# 0 0 3 * * *) so the two base backups don't contend.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: asp-db-garage-base
+  namespace: asp
+spec:
+  # Belt-and-braces second gate (matching the etcd CronJob's spec.suspend):
+  # even after the parent garage-backup Kustomization is un-suspended, this
+  # schedule does NOT run base backups against the LIVE asp-db Cluster until the
+  # operator clears this flag in Phase 4b — AFTER confirming Garage is reachable,
+  # garage-cnpg-credentials exists, and tailscale-proxy-garage is created. This
+  # stops a premature un-suspend from failing every backup and tripping the
+  # CNPGGarageBackup* alerts on the production asp-db cluster.
+  suspend: true
+  schedule: "0 0 4 * * *"
+  immediate: false
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+    parameters:
+      # Target the Garage ObjectStore explicitly — do NOT default to the
+      # cluster's WAL-archiver ObjectStore (which is R2).
+      barmanObjectName: garage-store
+      # serverName is intentionally NOT set: for fork (b) (base-backup-only) it
+      # defaults to the cluster name (asp-db), so base backups land under
+      # s3://cnpg-staging/asp-db/. That is fine — cnpg-staging is a distinct
+      # bucket from R2's asp-cnpg-staging. (A serverName on the Cluster plugin
+      # params would only matter for fork (a), where Garage becomes the WAL
+      # archiver and shares a prefix with the WAL chain.)
+  cluster:
+    name: asp-db

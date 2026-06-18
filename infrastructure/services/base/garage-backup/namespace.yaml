@@ -1,0 +1,9 @@
+# Namespace for all Garage-backup data-plane jobs (etcd snapshot CronJob,
+# Velero + node-agent). MUST match the talconfig
+# machine.features.kubernetesTalosAPIAccess.allowedKubernetesNamespaces entry
+# (WIRING adds [backup] there) — the etcd snapshot pod can only reach the Talos
+# API from a namespace on that allow-list. See documentations/10 Phase 4a.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backup

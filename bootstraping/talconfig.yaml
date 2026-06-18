@@ -118,6 +118,20 @@ patches:
         hostDNS:
           enabled: true
           forwardKubeDNSToHost: true
+        # In-cluster Talos API access for the etcd-snapshot CronJob (doc 10
+        # Phase 4a). Least-privilege: only os:etcd:backup, only the `backup` ns
+        # (must match the CronJob namespace). SOURCE-ONLY — this edit alone does
+        # nothing on the live nodes: it requires
+        #   cd bootstraping && SOPS_AGE_KEY_FILE=../clusters/staging/age.agekey talhelper genconfig
+        # then `talosctl apply-config` rolled to ALL THREE CP nodes (etcd runs on
+        # every CP) and confirmed BEFORE the etcd CronJob is un-suspended.
+        # Do NOT run genconfig/apply-config here — the operator does it in Phase 4a.
+        kubernetesTalosAPIAccess:
+          enabled: true
+          allowedRoles:
+            - os:etcd:backup
+          allowedKubernetesNamespaces:
+            - backup
       nodeLabels:
         node.kubernetes.io/exclude-from-external-load-balancers: ""
   # NOTE: PodSecurity admissionControl + auditPolicy are emitted by talhelper

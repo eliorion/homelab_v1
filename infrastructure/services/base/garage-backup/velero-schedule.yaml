@@ -1,0 +1,32 @@
+# Velero Schedule -> selective namespace + PVC data backup to Garage
+# (doc 09 §6, doc 10 Phase 4c).
+#
+# snapshotMoveData: true drives CSI Snapshot Data Movement — a CSI snapshot of
+# the Longhorn PVC is uploaded by the node-agent (Kopia) to the Garage BSL.
+# Requires (operator, doc 10 Phase 4c): the Longhorn VolumeSnapshotClass labelled
+#   velero.io/csi-volumesnapshot-class: "true"  AND parameter type: snap
+# (type: bak would push to Longhorn's own backupstore — the wrong path). Do NOT
+# also run Longhorn-native recurring backups on these volumes (double-backup
+# churn — Velero is the single PVC mover, ADR-5).
+#
+# INERT until the parent `garage-backup` Kustomization is un-suspended.
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: garage-daily
+  namespace: backup
+spec:
+  schedule: "0 4 * * *"
+  template:
+    # 30-day retention. Object-level retention is best-effort (doc 09 §7) — the
+    # real immutability is the fleet's ZFS snapshot moat, not this TTL.
+    ttl: 720h0m0s
+    storageLocation: garage
+    snapshotMoveData: true
+    # PLACEHOLDER namespace list — replace with the namespaces actually worth
+    # capturing before un-suspending. An empty/wrong list silently backs up
+    # nothing useful. (Postgres data is covered by CNPG PITR, not Velero — see
+    # cnpg-garage-backup.yaml; Velero captures app manifests + non-DB PVCs.)
+    includedNamespaces:
+      - asp
+    defaultVolumesToFsBackup: false

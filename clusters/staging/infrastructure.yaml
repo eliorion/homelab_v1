@@ -173,3 +173,33 @@ spec:
     name: flux-system
   path: ./infrastructure/controllers/base/cilium/config
   prune: true
+---
+# SUSPENDED until the Garage cluster exists (docs 09/10 Phase 4). Flip suspend:false to activate.
+# Own top-level Kustomization (NOT under infrastructure-services) so it can be
+# suspended independently — while suspended Flux does NOTHING here: it does not
+# reconcile, prune, or even decrypt the SOPS Secrets under the staging overlay.
+# decryption is required so the operator-supplied *.enc.yaml Secrets decrypt once
+# un-suspended (Garage S3 keys, talos-backup age recipient, scoped talosconfig).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: garage-backup
+  namespace: flux-system
+spec:
+  suspend: true
+  interval: 1m0s
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+    # CNPG operator + Barman plugin (the inert cnpg-garage-backup.yaml option)
+    # come from infrastructure-controllers / infra-cnpg-plugin.
+    - name: infrastructure-controllers
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/services/staging/garage-backup
+  prune: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

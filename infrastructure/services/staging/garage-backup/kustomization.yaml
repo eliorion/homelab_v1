@@ -1,0 +1,58 @@
+# Staging overlay for the garage-backup component (doc 09 / doc 10).
+#
+# The whole component is gated by the SUSPENDED top-level `garage-backup` Flux
+# Kustomization (clusters/staging/infrastructure.yaml, suspend: true, added by
+# WIRING). While suspended Flux does NOTHING here — it does not even decrypt the
+# SOPS Secrets. The operator flips suspend:false in Phase 4 once Garage is
+# reachable; the etcd CronJob ALSO carries its own suspend:true (belt-and-braces).
+#
+# `kubectl kustomize infrastructure/services/staging/garage-backup` MUST render
+# cleanly — so this lists ONLY files that exist in git. The *.example secret
+# templates are NOT resources (they are plaintext templates, see below). The
+# operator's real *.enc.yaml Secrets are added under the commented block below
+# when they exist.
+#
+# The cnpg-garage-backup.yaml and prometheusrule-backups.yaml resources ARE
+# active here (listed below) — they are the inert CNPG-to-Garage option and the
+# backup alerts that live INSIDE this suspended component (safety invariant: the
+# component is the inert home for them). They become live ONLY when the parent
+# `garage-backup` Kustomization is un-suspended; the single suspend flip is their
+# gate. For the CNPG ScheduledBackup that gate is belt-and-braced by its OWN
+# spec.suspend: true (matching the etcd CronJob), so un-suspending the parent
+# alone does NOT start base backups against the live asp-db Cluster — the
+# operator must also clear that flag after confirming Garage + the
+# garage-cnpg-credentials Secret + the egress proxy exist (see cnpg-garage-backup.yaml header).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base/garage-backup
+
+  # ── Operator-supplied SOPS Secrets (Phase 4) ──────────────────────────────
+  # These do NOT exist in git yet — the real secret values (Garage S3 keys, the
+  # talos-backup age recipient, the scoped talosconfig) do not exist until the
+  # nodes are provisioned. Generate them from the *.example templates in THIS
+  # dir, then uncomment. Each MUST be named *.enc.yaml under this staging/ path
+  # so .sops.yaml auto-selects the staging age recipient (age137z0k…). The
+  # parent `garage-backup` Kustomization's decryption.provider: sops /
+  # secretRef.name: sops-age (clusters/staging/infrastructure.yaml) decrypts them
+  # once un-suspended.
+  #   cp secret-etcd-backup.sops.yaml.example secret-etcd-backup.enc.yaml
+  #   cp secret-velero.sops.yaml.example       secret-velero.enc.yaml
+  #   cp secret-cnpg-garage.sops.yaml.example  secret-cnpg-garage.enc.yaml
+  # (fill placeholders, `sops -e -i` each, then uncomment:)
+  # - secret-etcd-backup.enc.yaml
+  # - secret-velero.enc.yaml
+  # - secret-cnpg-garage.enc.yaml   # garage-cnpg-credentials in ns asp (CNPG ObjectStore)
+
+  # ── Inert resources gated by the SUSPENDED parent Kustomization ───────────
+  # The CNPG-to-Garage option (base-backup-only, R2 stays the live WAL archiver)
+  # and the backup-failure/staleness alerts. Both are present in the suspended
+  # component on purpose (this component is their inert home) — neither is active
+  # until the parent `garage-backup` Kustomization is un-suspended. The CNPG
+  # ScheduledBackup additionally carries spec.suspend: true (belt-and-braces, see
+  # its file) so the bare parent un-suspend does not register a running schedule
+  # against the LIVE asp-db Cluster; the PrometheusRule loads into Prometheus on
+  # un-suspend (its expressions are harmless until those backups actually run).
+  - cnpg-garage-backup.yaml
+  - prometheusrule-backups.yaml

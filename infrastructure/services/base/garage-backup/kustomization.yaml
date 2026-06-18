@@ -1,0 +1,15 @@
+# Base for the garage-backup component (doc 09 / doc 10). Everything here is
+# INERT until the parent `garage-backup` Flux Kustomization is un-suspended in
+# clusters/staging/infrastructure.yaml (WIRING).
+#
+# No Secrets in base/ — SOPS discipline: *.enc.yaml must live only under a
+# staging/ path so .sops.yaml auto-selects the staging age recipient. The
+# operator-created Secrets are referenced from the staging overlay only.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - etcd-backup-cronjob.yaml
+  - velero-helmrelease.yaml
+  - velero-bsl.yaml
+  - velero-schedule.yaml

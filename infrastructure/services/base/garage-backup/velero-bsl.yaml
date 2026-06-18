@@ -1,0 +1,28 @@
+# Velero BackupStorageLocation -> Garage S3 (doc 09 §6, doc 10 Phase 4c).
+#
+# provider: aws (velero-plugin-for-aws speaks plain S3); s3ForcePathStyle is
+# REQUIRED for Garage/MinIO-style endpoints. The endpoint is the NEW tailscale
+# egress proxy to node-D (the Garage gateway) — PLACEHOLDER, confirm node-D's
+# tailnet IP / proxy name in Phase 0. HTTP-only over the tailnet (no CA).
+#
+# INERT: the CRD (BackupStorageLocation) is installed by the Velero HelmRelease,
+# which only reconciles once the parent `garage-backup` Kustomization is
+# un-suspended; this CR will not apply before then.
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: garage
+  namespace: backup
+spec:
+  provider: aws
+  objectStorage:
+    bucket: velero
+  credential:
+    # Same Secret the HelmRelease references; key is the AWS shared-creds file.
+    name: velero-garage-credentials
+    key: cloud
+  config:
+    region: garage
+    # PLACEHOLDER endpoint — tailscale-proxy-garage targets node-D's tailnet IP.
+    s3Url: "http://tailscale-proxy-garage.tailscale.svc.cluster.local:3900"
+    s3ForcePathStyle: "true"

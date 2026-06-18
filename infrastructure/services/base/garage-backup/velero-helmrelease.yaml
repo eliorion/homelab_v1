@@ -1,0 +1,81 @@
+# Velero — the SINGLE PVC mover (doc 09 ADR-5 / §6): CSI Snapshot Data Movement
+# (Kopia) for selected Longhorn PVCs + namespace manifests, uploaded to a Garage
+# S3 BackupStorageLocation. node-agent (the Kopia data mover) is MANDATORY for
+# CSI data movement — without it PVC data is silently NOT moved (doc 09 §6).
+#
+# INERT until the parent `garage-backup` Flux Kustomization is un-suspended
+# (clusters/staging/infrastructure.yaml, suspend: true). While suspended Flux
+# neither installs this HelmRelease nor decrypts the staging Secrets it needs.
+#
+# Per repo convention (nexus, tailscale, kube-prometheus-stack): the
+# HelmRepository source is co-located in the component's base/ dir (HelmRepository
+# sources are NOT centralised in clusters/staging/sources.yaml — that file is
+# GitRepository-only). HelmRelease metadata.namespace is flux-system; the workload
+# lands in spec.targetNamespace (backup) via install.createNamespace.
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: vmware-tanzu
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://vmware-tanzu.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: velero
+  namespace: flux-system
+spec:
+  targetNamespace: backup
+  releaseName: velero
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      # Renovate keeps this pinned current. vmware-tanzu/velero chart.
+      chart: velero
+      version: "10.1.1"
+      sourceRef:
+        kind: HelmRepository
+        name: vmware-tanzu
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: true
+  values:
+    # S3-compatible provider plugin. velero-plugin-for-aws speaks plain S3 and
+    # works against Garage/MinIO (path-style). Pin the init-container image tag.
+    initContainers:
+      - name: velero-plugin-for-aws
+        image: velero/velero-plugin-for-aws:v1.13.0
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
+    configuration:
+      # The BSL itself is a separate CR (velero-bsl.yaml) so the Garage endpoint
+      # / bucket placeholders live in one obvious place; disable the chart's
+      # built-in BSL templating to avoid a duplicate default location.
+      backupStorageLocation: []
+      volumeSnapshotLocation: []
+      # CSI Snapshot Data Movement via the Kopia uploader (doc 09 §6).
+      features: EnableCSI
+      uploaderType: kopia
+    # node-agent (Kopia data mover) — MANDATORY for CSI data movement, or PVC
+    # data is silently not moved (doc 09 §6 / doc 10 Phase 4c).
+    deployNodeAgent: true
+    # S3 credentials for the Garage `velero` write key. Operator creates this
+    # Secret from the template
+    # staging/garage-backup/secret-velero.sops.yaml.example. The chart mounts the
+    # named key as the AWS shared-credentials file for the plugin.
+    credentials:
+      useSecret: true
+      existingSecret: velero-garage-credentials
+    # No metrics ServiceMonitor here — Velero metrics/alerting are wired by the
+    # suspended PrometheusRule (prometheusrule-backups.yaml, owned by WIRING).
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: false
