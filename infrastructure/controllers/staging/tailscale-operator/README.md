@@ -108,6 +108,57 @@ kubectl -n asp run nettest --rm -it --image=curlimages/curl --restart=Never -- \
 #   → prints rsp-asp's residential IP (not the cluster/home IP)
 ```
 
+## API server proxy — kubectl off-LAN  (`release.yaml` values)
+
+Reach the k8s API over the tailnet when you're off the home LAN (the VIP
+`192.168.1.100:6443` is unreachable). The operator runs an **in-process API
+server proxy** in **auth mode**: it impersonates the caller's tailnet identity,
+so k8s RBAC (driven by an ACL grant) decides access — no client cert ships to
+the client. The proxy is the operator's own tailnet device, `tailscale-operator`.
+
+> **Talos API is NOT covered.** This is k8s only. `talosctl` (apid `:50000`)
+> needs the `.200` subnet route or the Talos `siderolabs/tailscale` extension —
+> neither is doable without LAN / Talos reach.
+
+GitOps part (done, in `release.yaml`):
+```yaml
+values:
+  apiServerProxyConfig:
+    mode: "true"            # auth mode (impersonate tailnet identity)
+    allowImpersonation: "true"  # creates the ClusterRole the proxy needs
+```
+
+Manual one-time steps (Flux can't do these):
+
+1. **Tailnet HTTPS certs** — admin console → DNS → enable **HTTPS Certificates**
+   (MagicDNS). The proxy serves a `ts.net` cert for its hostname.
+2. **ACL grant** — map your user → impersonate `system:masters` (built-in
+   cluster-admin, no extra RBAC). The proxy device is tagged `tag:k8s-operator`:
+   ```jsonc
+   "grants": [
+     {
+       "src": ["autogroup:admin"],          // or "your-user@"
+       "dst": ["tag:k8s-operator"],
+       "app": {
+         "tailscale.com/cap/kubernetes": [
+           { "impersonate": { "groups": ["system:masters"] } }
+         ]
+       }
+     }
+   ]
+   ```
+   Narrower than admin: bind your own ClusterRole and impersonate a custom group
+   instead of `system:masters`.
+3. **Generate kubeconfig** (on your laptop, after Flux reconciles on `main`):
+   ```bash
+   tailscale configure kubeconfig tailscale-operator   # exact name: Machines page
+   kubectl get nodes
+   ```
+
+Precondition: the operator must be healthy (`kubectl -n tailscale get pods`); the
+OAuth client + `tag:k8s`/`tag:k8s-operator` ACL from §1–§3 above must already be
+in place — the API server proxy reuses them.
+
 ## Troubleshooting (failures we actually hit)
 
 | Symptom | Cause | Fix |
