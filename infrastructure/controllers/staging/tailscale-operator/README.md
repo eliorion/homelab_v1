@@ -3,17 +3,19 @@
 Two jobs, both private to the tailnet (gated by tailnet identity, reachable
 off-LAN, **never internet-exposed** — no Cloudflare hostname, no public ingress):
 
-1. **Ingress** — publish the **asp** + **fbref** admin UIs onto the tailnet as
-   devices `asp-admin-ui` / `fbref-admin-ui`.
+1. **Ingress** — publish the **asp** + **fbref** admin UIs and the **Longhorn**
+   storage UI onto the tailnet as devices `asp-admin-ui` / `fbref-admin-ui` /
+   `longhorn`.
 2. **Egress** — let cluster workloads reach a tailnet device (the residential
    proxy `rsp-asp`) through a local Service `tailscale-proxy-00`.
 
 ## Why Tailscale (not a LoadBalancer / ingress)
 
 The admin UIs front a **no-auth control surface** (asp orchestrator has no auth;
-fbref BFF queries the DB directly). A LAN LoadBalancer (`192.168.1.50:<port>`)
-would let anyone on the home network drive them; a public ingress is worse.
-Tailscale authenticates by tailnet identity and never touches the internet.
+fbref BFF queries the DB directly; Longhorn's UI has no auth either and can
+delete volumes). A LAN LoadBalancer (`192.168.1.50:<port>`) would let anyone on
+the home network drive them; a public ingress is worse. Tailscale authenticates
+by tailnet identity and never touches the internet.
 
 ## Files here
 
@@ -28,6 +30,11 @@ The `tailscale.com/expose` annotations on the admin-ui Services live in
 `apps/staging/{asp,fbref}/release.yaml`. They require the chart template
 `adminUi.service.annotations` (in the asp repo `k8s/charts/{asp,fbref}` — shipped
 on `main`); the deployed HelmRelease must be on a chart revision that has it.
+
+The **Longhorn** UI is exposed the same way, but its annotations live in the
+Longhorn HelmRelease itself — `infrastructure/controllers/base/longhorn/release.yaml`
+(`values.service.ui.annotations`) — which the upstream chart renders onto the
+`longhorn-frontend` Service. No app-repo chart change needed.
 
 ## One-time setup (manual — Flux can't do these for you)
 
@@ -67,13 +74,14 @@ The dir is wired in `../kustomization.yaml`.
 
 ## Reaching the admin UIs
 
-After Flux reconciles and the admin-ui Services are annotated, the operator
-registers one device per Service. Reach them on the **Service port `8080` over
-plain HTTP** — the `expose` annotation is L3, it forwards the Service port; it is
-**not** HTTPS/443:
+After Flux reconciles and the Services are annotated, the operator registers one
+device per Service. Reach each on **its own Service port over plain HTTP** — the
+`expose` annotation is L3, it forwards the Service port; it is **not** HTTPS/443.
+The admin UIs listen on `8080`, the Longhorn UI (`longhorn-frontend`) on `80`:
 ```
 http://asp-admin-ui.tail45b0ca.ts.net:8080
 http://fbref-admin-ui.tail45b0ca.ts.net:8080
+http://longhorn.tail45b0ca.ts.net          # Service port 80
 ```
 (For HTTPS on 443 you would switch to a Tailscale **Ingress** —
 `ingressClassName: tailscale` + MagicDNS HTTPS — not configured here.)

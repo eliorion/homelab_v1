@@ -28,3 +28,15 @@ spec:
       defaultReplicaCount: 3
     persistence:
       defaultClassReplicaCount: 3
+    service:
+      ui:
+        # Publish the Longhorn UI on the tailnet via the Tailscale operator —
+        # authed by tailnet identity, reachable off-LAN, never internet-exposed
+        # (same pattern as the asp/fbref admin UIs). Inert until the operator is
+        # installed (infrastructure/controllers/staging/tailscale-operator); no
+        # extra ACL work — the operator already owns tag:k8s. The expose
+        # annotation is L3 and forwards the Service port (longhorn-frontend :80),
+        # so reach it at http://longhorn.<your-tailnet>.ts.net (plain HTTP, not 443).
+        annotations:
+          tailscale.com/expose: "true"
+          tailscale.com/hostname: longhorn
