@@ -36,10 +36,27 @@ spec:
       retries: 3
       strategy: rollback
   values:
+    # Always-on so the labs are reachable on the tailnet without scaling.
+    replicas: 1
     projects:
       - asp
       - fbref
-    # PRIVATE lab image? Make ghcr.io/eliorion/lab-jupyterlab public (bakes no
-    # secrets) OR reflect a pull secret into the lab ns and uncomment:
-    # imagePullSecrets:
-    #   - name: ghcr-pull-secret
+    # Publish each lab on the tailnet via the Tailscale operator — reach at
+    #   http://lab-asp.<tailnet>.ts.net:8888  /  http://lab-fbref.<tailnet>.ts.net:8888
+    tailscale:
+      expose: true
+    # No Jupyter token: the tailnet identity is the auth boundary (same model as
+    # the admin UIs). Anyone on the tailnet gets the lab's read-only DB access.
+    auth:
+      disableToken: true
+    # Pull the private image WITHOUT a public package: reflect the existing asp
+    # ghcr-pull-secret into the lab ns (reflector fills the chart-generated stub,
+    # auto-added to the pods' imagePullSecrets). ONE-TIME: annotate the SOURCE so
+    # it permits reflection into `lab` (needs the age key):
+    #   cd apps/staging/databases/asp && sops ghcr-pull-secret.enc.yaml
+    #   # under metadata.annotations add:
+    #   #   reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    #   #   reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "lab"
+    imagePullSecretReflect:
+      enabled: true
+      source: "asp/ghcr-pull-secret" # pragma: allowlist secret
