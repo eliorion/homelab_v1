@@ -25,3 +25,14 @@ spec:
   # plaintext GitOps.
   values:
     oauth: {}
+    # API server proxy — expose the k8s API on the tailnet so kubectl works
+    # off-LAN without the VIP (192.168.1.100:6443). In-process proxy runs in the
+    # operator pod; its tailnet device is `tailscale-operator` (operatorConfig.
+    # hostname). mode "true" = AUTH mode: the proxy impersonates the caller's
+    # tailnet identity, so k8s RBAC (via an ACL grant) decides access — no client
+    # cert. allowImpersonation creates the ClusterRole the proxy needs to do that.
+    # Activation needs a manual ACL grant + client `tailscale configure
+    # kubeconfig` — see README "API server proxy". Talos API is NOT covered here.
+    apiServerProxyConfig:
+      mode: "true"
+      allowImpersonation: "true"
