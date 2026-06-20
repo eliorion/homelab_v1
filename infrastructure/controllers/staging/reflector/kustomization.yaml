@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reflector operator (../../base/reflector) + ONE central GHCR pull secret that
+# kubernetes-reflector mirrors into every consuming namespace (asp, fbref, lab,
+# future). Replaces the per-namespace ghcr-pull-secret copies.
+#
+# You create ghcr-pull-secret.enc.yaml from the .example (see README.md) and
+# encrypt it. The infra-reflector Flux Kustomization (clusters/staging/
+# infrastructure.yaml) reconciles this dir WITH sops decryption.
+resources:
+  - ../../base/reflector
+  - ghcr-pull-secret.enc.yaml

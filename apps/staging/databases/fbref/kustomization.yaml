@@ -7,8 +7,8 @@ resources:
   - ../../../base/databases/fbref
   # grafana_ro role password (basic-auth) — consumed by the CNPG managed role.
   - fbref-grafana-ro.enc.yaml
-  # GHCR pull secret for the private fbref image (own ns → own pull secret).
-  - ghcr-pull-secret.enc.yaml
+  # ghcr-pull-secret now comes from the central reflector source
+  # (infrastructure/controllers/staging/reflector) — mirrored into this ns.
 
 patches:
   # PVCs on Longhorn (explicit — also the cluster default SC on Talos).

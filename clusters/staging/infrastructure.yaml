@@ -186,9 +186,15 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./infrastructure/controllers/base/reflector
+  # Staging overlay = the operator (../base/reflector) + the ONE central
+  # ghcr-pull-secret it mirrors into asp/fbref/lab. Needs sops decryption.
+  path: ./infrastructure/controllers/staging/reflector
   prune: true
   wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   healthChecks:
     - apiVersion: apps/v1
       kind: Deployment
