@@ -11,6 +11,11 @@ shellcheck = "latest"
 talosctl = "latest"
 talhelper = "latest"
 aws = { version = "latest", symlink_bins = "true" }
+gh = "latest"
+# Pinned, not "latest": aqua lists versions from GitHub tags but downloads from
+# pkgs.tailscale.com, which lags (e.g. tag v1.98.5 exists, tarball doesn't ->
+# 404). Pin to the latest PUBLISHED static binary; Renovate bumps it.
+"aqua:tailscale/tailscale" = "1.98.4"
 
 [tasks.sops-updatekeys]
 description = "Rewrap *.enc.yaml secrets to recipients in .sops.yaml (pass -- -k FILE [--check])"

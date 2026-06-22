@@ -4,9 +4,19 @@
     "dockerfile": "Dockerfile"
   },
   "containerEnv": {
-    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
+    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}",
+    "TS_AUTHKEY": "${localEnv:TS_AUTHKEY}"
   },
+  "runArgs": [
+    "--device=/dev/net/tun",
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW"
+  ],
+  "mounts": [
+    "source=k3s-tailscale-state,target=/var/lib/tailscale,type=volume"
+  ],
   "postCreateCommand": "scripts/setup",
+  "postStartCommand": "scripts/tailscaled-up",
   "forwardPorts": [
     8080
   ],
