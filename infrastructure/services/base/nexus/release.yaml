@@ -28,7 +28,7 @@ spec:
       enabled: true
       # Talos cluster: Longhorn CSI (local-path was the k3s provisioner).
       storageClass: longhorn
-      size: 80Gi
+      size: 250Gi
     # Keep heap modest: single-node homelab. Raise -Xmx and the memory limit
     # together if Nexus OOMs under heavier use.
     install4jAddVmParams: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2048m"
