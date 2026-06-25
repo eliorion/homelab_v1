@@ -48,4 +48,4 @@ spec:
   #    storageClass: fast-ssd
 
   storage:
-    size: 5Gi
+    size: 10Gi
