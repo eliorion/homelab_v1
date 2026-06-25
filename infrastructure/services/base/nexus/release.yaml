@@ -39,6 +39,22 @@ spec:
       limits:
         cpu: 10
         memory: 6Gi
+    # Prefer node staging-controlplane-1. Longhorn keeps a replica on every
+    # node (defaultReplicaCount: 3), so node-1 always holds a local copy of
+    # the data volume — running the pod here means the engine reads its data
+    # locally. Soft (preferred) so Nexus still schedules elsewhere if node-1
+    # is down; data survives via the other replicas. Note: after a failover
+    # the pod does not auto-return to node-1 until it's rescheduled.
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - staging-controlplane-1
     rootPassword:
       # SOPS-encrypted secret provided by the staging overlay.
       secret: nexus-root-password
