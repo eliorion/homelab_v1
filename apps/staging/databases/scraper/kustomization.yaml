@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: scraper
+
+resources:
+  - ../../../base/databases/scraper
+  # ghcr-pull-secret comes from the central reflector source
+  # (infrastructure/controllers/staging/reflector) — mirrored into this ns.
+  # The scraper coordination DB holds NO scraped data (queues/config/health
+  # only, rebuildable from the seed migrations), so it carries no R2 backups.
+
+patches:
+  # PVCs on Longhorn (explicit — also the cluster default SC on Talos).
+  - path: cluster-storage-patch.yaml
+    target:
+      kind: Cluster
+      name: scraper-db

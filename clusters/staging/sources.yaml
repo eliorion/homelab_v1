@@ -79,3 +79,28 @@ spec:
     !/k8s/charts/
     /k8s/charts/*
     !/k8s/charts/lab/
+---
+# Source for the central scraper service Helm chart (k8s/charts/scraper in the
+# asp repo) — the API-only scraping platform (engine lanes + backend + admin-ui
+# + FlareSolverr) that asp/fbref consume via their ingest deployments. Reuses
+# the same read-only asp-deploy-key Secret; scoped to the chart path so unrelated
+# asp commits don't churn the artifact (Revision strategy would re-reconcile).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: scraper
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: ssh://git@github.com/eliorion/asp
+  ref:
+    branch: main
+  secretRef:
+    name: asp-deploy-key
+  ignore: |
+    /*
+    !/k8s/
+    /k8s/*
+    !/k8s/charts/
+    /k8s/charts/*
+    !/k8s/charts/scraper/

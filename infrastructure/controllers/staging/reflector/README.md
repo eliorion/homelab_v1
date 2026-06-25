@@ -2,8 +2,8 @@
 
 One SOPS-encrypted `ghcr-pull-secret` lives here, in the `reflector` namespace,
 and **kubernetes-reflector mirrors it into every consuming namespace** (asp,
-fbref, lab, and any future project). Replaces the per-namespace copies that used
-to live under `apps/staging/databases/{asp,fbref}/`.
+fbref, lab, scraper, and any future project). Replaces the per-namespace copies
+that used to live under `apps/staging/databases/{asp,fbref}/`.
 
 ## Why reflector runs first
 
@@ -30,8 +30,8 @@ sops --encrypt --in-place ghcr-pull-secret.enc.yaml   # staging recipient, by pa
 git add ghcr-pull-secret.enc.yaml && git commit && <merge>
 ```
 
-On merge: reflector mirrors `ghcr-pull-secret` into asp/fbref/lab, the per-project
-copies are pruned (same name → consumers unaffected), apps roll.
+On merge: reflector mirrors `ghcr-pull-secret` into asp/fbref/lab/scraper, the
+per-project copies are pruned (same name → consumers unaffected), apps roll.
 
 ## Add a project
 
@@ -43,6 +43,6 @@ secret, one edit — no new file to encrypt or maintain.
 
 ```bash
 flux get kustomizations | grep -E 'infra-reflector|databases'   # reflector Ready BEFORE databases
-kubectl get secret ghcr-pull-secret -n asp -n fbref -n lab      # present in each
+for ns in asp fbref lab scraper; do kubectl get secret ghcr-pull-secret -n $ns; done  # present in each
 kubectl -n reflector logs deploy/reflector | grep ghcr          # mirror events
 ```

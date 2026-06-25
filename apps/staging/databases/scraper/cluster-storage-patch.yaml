@@ -1,0 +1,3 @@
+- op: add
+  path: /spec/storage/storageClass
+  value: longhorn
