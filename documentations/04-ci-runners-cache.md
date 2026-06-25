@@ -222,11 +222,30 @@ kubectl run pip-test --rm -it --image=python:3.12 -- \
 
 ### Nexus HelmRelease: `cannot patch "nexus" with kind StatefulSet ... Forbidden`
 
-`volumeClaimTemplates` (PVC size) is immutable on StatefulSets, and the
-`local-path` storage class does not support volume expansion. Changing
-`persistence.size` therefore blocks every subsequent Helm upgrade. Fix
-(wipes Nexus data — proxy caches and buildcache are rebuildable, repos and
-root password are re-applied by the config Job):
+`volumeClaimTemplates` (PVC size) is immutable on StatefulSets, so changing
+`persistence.size` blocks every subsequent Helm upgrade.
+
+**On Longhorn (current storage) — non-destructive.** Longhorn supports online
+volume expansion, so the PVC can already be at the target size; only the STS's
+immutable `volumeClaimTemplates` is stale. Recreate the STS without touching the
+pod or PVC:
+
+```bash
+kubectl -n nexus delete sts nexus --cascade=orphan   # keeps nexus-0 + PVC running
+flux reconcile helmrelease nexus -n flux-system --force
+```
+
+Gotcha: a plain `flux reconcile` (no `--force`) does **not** recreate the STS.
+helm-controller compares its release storage (which still lists the STS) against
+the desired values (unchanged) and logs `release in-sync with desired state`,
+skipping the re-apply — so the orphaned STS is never recreated. `--force` forces
+the Helm upgrade; with no live STS it CREATEs a fresh one at the new size (a
+create, not a forbidden update), then adopts the existing `nexus-0` pod.
+
+**On `local-path` (legacy single-node) — destructive.** That storage class did
+not support expansion, so the only fix wiped Nexus data (proxy caches and
+buildcache are rebuildable; repos and root password are re-applied by the config
+Job):
 
 ```bash
 kubectl -n nexus delete sts nexus
