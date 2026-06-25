@@ -49,14 +49,11 @@ spec:
     # the admin UIs). Anyone on the tailnet gets the lab's read-only DB access.
     auth:
       disableToken: true
-    # Pull the private image WITHOUT a public package: reflect the existing asp
-    # ghcr-pull-secret into the lab ns (reflector fills the chart-generated stub,
-    # auto-added to the pods' imagePullSecrets). ONE-TIME: annotate the SOURCE so
-    # it permits reflection into `lab` (needs the age key):
-    #   cd apps/staging/databases/asp && sops ghcr-pull-secret.enc.yaml
-    #   # under metadata.annotations add:
-    #   #   reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-    #   #   reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "lab"
+    # Pull the private image WITHOUT a public package: reflect the canonical
+    # reflector/ghcr-pull-secret into the lab ns (reflector fills the
+    # chart-generated stub, auto-added to the pods' imagePullSecrets). The source
+    # already permits reflection into `lab` (reflection-allowed-namespaces:
+    # asp,fbref,lab,scraper), so no per-namespace annotation is needed.
     imagePullSecretReflect:
       enabled: true
-      source: "asp/ghcr-pull-secret" # pragma: allowlist secret
+      source: "reflector/ghcr-pull-secret" # pragma: allowlist secret
