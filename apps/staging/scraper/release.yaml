@@ -1,0 +1,94 @@
+# The central scraper service — Helm chart owned by the asp repo
+# (k8s/charts/scraper), synced via the `scraper` GitRepository
+# (clusters/staging/sources.yaml). Image tags live in the chart's values.yaml
+# (CI bumps them per release); this file carries environment overrides ONLY.
+# Deploys into its OWN `scraper` namespace against its own CNPG cluster
+# scraper-db. asp + fbref consume results from its API (their ingest pods) — the
+# API is the only project↔scraper contract; this service stores NO scraped data.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: scraper
+  namespace: flux-system
+spec:
+  targetNamespace: scraper
+  interval: 1m
+  # Helm op ceiling — must exceed the engine scraper lanes' Camoufox warm-up
+  # gated readiness (initialDelay 90s) + minReadySeconds 30, or a slow warm-up
+  # looks like a failed upgrade and rolls back.
+  timeout: 10m
+  chart:
+    spec:
+      chart: k8s/charts/scraper
+      # Chart.yaml version is a human changelog signal only — upgrade on every
+      # new git revision of the (chart-path-scoped) GitRepository instead.
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: scraper
+        namespace: flux-system
+      interval: 1m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      # A failed upgrade (pods never Ready within timeout, or a failed helm test)
+      # rolls back to the last good release. retries is REQUIRED: helm-controller
+      # performs no remediation at the default retries: 0.
+      retries: 3
+      strategy: rollback
+      remediateLastFailure: true
+  rollback:
+    cleanupOnFail: true
+  test:
+    # Run the chart's helm test hooks (curl backend /v1/health + admin-ui) after
+    # every install/upgrade; a failing hook fails the release → rollback.
+    enable: true
+    ignoreFailures: false
+  driftDetection:
+    mode: enabled
+  values:
+    global:
+      # Pull the private GHCR images (ghcr.io/eliorion/scraper-*). The
+      # ghcr-pull-secret is mirrored into this ns by the central reflector source.
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+    # FlareSolverr ON: the fbref engine lane fetches Cloudflare-protected pages
+    # through it (Camoufox cannot clear a managed challenge server-side). The
+    # fbref lane's PROXY_URL is forwarded INTO the solve, so FlareSolverr's
+    # Chrome egresses via the proxy — hence solver.proxyEgressPorts below.
+    solver:
+      enabled: true
+      replicas: 2 # one solve per replica → fbref crawl + scrape solve in parallel
+      proxyEgressPorts: [8888] # let FlareSolverr reach the Tailscale egress proxy
+    engine:
+      # Per-(tenant,site) egress proxy — both projects route through the in-cluster
+      # Tailscale egress proxy (operator-managed → rsp-asp residential IP
+      # 100.100.98.5) instead of the cluster's datacenter IP, which DataDome
+      # (leboncoin) and Cloudflare (fbref) block. Same routing the retired asp +
+      # fbref lanes used, validated on-cluster. REQUIRES the tailscale-proxy-00
+      # egress pod Ready (kubectl -n tailscale get pods); revert a url to
+      # http://100.100.98.5:8888 if the proxy is down. autoscout24 stays direct.
+      #
+      # leboncoin (camoufox_warm) connects to the proxy directly from the engine
+      # pod → needs engine.proxyEgressPorts. fbref (flaresolverr) forwards
+      # PROXY_URL into the solve → that hop uses solver.proxyEgressPorts instead.
+      proxies:
+        - tenant: asp
+          site: leboncoin
+          url: "http://tailscale-proxy-00.tailscale.svc.cluster.local:8888"
+        - tenant: fbref
+          site: fbref
+          url: "http://tailscale-proxy-00.tailscale.svc.cluster.local:8888"
+      proxyEgressPorts: [8888]
+    adminUi:
+      service:
+        # Publish the admin UI on the tailnet via the Tailscale operator —
+        # authed + reachable off-LAN, never internet-exposed. Inert until the
+        # operator is installed (infrastructure/controllers/staging/tailscale-operator).
+        # Reach at https://scraper-admin-ui.<your-tailnet>.ts.net
+        annotations:
+          tailscale.com/expose: "true"
+          tailscale.com/hostname: scraper-admin-ui

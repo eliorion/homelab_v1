@@ -1,0 +1,67 @@
+# Flyway migration Job for the scraper coordination database.
+# Mirrors the asp/fbref Flyway tier: Renovate bumps the image tag; Flux
+# force-recreates the immutable Job and gates the `apps` Kustomization on its
+# completion. No ttlSecondsAfterFinished — Flux owns the Job lifecycle (force);
+# a TTL would delete the completed Job and re-run it on every reconcile.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: scraper-db-migrate
+  namespace: scraper
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: scraper-db-migrations
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: ghcr-pull-secret # reflected into this ns by the central reflector source
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101 # flyway image files are world-readable; verified non-root migrate
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: flyway
+          image: ghcr.io/eliorion/scraper-db-migrations:scraper-db-migrations-v0.1.0
+          args: ["migrate"]
+          env:
+            # CNPG app secret for cluster "scraper-db" → scraper-db-app. jdbc-uri
+            # targets the cluster's bootstrap database (scraper).
+            - name: FLYWAY_URL
+              valueFrom:
+                secretKeyRef:
+                  name: scraper-db-app
+                  key: jdbc-uri
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: scraper-db-app
+                  key: username
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: scraper-db-app
+                  key: password
+            # Existing DBs (provisioned before Flyway) get baselined at 0, then
+            # the idempotent V-files re-run as no-ops and history is populated.
+            - name: FLYWAY_BASELINE_ON_MIGRATE
+              value: "true"
+            - name: FLYWAY_BASELINE_VERSION
+              value: "0"
+            - name: FLYWAY_CONNECT_RETRIES
+              value: "10"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false # flyway writes temp files under /flyway
+            capabilities:
+              drop: ["ALL"]
