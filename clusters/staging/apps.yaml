@@ -10,6 +10,10 @@ spec:
   interval: 1m0s
   dependsOn:
     - name: infra-cnpg-plugin # CNPG operator + barman plugin must exist first
+    # Gate the WHOLE app chain (databases → db-migrations → apps, + lab) on the
+    # reflector tier: the central ghcr-pull-secret must be mirrored before any
+    # namespace pulls a private image. wait:true on infra-reflector blocks here.
+    - name: infra-reflector
   retryInterval: 1m
   timeout: 5m
   sourceRef:

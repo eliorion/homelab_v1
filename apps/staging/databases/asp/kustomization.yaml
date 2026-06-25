@@ -5,9 +5,10 @@ namespace: asp
 
 resources:
   - ../../../base/databases/asp
-  # Pull secret lives here (not in apps) so the migration Job can pull
-  # ghcr.io/eliorion/asp-db-migrations before the apps tier reconciles.
-  - ghcr-pull-secret.enc.yaml
+  # ghcr-pull-secret is no longer per-ns — the central reflector source
+  # (infrastructure/controllers/staging/reflector) mirrors it into this ns. The
+  # `databases` Kustomization dependsOn infra-reflector, so the mirrored secret
+  # exists before the db-migration Job pulls.
   - r2-backup-credentials.enc.yaml
   - objectstore.yaml
   - scheduledbackup.yaml
