@@ -81,13 +81,27 @@ spec:
           - NexusAuthenticatingRealm
           - DockerToken
       cleanup:
-        # Proxies + the overwritten buildcache tag grow fast on a 10Gi volume.
+        # Proxies keep a 14d window — re-pulling base images upstream is costly.
         - name: purge-stale
           notes: "Drop anything not downloaded in 14 days."
           format: ALL_FORMATS
           mode: delete
           criteria:
             lastDownloaded: "1209600"
+        # docker-cache only. BuildKit (mode=max) overwrites the :buildcache tag
+        # every build; the OLD manifest goes UNTAGGED but Nexus keeps it + its
+        # unique layer blobs forever — a never-downloaded dangling manifest that
+        # a lastDownloaded policy can NEVER match (it was never pulled by tag).
+        # That leak hit ~215GB of orphans. Key on lastBlobUpdated (age since last
+        # WRITE) instead: the live :buildcache is rewritten every build so it
+        # stays fresh and survives, while each dangling manifest is never
+        # rewritten → ages out in 4d → reaped → assetBlob.cleanup frees its blobs.
+        - name: purge-buildcache
+          notes: "docker-cache: drop manifests not rewritten in 4 days (reaps BuildKit dangling manifests)."
+          format: docker
+          mode: delete
+          criteria:
+            lastBlobUpdated: "345600"
       repos:
         - name: pypi-proxy
           format: pypi
@@ -171,4 +185,4 @@ spec:
             forceBasicAuth: false # anonymous pull (e2e cache-from has no login); push still needs auth
             httpPort: 5002
           cleanup:
-            policyNames: [purge-stale]
+            policyNames: [purge-buildcache]
