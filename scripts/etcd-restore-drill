@@ -1,0 +1,182 @@
+#!/bin/bash
+# Read-only etcd restore drill (doc 09, Tier 0 + Tier 1).
+#
+# Fetches the newest talos-backup snapshot from Garage, decrypts it with your
+# OFFLINE age private key, restores it into a throwaway etcd, and reads the real
+# control-plane state back out. The live cluster is never contacted for the
+# restore. This proves the backup is a restorable copy of the whole control
+# plane, not just a well-formed file.
+#
+# It does NOT touch the destructive Tier 2 (talosctl reset / bootstrap
+# --recover-from) -- that stays manual and deliberate, by design.
+#
+# Security: the snapshot contains every Kubernetes Secret in plaintext. This
+# script works in a 0700 mktemp dir and shreds every plaintext file on exit
+# (even on Ctrl-C / error). The offline key is used in place and never copied,
+# logged, or persisted. Garage read creds come from the SOPS secret and live
+# only in this process's env.
+#
+# Usage:
+#   scripts/etcd-restore-drill [--offline-key PATH] [--keep]
+#     --offline-key PATH  the offline etcd-backup age private key (prompted if omitted)
+#     --keep              do NOT shred the workdir afterwards (leaves plaintext
+#                         secrets on disk -- for inspection only)
+#
+#   Or via mise:  mise run etcd-drill -- --offline-key ~/etcd-backup-age.key
+
+set -euo pipefail
+
+# --- config (override via env) ------------------------------------------------
+SECRET_FILE=${SECRET_FILE:-infrastructure/services/staging/etcd-backup/etcd-backup-s3.enc.yaml}
+BUCKET=${BUCKET:-homelab-staging-etcd-backup}
+S3_PREFIX=${S3_PREFIX:-staging}
+GW_PORT=${GW_PORT:-3900}          # local port for the port-forward to garage-s3
+ETCD_CLIENT_PORT=${ETCD_CLIENT_PORT:-2379}
+ETCD_PEER_PORT=${ETCD_PEER_PORT:-2380}
+
+# --- helpers ------------------------------------------------------------------
+log() { echo ">> $*" >&2; }
+die() { echo "error: $*" >&2; exit 1; }
+
+usage() { sed -n '2,30{/^#/!q;s/^# \{0,1\}//p}' "$0"; }
+
+WORK=""
+PF_PID=""
+ETCD_PID=""
+KEEP=0
+
+cleanup() {
+  set +e
+  [ -n "$ETCD_PID" ] && kill "$ETCD_PID" 2>/dev/null
+  [ -n "$PF_PID" ] && kill "$PF_PID" 2>/dev/null
+  wait 2>/dev/null
+  if [ -n "$WORK" ] && [ -d "$WORK" ]; then
+    if [ "$KEEP" = 1 ]; then
+      log "kept workdir (CONTAINS PLAINTEXT SECRETS): $WORK"
+    else
+      find "$WORK" -type f -exec shred -u {} + 2>/dev/null
+      rm -rf "$WORK"
+      log "workdir shredded"
+    fi
+  fi
+}
+trap cleanup EXIT
+trap 'exit 130' INT TERM
+
+# --- args ---------------------------------------------------------------------
+OFFLINE_KEY=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --offline-key) OFFLINE_KEY=${2:-}; shift 2 ;;
+    --offline-key=*) OFFLINE_KEY=${1#*=}; shift ;;
+    --keep) KEEP=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) die "unknown arg: $1 (see --help)" ;;
+  esac
+done
+
+# --- run from repo root so relative paths resolve -----------------------------
+cd "$(git rev-parse --show-toplevel)" || die "not inside a git repo"
+
+# --- preflight ----------------------------------------------------------------
+for t in aws age zstd etcdutl etcd etcdctl sops kubectl git shred; do
+  command -v "$t" >/dev/null 2>&1 || die "missing required tool: $t"
+done
+
+: "${SOPS_AGE_KEY_FILE:=clusters/staging/age.agekey}"
+[ -f "$SOPS_AGE_KEY_FILE" ] || die "SOPS age key not found: $SOPS_AGE_KEY_FILE (set SOPS_AGE_KEY_FILE)"
+export SOPS_AGE_KEY_FILE
+[ -f "$SECRET_FILE" ] || die "SOPS secret not found: $SECRET_FILE"
+
+if [ -z "$OFFLINE_KEY" ]; then
+  read -rp "Path to the OFFLINE etcd-backup age private key: " OFFLINE_KEY
+fi
+[ -f "$OFFLINE_KEY" ] || die "offline age key not found: $OFFLINE_KEY"
+
+# --- workdir ------------------------------------------------------------------
+WORK=$(mktemp -d)
+chmod 700 "$WORK"
+log "workdir: $WORK"
+
+# --- port-forward the in-cluster garage-s3 gateway ----------------------------
+log "port-forwarding svc/garage-s3 -> localhost:$GW_PORT"
+kubectl -n garage-gw port-forward "svc/garage-s3" "$GW_PORT:3900" >"$WORK/pf.log" 2>&1 &
+PF_PID=$!
+for _ in $(seq 1 60); do
+  grep -q "Forwarding from" "$WORK/pf.log" 2>/dev/null && break
+  kill -0 "$PF_PID" 2>/dev/null || die "port-forward died: $(cat "$WORK/pf.log")"
+  sleep 0.5
+done
+grep -q "Forwarding from" "$WORK/pf.log" 2>/dev/null || die "port-forward not ready: $(cat "$WORK/pf.log")"
+ENDPOINT="http://localhost:$GW_PORT"
+
+# --- Garage read creds from the SOPS secret (this process's env only) ---------
+log "decrypting Garage read creds from $SECRET_FILE"
+AWS_ACCESS_KEY_ID=$(sops -d --extract '["stringData"]["AWS_ACCESS_KEY_ID"]' "$SECRET_FILE")
+AWS_SECRET_ACCESS_KEY=$(sops -d --extract '["stringData"]["AWS_SECRET_ACCESS_KEY"]' "$SECRET_FILE")
+export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+export AWS_DEFAULT_REGION=garage
+
+# --- fetch newest snapshot object ---------------------------------------------
+log "finding newest object under s3://$BUCKET/$S3_PREFIX/"
+OBJ=$(aws --endpoint-url "$ENDPOINT" s3 ls "s3://$BUCKET/$S3_PREFIX/" | sort | awk 'END{print $NF}')
+[ -n "$OBJ" ] || die "no objects under s3://$BUCKET/$S3_PREFIX/"
+log "newest: $OBJ"
+aws --endpoint-url "$ENDPOINT" s3 cp "s3://$BUCKET/$S3_PREFIX/$OBJ" "$WORK/$OBJ" >/dev/null
+
+# --- decrypt (offline key) then decompress ------------------------------------
+# talos-backup with compression names objects *.snap.zst.age (decrypt, then
+# decompress); without, *.snap.age (decrypt only).
+log "decrypting with offline key + decompressing"
+case "$OBJ" in
+  *.zst.age)
+    age -d -i "$OFFLINE_KEY" -o "$WORK/snapshot.zst" "$WORK/$OBJ"
+    zstd -q -d "$WORK/snapshot.zst" -o "$WORK/db.snap"
+    ;;
+  *.age)
+    age -d -i "$OFFLINE_KEY" -o "$WORK/db.snap" "$WORK/$OBJ"
+    ;;
+  *)
+    die "unrecognised object suffix (expected .zst.age or .age): $OBJ"
+    ;;
+esac
+
+# --- Tier 0: integrity --------------------------------------------------------
+log "Tier 0 -- snapshot status"
+etcdutl snapshot status "$WORK/db.snap" -w table
+
+# --- Tier 1: restore into a throwaway etcd and read real cluster state --------
+log "Tier 1 -- restoring into a throwaway etcd"
+etcdutl snapshot restore "$WORK/db.snap" --data-dir "$WORK/drill" \
+  --name drill --initial-cluster "drill=http://localhost:$ETCD_PEER_PORT" \
+  --initial-advertise-peer-urls "http://localhost:$ETCD_PEER_PORT" >/dev/null
+
+etcd --name drill --data-dir "$WORK/drill" \
+  --initial-cluster "drill=http://localhost:$ETCD_PEER_PORT" \
+  --initial-advertise-peer-urls "http://localhost:$ETCD_PEER_PORT" \
+  --listen-peer-urls "http://localhost:$ETCD_PEER_PORT" \
+  --listen-client-urls "http://127.0.0.1:$ETCD_CLIENT_PORT" \
+  --advertise-client-urls "http://127.0.0.1:$ETCD_CLIENT_PORT" \
+  --force-new-cluster >"$WORK/etcd.log" 2>&1 &
+ETCD_PID=$!
+
+EP="http://127.0.0.1:$ETCD_CLIENT_PORT"
+for _ in $(seq 1 40); do
+  etcdctl --endpoints="$EP" endpoint health >/dev/null 2>&1 && break
+  kill -0 "$ETCD_PID" 2>/dev/null || die "etcd exited: $(tail -n2 "$WORK/etcd.log")"
+  sleep 0.5
+done
+etcdctl --endpoints="$EP" endpoint health >/dev/null 2>&1 || die "etcd never became healthy"
+
+KEYS=$(etcdctl --endpoints="$EP" get /registry --prefix --keys-only | grep -c .)
+NS=$(etcdctl --endpoints="$EP" get /registry/namespaces --prefix --keys-only | grep -c .)
+log "spot-check -- the etcd-backup Secret this system created:"
+etcdctl --endpoints="$EP" get /registry/secrets/etcd-backup --prefix --keys-only | sed 's/^/   /' >&2 || true
+
+# --- verdict ------------------------------------------------------------------
+echo
+echo "PASS -- backup is a restorable copy of the control plane"
+echo "  object     : $OBJ"
+echo "  /registry  : $KEYS keys"
+echo "  namespaces : $NS"
+[ "$KEYS" -gt 100 ] || die "suspiciously few /registry keys ($KEYS) -- investigate"
