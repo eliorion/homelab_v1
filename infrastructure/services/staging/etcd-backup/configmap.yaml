@@ -4,11 +4,14 @@ metadata:
   name: etcd-backup-config
 data:
   AWS_REGION: "garage"
-  BUCKET: "etcd"
+  BUCKET: "etcd-backup"
   S3_PREFIX: "staging"
   CLUSTER_NAME: "Homelab_staging"
-  # Garage host -- off-cluster. Must NOT be a node in this cluster.
-  CUSTOM_S3_ENDPOINT: "http://<garage-host>:3900"
+  # The in-cluster HAProxy gateway (garage-gw) which fails over across the 3
+  # Garage tailnet nodes. talos-backup is an in-cluster pod, so it uses the
+  # ClusterIP Service directly. Restore (off-cluster) goes direct to a Garage
+  # tailnet node instead -- see documentations/09.
+  CUSTOM_S3_ENDPOINT: "http://garage-s3.garage-gw.svc.cluster.local:3900"
   # Required: Garage does not support virtual-host style addressing.
   USE_PATH_STYLE: "true"
   # zstd before encryption.
