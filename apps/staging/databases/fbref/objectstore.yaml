@@ -5,7 +5,7 @@ metadata:
 spec:
   retentionPolicy: "7d"
   configuration:
-    destinationPath: "s3://homelab-staging-fbref"
+    destinationPath: "s3://cnpg-staging-fbref"
     # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes. Same
     # single endpoint the etcd backup uses.
     endpointURL: "http://garage-s3.garage-gw.svc.cluster.local:3900"
@@ -26,9 +26,8 @@ spec:
   instanceSidecarConfiguration:
     # Defensive: same class of boto3 >= 1.36 data-integrity checksum rejection
     # seen with R2 (plugin-barman-cloud #411). Harmless if Garage accepts them.
-    # VERIFY ON FIRST BACKUP: boto3 may attempt virtual-host addressing
-    # (homelab-staging-fbref.garage-s3.garage-gw.svc...) which will NOT resolve.
-    # If backups fail with a DNS/host error, we force path-style here.
+    # Path-style verified: barman-cloud-backup-list against this bucket via the
+    # gateway returned cleanly (boto3 uses path-style for the custom endpoint).
     env:
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required

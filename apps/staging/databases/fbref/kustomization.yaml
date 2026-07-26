@@ -9,11 +9,19 @@ resources:
   - fbref-grafana-ro.enc.yaml
   # ghcr-pull-secret now comes from the central reflector source
   # (infrastructure/controllers/staging/reflector) — mirrored into this ns.
+  # CNPG -> Garage backup (bucket cnpg-staging-fbref, via the in-cluster gateway).
+  - garage-backup-credentials.enc.yaml
+  - objectstore.yaml
+  - scheduledbackup.yaml
 
 patches:
+  # Attach the Barman Cloud plugin -> Garage (WAL archiver + daily base backup).
+  # Connectivity verified before enabling (barman-cloud-backup-list, EXIT=0).
+  - path: cluster-backup-patch.yaml
+    target:
+      kind: Cluster
+      name: fbref-db
   # PVCs on Longhorn (explicit — also the cluster default SC on Talos).
-  # fbref has no R2 backups, so it bootstraps fresh (initdb) and gets its
-  # data via pg_dump from the k3s cluster (doc 06 step 3).
   - path: cluster-storage-patch.yaml
     target:
       kind: Cluster
