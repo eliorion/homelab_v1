@@ -12,17 +12,21 @@
 #
 # Security: the snapshot contains every Kubernetes Secret in plaintext. This
 # script works in a 0700 mktemp dir and shreds every plaintext file on exit
-# (even on Ctrl-C / error). The offline key is used in place and never copied,
-# logged, or persisted. Garage read creds come from the SOPS secret and live
-# only in this process's env.
+# (even on Ctrl-C / error). A --offline-key FILE is used in place, never copied;
+# a pasted key is fed to age over stdin, so it never touches disk, argv, or the
+# environment. Garage read creds come from the SOPS secret and live only in this
+# process's env.
 #
 # Usage:
 #   scripts/etcd-restore-drill [--offline-key PATH] [--keep]
-#     --offline-key PATH  the offline etcd-backup age private key (prompted if omitted)
+#     --offline-key PATH  the offline etcd-backup age private key FILE. If omitted,
+#                         you are prompted to PASTE the key (hidden input; it is
+#                         fed to age over stdin and never written to disk).
 #     --keep              do NOT shred the workdir afterwards (leaves plaintext
 #                         secrets on disk -- for inspection only)
 #
 #   Or via mise:  mise run etcd-drill -- --offline-key ~/etcd-backup-age.key
+#                 mise run etcd-drill            # then paste the key when prompted
 
 set -euo pipefail
 
@@ -40,10 +44,21 @@ die() { echo "error: $*" >&2; exit 1; }
 
 usage() { sed -n '2,30{/^#/!q;s/^# \{0,1\}//p}' "$0"; }
 
+# Decrypt SRC -> DST with whichever key source was chosen: a --offline-key FILE,
+# or the pasted key piped to age over stdin (-i -), never hitting disk.
+age_decrypt() {
+  if [ -n "$OFFLINE_KEY" ]; then
+    age -d -i "$OFFLINE_KEY" -o "$2" "$1"
+  else
+    printf '%s\n' "$PASTED_KEY" | age -d -i - -o "$2" "$1"
+  fi
+}
+
 WORK=""
 PF_PID=""
 ETCD_PID=""
 KEEP=0
+PASTED_KEY=""
 
 cleanup() {
   set +e
@@ -88,10 +103,18 @@ done
 export SOPS_AGE_KEY_FILE
 [ -f "$SECRET_FILE" ] || die "SOPS secret not found: $SECRET_FILE"
 
-if [ -z "$OFFLINE_KEY" ]; then
-  read -rp "Path to the OFFLINE etcd-backup age private key: " OFFLINE_KEY
+if [ -n "$OFFLINE_KEY" ]; then
+  [ -f "$OFFLINE_KEY" ] || die "offline age key file not found: $OFFLINE_KEY"
+else
+  log "no --offline-key FILE given -- paste the key instead"
+  read -rsp "Paste the OFFLINE age private key (input hidden), then Enter: " PASTED_KEY || true
+  echo >&2
+  [ -n "$PASTED_KEY" ] || die "no key provided"
+  case "$PASTED_KEY" in
+    AGE-SECRET-KEY-1*) ;;
+    *) die "that does not look like an age secret key (expected AGE-SECRET-KEY-1...)" ;;
+  esac
 fi
-[ -f "$OFFLINE_KEY" ] || die "offline age key not found: $OFFLINE_KEY"
 
 # --- workdir ------------------------------------------------------------------
 WORK=$(mktemp -d)
@@ -130,16 +153,17 @@ aws --endpoint-url "$ENDPOINT" s3 cp "s3://$BUCKET/$S3_PREFIX/$OBJ" "$WORK/$OBJ"
 log "decrypting with offline key + decompressing"
 case "$OBJ" in
   *.zst.age)
-    age -d -i "$OFFLINE_KEY" -o "$WORK/snapshot.zst" "$WORK/$OBJ"
+    age_decrypt "$WORK/$OBJ" "$WORK/snapshot.zst"
     zstd -q -d "$WORK/snapshot.zst" -o "$WORK/db.snap"
     ;;
   *.age)
-    age -d -i "$OFFLINE_KEY" -o "$WORK/db.snap" "$WORK/$OBJ"
+    age_decrypt "$WORK/$OBJ" "$WORK/db.snap"
     ;;
   *)
     die "unrecognised object suffix (expected .zst.age or .age): $OBJ"
     ;;
 esac
+unset PASTED_KEY
 
 # --- Tier 0: integrity --------------------------------------------------------
 log "Tier 0 -- snapshot status"

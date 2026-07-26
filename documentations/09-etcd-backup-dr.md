@@ -285,11 +285,32 @@ evidence. Three tiers, cheapest first; **Tier 1 is the one to run on a schedule*
 > age + zstd decrypt/decompress chain roundtrips byte-identical. **Only step not
 > yet run against the real Garage object:** the `age -d` with the **offline** age
 > private key (yours) — that last decrypt is the operator's to finish. Run it
-> once and record the result here.
+> once and record the result here — `mise run etcd-drill` does the whole thing
+> (see below).
 >
 > Tools: the devcontainer now ships the whole chain — `aws`, `age`, `zstd`,
 > `talosctl`, and native `etcdutl`/`etcdctl`/`etcd` (v3.7.1, reads the cluster's
 > 3.6.x snapshots). No `docker` needed for Tier 1.
+
+### Fastest path — `scripts/etcd-restore-drill`
+
+Tiers 0 and 1 are wrapped in a read-only script that runs every manual step
+below and cleans up after itself. From the devcontainer:
+
+```bash
+mise run etcd-drill -- --offline-key ~/etcd-backup-age.key   # key from a file
+mise run etcd-drill                                          # omit it: paste the key when prompted (hidden, never written to disk)
+mise run etcd-drill -- --keep                                # keep the workdir to inspect (leaves plaintext secrets on disk)
+```
+
+It port-forwards the gateway, pulls the Garage read creds from the SOPS secret,
+fetches the newest snapshot, decrypts (offline key — **file or pasted**) and
+decompresses, runs `etcdutl snapshot status`, restores into a throwaway etcd, and
+counts `/registry` keys — then **shreds every plaintext file on exit**, even on
+Ctrl-C. A pasted key is fed to age over stdin, so it never touches disk. The
+destructive Tier 2 is intentionally **not** scripted.
+
+The manual steps below are the same flow, for understanding and for Tier 2.
 
 Set the endpoint once for the commands below:
 
