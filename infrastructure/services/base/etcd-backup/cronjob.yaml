@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-backup
+  namespace: etcd-backup
+spec:
+  # Every 6 hours -- worst-case RPO of 6h of control-plane state. Offset from
+  # the 03:00 CNPG backups so the two do not contend for upstream bandwidth.
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: talos-backup
+              # renovate: datasource=docker depName=ghcr.io/siderolabs/talos-backup
+              image: ghcr.io/siderolabs/talos-backup:v0.1.0-beta.3
+              command:
+                - /talos-backup
+              workingDir: /tmp
+              # Credentials come from the overlay's SOPS secret; endpoint,
+              # bucket and the age recipient public key from its ConfigMap.
+              envFrom:
+                - secretRef:
+                    name: etcd-backup-s3
+                - configMapRef:
+                    name: etcd-backup-config
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+              securityContext:
+                runAsUser: 1000
+                runAsGroup: 1000
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+                seccompProfile:
+                  type: RuntimeDefault
+              volumeMounts:
+                # Snapshot is written here before upload.
+                - mountPath: /tmp
+                  name: tmp
+                - mountPath: /.talos
+                  name: talos
+                # Path the Talos client library auto-discovers.
+                - mountPath: /var/run/secrets/talos.dev
+                  name: talos-secrets
+          volumes:
+            - name: tmp
+              emptyDir: {}
+            - name: talos
+              emptyDir: {}
+            - name: talos-secrets
+              secret:
+                secretName: etcd-backup-talos-secrets

@@ -13,5 +13,5 @@ rtk init -g --auto-patch
 curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash
 
 # Graphify - install package via uv (uv provided by mise), then wire to Claude Code
-uv tool install graphifyy
-graphify install
+#uv tool install graphifyy
+#graphify install

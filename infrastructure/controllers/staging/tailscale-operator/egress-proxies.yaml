@@ -33,3 +33,42 @@ spec:
 # spec:
 #   type: ExternalName
 #   externalName: placeholder
+---
+# Garage S3 backup nodes. NOT consumed directly -- the in-cluster HAProxy gateway
+# (infrastructure/services/staging/garage-gateway) load-balances + health-checks
+# across these three egress Services and exposes one endpoint to etcd-backup and
+# the fbref barman sidecar. Dial (via the gateway): port 3900, the Garage S3 API.
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage-node-a
+  namespace: tailscale
+  annotations:
+    tailscale.com/tailnet-ip: "100.122.58.119"
+spec:
+  type: ExternalName
+  externalName: placeholder # operator overwrites with the egress proxy's svc DNS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage-node-b
+  namespace: tailscale
+  annotations:
+    # Currently offline -- created anyway so the gateway picks it up the moment
+    # it joins the tailnet. HAProxy keeps it marked DOWN until then.
+    tailscale.com/tailnet-ip: "100.122.210.124"
+spec:
+  type: ExternalName
+  externalName: placeholder
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage-node-c
+  namespace: tailscale
+  annotations:
+    tailscale.com/tailnet-ip: "100.92.142.13"
+spec:
+  type: ExternalName
+  externalName: placeholder

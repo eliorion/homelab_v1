@@ -1,0 +1,35 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: garage-store
+spec:
+  retentionPolicy: "7d"
+  configuration:
+    destinationPath: "s3://cnpg-staging-fbref"
+    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes. Same
+    # single endpoint the etcd backup uses.
+    endpointURL: "http://garage-s3.garage-gw.svc.cluster.local:3900"
+    s3Credentials:
+      accessKeyId:
+        name: garage-backup-credentials
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: garage-backup-credentials
+        key: ACCESS_KEY_SECRET
+    wal:
+      compression: gzip
+      # NO `encryption:` here. Garage does not support SSE-S3/AES256 (SSE-C
+      # only), unlike R2 -- setting AES256 would fail every WAL/base upload.
+    data:
+      compression: gzip
+      jobs: 2
+  instanceSidecarConfiguration:
+    # Defensive: same class of boto3 >= 1.36 data-integrity checksum rejection
+    # seen with R2 (plugin-barman-cloud #411). Harmless if Garage accepts them.
+    # Path-style verified: barman-cloud-backup-list against this bucket via the
+    # gateway returned cleanly (boto3 uses path-style for the custom endpoint).
+    env:
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
