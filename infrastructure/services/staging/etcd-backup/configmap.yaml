@@ -4,7 +4,7 @@ metadata:
   name: etcd-backup-config
 data:
   AWS_REGION: "garage"
-  BUCKET: "etcd-backup"
+  BUCKET: "homelab-staging-etcd-backup"
   S3_PREFIX: "staging"
   CLUSTER_NAME: "Homelab_staging"
   # The in-cluster HAProxy gateway (garage-gw) which fails over across the 3
@@ -19,4 +19,4 @@ data:
   # age PUBLIC key (not secret). The snapshot holds every Kubernetes Secret in
   # plaintext -- never set DISABLE_ENCRYPTION. Keep the private key offline; see
   # documentations/09-etcd-backup-dr.md.
-  AGE_RECIPIENT_PUBLIC_KEY: "<age1...>"
+  AGE_RECIPIENT_PUBLIC_KEY: age164jzj8jwu7lu2hwanc92unkh75py8sy2y9wt3da3hgk4ddwrkutsn02c3v

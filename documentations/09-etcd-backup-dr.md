@@ -5,7 +5,7 @@ Secret. Losing 2 of the 3 control planes at once means total loss of service,
 and without a snapshot the cluster is unrecoverable.
 
 Snapshots run **every 6 hours** via a Flux-managed CronJob, are encrypted with
-`age` before leaving the cluster, and land in the `etcd-backup` bucket on an
+`age` before leaving the cluster, and land in the `homelab-staging-etcd-backup` bucket on an
 **off-cluster** Garage host.
 
 ## What this does and does not cover
@@ -38,7 +38,7 @@ graph TD
     pr["PrometheusRule<br/>etcd-backup"]
   end
 
-  garage[("Garage bucket `etcd-backup`<br/>OFF-CLUSTER, via tailnet")]
+  garage[("Garage bucket `homelab-staging-etcd-backup`<br/>OFF-CLUSTER, via tailnet")]
   tg["Telegram<br/>(Alertmanager)"]
 
   sa -- "Talos materialises" --> sec_talos
@@ -83,7 +83,7 @@ encrypts it with `age` using `AGE_RECIPIENT_PUBLIC_KEY` before upload.
 
 Unlike the R2 buckets used for CNPG (`03-backups.md`), Garage cannot make
 objects immutable. Anyone holding the write key can delete every snapshot.
-Mitigations in place: the Garage key is scoped to the `etcd-backup` bucket only, and
+Mitigations in place: the Garage key is scoped to the `homelab-staging-etcd-backup` bucket only, and
 the age **private** key is stored outside the cluster entirely. Full 3-2-1
 (replicating snapshots to the existing R2 account) is a deliberate future step.
 
@@ -104,7 +104,7 @@ Garage host — 30 days, which at 4 snapshots/day is ~120 objects:
 
 ```bash
 aws --endpoint-url http://<garage-host>:3900 s3api put-bucket-lifecycle-configuration \
-  --bucket etcd-backup --lifecycle-configuration file://lifecycle.json
+  --bucket homelab-staging-etcd-backup --lifecycle-configuration file://lifecycle.json
 ```
 
 If the installed Garage version does not support lifecycle rules, add a small
@@ -136,7 +136,7 @@ kubectl -n etcd-backup logs job/manual-test-1
 List what is in the bucket:
 
 ```bash
-aws --endpoint-url http://<garage-host>:3900 s3 ls s3://etcd-backup/staging/
+aws --endpoint-url http://<garage-host>:3900 s3 ls s3://homelab-staging-etcd-backup/staging/
 ```
 
 Verify a snapshot is a valid etcd database (do this periodically):
@@ -170,8 +170,8 @@ steps in order; do not run step 5 on more than one node.
 **1. Retrieve and decrypt the newest snapshot**
 
 ```bash
-aws --endpoint-url http://<garage-host>:3900 s3 ls s3://etcd-backup/staging/
-aws --endpoint-url http://<garage-host>:3900 s3 cp s3://etcd-backup/staging/<newest> .
+aws --endpoint-url http://<garage-host>:3900 s3 ls s3://homelab-staging-etcd-backup/staging/
+aws --endpoint-url http://<garage-host>:3900 s3 cp s3://homelab-staging-etcd-backup/staging/<newest> .
 age -d -i etcd-backup-age.key -o db.snapshot <newest>
 ```
 
@@ -272,8 +272,8 @@ then decompress**. RFC3339 timestamps sort chronologically, so the last line is
 the newest:
 
 ```bash
-OBJ=$(aws --endpoint-url "$GARAGE" s3 ls s3://etcd-backup/staging/ | sort | tail -n1 | awk '{print $NF}')
-aws --endpoint-url "$GARAGE" s3 cp "s3://etcd-backup/staging/$OBJ" .
+OBJ=$(aws --endpoint-url "$GARAGE" s3 ls s3://homelab-staging-etcd-backup/staging/ | sort | tail -n1 | awk '{print $NF}')
+aws --endpoint-url "$GARAGE" s3 cp "s3://homelab-staging-etcd-backup/staging/$OBJ" .
 
 age -d -i etcd-backup-age.key -o snapshot.zst "$OBJ"   # object ends .zst.age
 zstd -d snapshot.zst -o db.snap
