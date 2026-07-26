@@ -278,21 +278,38 @@ evidence. Three tiers, cheapest first; **Tier 1 is the one to run on a schedule*
 > retrievable through the gateway and is a valid `age` file
 > (`age-encryption.org/v1` header, 156 MB), and a fresh snapshot of this
 > cluster's etcd validates as a well-formed DB — `revision 30365476, 2116 keys,
-> valid hash` (that line is `etcdutl snapshot status`). **Not yet run
-> end-to-end:** the decrypt + restore below, because it needs the **offline** age
-> private key (yours) — so it is the operator's drill to finish. Run it once and
-> record the result here.
+> valid hash` (that line is `etcdutl snapshot status`). The **restore mechanics
+> are now proven in the devcontainer** (2026-07-26): a live 156 MB snapshot
+> (`revision 30375269, 2141 keys`, etcd `3.6.0`) restored cleanly with `etcdutl
+> snapshot restore` into a valid data-dir (`member/snap/db` + WAL), and the
+> age + zstd decrypt/decompress chain roundtrips byte-identical. **Only step not
+> yet run against the real Garage object:** the `age -d` with the **offline** age
+> private key (yours) — that last decrypt is the operator's to finish. Run it
+> once and record the result here.
 >
-> Tools needed on your workstation: `aws`, `age`, `zstd`, and `docker` (or a
-> local `etcd`/`etcdutl`/`etcdctl` 3.5.x).
+> Tools: the devcontainer now ships the whole chain — `aws`, `age`, `zstd`,
+> `talosctl`, and native `etcdutl`/`etcdctl`/`etcd` (v3.7.1, reads the cluster's
+> 3.6.x snapshots). No `docker` needed for Tier 1.
 
 Set the endpoint once for the commands below:
 
 ```bash
-# Restore runs off-cluster -> hit a Garage node's tailnet IP DIRECTLY (the
-# in-cluster garage-s3 gateway is not reachable off-cluster). Run from a tailnet
-# device. Node IPs are in egress-proxies.yaml.
+# Off-cluster tailnet device: hit a Garage node's tailnet IP DIRECTLY (the
+# in-cluster garage-s3 gateway is not reachable off-cluster). IPs in egress-proxies.yaml.
 GARAGE=http://<garage-tailnet-ip>:3900
+```
+
+Or **from this devcontainer** (not on the tailnet): port-forward the in-cluster
+gateway in a second shell, then point at localhost. Garage read creds come from
+the SOPS secret:
+
+```bash
+kubectl -n garage-gw port-forward svc/garage-s3 3900:3900   # leave running
+GARAGE=http://localhost:3900
+S=infrastructure/services/staging/etcd-backup/etcd-backup-s3.enc.yaml
+export AWS_ACCESS_KEY_ID=$(sops -d --extract '["stringData"]["AWS_ACCESS_KEY_ID"]' "$S")
+export AWS_SECRET_ACCESS_KEY=$(sops -d --extract '["stringData"]["AWS_SECRET_ACCESS_KEY"]' "$S")
+export AWS_DEFAULT_REGION=garage
 ```
 
 ### Fetch and decrypt the newest snapshot
@@ -324,13 +341,41 @@ the *contents* are your cluster.
 
 ### Tier 1 — restore it and read the real cluster state (safe, repeatable)
 
-Rebuild an actual etcd member from the snapshot and query it. Everything runs in
-a throwaway container; the live cluster is never contacted.
+Rebuild an actual etcd member from the snapshot and query it — all local, the
+live cluster is never contacted.
+
+**In the devcontainer (native, no docker):**
+
+```bash
+etcdutl snapshot restore db.snap --data-dir ./drill \
+  --name drill --initial-cluster drill=http://localhost:2380 \
+  --initial-advertise-peer-urls http://localhost:2380
+
+etcd --name drill --data-dir ./drill \
+  --initial-cluster drill=http://localhost:2380 \
+  --initial-advertise-peer-urls http://localhost:2380 \
+  --listen-peer-urls http://localhost:2380 \
+  --listen-client-urls http://127.0.0.1:2379 \
+  --advertise-client-urls http://127.0.0.1:2379 \
+  --force-new-cluster &                        # serves the restored DB in the background
+
+# How many Kubernetes objects are really in there?
+etcdctl --endpoints=http://127.0.0.1:2379 get /registry --prefix --keys-only | grep -c .
+
+# Spot-check objects you know exist:
+etcdctl --endpoints=http://127.0.0.1:2379 get /registry/namespaces --prefix --keys-only
+etcdctl --endpoints=http://127.0.0.1:2379 get /registry/secrets/etcd-backup --prefix --keys-only
+
+kill %1 && rm -rf ./drill db.snap snapshot.zst "$OBJ"   # stop etcd + wipe (snapshot holds every Secret)
+```
+
+**Alternative — throwaway container** (outside the devcontainer). Match the image
+to the cluster's **etcd 3.6.x** line:
 
 ```bash
 docker run --rm -d --name etcd-drill \
   -v "$PWD:/work" -w /work --entrypoint sh \
-  gcr.io/etcd-development/etcd:v3.5.17 -c '
+  gcr.io/etcd-development/etcd:v3.6.4 -c '
     etcdutl snapshot restore db.snap --data-dir /drill \
       --name drill --initial-cluster drill=http://localhost:2380 \
       --initial-advertise-peer-urls http://localhost:2380 &&
@@ -341,14 +386,7 @@ docker run --rm -d --name etcd-drill \
       --listen-client-urls http://0.0.0.0:2379 \
       --advertise-client-urls http://localhost:2379 \
       --force-new-cluster'
-
-# How many Kubernetes objects are really in there?
 docker exec etcd-drill etcdctl get /registry --prefix --keys-only | grep -c .
-
-# Spot-check objects you know exist:
-docker exec etcd-drill etcdctl get /registry/namespaces --prefix --keys-only
-docker exec etcd-drill etcdctl get /registry/secrets/etcd-backup --prefix --keys-only
-
 docker rm -f etcd-drill && rm -rf db.snap snapshot.zst "$OBJ"
 ```
 
@@ -356,9 +394,8 @@ Seeing thousands of `/registry/...` keys — your namespaces, your Secrets, the
 `etcd-backup` objects this system itself created — is the proof: the snapshot is
 a live, restorable copy of the whole control plane, not just a well-formed file.
 (Talos does not encrypt etcd at rest, so the keys list in plaintext; the *values*
-are Kubernetes-encoded protobuf. The key list is the evidence.) Match the etcd
-image to the cluster's etcd 3.5.x line — any recent 3.5.x restores a 3.5.x
-snapshot.
+are Kubernetes-encoded protobuf. The key list is the evidence.) The cluster runs
+etcd `3.6.x`; the devcontainer's `etcdutl` 3.7.1 restores its snapshots fine.
 
 ### Tier 2 — full cluster rehearsal (the real "the system failed" test)
 
