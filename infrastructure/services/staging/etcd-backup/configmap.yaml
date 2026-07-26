@@ -12,8 +12,12 @@ data:
   # ClusterIP Service directly. Restore (off-cluster) goes direct to a Garage
   # tailnet node instead -- see documentations/09.
   CUSTOM_S3_ENDPOINT: "http://garage-s3.garage-gw.svc.cluster.local:3900"
-  # Required: Garage does not support virtual-host style addressing.
-  USE_PATH_STYLE: "true"
+  # Garage needs PATH-STYLE addressing (virtual-host bucket.<host> does not
+  # resolve). BEWARE: talos-backup v0.1.0-beta.3 has an INVERTED check --
+  #   UsePathStyle = (os.Getenv("USE_PATH_STYLE") == "false")
+  # -- so we set "false" here to actually GET path-style. Fixed on main
+  # (== "true"). When the pinned image is bumped past beta.3, flip back to "true".
+  USE_PATH_STYLE: "false"
   # zstd before encryption.
   ENABLE_COMPRESSION: "true"
   # age PUBLIC key (not secret). The snapshot holds every Kubernetes Secret in
