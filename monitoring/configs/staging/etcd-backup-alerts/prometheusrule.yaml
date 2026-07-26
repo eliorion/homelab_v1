@@ -1,0 +1,39 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: etcd-backup
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: etcd-backup.rules
+      rules:
+        - alert: EtcdBackupJobFailed
+          expr: |
+            max by (namespace, job_name) (
+              kube_job_status_failed{namespace="etcd-backup"}
+            ) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "etcd backup job {{ $labels.job_name }} failed"
+            description: "The etcd snapshot job {{ $labels.job_name }} failed. Run: kubectl -n etcd-backup logs job/{{ $labels.job_name }}"
+        # The important one: catches Garage being unreachable, credentials
+        # expiring, and the CronJob being accidentally suspended -- all of
+        # which are silent otherwise. 9h = one missed 6h cycle plus margin.
+        # Absent until the first successful run, so it will not fire on a
+        # freshly deployed cluster.
+        - alert: EtcdBackupStale
+          expr: |
+            time() - max by (namespace, cronjob) (
+              kube_cronjob_status_last_successful_time{namespace="etcd-backup", cronjob="etcd-backup"}
+            ) > 32400
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No successful etcd backup in over 9h"
+            description: "The etcd-backup CronJob has not completed successfully in over 9h (expected every 6h). The cluster currently has no recent control-plane snapshot. See documentations/09-etcd-backup-dr.md."

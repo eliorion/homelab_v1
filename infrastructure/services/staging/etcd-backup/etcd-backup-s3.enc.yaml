@@ -1,0 +1,30 @@
+# PLACEHOLDER — NOT ENCRYPTED YET. Only the Garage credentials live here;
+# every non-secret variable is in configmap.yaml (plaintext).
+# 1. Mint a Garage key scoped to the `etcd` bucket only:
+#      garage key create etcd-backup-staging
+#      garage bucket allow --read --write etcd --key etcd-backup-staging
+# 2. Put the key id + secret below, then encrypt in place:  sops -e -i <this file>
+# See documentations/09-etcd-backup-dr.md.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: etcd-backup-s3
+type: Opaque
+stringData:
+    AWS_ACCESS_KEY_ID: ENC[AES256_GCM,data:r4BMJxeOuA+QH+KaNRvApEU/hnUcoQTBCSk=,iv:MGglY3loY2QDTR7gn+byt4PD/s0wlypIuM2p6pTU6AU=,tag:k9senDVYeWrJYea//TsW9g==,type:str]
+    AWS_SECRET_ACCESS_KEY: ENC[AES256_GCM,data:R5qspR40jO+4sLLVffhw+Nsi0YVNKyPWB2Nq/HPvQKQWGLbC67DRGub2ePX3rG8/d5NcgtXonnouBldCEWCn9A==,iv:aWyTd9nz9lyk/VZAAMMRn9TUYmClYPlrwzVth1bJRIc=,tag:anOGTgjd7wotZV6DQ/fLeA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBIMkkwNFFYUlBBZ3ZSMFF0
+            MlQzbUJLUUNwQ3ZRUDVnY05Fa0F0REljcG5JClUvcFVtdDl6eUo3TE5takR0Mnhl
+            MU1JN3B6MXdhQ3dwVEhic0IyWWg0MmMKLS0tIGNWeWVncTBldytuVCswMWE3b3Ru
+            MU5HUDErNzMrUXp6ck1uWG5uSTVPd3MKpkb3uKvHbtvnk3G+/EiR6OGYwgEoP6mE
+            ig8WaYoGglEfUhAGwq0fwF7mVbL808SJw2LRYJXYBdG+M7cKLvOTuA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-07-26T12:05:27Z"
+    mac: ENC[AES256_GCM,data:rrkmFn8xkjSBGSSb64hiBlqquykeIW78Zt6y5TSKaAw+EuBDs1rq7M/M5XcRA8Sz3t29wWy1UwJTVDd39y2cOC/AYHOt/ToSxGr4xevskhwe6amakijDdkN/QNS1byYSFUv0LUTRoEqYUUFfKL2WwdTrAh1X1SjVdGHw5L3Wc94=,iv:4L6HdyR7MvX7bUnEr3Zb1LqMVsHvcP73gR57ey+ZoaM=,tag:94xOqt5sOpf2XxZp51au4g==,type:str]
+    version: 3.13.2

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: etcd-backup-config
+data:
+  AWS_REGION: "garage"
+  BUCKET: "etcd"
+  S3_PREFIX: "staging"
+  CLUSTER_NAME: "Homelab_staging"
+  # Garage host -- off-cluster. Must NOT be a node in this cluster.
+  CUSTOM_S3_ENDPOINT: "http://<garage-host>:3900"
+  # Required: Garage does not support virtual-host style addressing.
+  USE_PATH_STYLE: "true"
+  # zstd before encryption.
+  ENABLE_COMPRESSION: "true"
+  # age PUBLIC key (not secret). The snapshot holds every Kubernetes Secret in
+  # plaintext -- never set DISABLE_ENCRYPTION. Keep the private key offline; see
+  # documentations/09-etcd-backup-dr.md.
+  AGE_RECIPIENT_PUBLIC_KEY: "<age1...>"

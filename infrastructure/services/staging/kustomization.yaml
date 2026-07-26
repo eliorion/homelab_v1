@@ -6,3 +6,4 @@ resources:
   - cloudflare/
   - arc-runner-set/
   - nexus/
+  - etcd-backup/

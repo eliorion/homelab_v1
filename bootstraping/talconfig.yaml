@@ -118,6 +118,16 @@ patches:
         hostDNS:
           enabled: true
           forwardKubeDNSToHost: true
+        # Lets pods in the etcd-backup namespace call the Talos API with
+        # short-lived, auto-rotated certs instead of a static talosconfig
+        # secret. os:etcd:backup grants exactly one method --
+        # /machine.MachineService/EtcdSnapshot. See documentations/09.
+        kubernetesTalosAPIAccess:
+          enabled: true
+          allowedRoles:
+            - os:etcd:backup
+          allowedKubernetesNamespaces:
+            - etcd-backup
       nodeLabels:
         node.kubernetes.io/exclude-from-external-load-balancers: ""
   # NOTE: PodSecurity admissionControl + auditPolicy are emitted by talhelper

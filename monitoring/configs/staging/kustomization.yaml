@@ -5,3 +5,4 @@ resources:
   - flux-alerts
   - flux-am
   - fbref-grafana
+  - etcd-backup-alerts
