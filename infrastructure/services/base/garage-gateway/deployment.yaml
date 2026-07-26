@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garage-gateway
+  namespace: garage-gw
+  labels:
+    app: garage-gateway
+spec:
+  # Two replicas, spread across nodes: "at least 2 HAProxy". kube-proxy/Cilium
+  # load-balances the ClusterIP across both.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: garage-gateway
+  template:
+    metadata:
+      labels:
+        app: garage-gateway
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: garage-gateway
+                topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 99
+        runAsGroup: 99
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: haproxy
+          # renovate: datasource=docker depName=haproxy
+          image: haproxy:3.0.6-alpine
+          ports:
+            - name: s3
+              containerPort: 3900
+            - name: health
+              containerPort: 8404
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          # HAProxy binds the frontend even when every backend is down, so a TCP
+          # connect proves the proxy is alive. Backend health is a separate
+          # concern (see /stats on :8404) -- gating readiness on it would give no
+          # load-balancing benefit (both replicas share the same backends) and
+          # would wedge Flux health checks while the tailnet route is missing.
+          livenessProbe:
+            tcpSocket:
+              port: 3900
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3900
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: cfg
+              mountPath: /usr/local/etc/haproxy
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: cfg
+          configMap:
+            name: garage-haproxy-config
+        - name: tmp
+          emptyDir: {}
