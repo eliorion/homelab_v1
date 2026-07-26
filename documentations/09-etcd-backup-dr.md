@@ -17,10 +17,14 @@ Snapshots run **every 6 hours** via a Flux-managed CronJob, are encrypted with
 | | Postgres PITR — separately covered by CNPG → R2, see `03-backups.md` |
 
 Longhorn currently has **no `backupTarget` configured**
-(`infrastructure/controllers/base/longhorn/release.yaml`). Volume data survives
-a node reset only because replicas live on `/var/lib/longhorn`, a bind mount
-outside the wiped `EPHEMERAL` partition. That is resilience, not backup. Closing
-this gap is the next piece of work.
+(`infrastructure/controllers/base/longhorn/release.yaml`). `/var/lib/longhorn` is
+a bind mount whose backing storage is on the **EPHEMERAL** partition — there is
+no separate disk for it in `talconfig.yaml` — so a node reset **does** wipe that
+node's replicas. Volume data survives a *single*-node reset only because the
+other two nodes keep their replicas and Longhorn rebuilds the wiped one:
+resilience, not backup. A **full** wipe of all three nodes destroys every replica
+and loses the data. Closing this gap (a real `backupTarget`) is the next piece of
+work.
 
 ## Components
 
@@ -247,8 +251,15 @@ flux get kustomizations
 flux get helmreleases -A
 ```
 
-Then check Longhorn volumes reattach, remembering that their *data* was never in
-etcd — only the PV/PVC objects were.
+Then check Longhorn volumes reattach. **Critical — this is not a clean recovery
+for stateful data.** The PV/PVC *objects* come back from etcd, but their *data*
+does not, and step 3 wiped `EPHEMERAL` on all three nodes — which is where
+`/var/lib/longhorn` lives (no separate disk), so **every Longhorn replica was
+destroyed**. With no Longhorn `backupTarget`, that volume data is gone. Only
+databases that ship off-cluster backups survive a Case 2: restore each from its
+own backup (CNPG → R2/Garage, `03-backups.md`). Anything stateful without an
+external backup is lost — the reason to prefer the single-node rehearsal and to
+close the Longhorn-backup gap.
 
 ### Manual snapshot (before a risky change)
 
@@ -464,6 +475,89 @@ evidence the system works:
 | 0 | `snapshot status` shows non-zero revision + total keys |
 | 1 | `/registry` key count in the thousands; named objects you recognize appear |
 | 2 | restored cluster: `kubectl get ns,nodes,secrets -A` ≈ production; app pods Running; `flux get kustomizations` all Ready |
+
+## Recovery rehearsal — prove it in two safe steps
+
+Tier 1 proves the *data*; only executing the *procedure* proves recovery. Do it
+in two steps of ascending risk and stop when satisfied. Respect the gates and
+neither step can take the cluster down.
+
+### Step 1 — data proof against the real stored snapshot (near-zero risk)
+
+Run the drill on the actual Garage object with your offline key:
+
+```bash
+mise run etcd-drill                                       # paste the offline key when prompted
+# or: mise run etcd-drill -- --offline-key ~/etcd-backup-age.key
+```
+
+**Pass:** `snapshot status` shows a non-zero revision and a few thousand keys,
+and the `/registry` count prints in the thousands. This proves the *stored*
+backup and *your* offline key actually reconstruct the control plane — not just a
+fresh snapshot. If it fails, **STOP** and fix the backup before any hardware
+test. Record the object name + key count in the status block near the top.
+
+### Step 2 — single-node reset + rejoin (Case 1, low risk)
+
+Rehearses the destructive mechanics — node wipe, etcd rejoin, Longhorn replica
+rebuild — while the other two nodes keep quorum, so the cluster stays up. The
+real test of whether a control plane can be lost and recovered.
+
+> **Why it's safe — and the one rule that keeps it safe.** Longhorn keeps three
+> replicas, one per node. This node's `/var/lib/longhorn` is on the EPHEMERAL
+> partition (no separate disk in `talconfig.yaml`), so the reset **destroys this
+> node's replicas** — but the other two survive and Longhorn rebuilds this node
+> from them. That safety holds ONLY while two nodes are intact. **Never reset a
+> second node until the first is fully back (Gate C).** Wiping two nodes'
+> EPHEMERAL destroys two of three replicas and can lose data.
+
+**Gate A — full health before touching anything.** Pick the node to reset and a
+*different*, healthy node as the command endpoint (`-e`). Proceed only if all
+pass:
+
+```bash
+E=192.168.1.101          # healthy endpoint — NOT the node being reset
+TARGET=192.168.1.103     # the node to reset
+
+talosctl -e "$E" -n "$E" etcd members                    # 3 members, all started
+kubectl get nodes                                        # all 3 Ready
+kubectl -n longhorn-system get volumes.longhorn.io \
+  -o custom-columns=NAME:.metadata.name,STATE:.status.state,ROBUST:.status.robustness
+  # every volume: attached + healthy (no pre-existing Degraded)
+```
+
+If etcd is not 3/3 or any volume is already Degraded, **do not proceed** — you
+could not tell rebuild from pre-existing damage.
+
+**Reset the one node** (abrupt, to simulate real loss):
+
+```bash
+talosctl -e "$E" -n "$TARGET" reset --graceful=false --reboot --system-labels-to-wipe=EPHEMERAL
+```
+
+It reboots, keeps its machine config (the STATE partition is untouched), and
+rejoins on its own. Do **not** run `bootstrap`.
+
+**Gate B — watch it come back:**
+
+```bash
+talosctl -e "$E" -n "$E" etcd members                    # returns to 3 members
+kubectl get nodes -w                                     # TARGET returns, then Ready
+```
+
+**Gate C — Longhorn fully rebuilt before you call it done (or ever touch another
+node):**
+
+```bash
+kubectl -n longhorn-system get volumes.longhorn.io \
+  -o custom-columns=NAME:.metadata.name,ROBUST:.status.robustness
+  # every volume back to healthy as replicas rebuild on TARGET (can take a while
+  # for large volumes)
+```
+
+**Pass:** etcd back to 3/3, `TARGET` Ready, all volumes healthy again — a control
+plane was lost and fully recovered with zero data loss. Record it. Only after
+Gate C is green is a further node ever safe to consider.
 
 ## A backup that cannot restore is worthless
 
