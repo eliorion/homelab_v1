@@ -73,11 +73,33 @@ machine config, fetch other secrets, or reboot a node.
 The alternative — generating a long-lived `talosconfig` and committing it as a
 SOPS secret — means a static credential with no rotation. Don't.
 
+### Garage connectivity — the in-cluster gateway
+
+talos-backup is an in-cluster pod, so it uploads via
+`CUSTOM_S3_ENDPOINT = http://garage-s3.garage-gw.svc.cluster.local:3900` — the
+**HAProxy gateway** (`infrastructure/services/{base,staging}/garage-gateway/`),
+which load-balances + TCP-health-checks across three Garage nodes reached over
+**Tailscale** (operator egress Services `garage-node-{a,b,c}` in
+`infrastructure/controllers/staging/tailscale-operator/egress-proxies.yaml`). The
+Talos nodes are **not** on the tailnet — the operator's userspace proxy pods are.
+A **restore runs off-cluster** and goes **direct** to a Garage tailnet node (the
+gateway is in-cluster only). fbref's CNPG backup rides the same gateway (`03`).
+
 ### Encryption
 
 The snapshot contains every Kubernetes Secret in plaintext. `talos-backup`
-encrypts it with `age` using `AGE_RECIPIENT_PUBLIC_KEY` before upload.
-**Never set `DISABLE_ENCRYPTION`.**
+encrypts it with `age` before upload. **Never set `DISABLE_ENCRYPTION`.**
+
+> **talos-backup v0.1.0-beta.3 quirks** — both are worked around in
+> `staging/etcd-backup/configmap.yaml` with inline comments; revisit when the
+> pinned image is bumped (fixed on `main`):
+> - It **concatenates** `AGE_RECIPIENT_PUBLIC_KEY` + `AGE_X25519_PUBLIC_KEY`
+>   (`strings.Split` + append, no empty filter) — leaving one unset injects an
+>   empty recipient and age fails `malformed recipient`. **Set both** to the same
+>   key (age only warns on the duplicate).
+> - Its `USE_PATH_STYLE` check is **inverted** (`== "false"`). Garage needs
+>   path-style (virtual-host `bucket.<host>` won't resolve), so the configmap
+>   sets `USE_PATH_STYLE: "false"` to actually enable it.
 
 ### Security limitation — Garage has no object lock or versioning
 
@@ -250,18 +272,27 @@ A backup you have never restored is a hypothesis. This section turns it into
 evidence. Three tiers, cheapest first; **Tier 1 is the one to run on a schedule**
 — it is a real restore, off to the side, that cannot touch the live cluster.
 
-> **Prerequisite.** The system must already be deployed and have produced at
-> least one real snapshot. Until the SOPS secret is filled
-> (`infrastructure/services/staging/etcd-backup/etcd-backup-s3.enc.yaml`) and the
-> `kubernetesTalosAPIAccess` feature is applied to all three nodes, the bucket is
-> empty and there is nothing to drill against. Tools needed on your workstation:
-> `aws`, `age`, `zstd`, and `docker` (or a local `etcd`/`etcdutl`/`etcdctl`
-> 3.5.x).
+> **Status — deployed & partially verified 2026-07-26.** The stack is live: the
+> CronJob runs every 6h (the 18:00 run landed
+> `Homelab_staging-2026-07-26T18:00:13Z.snap.age` unattended), the object is
+> retrievable through the gateway and is a valid `age` file
+> (`age-encryption.org/v1` header, 156 MB), and a fresh snapshot of this
+> cluster's etcd validates as a well-formed DB — `revision 30365476, 2116 keys,
+> valid hash` (that line is `etcdutl snapshot status`). **Not yet run
+> end-to-end:** the decrypt + restore below, because it needs the **offline** age
+> private key (yours) — so it is the operator's drill to finish. Run it once and
+> record the result here.
+>
+> Tools needed on your workstation: `aws`, `age`, `zstd`, and `docker` (or a
+> local `etcd`/`etcdutl`/`etcdctl` 3.5.x).
 
 Set the endpoint once for the commands below:
 
 ```bash
-GARAGE=http://<garage-host>:3900     # CUSTOM_S3_ENDPOINT from the SOPS secret
+# Restore runs off-cluster -> hit a Garage node's tailnet IP DIRECTLY (the
+# in-cluster garage-s3 gateway is not reachable off-cluster). Run from a tailnet
+# device. Node IPs are in egress-proxies.yaml.
+GARAGE=http://<garage-tailnet-ip>:3900
 ```
 
 ### Fetch and decrypt the newest snapshot

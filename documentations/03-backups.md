@@ -1,16 +1,21 @@
-# Database Backups — CNPG → Cloudflare R2
+# Database Backups — CNPG → Cloudflare R2 & Garage
 
-Every CNPG Postgres cluster ships continuous, restore-verified backups to
-Cloudflare R2 (S3-compatible object storage). The design gives **point-in-time
-recovery (PITR)**: a daily physical base backup plus continuous WAL archiving,
-so the database can be restored to any moment within the retention window.
+Every CNPG Postgres cluster ships continuous, restore-verified backups to an
+S3-compatible object store — **Cloudflare R2**, or off-cluster **Garage** for
+fbref. The design gives **point-in-time recovery (PITR)**: a daily physical base
+backup plus continuous WAL archiving, so the database can be restored to any
+moment within the retention window.
 
-Two clusters are protected:
+Three clusters are protected:
 
-| Cluster | Namespace | Holds |
-|---|---|---|
-| `keycloak-db` | `identity` | Keycloak realms, users, sessions |
-| `asp-db` | `asp` | Automarket scraper data |
+| Cluster | Namespace | Backend | Holds |
+|---|---|---|---|
+| `keycloak-db` | `identity` | Cloudflare R2 | Keycloak realms, users, sessions |
+| `asp-db` | `asp` | Cloudflare R2 | Automarket scraper data |
+| `fbref-db` | `fbref` | **Garage** (off-cluster, via the gateway) | fbref scraper data (~3.5 GB) |
+
+R2 and Garage use the **same** barman-cloud plugin; only the ObjectStore endpoint
++ credentials differ. The Garage path is detailed below and in `09`.
 
 ## Components and how they interact
 
@@ -120,6 +125,22 @@ env:
 Because of this history, a **restore drill is mandatory** after enabling backups
 in an environment — a backup that cannot restore is worthless.
 
+## Second backend: Garage (fbref)
+
+`fbref-db` backs up to an **off-cluster Garage** cluster instead of R2. Same
+plugin, different ObjectStore (`garage-store`, `apps/staging/databases/fbref/`):
+
+- **Endpoint**: the in-cluster HAProxy gateway
+  `http://garage-s3.garage-gw.svc.cluster.local:3900`, which fails over across
+  three Garage nodes reached over Tailscale (operator egress). Full gateway
+  architecture in `documentations/09-etcd-backup-dr.md`.
+- **No server-side encryption**: Garage has no SSE-S3/AES256 (SSE-C only), unlike
+  R2 — the ObjectStore sets `wal`/`data` `compression: gzip` and **omits**
+  `encryption:`. Setting AES256 would fail every upload.
+- **Bucket**: `cnpg-staging-fbref` (barman layout `fbref-db/base|wals/`), key
+  scoped to it (`garage-backup-credentials.enc.yaml`).
+- Same defensive boto3 checksum-compat env as R2.
+
 ## Flux deployment order
 
 The plugin installs the `ObjectStore` **CRD**; the `ObjectStore` **CRs** live in
@@ -200,6 +221,22 @@ spec:
           barmanObjectName: r2-store
           serverName: keycloak-db
 ```
+
+### Restore drill — performed 2026-07-26 (fbref-db ← Garage)
+
+From-scratch bootstrap-recovery of `fbref-db` out of Garage
+(`cnpg-staging-fbref`, `serverName fbref-db`) into a throwaway
+`fbref-restore-test` cluster (`bootstrap.recovery`, **no** `spec.plugins` so the
+test cluster cannot archive back onto the source's chain):
+
+- Reached `Cluster in healthy state` in **~2.5 min**.
+- Restored DB matched the source **exactly**: **3488 MB**, 10 public tables,
+  `player_stats` ~9.7M rows, `url_queue` ~275K, `players` ~30K.
+- Source `fbref-db` stayed 2/2 healthy throughout; test cluster + PVC deleted after.
+
+Confirms the Garage bucket can rebuild a fresh cluster end-to-end. Re-run after
+any change to the Garage gateway/egress path. (etcd snapshot restore is a
+separate drill — see `09-etcd-backup-dr.md`.)
 
 Rotate the R2 token periodically: mint a new scoped token, update the SOPS secret
 (`sops -e -i`), commit, then revoke the old token.
