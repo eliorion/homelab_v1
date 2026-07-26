@@ -19,4 +19,9 @@ data:
   # age PUBLIC key (not secret). The snapshot holds every Kubernetes Secret in
   # plaintext -- never set DISABLE_ENCRYPTION. Keep the private key offline; see
   # documentations/09-etcd-backup-dr.md.
-  AGE_RECIPIENT_PUBLIC_KEY: age164jzj8jwu7lu2hwanc92unkh75py8sy2y9wt3da3hgk4ddwrkutsn02c3v
+  # NOTE: talos-backup UNCONDITIONALLY combines AGE_RECIPIENT_PUBLIC_KEY and
+  # AGE_X25519_PUBLIC_KEY (strings.Split on each, then appended). Leaving one
+  # unset appends an empty "" recipient and age fails with "malformed recipient".
+  # So BOTH must be set -- to the same key here (age only warns on the duplicate).
+  AGE_RECIPIENT_PUBLIC_KEY: "age164jzj8jwu7lu2hwanc92unkh75py8sy2y9wt3da3hgk4ddwrkutsn02c3v"
+  AGE_X25519_PUBLIC_KEY: "age164jzj8jwu7lu2hwanc92unkh75py8sy2y9wt3da3hgk4ddwrkutsn02c3v"
