@@ -81,13 +81,13 @@ spec:
           - NexusAuthenticatingRealm
           - DockerToken
       cleanup:
-        # Proxies keep a 14d window — re-pulling base images upstream is costly.
+        # Proxies keep a 10d window — re-pulling base images upstream is costly.
         - name: purge-stale
-          notes: "Drop anything not downloaded in 14 days."
+          notes: "Drop anything not downloaded in 10 days."
           format: ALL_FORMATS
           mode: delete
           criteria:
-            lastDownloaded: "1209600"
+            lastDownloaded: "864000"
         # docker-cache only. BuildKit (mode=max) overwrites the :buildcache tag
         # every build; the OLD manifest goes UNTAGGED but Nexus keeps it + its
         # unique layer blobs forever — a never-downloaded dangling manifest that
@@ -186,3 +186,22 @@ spec:
             httpPort: 5002
           cleanup:
             policyNames: [purge-buildcache]
+      # Scheduled maintenance. Cleanup policies only SOFT-delete; the blob store
+      # keeps the bytes until blobstore.compact runs -- without it the volume
+      # grows unbounded (this is what filled it to 234GB). Chain nightly:
+      # apply policies -> docker GC (drops orphaned buildcache layers) -> compact.
+      # Crontabs are Quartz format (sec min hour day month dow).
+      tasks:
+        - name: "Cleanup service"
+          typeId: repository.cleanup
+          crontab: "0 0 0 * * ?"
+        - name: "Docker GC - unused manifests and layers"
+          typeId: repository.docker.gc
+          crontab: "0 0 1 * * ?"
+          attributes:
+            repositoryName: "*"
+        - name: "Compact blob store"
+          typeId: blobstore.compact
+          crontab: "0 0 2 * * ?"
+          attributes:
+            blobstoreName: "default"
