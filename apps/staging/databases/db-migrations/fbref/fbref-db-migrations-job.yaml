@@ -27,7 +27,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: flyway
-          image: ghcr.io/eliorion/fbref-db-migrations:fbref-db-migrations-v0.1.0
+          image: ghcr.io/eliorion/fbref-db-migrations:fbref-db-migrations-v0.3.0
           args: ["migrate"]
           env:
             # CNPG app secret (<cluster>-app for cluster "fbref-db"). jdbc-uri
