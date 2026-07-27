@@ -188,20 +188,24 @@ spec:
             policyNames: [purge-buildcache]
       # Scheduled maintenance. Cleanup policies only SOFT-delete; the blob store
       # keeps the bytes until blobstore.compact runs -- without it the volume
-      # grows unbounded (this is what filled it to 234GB). Chain nightly:
-      # apply policies -> docker GC (drops orphaned buildcache layers) -> compact.
-      # Crontabs are Quartz format (sec min hour day month dow).
+      # grows unbounded (this is what filled it to 234GB). Nexus's built-in
+      # "Cleanup service" already applies the policies daily, so we only add the
+      # two tasks it lacks: docker GC (drops orphaned BuildKit layers) at 01:00,
+      # then compact (frees the disk) at 02:00. Crontabs are Quartz format
+      # (sec min hour day month dow).
+      # NOTE: the chart's task.groovy calls .each on BOTH attributes AND
+      # boolAttributes, so every task MUST include both maps ({} if empty) or the
+      # config job dies with a NullPointerException.
       tasks:
-        - name: "Cleanup service"
-          typeId: repository.cleanup
-          crontab: "0 0 0 * * ?"
         - name: "Docker GC - unused manifests and layers"
           typeId: repository.docker.gc
           crontab: "0 0 1 * * ?"
           attributes:
             repositoryName: "*"
+          boolAttributes: {}
         - name: "Compact blob store"
           typeId: blobstore.compact
           crontab: "0 0 2 * * ?"
           attributes:
             blobstoreName: "default"
+          boolAttributes: {}
