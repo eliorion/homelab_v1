@@ -81,13 +81,13 @@ spec:
           - NexusAuthenticatingRealm
           - DockerToken
       cleanup:
-        # Proxies keep a 10d window — re-pulling base images upstream is costly.
+        # Proxies keep a 14d window — re-pulling base images upstream is costly.
         - name: purge-stale
-          notes: "Drop anything not downloaded in 10 days."
+          notes: "Drop anything not downloaded in 14 days."
           format: ALL_FORMATS
           mode: delete
           criteria:
-            lastDownloaded: "864000"
+            lastDownloaded: "1209600"
         # docker-cache only. BuildKit (mode=max) overwrites the :buildcache tag
         # every build; the OLD manifest goes UNTAGGED but Nexus keeps it + its
         # unique layer blobs forever — a never-downloaded dangling manifest that
@@ -186,26 +186,3 @@ spec:
             httpPort: 5002
           cleanup:
             policyNames: [purge-buildcache]
-      # Scheduled maintenance. Cleanup policies only SOFT-delete; the blob store
-      # keeps the bytes until blobstore.compact runs -- without it the volume
-      # grows unbounded (this is what filled it to 234GB). Nexus's built-in
-      # "Cleanup service" already applies the policies daily, so we only add the
-      # two tasks it lacks: docker GC (drops orphaned BuildKit layers) at 01:00,
-      # then compact (frees the disk) at 02:00. Crontabs are Quartz format
-      # (sec min hour day month dow).
-      # NOTE: the chart's task.groovy calls .each on BOTH attributes AND
-      # boolAttributes, so every task MUST include both maps ({} if empty) or the
-      # config job dies with a NullPointerException.
-      tasks:
-        - name: "Docker GC - unused manifests and layers"
-          typeId: repository.docker.gc
-          crontab: "0 0 1 * * ?"
-          attributes:
-            repositoryName: "*"
-          boolAttributes: {}
-        - name: "Compact blob store"
-          typeId: blobstore.compact
-          crontab: "0 0 2 * * ?"
-          attributes:
-            blobstoreName: "default"
-          boolAttributes: {}
