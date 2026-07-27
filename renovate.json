@@ -2,5 +2,15 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "kubernetes": {
     "managerFilePatterns": ["/apps/.+/db-migrations/.+\\.yaml$/"]
-  }
+  },
+  "packageRules": [
+    {
+      "description": "db-migrations images tag as <component>-vX.Y.Z (release-please); teach Renovate that non-semver scheme so it can bump them",
+      "matchPackageNames": [
+        "ghcr.io/eliorion/scraper-db-migrations",
+        "ghcr.io/eliorion/fbref-db-migrations"
+      ],
+      "versioning": "regex:^.*-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    }
+  ]
 }
