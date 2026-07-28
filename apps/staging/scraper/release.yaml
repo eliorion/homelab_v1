@@ -64,25 +64,41 @@ spec:
       replicas: 2 # one solve per replica → fbref crawl + scrape solve in parallel
       proxyEgressPorts: [8888] # let FlareSolverr reach the Tailscale egress proxy
     engine:
-      # Per-(tenant,site) egress proxy — both projects route through the in-cluster
-      # Tailscale egress proxy (operator-managed → rsp-asp residential IP
-      # 100.100.98.5) instead of the cluster's datacenter IP, which DataDome
-      # (leboncoin) and Cloudflare (fbref) block. Same routing the retired asp +
-      # fbref lanes used, validated on-cluster. REQUIRES the tailscale-proxy-00
-      # egress pod Ready (kubectl -n tailscale get pods); revert a url to
-      # http://100.100.98.5:8888 if the proxy is down. autoscout24 stays direct.
-      #
-      # leboncoin (camoufox_warm) connects to the proxy directly from the engine
-      # pod → needs engine.proxyEgressPorts. fbref (flaresolverr) forwards
-      # PROXY_URL into the solve → that hop uses solver.proxyEgressPorts instead.
-      proxies:
-        - tenant: asp
-          site: leboncoin
+      # STATIC lanes RETIRED entirely (chart default is asp + fbref; this empties
+      # it). Both projects are request-driven now, so this namespace runs ONLY the
+      # platform: backend + the request pools below + solver + admin-ui. Flux
+      # prunes the old static Deployments (engine-asp-* and engine-fbref-*). fbref
+      # is the first (only) client via fbref-ingest → POST /v1/scrape; asp's own
+      # static consumer (asp-ingest) is turned OFF in apps/staging/asp.
+      tenants: []
+      # Request-driven warm pools (ROLE=server) — the target of POST /v1/scrape.
+      # One pool per egress IP; a pod leases lanes bound to its proxy, warms the
+      # anti-bot session behind that IP, and serves the lane's requests. KEDA
+      # scales each 0<->N on its proxy's pending count (keda below).
+      #   direct   — the cluster's datacenter IP (Cloudflare/DataDome block it):
+      #              the default pool, idle at 0 replicas (nobody submits
+      #              proxy=direct today).
+      #   tailscale — the residential exit (rsp-asp). `sites: [fbref]` routes fbref
+      #              here: the backend assigns a proxy-less fbref request to this pool
+      #              (least-pending), so its Cloudflare fetch egresses the residential
+      #              IP — the SAME routing the retired static fbref lane used.
+      #              flaresolverr forwards PROXY_URL into the solve → that hop uses
+      #              solver.proxyEgressPorts. REQUIRES the tailscale-proxy-00 egress
+      #              pod Ready (kubectl -n tailscale get pods). Add residential exits
+      #              (each sites: [fbref]) to fan fbref out onto more IPs.
+      pools:
+        - name: direct
+        - name: tailscale
           url: "http://tailscale-proxy-00.tailscale.svc.cluster.local:8888"
-        - tenant: fbref
-          site: fbref
-          url: "http://tailscale-proxy-00.tailscale.svc.cluster.local:8888"
+          sites: [fbref]
+      # Extra egress port for any pool that dials the Tailscale proxy directly
+      # from the engine pod (the fbref hop goes via solver.proxyEgressPorts).
       proxyEgressPorts: [8888]
+    # Scale each request pool 0<->N on its proxy's pending-request count (idle
+    # namespace = backend only). KEDA operator installed via infra-keda
+    # (infrastructure/controllers/base/keda).
+    keda:
+      enabled: true
     adminUi:
       service:
         # Publish the admin UI on the tailnet via the Tailscale operator —

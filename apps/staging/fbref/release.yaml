@@ -45,11 +45,12 @@ spec:
         - name: ghcr-pull-secret
     # The in-chart scraper lanes + FlareSolverr are RETIRED (chart defaults
     # scraper.enabled / flaresolverr.enabled: false): the central scraper service
-    # (apps/staging/scraper) now crawls + scrapes fbref through its OWN
-    # FlareSolverr, routed via the same Tailscale egress proxy (→ rsp-asp
-    # residential IP) — see that HelmRelease's solver + engine.proxies. fbref
-    # consumes results via fbref-ingest (chart default ingest.enabled: true → no
-    # override needed).
+    # (apps/staging/scraper) now scrapes fbref through its OWN FlareSolverr,
+    # routed via the Tailscale egress proxy (→ rsp-asp residential IP) — see that
+    # HelmRelease's solver + engine.pools[tailscale] (sites: [fbref]). fbref-ingest
+    # drives the BFS (claim url_queue → POST /v1/scrape → write results + enqueue
+    # links) and sends ONLY url + kind; the scraper PLATFORM assigns the residential
+    # egress pool. No proxy config here — chart defaults (ingest.enabled: true) suffice.
     adminUi:
       service:
         # Publish on the tailnet via the Tailscale operator — authed, off-LAN,
