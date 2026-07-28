@@ -200,3 +200,25 @@ spec:
       kind: Deployment
       name: reflector
       namespace: reflector
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-keda
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  # First install pulls the KEDA operator/metrics-apiserver images.
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/base/keda
+  prune: true
+  wait: true
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: keda-operator
+      namespace: keda

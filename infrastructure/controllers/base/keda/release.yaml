@@ -1,0 +1,35 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keda
+  namespace: flux-system
+spec:
+  targetNamespace: keda
+  interval: 30m
+  chart:
+    spec:
+      chart: keda
+      # Renovate bumps this. KEDA scale-to-zero for the scraper's request-driven
+      # engine pools (ScaledObjects live in the asp `scraper` chart, gated by
+      # keda.enabled). Operator + CRDs (ScaledObject/TriggerAuthentication) only.
+      version: "2.17.2"
+      sourceRef:
+        kind: HelmRepository
+        name: kedacore
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: true
+    # KEDA ships CRDs in a crds/ dir; let Helm own them on install.
+    crds: Create
+  upgrade:
+    crds: CreateReplace
+  values:
+    resources:
+      operator:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+        limits:
+          cpu: "500m"
+          memory: "512Mi"
