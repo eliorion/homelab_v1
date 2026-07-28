@@ -54,10 +54,14 @@ spec:
       imagePullSecrets:
         - name: ghcr-pull-secret
     # The in-chart scraper lanes are RETIRED (chart default scraper.enabled:
-    # false): the central scraper service (apps/staging/scraper) now does the
-    # scraping and asp consumes results via asp-ingest (chart default
-    # ingest.enabled: true → no override needed). The Tailscale leboncoin egress
-    # proxy moved with the lanes to the scraper HelmRelease's engine.proxies.
+    # false). asp scraping is fully STOPPED for now: the scraper platform's static
+    # asp lanes are gone (that HelmRelease's engine.tenants: []), so there is no
+    # producer left, and asp is NOT yet a request-driven client of the new engine.
+    # fbref is the sole first client. asp-ingest (the results bridge) is therefore
+    # turned off — flip back to true (+ re-add asp to the scraper engine, or give
+    # asp its own request driver) when asp rejoins the platform.
+    ingest:
+      enabled: false
     adminUi:
       enabled: true
       service:
