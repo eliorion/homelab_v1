@@ -1,0 +1,100 @@
+# Ensures the Nexus "Compact blob store" task exists.
+#
+# WHY THIS ISN'T IN THE HELM CHART'S config.tasks:
+# Nexus 3.92 runs on JDK 25 (every 3.92.2 image tag — plain, -alpine, -ubi — does;
+# there is no -java17 variant). The chart provisions tasks AND cleanup policies
+# through the deprecated Groovy scripting API, whose bundled compiler cannot read
+# JDK 25 class files ("Unsupported class file major version 69", HTTP 500). So
+# config.tasks / config.cleanup silently fail to apply on this JVM, and pinning a
+# different image tag can't fix it (all 3.92.2 tags are JDK 25; downgrading Nexus
+# is unsafe — DB migrations are one-way). See documentations/04.
+#
+# WHAT IT DOES:
+# blobstore.compact physically frees blobs that cleanup policies (and Docker
+# pushes) only SOFT-delete. Without it the default blob store grows unbounded —
+# it filled the PVC to 99% with ~270GB of dead direct-path Docker-upload blobs
+# ("deletedReason=Docker upload cleaned up"). The compact TASK itself is plain
+# Java and runs fine on JDK 25; only its *provisioning* had to route around Groovy.
+# This CronJob creates the task via ExtDirect (the UI's API, JDK-independent) if
+# it is missing, giving GitOps ownership that survives a PVC wipe. The task then
+# self-schedules its own nightly run (cron below) via the Nexus scheduler.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nexus-ensure-compact-task
+  namespace: nexus
+spec:
+  # Daily 02:00 UTC — an hour before the compact task's own 03:00 run, so a task
+  # lost to a PVC wipe is recreated in time for that night's compaction.
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app: nexus-ensure-compact-task
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: ensure
+              # Same image the chart uses for its own config Job (curl + jq + sh).
+              image: docker.io/alpine/k8s:1.31.2
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: NEXUS_PW
+                  valueFrom:
+                    secretKeyRef:
+                      name: nexus-root-password
+                      key: password
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 32Mi
+                limits:
+                  memory: 64Mi
+              command: ["/bin/sh", "-ceu"]
+              args:
+                - |
+                  BASE=http://nexus.nexus.svc.cluster.local:8081
+                  AUTH="admin:${NEXUS_PW}"
+                  NAME="Compact blob store - default"
+
+                  # Wait for the Nexus API (pod may still be booting).
+                  ok=0
+                  for i in $(seq 1 30); do
+                    if curl -sf -o /dev/null -u "$AUTH" "$BASE/service/rest/v1/status"; then ok=1; break; fi
+                    echo "waiting for nexus ($i/30)"; sleep 5
+                  done
+                  [ "$ok" = 1 ] || { echo "ERROR: nexus API not reachable"; exit 1; }
+
+                  # Idempotent: do nothing if the task already exists.
+                  if curl -sf -u "$AUTH" "$BASE/service/rest/v1/tasks" \
+                       | jq -e --arg n "$NAME" '.items[] | select(.type=="blobstore.compact" and .name==$n)' >/dev/null; then
+                    echo "compact task already present — nothing to do"
+                    exit 0
+                  fi
+
+                  echo "compact task missing — creating via ExtDirect"
+                  # schedule=advanced needs an explicit timeZoneOffset (create 400s with
+                  # message "offsetId" otherwise). Cron is Quartz format (sec min hour ...).
+                  REQ='{"action":"coreui_Task","method":"create","tid":1,"type":"rpc","data":[{"id":null,"enabled":true,"name":"Compact blob store - default","typeId":"blobstore.compact","properties":{"blobstoreName":"default"},"schedule":"advanced","cronExpression":"0 0 3 * * ?","timeZoneOffset":"+00:00","notificationCondition":"FAILURE","alertEmail":null,"recurringDays":[],"startDate":null}]}'
+                  OK=$(curl -sf -u "$AUTH" -H 'Content-Type: application/json' -X POST \
+                        -d "$REQ" "$BASE/service/extdirect" | jq -r '.result.success // false')
+                  [ "$OK" = "true" ] || { echo "ERROR: task create failed"; exit 1; }
+                  echo "compact task created (runs daily 03:00 UTC)"
