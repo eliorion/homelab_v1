@@ -1,7 +1,13 @@
 # Flyway migration Job for the scraper coordination database.
-# Mirrors the asp/fbref Flyway tier: Renovate bumps the image tag; Flux
-# force-recreates the immutable Job and gates the `apps` Kustomization on its
-# completion. No ttlSecondsAfterFinished — Flux owns the Job lifecycle (force);
+# Mirrors the asp/fbref Flyway tier: Flux force-recreates the immutable Job and
+# gates the `apps` Kustomization on its completion.
+# The tag is bumped BY HAND. Renovate does not touch it — its CronJob still
+# targets the pre-rename repo and skips every run — and the `apps` gate cannot
+# help either: app image tags live in the asp repo's charts and reach the
+# cluster on their own GitRepository, never through this Kustomization. A stale
+# pin here is therefore invisible: the already-completed Job satisfies
+# `wait: true` in ~46ms while the schema sits behind the code.
+# No ttlSecondsAfterFinished — Flux owns the Job lifecycle (force);
 # a TTL would delete the completed Job and re-run it on every reconcile.
 apiVersion: batch/v1
 kind: Job
@@ -25,7 +31,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: flyway
-          image: ghcr.io/eliorion/scraper-db-migrations:scraper-db-migrations-v0.4.0
+          image: ghcr.io/eliorion/scraper-db-migrations:scraper-db-migrations-v0.5.0
           args: ["migrate"]
           env:
             # CNPG app secret for cluster "scraper-db" → scraper-db-app. jdbc-uri
