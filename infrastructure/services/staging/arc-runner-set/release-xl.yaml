@@ -28,8 +28,8 @@ spec:
     # Bigger, fewer runners for the full in-dind k3d stack. One warm (min 1);
     # podAntiAffinity below spreads up to maxRunners=3 one-per-node across the
     # 3-node cluster so two/three concurrent e2e runs never share a node.
-    minRunners: 1
-    maxRunners: 3
+    minRunners: 2
+    maxRunners: 4
     # containerMode: dind reproduced manually (same as the default pool) so
     # dockerd gets --insecure-registry for the HTTP-only Nexus connectors.
     template:
