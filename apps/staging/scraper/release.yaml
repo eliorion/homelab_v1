@@ -74,23 +74,31 @@ spec:
       # Request-driven warm pools (ROLE=server) — the target of POST /v1/scrape.
       # One pool per egress IP; a pod leases lanes bound to its proxy, warms the
       # anti-bot session behind that IP, and serves the lane's requests. KEDA
-      # scales each 0<->N on its proxy's pending count (keda below).
-      #   direct   — the cluster's datacenter IP (Cloudflare/DataDome block it):
-      #              the default pool, idle at 0 replicas (nobody submits
-      #              proxy=direct today).
-      #   tailscale — the residential exit (rsp-asp). `sites: [fbref]` routes fbref
-      #              here: the backend assigns a proxy-less fbref request to this pool
-      #              (least-pending), so its Cloudflare fetch egresses the residential
-      #              IP — the SAME routing the retired static fbref lane used.
-      #              flaresolverr forwards PROXY_URL into the solve → that hop uses
-      #              solver.proxyEgressPorts. REQUIRES the tailscale-proxy-00 egress
-      #              pod Ready (kubectl -n tailscale get pods). Add residential exits
-      #              (each sites: [fbref]) to fan fbref out onto more IPs.
+      # scales each 0<->N on its proxy's pending count (keda below), capped at ONE
+      # pod per pool (chart keda.maxReplicaCount): one pool = one proxy = one IP =
+      # one fingerprint. Scale throughput by adding POOLS, never replicas.
+      #
+      # `residential: true` is the ROUTING KEY. The backend assigns a proxy-less
+      # request to the LEAST-PENDING residential pool (else 'direct'), so the two
+      # pools below split the load onto two distinct public IPs — one lane each
+      # (lanes are UNIQUE per tenant+site+proxy), each with its own AdaptivePacer
+      # budget and its own fingerprint. Routing is by pool CAPABILITY, never by
+      # site/project name: the platform owns the trade-off, a client cannot pick a
+      # lane. Add another residential exit here = +1 lane = ~linear throughput,
+      # with no client or code change.
+      #   direct    — the cluster's OWN egress. This cluster is home-hosted, so
+      #               that is a residential IP (verified distinct from the exit
+      #               below), NOT a datacenter one — hence residential: true.
+      #   tailscale — the residential exit (rsp-asp). flaresolverr forwards
+      #               PROXY_URL into the solve → that hop uses
+      #               solver.proxyEgressPorts. REQUIRES the tailscale-proxy-00
+      #               egress pod Ready (kubectl -n tailscale get pods).
       pools:
         - name: direct
+          residential: true
         - name: tailscale
+          residential: true
           url: "http://tailscale-proxy-00.tailscale.svc.cluster.local:8888"
-          sites: [fbref]
       # Extra egress port for any pool that dials the Tailscale proxy directly
       # from the engine pod (the fbref hop goes via solver.proxyEgressPorts).
       proxyEgressPorts: [8888]
