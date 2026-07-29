@@ -1,7 +1,15 @@
 # Flyway migration Job for the Automarket (asp) database.
-# Lives in apps/base/asp/db/ (own Flux Kustomization — see
-# flux-kustomizations.yaml). Renovate bumps the image tag; Flux force-recreates
-# the Job and gates asp-apps on its completion.
+# Flux force-recreates the Job and gates the `apps` Kustomization on its
+# completion.
+# The tag is bumped BY HAND. Renovate does not touch it — its CronJob still
+# targets the pre-rename repo and skips every run — and the `apps` gate cannot
+# help either: app image tags live in the asp repo's charts and reach the
+# cluster on their own GitRepository, never through this Kustomization. A stale
+# pin here is therefore invisible: the already-completed Job satisfies
+# `wait: true` in ~46ms while the schema sits behind the code. That is how this
+# pin sat on v0.1.0 for 47 days while releases reached v0.6.0.
+# The asp chart's own Flyway pre-upgrade hook (dbMigrate.enabled) supersedes
+# this Job once it is switched on.
 # NOTE: no ttlSecondsAfterFinished — Flux owns the Job lifecycle (force).
 # A TTL would delete the completed Job and make every later reconcile
 # re-create + re-run it for nothing.
@@ -27,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: flyway
-          image: ghcr.io/eliorion/asp-db-migrations:db-migrations-v0.1.0
+          image: ghcr.io/eliorion/asp-db-migrations:db-migrations-v0.6.0
           args: ["migrate"]
           env:
             # CNPG app secret (<cluster>-app for cluster "staging"). jdbc-uri
