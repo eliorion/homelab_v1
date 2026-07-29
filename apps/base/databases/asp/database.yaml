@@ -35,6 +35,20 @@ spec:
         configMapRefs:
           - name: asp-db-init
             key: init.sql
+
+  # Flyway V6 (webapp_ro) and V8 (grafana_ro) CREATE ROLE while connected as
+  # `app`, which needs CREATEROLE — without it the migration image fails at V6
+  # and, once the chart runs it as a pre-upgrade hook, takes every asp upgrade
+  # down with it. This is why asp-db is stuck at V5 while db-migrations is at
+  # v0.6.0. fbref-db already carries the same grant (added after the identical
+  # failure on 2026-06-12, doc 07); asp-db never got it.
+  managed:
+    roles:
+      - name: app
+        ensure: present
+        login: true
+        createrole: true
+
   # Superuser secret
   #  superuserSecret:
   #    name: postgres-superuser-secret
