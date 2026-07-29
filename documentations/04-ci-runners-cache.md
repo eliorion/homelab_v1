@@ -94,6 +94,49 @@ The two ARC Helm charts (`gha-runner-scale-set-controller` and
 `gha-runner-scale-set`) must stay on the **same version** — Renovate bumps
 both, keep them aligned when merging.
 
+## Blob store maintenance (compaction) — and the JDK-25 / Groovy constraint
+
+Nexus cleanup policies (and every Docker push) only **soft-delete** blobs; the
+bytes stay on disk until a `blobstore.compact` task physically frees them. There
+was no such task, so the `default` blob store grew unbounded and filled the PVC
+to **99%** — ~270GB of dead direct-path Docker-upload blobs
+(`deletedReason=Docker upload cleaned up`, written by every BuildKit push to
+`docker-cache`). Running compaction reclaimed it to **20%** (67G/344G). A daily
+Longhorn `filesystem-trim` (04:00) then returns the freed blocks to the volume.
+
+**Why this is a CronJob and not the chart's `config.tasks`:** Nexus 3.92 runs on
+**JDK 25** (every 3.92.2 image tag — plain, `-alpine`, `-ubi` — does; there is no
+`-java17` variant). The stevehipwell chart provisions tasks **and** cleanup
+policies through the deprecated Groovy scripting API, whose bundled compiler
+can't read JDK 25 class files:
+
+```
+Unsupported class file major version 69   (HTTP 500 from /service/rest/v1/script/...)
+```
+
+So `config.tasks` / `config.cleanup` silently fail to apply on this JVM, and
+pinning `image.tag` can't help (all 3.92.2 tags are JDK 25; downgrading Nexus is
+unsafe — DB migrations are one-way). Existing cleanup policies still work because
+they were provisioned before the JDK bump; **do not expect edits to
+`config.cleanup` to take effect** until Nexus ships a Groovy that supports the
+running JVM.
+
+The compact **task itself is plain Java** and runs fine on JDK 25 — only its
+*provisioning* had to route around Groovy. `compact-task-cronjob.yaml` ensures
+the task exists via **ExtDirect** (the UI's API, JDK-independent), idempotently,
+daily at 02:00 — so it survives a PVC wipe. The task then self-schedules its own
+nightly compaction (03:00) via the Nexus scheduler.
+
+```bash
+# Trigger a compaction immediately (don't wait for 03:00):
+PW=$(kubectl -n nexus get secret nexus-root-password -o jsonpath='{.data.password}' | base64 -d)
+ID=$(kubectl -n nexus exec nexus-0 -c nexus3 -- env NP="$PW" sh -c \
+  'curl -s -u admin:$NP http://localhost:8081/service/rest/v1/tasks' \
+  | jq -r '.items[]|select(.type=="blobstore.compact")|.id')
+kubectl -n nexus exec nexus-0 -c nexus3 -- env NP="$PW" sh -c \
+  "curl -s -X POST -u admin:\$NP http://localhost:8081/service/rest/v1/tasks/$ID/run"
+```
+
 ## One-time setup
 
 ### 1. GitHub PAT for runner registration
