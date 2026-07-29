@@ -53,6 +53,15 @@ box — the repo name is historical; see `documentations/06`–`08`.)
   proxy (5001), `docker-cache` hosted (5002). Connector `httpPort`s must be
   unique or the config Job 400s and the port never opens.
 - In-cluster registry host: `nexus.nexus.svc.cluster.local:500x`.
+- **Blob store compaction**: cleanup policies + Docker pushes only *soft-delete*
+  blobs; a `blobstore.compact` task must physically free them (dead direct-path
+  Docker-upload blobs once filled the PVC to 99%). The chart **can't** schedule
+  it — Nexus 3.92 runs on **JDK 25** and the Groovy scripting API it provisions
+  `config.tasks`/`config.cleanup` through can't compile JDK-25 class files
+  (`major version 69` → HTTP 500), so those blocks silently no-op (no 3.92.2 tag
+  avoids JDK 25; downgrade is unsafe). `compact-task-cronjob.yaml` ensures the
+  task via **ExtDirect** (JDK-independent) instead; the task self-schedules
+  nightly (03:00). Details + manual trigger in doc 04.
 
 ## Backups & DR (full detail in documentations/03 + 09)
 
