@@ -55,28 +55,28 @@ spec:
       # ghcr-pull-secret is mirrored into this ns by the central reflector source.
       imagePullSecrets:
         - name: ghcr-pull-secret
-    # FlareSolverr ON: the fbref engine lane fetches Cloudflare-protected pages
-    # through it (Camoufox cannot clear a managed challenge server-side). The
-    # fbref lane's PROXY_URL is forwarded INTO the solve, so FlareSolverr's
+    # FlareSolverr ON: Cloudflare-protected pages are fetched through it (Camoufox
+    # cannot clear a managed challenge server-side). The chart generates ONE SOLVER
+    # PER POOL — sessions live in per-pod memory and a session's cf_clearance is
+    # bound to one egress IP, so a shared instance cannot serve several proxies.
+    # There is no `replicas` knob: each solver is KEDA-scaled 0<->1 alongside its
+    # pool. The pool's PROXY_URL is forwarded INTO the solve, so FlareSolverr's
     # Chrome egresses via the proxy — hence solver.proxyEgressPorts below.
     solver:
       enabled: true
-      replicas: 2 # one solve per replica → fbref crawl + scrape solve in parallel
       proxyEgressPorts: [8888] # let FlareSolverr reach the Tailscale egress proxy
     engine:
-      # STATIC lanes RETIRED entirely (chart default is asp + fbref; this empties
-      # it). Both projects are request-driven now, so this namespace runs ONLY the
-      # platform: backend + the request pools below + solver + admin-ui. Flux
-      # prunes the old static Deployments (engine-asp-* and engine-fbref-*). fbref
-      # is the first (only) client via fbref-ingest → POST /v1/scrape; asp's own
-      # static consumer (asp-ingest) is turned OFF in apps/staging/asp.
-      tenants: []
-      # Request-driven warm pools (ROLE=server) — the target of POST /v1/scrape.
-      # One pool per egress IP; a pod leases lanes bound to its proxy, warms the
-      # anti-bot session behind that IP, and serves the lane's requests. KEDA
-      # scales each 0<->N on its proxy's pending count (keda below), capped at ONE
-      # pod per pool (chart keda.maxReplicaCount): one pool = one proxy = one IP =
-      # one fingerprint. Scale throughput by adding POOLS, never replicas.
+      # Request-driven warm pools (ROLE=server) — the target of POST /v1/scrape, and
+      # the ONLY engine topology (the static per-(tenant,site) lanes are gone from the
+      # chart entirely). One pool per egress IP; a pod leases lanes bound to its proxy,
+      # warms the anti-bot session behind that IP, and serves the lane's requests. KEDA
+      # scales each pool AND its solver 0<->1 on that proxy's pending count — capped at
+      # one pod because one pool = one proxy = one IP = one fingerprint. Scale
+      # throughput by adding POOLS, never replicas.
+      #
+      # No site is named here, by design: a site exists when the DB says so (a `lanes`
+      # row created by POST /v1/scrape, configured by its `site_config`), so onboarding
+      # one is an API call rather than a values edit.
       #
       # `residential: true` is the ROUTING KEY. The backend assigns a proxy-less
       # request to the LEAST-PENDING residential pool (else 'direct'), so the two
@@ -100,13 +100,13 @@ spec:
           residential: true
           url: "http://tailscale-proxy-00.tailscale.svc.cluster.local:8888"
       # Extra egress port for any pool that dials the Tailscale proxy directly
-      # from the engine pod (the fbref hop goes via solver.proxyEgressPorts).
+      # from the engine pod (the Cloudflare hop goes via solver.proxyEgressPorts).
       proxyEgressPorts: [8888]
-    # Scale each request pool 0<->N on its proxy's pending-request count (idle
-    # namespace = backend only). KEDA operator installed via infra-keda
-    # (infrastructure/controllers/base/keda).
-    keda:
-      enabled: true
+    # NOTE: no `keda:` block. KEDA is a HARD REQUIREMENT of the chart now — there is no
+    # enable flag and no fixed-replica mode, so every pool and solver is HPA-owned and an
+    # idle namespace is backend-only. The operator comes from infra-keda
+    # (infrastructure/controllers/base/keda); without it this release fails to apply its
+    # ScaledObjects rather than silently running everything unscaled.
     adminUi:
       service:
         # Publish the admin UI on the tailnet via the Tailscale operator —
