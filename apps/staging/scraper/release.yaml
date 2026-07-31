@@ -93,12 +93,30 @@ spec:
       #               PROXY_URL into the solve → that hop uses
       #               solver.proxyEgressPorts. REQUIRES the tailscale-proxy-00
       #               egress pod Ready (kubectl -n tailscale get pods).
+      #   c         — node C's exit. DELIBERATELY NOT residential yet: the flag is
+      #               the routing key, so until it is set this pool receives zero
+      #               traffic and we are only proving that its Deployment, solver
+      #               and ScaledObjects render and the pod can reach the proxy.
+      #               Tag it only once the exit is confirmed to be a DISTINCT,
+      #               non-datacenter IP:
+      #                 kubectl -n scraper run ipcheck --rm -it --restart=Never \
+      #                   --image=curlimages/curl:8.11.1 -- curl -s \
+      #                   -x http://tailscale-proxy-scrape-c.tailscale.svc.cluster.local:8888 \
+      #                   https://ifconfig.me
+      #               and compare against tailscale-proxy-00 and the direct egress.
+      #               Mislabelling a datacenter exit residential puts EVERY site's
+      #               traffic on an IP anti-bot vendors already distrust.
+      #               Once scraper-backend carries the `pools` table, the flag is an
+      #               admin-UI toggle and needs no commit here — but the entry below
+      #               is still what renders the pod.
       pools:
         - name: direct
           residential: true
         - name: tailscale
           residential: true
           url: "http://tailscale-proxy-00.tailscale.svc.cluster.local:8888"
+        - name: c
+          url: "http://tailscale-proxy-scrape-c.tailscale.svc.cluster.local:8888"
       # Extra egress port for any pool that dials the Tailscale proxy directly
       # from the engine pod (the Cloudflare hop goes via solver.proxyEgressPorts).
       proxyEgressPorts: [8888]
