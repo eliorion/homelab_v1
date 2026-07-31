@@ -203,7 +203,7 @@ backup *is* the access list. Wired in
 
 | Object | Value |
 |---|---|
-| ObjectStore `r2-store` | `s3://cnpg-staging-keycloak`, 7d retention, gzip + AES256 on WAL and base |
+| ObjectStore `r2-store` | `s3://keycloak-cnpg-staging`, 7d retention, gzip + AES256 on WAL and base |
 | Cluster patch | barman-cloud plugin as WAL archiver, `serverName: keycloak-db` |
 | ScheduledBackup | `keycloak-db-daily`, 03:00, `immediate: true` |
 
@@ -233,7 +233,7 @@ material, not the word "PLACEHOLDER". (Nobody here can decrypt it to be sure —
 that needs the staging age key.)
 
 It still needs replacing, for a different reason: that token was scoped to
-`asp-cnpg-staging`, and this ObjectStore now points at `cnpg-staging-keycloak`.
+`asp-cnpg-staging`, and this ObjectStore now points at `keycloak-cnpg-staging`.
 A bucket-scoped token for the old bucket cannot write to the new one. Delete the
 stale header while you are in there.
 
@@ -242,7 +242,7 @@ Verify after the first scheduled run:
 kubectl -n identity get backup
 kubectl -n identity exec keycloak-db-1 -c plugin-barman-cloud -- \
   barman-cloud-backup-list --cloud-provider aws-s3 \
-  s3://cnpg-staging-keycloak keycloak-db
+  s3://keycloak-cnpg-staging keycloak-db
 ```
 
 ## First-run checklist
