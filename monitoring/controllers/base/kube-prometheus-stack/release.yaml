@@ -74,3 +74,12 @@ spec:
                   {{ .Annotations.summary }}
                   {{ .Annotations.description }}
                   {{ end }}
+    prometheus-node-exporter:
+      # node-exporter needs hostPID + host mounts to read node metrics -- that
+      # finding is by-design and left as-is. It does NOT need to escalate
+      # privileges, so drop it + caps (Radar audit privilegeEscalation danger).
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
