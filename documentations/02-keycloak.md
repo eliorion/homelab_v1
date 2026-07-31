@@ -188,22 +188,32 @@ those two variables are what make backup *and restore* work.
 
 ### One-time setup, before the first backup can succeed
 
-1. Create the R2 bucket `cnpg-staging-keycloak`.
-2. Create an R2 API token scoped to **Object Read & Write on that bucket only**.
-3. Put it in the placeholder Secret and encrypt:
-   ```bash
-   cd infrastructure/services/staging/keycloak/database
-   sops r2-backup-credentials.enc.yaml   # ACCESS_KEY_ID + ACCESS_KEY_SECRET
-   ```
-   The file currently carries a placeholder. Until it holds a real token the
-   ScheduledBackup fails — loudly, in the backup's status, not silently.
-4. Verify after the first run:
-   ```bash
-   kubectl -n identity get backup
-   kubectl -n identity exec keycloak-db-1 -c plugin-barman-cloud -- \
-     barman-cloud-backup-list --cloud-provider aws-s3 \
-     s3://cnpg-staging-keycloak keycloak-db
-   ```
+Full instructions live in
+`infrastructure/services/staging/keycloak/database/r2-backup-credentials.enc.yaml.example`.
+In short: create the bucket, create a token with **Object Read & Write on that
+bucket only**, copy the example over the real file, fill it, `sops --encrypt
+--in-place`.
+
+**On the existing `r2-backup-credentials.enc.yaml`:** it is genuinely encrypted —
+valid `sops` block, staging age recipient, MAC, `version: 3.13.1`. Its header
+comment saying "PLACEHOLDER — NOT ENCRYPTED YET" is **stale**: `sops -e -i`
+encrypts values and leaves comments untouched, so the instruction outlived the
+act of following it. The ciphertext is 32 and 64 bytes, which is real R2 key
+material, not the word "PLACEHOLDER". (Nobody here can decrypt it to be sure —
+that needs the staging age key.)
+
+It still needs replacing, for a different reason: that token was scoped to
+`asp-cnpg-staging`, and this ObjectStore now points at `cnpg-staging-keycloak`.
+A bucket-scoped token for the old bucket cannot write to the new one. Delete the
+stale header while you are in there.
+
+Verify after the first scheduled run:
+```bash
+kubectl -n identity get backup
+kubectl -n identity exec keycloak-db-1 -c plugin-barman-cloud -- \
+  barman-cloud-backup-list --cloud-provider aws-s3 \
+  s3://cnpg-staging-keycloak keycloak-db
+```
 
 ## First-run checklist
 
