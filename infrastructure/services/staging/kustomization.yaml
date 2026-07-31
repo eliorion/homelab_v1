@@ -8,3 +8,4 @@ resources:
   - nexus/
   - etcd-backup/
   - garage-gateway/
+  - radar/
