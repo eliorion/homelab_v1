@@ -86,19 +86,18 @@ defaultDefaultClientScopes:
   - acr
   - basic
 
-users:
-  # Declared WITHOUT a credential on purpose: a password in git is a password in
-  # git, and this repo has no way to hold one that the operator would read
-  # anyway. Set a temporary password once from the admin console on the tailnet;
-  # the required actions below force it to be changed and TOTP enrolled on first
-  # login, so the temporary value never survives.
-  - username: dev@eliorion.fr
-    email: dev@eliorion.fr
-    enabled: true
-    emailVerified: true
-    requiredActions:
-      - UPDATE_PASSWORD
-      - CONFIGURE_TOTP
+# NO `users:` BLOCK, DELIBERATELY. Accounts are created in the admin console
+# over the tailnet, not here — see documentations/02-keycloak.md.
+#
+# That choice makes ONE setting load-bearing: the import Job sets
+# IMPORT_MANAGED_USER=no-delete. config-cli's default is full management, under
+# which every realm import would delete every user absent from this file — i.e.
+# all of them. Removing that env var silently locks everyone out on the next
+# realm edit.
+#
+# Access control is realm membership: this realm has registrationAllowed: false
+# and exactly one resource, so a user existing here IS permission to read the
+# fbref database. Disable or delete the account to revoke.
 
 components:
   org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy:

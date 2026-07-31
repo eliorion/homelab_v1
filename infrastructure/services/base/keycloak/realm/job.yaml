@@ -85,12 +85,19 @@ spec:
             # policy a later Keycloak version introduces.
             - name: IMPORT_MANAGED_COMPONENT
               value: no-delete
-            # Same reasoning for the two objects a live realm accumulates
-            # outside this file: clients arrive by dynamic registration, and
+            # Same reasoning for the objects a live realm accumulates outside
+            # this file: clients arrive by dynamic registration, and
             # sub-components hang off the ones above.
             - name: IMPORT_MANAGED_CLIENT
               value: no-delete
             - name: IMPORT_MANAGED_SUBCOMPONENT
+              value: no-delete
+            # THE MOST IMPORTANT LINE IN THIS FILE. Users are created in the
+            # admin console, not in realm-mcp.yaml, so the default (full
+            # management) would delete every account on the next import —
+            # every account, since the file declares none. That is a silent
+            # total lockout triggered by an unrelated realm edit.
+            - name: IMPORT_MANAGED_USER
               value: no-delete
             - name: JAVA_OPTS
               value: -XX:MaxRAMPercentage=75

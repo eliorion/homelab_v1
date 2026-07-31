@@ -5,7 +5,13 @@ metadata:
 spec:
   retentionPolicy: "7d"
   configuration:
-    destinationPath: "s3://asp-cnpg-staging"
+    # Keycloak's OWN bucket, not asp's, so the token in r2-backup-credentials
+    # can be scoped to Object Read & Write on this bucket alone. Sharing asp's
+    # bucket would mean a credential in the `identity` namespace that can also
+    # rewrite the asp archive — which is the archive you would be restoring
+    # from on the day you needed both. fbref keeps its own bucket for the same
+    # reason (it just points at Garage rather than R2).
+    destinationPath: "s3://cnpg-staging-keycloak"
     endpointURL: "https://07e577de68147de704bb467debe46e21.r2.cloudflarestorage.com"
     s3Credentials:
       accessKeyId:

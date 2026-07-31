@@ -3,10 +3,11 @@ kind: Cluster
 metadata:
   name: keycloak-db
 spec:
-  # THREE instances. Keycloak keeps every durable thing — realms, clients,
-  # users, sessions — here, so a single-instance database makes the two
-  # Keycloak replicas decorative: they would fail together on one node.
-  instances: 3
+  # TWO instances — one primary, one hot standby — matching asp-db, fbref-db and
+  # scraper-db. Keycloak keeps every durable thing (realms, clients, users,
+  # sessions) here, so a single instance would make the two Keycloak replicas
+  # decorative: they would fail together with the one database pod.
+  instances: 2
   bootstrap:
     initdb:
       database: keycloak

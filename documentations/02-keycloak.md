@@ -15,7 +15,7 @@ server; fbref-mcp verifies the tokens and never issues one.
 ## Deployment shape
 
 ```
-CNPG Cluster keycloak-db (3 instances) ──auto──▶ Secret keycloak-db-app
+CNPG Cluster keycloak-db (2 instances) ──auto──▶ Secret keycloak-db-app
                                                        │
 Keycloak OPERATOR (identity ns) ──reconciles──▶ Keycloak CR ──▶ StatefulSet (2 pods)
                                                        │
@@ -138,6 +138,73 @@ client cannot mint an `aud` of its own.
 Review registered clients periodically. If ChatGPT support ever stops mattering,
 close DCR and pin a static Claude client — strictly safer.
 
+## Who may use the MCP
+
+**Realm membership is the access list.** The realm sets
+`registrationAllowed: false` and holds exactly one resource, so an account
+existing in realm `mcp` *is* permission to read the fbref database. There is no
+second gate to configure and no role to assign.
+
+Accounts are managed in the **admin console over the tailnet**, not in git:
+
+| To | Do |
+|---|---|
+| Grant access | Realm `mcp` → Users → Add user. Set a **temporary** password under Credentials, and add the required actions `Update Password` and `Configure OTP` so the temporary value cannot survive first login. |
+| Revoke access | Disable the user (keeps history) or delete it. Existing access tokens stay valid for their remaining lifetime — 5 minutes at most, `accessTokenLifespan: 300`. |
+| Audit | Realm `mcp` → Users, and Clients for what registered itself by DCR. |
+
+`realm-mcp.yaml` declares **no** `users:` block, and the import Job therefore
+sets `IMPORT_MANAGED_USER=no-delete`. **Do not remove that env var.**
+keycloak-config-cli defaults to full management, under which the next realm edit
+would delete every user absent from the file — which is all of them. The failure
+is silent from the pipeline's point of view: the Job succeeds, and everybody is
+locked out.
+
+The trade you accepted by choosing console management: the access list lives only
+in the database, so it gets no pull-request review, no history, and it is gone if
+the realm is ever rebuilt from scratch. R2 backups are what make that
+recoverable, which is the next section.
+
+## Backups — Cloudflare R2
+
+Since users and client registrations live only in the database (above), the
+backup *is* the access list. Wired in
+`infrastructure/services/staging/keycloak/database/`:
+
+| Object | Value |
+|---|---|
+| ObjectStore `r2-store` | `s3://cnpg-staging-keycloak`, 7d retention, gzip + AES256 on WAL and base |
+| Cluster patch | barman-cloud plugin as WAL archiver, `serverName: keycloak-db` |
+| ScheduledBackup | `keycloak-db-daily`, 03:00, `immediate: true` |
+
+Its **own bucket**, not asp's: the token then carries Object Read & Write on this
+bucket alone, so a credential in the `identity` namespace cannot rewrite the asp
+archive. (fbref keeps a separate bucket too, though it points at in-cluster
+Garage rather than R2.)
+
+The `instanceSidecarConfiguration` env is not decoration — boto3 ≥ 1.36 sends
+data-integrity checksums that R2 rejects with `XAmzContentSHA256Mismatch`, and
+those two variables are what make backup *and restore* work.
+
+### One-time setup, before the first backup can succeed
+
+1. Create the R2 bucket `cnpg-staging-keycloak`.
+2. Create an R2 API token scoped to **Object Read & Write on that bucket only**.
+3. Put it in the placeholder Secret and encrypt:
+   ```bash
+   cd infrastructure/services/staging/keycloak/database
+   sops r2-backup-credentials.enc.yaml   # ACCESS_KEY_ID + ACCESS_KEY_SECRET
+   ```
+   The file currently carries a placeholder. Until it holds a real token the
+   ScheduledBackup fails — loudly, in the backup's status, not silently.
+4. Verify after the first run:
+   ```bash
+   kubectl -n identity get backup
+   kubectl -n identity exec keycloak-db-1 -c plugin-barman-cloud -- \
+     barman-cloud-backup-list --cloud-provider aws-s3 \
+     s3://cnpg-staging-keycloak keycloak-db
+   ```
+
 ## First-run checklist
 
 1. `kubectl -n identity get keycloak,pods` — 2 pods Ready.
@@ -146,19 +213,15 @@ close DCR and pin a static Claude client — strictly safer.
    admin credential and the realm file together.
 3. `kubectl -n identity get secret keycloak-initial-admin -o jsonpath='{.data.password}' | base64 -d`
    — the operator-generated bootstrap admin.
-4. Open `https://keycloak-admin.tail45b0ca.ts.net` **from the tailnet**, log in
-   with it, create a personal admin, then disable the bootstrap account.
-5. In realm `mcp`, set a temporary password on `dev@eliorion.fr`. The realm
-   declares the user with `UPDATE_PASSWORD` + `CONFIGURE_TOTP` required, so
-   first login forces a real password and TOTP enrolment. No credential for that
-   account is in git, and none should be.
+4. Open `https://keycloak-admin.tail45b0ca.ts.net` **from the tailnet** (HTTPS
+   certificates are already enabled on the tailnet), log in with it, create a
+   personal admin, then disable the bootstrap account.
+5. Create your MCP user in realm `mcp` — see *Who may use the MCP* above.
 6. Verify the split from **off** the tailnet:
    `/realms/mcp/.well-known/openid-configuration` answers on
    `keycloak.eliorion.fr`; `/admin/` does not.
-
-**Precondition for step 4:** Tailscale HTTPS certificates must be enabled (admin
-console → DNS → HTTPS Certificates). The API-server proxy needs them too, so
-they may already be on.
+7. Confirm the first backup landed (see *Backups* above). Do this before adding
+   users you would mind recreating.
 
 ## Scaling path
 
@@ -168,8 +231,9 @@ they may already be on.
    discovery, so this is now a one-line change rather than the four-env-var
    recipe the StatefulSet needed. At very large scale, offload sessions to an
    external Infinispan cluster.
-3. **Database.** `keycloak-db` runs 3 instances. Backups go to Cloudflare R2
-   (PITR, daily base + continuous WAL, 7d retention) — see `03-backups.md`.
+3. **Database.** `keycloak-db` runs 2 instances, matching every other CNPG
+   cluster here. Backups go to Cloudflare R2 (PITR, daily base + continuous WAL,
+   7d retention) — see the section above and `03-backups.md`.
 4. **Identity model.** Realm-per-tenant or shared realm + groups; federate the
    IT team (LDAP / Google Workspace via SCIM); self-registration + social login
    for customers. Independent of replica count.
