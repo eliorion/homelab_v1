@@ -1,0 +1,28 @@
+# The `master` realm — one attribute, and only because the admin console is on a
+# different hostname than the public one.
+#
+# THE BUG THIS FIXES. `spec.hostname.admin` makes Keycloak SERVE the console at
+# the tailnet URL, but the realm still advertises its OIDC endpoints at the
+# global `spec.hostname.hostname` — verified on the live cluster, where
+# /realms/master/.well-known/openid-configuration returned
+# "issuer":"https://keycloak.eliorion.fr/realms/master" regardless of the Host
+# header sent. So the console page loads from ts.net while its JS is told the
+# auth server is keycloak.eliorion.fr, the 3rd-party check iframe is
+# cross-origin, the browser blocks its cookies, and the console dies with:
+#
+#     Something went wrong
+#     Timeout when waiting for 3rd party check iframe message.
+#
+# A per-realm frontendUrl overrides the global hostname, which is upstream's own
+# workaround for this exact report (keycloak/keycloak#42254). Setting it on
+# master makes the console same-origin: page, auth endpoints and iframe all on
+# the tailnet.
+#
+# ONLY master. The `mcp` realm deliberately keeps the public frontend URL —
+# fbref-mcp compares `iss` by exact string and the hosted connectors reach it
+# over the internet, so pointing that realm at a ts.net URL would break the
+# whole MCP flow. That asymmetry is the point of doing this per realm rather
+# than flipping the global hostname.
+realm: master
+attributes:
+  frontendUrl: https://keycloak-admin.tail45b0ca.ts.net
