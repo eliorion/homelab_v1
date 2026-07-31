@@ -14,7 +14,7 @@ spec:
             - name: renovate
               image: renovate/renovate:latest
               args:
-                - eliorion/k3s_cluster_for_learning
+                - eliorion/homelab_v1
 
               envFrom:
                 - secretRef:
