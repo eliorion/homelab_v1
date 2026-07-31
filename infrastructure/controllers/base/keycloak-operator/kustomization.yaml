@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# The Keycloak project publishes NO Helm chart for the operator, so the release
+# manifests are VENDORED under upstream/ rather than pulled at reconcile time.
+# A remote kustomize base would make every Flux reconcile depend on GitHub being
+# reachable and would let a re-tag change what the cluster runs; vendoring keeps
+# the operator reviewable in a PR like everything else here.
+#
+# Bump with `scripts/fetch-keycloak-operator <version>` — it re-downloads all
+# five files and is the ONLY supported way to change them. See README.md.
+# renovate: datasource=github-releases depName=keycloak/keycloak-k8s-resources
+# keycloakOperatorVersion: 26.7.0
+
+resources:
+  - namespace.yaml
+  - upstream/keycloakoidcclients.k8s.keycloak.org-v1.yml
+  - upstream/keycloakrealmimports.k8s.keycloak.org-v1.yml
+  - upstream/keycloaks.k8s.keycloak.org-v1.yml
+  - upstream/keycloaksamlclients.k8s.keycloak.org-v1.yml
+  - upstream/kubernetes.yml
+
+# Upstream ships these for namespace `keycloak`. `identity` is this cluster's
+# name for it, and the ClusterRoleBinding subject must follow the ServiceAccount
+# or the operator starts with no permissions and silently reconciles nothing —
+# hence setRoleBindingSubjects, copied from upstream's own kustomization.
+namespace: identity
+transformers:
+  - |-
+    apiVersion: builtin
+    kind: NamespaceTransformer
+    metadata:
+      name: keycloak-operator-namespace
+      namespace: identity
+    setRoleBindingSubjects: allServiceAccounts
+    fieldSpecs:
+      - path: metadata/namespace
+        create: true

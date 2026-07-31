@@ -3,10 +3,16 @@ kind: Cluster
 metadata:
   name: keycloak-db
 spec:
-  instances: 1
+  # THREE instances. Keycloak keeps every durable thing — realms, clients,
+  # users, sessions — here, so a single-instance database makes the two
+  # Keycloak replicas decorative: they would fail together on one node.
+  instances: 3
   bootstrap:
     initdb:
       database: keycloak
       owner: keycloak
   storage:
-    size: 2Gi
+    # 2Gi was sized for an unused install. A realm with client registrations,
+    # sessions and an event log outgrows it quietly, and Postgres out of disk
+    # is a much worse day than an oversized PVC.
+    size: 10Gi

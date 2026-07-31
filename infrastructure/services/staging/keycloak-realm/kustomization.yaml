@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: identity
+# Its OWN overlay, and its own Flux Kustomization (`infra-keycloak-realm`),
+# because the realm import is a Job: immutable, so it needs force: true to be
+# re-created when the realm changes, and wait: true so a failed import shows up
+# as NotReady instead of passing silently. Folding it into the keycloak overlay
+# would apply force to the Keycloak CR and the database too.
+resources:
+  - ../../base/keycloak/realm/

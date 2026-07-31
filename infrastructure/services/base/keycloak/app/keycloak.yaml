@@ -1,0 +1,115 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+spec:
+  # TWO instances, per Keycloak's own production guidance: a login page that
+  # dies with one node is not production. The operator wires Infinispan/JGroups
+  # DNS discovery for instances > 1, so the KC_CACHE/KC_CACHE_STACK/jgroups.dns
+  # recipe the hand-written StatefulSet needed is gone.
+  instances: 2
+
+  # `image` is deliberately NOT set. Setting it makes the operator assume a
+  # pre-optimized image and start with --optimized, and it decouples the server
+  # version from the operator version. Left unset, the operator runs the server
+  # it was released with (RELATED_IMAGE_KEYCLOAK in its Deployment), so the
+  # version knob is `scripts/fetch-keycloak-operator` and nothing else.
+
+  db:
+    vendor: postgres
+    host: keycloak-db-rw
+    database: keycloak
+    # CNPG generates this Secret with a random password; no credential is in git.
+    usernameSecret:
+      name: keycloak-db-app
+      key: username
+    passwordSecret:
+      name: keycloak-db-app
+      key: password
+
+  # `bootstrapAdmin` is deliberately NOT set. Left out, the operator generates a
+  # temporary admin and stores it in the Secret `keycloak-initial-admin` — which
+  # is both one less credential in git and the credential the realm pipeline
+  # reads. The pre-existing sops `keycloak-secret` used the KC_BOOTSTRAP_ADMIN_*
+  # key spellings the old StatefulSet read; the operator wants `username` and
+  # `password`, so it is no longer wired to anything. Delete it once a personal
+  # admin exists.
+
+  http:
+    # TLS terminates at the pod, so the cloudflared hop is encrypted too.
+    # Cilium runs without transparent encryption here, so without this the
+    # login POST would cross the node network in plaintext.
+    tlsSecret: keycloak-tls
+    # The HTTP listener exists for ONE caller: the Tailscale proxy fronting the
+    # admin console. Terminating the MagicDNS cert there and re-encrypting to a
+    # self-signed origin would mean teaching that proxy to trust our CA. The
+    # networkPolicy below is what makes this safe — nothing else can reach it.
+    httpEnabled: true
+
+  hostname:
+    # The PUBLIC face: what Cloudflare routes and what tokens are issued for.
+    # Also the `iss` fbref-mcp verifies by exact string.
+    hostname: https://keycloak.eliorion.fr
+    # The admin console's own URL, so its links and redirects point at the
+    # tailnet device rather than the public hostname.
+    #
+    # THIS DOES NOT RESTRICT ANYTHING. Keycloak's docs are explicit: "Using the
+    # hostname-admin option does not prevent accessing the Administration REST
+    # API endpoints via the frontend URL specified by the hostname option."
+    # Keeping the console off the internet is done at the reverse proxy, and
+    # here that means TWO CLOUDFLARE-SIDE LAYERS, neither of them in git:
+    #   1. the tunnel publishes keycloak.eliorion.fr with path rules for
+    #      /realms/*, /resources/*, /js/* ONLY, so no route reaches /admin;
+    #   2. a WAF rule blocks /admin* on that hostname at the edge.
+    # Both are documented in infrastructure/services/staging/cloudflare/README.md.
+    # A dashboard edit that adds a catch-all route re-exposes the admin login
+    # page, and nothing in this repo would catch it in review — that is the
+    # accepted trade-off, not an oversight.
+    admin: https://keycloak-admin.tail45b0ca.ts.net
+    # Without this, Keycloak resolves its hostname from request headers, which
+    # would let a forged Host header mint tokens with someone else's `iss`.
+    strict: true
+
+  proxy:
+    # TLS is terminated by Cloudflare at the edge; the pod must trust the
+    # forwarded scheme/host or it builds redirect URLs as http://.
+    headers: xforwarded
+
+  # The operator writes the NetworkPolicy, so ingress control ships with the CR
+  # rather than as a separate object that can drift away from it.
+  networkPolicy:
+    enabled: true
+    # HTTPS: the tunnel (public OAuth surface) and this namespace, which is
+    # where the keycloak-config-cli Job runs the realm pipeline against the
+    # admin REST API.
+    https:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: cloudflare
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: identity
+    # HTTP: only the Tailscale proxy fronting the admin console.
+    http:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: tailscale
+    # `management` (health + metrics) is deliberately left unrestricted: the
+    # kubelet probes it from the node, which is not a pod and would be dropped
+    # by a namespaceSelector list.
+
+  additionalOptions:
+    # Return 503 under overload instead of queueing without bound. A public
+    # login endpoint is the one place a queue turns into a memory leak.
+    - name: http-max-queued-requests
+      value: "1000"
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
