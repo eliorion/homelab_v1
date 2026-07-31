@@ -11,6 +11,7 @@ shellcheck = "latest"
 talosctl = "latest"
 talhelper = "latest"
 aws = { version = "latest", symlink_bins = "true" }
+gh = "latest"
 
 [tasks.sops-updatekeys]
 description = "Rewrap *.enc.yaml secrets to recipients in .sops.yaml (pass -- -k FILE [--check])"
