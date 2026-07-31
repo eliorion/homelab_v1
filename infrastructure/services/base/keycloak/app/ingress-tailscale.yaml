@@ -1,0 +1,37 @@
+# The admin console, published on the tailnet and NOWHERE ELSE.
+#
+# A Tailscale INGRESS rather than the `tailscale.com/expose` annotation the
+# admin UIs use: expose is an L3 forward of the Service port, so it would serve
+# the console over plain http on :8080. An admin console needs HTTPS on 443 —
+# MagicDNS issues the cert — both so session cookies sit on a secure origin and
+# so the URL matches the `https://` value Keycloak is configured with in
+# spec.hostname.admin. A mismatch there breaks every redirect in the console.
+#
+# PRECONDITION: HTTPS Certificates must be enabled in the Tailscale admin
+# console (DNS → HTTPS Certificates). The API-server proxy already requires it
+# (see infrastructure/controllers/staging/tailscale-operator/README.md), so it
+# may already be on; without it the proxy comes up with no certificate and the
+# console is unreachable.
+#
+# The backend is Keycloak's HTTP listener. Only this namespace can reach it —
+# see spec.networkPolicy.http on the Keycloak CR — so the plaintext hop never
+# leaves the tailscale proxy pod's path.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-admin
+  labels:
+    app: keycloak
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: keycloak-service
+      port:
+        number: 8080
+  tls:
+    # The device name. MagicDNS serves it at
+    # https://keycloak-admin.tail45b0ca.ts.net — the exact string
+    # spec.hostname.admin is set to.
+    - hosts:
+        - keycloak-admin

@@ -1,0 +1,165 @@
+# The `mcp` realm, as code. Applied by keycloak-config-cli (see job.yaml), which
+# diffs this against the live realm and applies only what changed.
+#
+# This realm exists to authorize ONE resource: the fbref MCP server at
+# https://fbref-mcp.eliorion.fr/mcp. Everything below is in service of that.
+realm: mcp
+enabled: true
+displayName: MCP
+
+# Every flow here crosses the public internet.
+sslRequired: all
+
+# Nobody self-registers. Accounts are declared in this file.
+registrationAllowed: false
+registrationEmailAsUsername: false
+resetPasswordAllowed: false
+loginWithEmailAllowed: true
+duplicateEmailsAllowed: false
+verifyEmail: false
+rememberMe: false
+
+# The login page is on the public internet, so brute-force protection is not
+# optional. Five failures, then an exponential wait capped at 15 minutes.
+# permanentLockout stays false on purpose: with a single human account, a
+# permanent lock is a self-inflicted outage anybody can trigger.
+bruteForceProtected: true
+permanentLockout: false
+failureFactor: 5
+waitIncrementSeconds: 60
+maxFailureWaitSeconds: 900
+minimumQuickLoginWaitSeconds: 60
+quickLoginCheckMilliSeconds: 1000
+maxDeltaTimeSeconds: 43200
+
+# Access tokens are short; the connector refreshes. A long-lived token is a
+# long-lived database reader in someone else's cloud.
+accessTokenLifespan: 300
+accessTokenLifespanForImplicitFlow: 300
+ssoSessionIdleTimeout: 1800
+ssoSessionMaxLifespan: 36000
+offlineSessionIdleTimeout: 1209600
+
+otpPolicyType: totp
+otpPolicyAlgorithm: HmacSHA1
+otpPolicyDigits: 6
+otpPolicyPeriod: 30
+otpPolicyLookAheadWindow: 1
+
+clientScopes:
+  - name: mcp:tools
+    description: Call tools on the fbref MCP server
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: "true"
+      display.on.consent.screen: "true"
+      consent.screen.text: Read football data from the fbref database
+    protocolMappers:
+      # THE AUDIENCE BINDING, and the reason this scope exists at all.
+      #
+      # The MCP spec expects RFC 8707 resource indicators to bind a token to one
+      # resource. Keycloak 26 does not implement RFC 8707 — it ignores the
+      # `resource` parameter clients send — so the audience has to be stamped on
+      # by a mapper instead. fbref-mcp REQUIRES `aud` and refuses a token
+      # without it, which is what stops a token issued for some future client in
+      # this realm from being replayed against the database.
+      - name: fbref-mcp-audience
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config:
+          included.custom.audience: https://fbref-mcp.eliorion.fr/mcp
+          access.token.claim: "true"
+          id.token.claim: "false"
+          introspection.token.claim: "true"
+
+# mcp:tools is a DEFAULT scope, not an optional one. This single line is what
+# makes the audience mapper reach dynamically-registered clients: claude.ai and
+# ChatGPT register themselves and request whatever they please. On an OPTIONAL
+# scope, a client that asks for nothing gets a token with no `aud`, fbref-mcp
+# refuses it, and every call fails with no obvious cause.
+defaultDefaultClientScopes:
+  - mcp:tools
+  - email
+  - profile
+  - roles
+  - web-origins
+  - acr
+  - basic
+
+# NO `users:` BLOCK, DELIBERATELY. Accounts are created in the admin console
+# over the tailnet, not here — see documentations/02-keycloak.md.
+#
+# That choice makes ONE setting load-bearing: the import Job sets
+# IMPORT_MANAGED_USER=no-delete. config-cli's default is full management, under
+# which every realm import would delete every user absent from this file — i.e.
+# all of them. Removing that env var silently locks everyone out on the next
+# realm edit.
+#
+# Access control is realm membership: this realm has registrationAllowed: false
+# and exactly one resource, so a user existing here IS permission to read the
+# fbref database. Disable or delete the account to revoke.
+
+components:
+  org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy:
+    # ANONYMOUS DYNAMIC CLIENT REGISTRATION, deliberately open and fenced.
+    #
+    # ChatGPT mandates OAuth 2.1 + DCR — it will not accept a pre-registered
+    # client id — so /realms/mcp/clients-registrations/openid-connect is a
+    # public, unauthenticated endpoint. Keycloak blocks anonymous registration
+    # by default via an EMPTY trusted-hosts list; these values are what open it,
+    # so treat them as the security boundary they are.
+    - name: Trusted Hosts
+      providerId: trusted-hosts
+      subType: anonymous
+      config:
+        trusted-hosts:
+          - claude.ai
+          - chatgpt.com
+        # The HOST CHECK IS OFF and that is not laziness: hosted providers send
+        # the registration request from arbitrary cloud egress IPs, so matching
+        # the caller's address would reject every real client while providing no
+        # security (an attacker chooses their own source too).
+        host-sending-registration-request-must-match:
+          - "false"
+        # THIS is the check doing the work: the client's redirect URIs must live
+        # under one of the trusted hosts above. A registration that would send
+        # authorization codes anywhere else is refused.
+        client-uris-must-match:
+          - "true"
+    # A cap, so a bug or a bored stranger cannot fill the table.
+    - name: Max Clients Limit
+      providerId: max-clients
+      subType: anonymous
+      config:
+        max-clients:
+          - "50"
+    # A registered client may only ask for scopes this realm defines, and
+    # inherits the realm defaults (which is how it picks up mcp:tools).
+    - name: Allowed Client Scopes
+      providerId: allowed-client-templates
+      subType: anonymous
+      config:
+        allow-default-scopes:
+          - "true"
+    # A self-registered client must not be able to invent claims. Without this,
+    # a client could add a mapper minting an `aud` of its own choosing — which
+    # is precisely the check fbref-mcp relies on.
+    - name: Allowed Protocol Mapper Types
+      providerId: allowed-protocol-mappers
+      subType: anonymous
+      config:
+        allowed-protocol-mapper-types:
+          - oidc-usermodel-property-mapper
+          - oidc-usermodel-attribute-mapper
+          - oidc-full-name-mapper
+          - oidc-address-mapper
+          - oidc-sha256-pairwise-sub-mapper
+    # Consent is shown on first login, so an unexpected client registering
+    # cannot silently obtain a token in your name — you have to click.
+    - name: Consent Required
+      providerId: consent-required
+      subType: anonymous
+    # A self-registered client gets no realm roles by scope inheritance.
+    - name: Full Scope Disabled
+      providerId: scope
+      subType: anonymous

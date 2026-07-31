@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: identity
+---
+# The operator is NAMESPACE-SCOPED: its Role/RoleBinding are namespaced, so it
+# only reconciles Keycloak CRs in the namespace it runs in. It therefore lives
+# in `identity` beside the Keycloak it manages, and OWNS that namespace —
+# `infrastructure/services/base/keycloak` deliberately no longer declares it, so
+# two Flux Kustomizations never fight over the same object.
+#
+# The cluster-wide variant (upstream `kubernetes/cluster-wide/`) exists for a
+# multi-namespace estate. One Keycloak does not need it, and it would trade a
+# namespaced Role for cluster-wide write access to every Keycloak CR.

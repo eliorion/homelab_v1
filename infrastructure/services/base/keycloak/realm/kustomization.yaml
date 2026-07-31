@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - job.yaml
+
+# The hash suffix is load-bearing: it changes the ConfigMap name whenever the
+# realm changes, which changes the Job spec, which is what makes Flux (with
+# force: true) delete and recreate the Job and re-run the import. Disabling it
+# would leave realm edits sitting in git, applied to nothing.
+configMapGenerator:
+  - name: keycloak-realm
+    files:
+      - realm-mcp.yaml

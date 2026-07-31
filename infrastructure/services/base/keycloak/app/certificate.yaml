@@ -1,0 +1,68 @@
+# Internal TLS for the Keycloak pods.
+#
+# The certificate is only ever presented to ONE peer — cloudflared, inside the
+# cluster — so a public CA would buy nothing: the name it protects
+# (keycloak-service.identity.svc) is not resolvable from the internet, and no
+# browser ever sees it. A private CA scoped to this namespace is the right size.
+# Issuers are namespaced rather than ClusterIssuers so this CA can sign for
+# `identity` and nothing else.
+#
+# cloudflared cannot be given this CA through the dashboard, so its origin
+# config sets "No TLS Verify". That is a real limitation and worth naming: the
+# hop is ENCRYPTED but not AUTHENTICATED. It still removes plaintext
+# credentials from the node network, which is what Cilium (running without
+# transparent encryption) leaves exposed.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: keycloak-selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-ca
+spec:
+  isCA: true
+  commonName: keycloak-ca
+  secretName: keycloak-ca
+  duration: 87600h # 10y — a private CA nobody can rotate out of band
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: keycloak-selfsigned
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: keycloak-ca
+spec:
+  ca:
+    secretName: keycloak-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-tls
+spec:
+  # Consumed by the Keycloak CR as spec.http.tlsSecret.
+  secretName: keycloak-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  dnsNames:
+    # The Service the operator generates is <CR name>-service.
+    - keycloak-service
+    - keycloak-service.identity
+    - keycloak-service.identity.svc
+    - keycloak-service.identity.svc.cluster.local
+  issuerRef:
+    name: keycloak-ca
+    kind: Issuer

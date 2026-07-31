@@ -100,6 +100,9 @@ spec:
     # arc-runner-set needs the ARC CRDs.
     - name: infrastructure-controllers
     - name: infra-arc-controller
+    # The Keycloak CR needs its CRD registered and the `identity` namespace to
+    # exist — both ship with the operator.
+    - name: infra-keycloak-operator
   retryInterval: 1m
   timeout: 5m
   sourceRef:
@@ -222,3 +225,57 @@ spec:
       kind: Deployment
       name: keda-operator
       namespace: keda
+---
+# The Keycloak operator: vendored release manifests (CRDs + RBAC + Deployment)
+# and the `identity` namespace it runs in. Separate from infrastructure-services
+# so the CRDs are registered and the operator is Ready BEFORE the Keycloak CR is
+# applied — a CR against an unregistered CRD is a reconcile error, not a wait.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-keycloak-operator
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/base/keycloak-operator
+  prune: true
+  wait: true
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: keycloak-operator
+      namespace: identity
+---
+# The realm, applied by a keycloak-config-cli Job.
+#
+# force: true because a Job is immutable — a realm edit changes the generated
+# ConfigMap's hash, which changes the Job spec, and only a delete+recreate can
+# apply that. Same recipe as the db-migrations Flyway Job.
+# wait: true so a failed import surfaces as NotReady rather than as a realm that
+# quietly does not match git.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-keycloak-realm
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  # > the Job's own availability wait for Keycloak to come up (300s).
+  timeout: 10m
+  dependsOn:
+    # Keycloak itself, plus the operator-generated keycloak-initial-admin Secret
+    # the Job authenticates with.
+    - name: infrastructure-services
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/services/staging/keycloak/realm
+  prune: true
+  force: true
+  wait: true

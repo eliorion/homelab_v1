@@ -1,12 +1,20 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: identity
-#resources:
-#  - ../../base/keycloak/
-#  - app/
-#  - database/r2-backup-credentials.enc.yaml
-#  - database/objectstore.yaml
-#  - database/scheduledbackup.yaml
+# realm/ is intentionally NOT listed — it is applied by its own Flux
+# Kustomization (`infra-keycloak-realm`, force: true + wait: true), because the
+# realm import is an immutable Job. Listing it here would give it a second owner
+# without force, and the two would fight. Same convention as
+# apps/staging/databases/kustomization.yaml and db-migrations/.
+resources:
+  - ../../base/keycloak/
+  - database/r2-backup-credentials.enc.yaml
+  - database/objectstore.yaml
+  - database/scheduledbackup.yaml
+# `app/` (the sops keycloak-secret) is gone: the operator generates the
+# bootstrap admin into `keycloak-initial-admin` itself, so that Secret held a
+# credential nothing read, in the KC_BOOTSTRAP_ADMIN_* key spellings only the
+# retired StatefulSet understood.
 patches:
   - path: database/cluster-backup-patch.yaml
     target:
