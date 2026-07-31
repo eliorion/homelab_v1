@@ -7,6 +7,9 @@ resources:
   - ../../../base/databases/fbref
   # grafana_ro role password (basic-auth) — consumed by the CNPG managed role.
   - fbref-grafana-ro.enc.yaml
+  # mcp_ro role password (basic-auth) — consumed by the CNPG managed role and
+  # read by the fbref-mcp Deployment as its DATABASE_URL credential.
+  - fbref-mcp-ro.enc.yaml
   # ghcr-pull-secret now comes from the central reflector source
   # (infrastructure/controllers/staging/reflector) — mirrored into this ns.
   # CNPG -> Garage backup (bucket cnpg-staging-fbref, via the in-cluster gateway).

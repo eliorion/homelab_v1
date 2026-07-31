@@ -42,6 +42,18 @@ spec:
         login: true
         passwordSecret:
           name: fbref-grafana-ro
+      # Operator-managed read-only role for fbref-mcp. Same shape as grafana_ro:
+      # Flyway V7 creates it NOLOGIN with SELECT on the data tables + the mcp
+      # schema (and deliberately NOT worker_control, so the MCP cannot pause the
+      # engine); CNPG flips it to LOGIN with the sops-encrypted password. This is
+      # the role grant that makes the MCP read-only in the database itself,
+      # underneath the replica endpoint it connects to and the
+      # default_transaction_read_only it sets per connection.
+      - name: mcp_ro
+        ensure: present
+        login: true
+        passwordSecret:
+          name: fbref-mcp-ro
       # Flyway V3 creates the worker-control/nocodb roles while connected as
       # app — needs CREATEROLE (hit 2026-06-12 on fresh initdb, doc 07).
       - name: app
