@@ -24,6 +24,16 @@ spec:
   install:
     createNamespace: true
   values:
+    # Chart ships securityContext: {} -> manager container allowed privilege
+    # escalation (Radar audit privilegeEscalation danger). Drop it + caps.
+    # Kept minimal (no runAsNonRoot/readOnlyRootFilesystem) to avoid changing
+    # the controller's runtime assumptions.
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault
     resources:
       requests:
         cpu: 500m

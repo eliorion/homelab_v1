@@ -23,3 +23,16 @@ spec:
       interval: 12h
   install:
     createNamespace: true
+  values:
+    # Chart already drops ALL caps + runs non-root; only allowPrivilegeEscalation
+    # was unset (Radar audit privilegeEscalation danger). Full block so the
+    # override doesn't drop the chart's existing hardening.
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault

@@ -14,7 +14,17 @@ spec:
     spec:
       containers:
         - name: cloudflared
-          image: cloudflare/cloudflared:latest
+          # Pinned off :latest (Radar audit imageTagLatest). Renovate bumps it.
+          image: cloudflare/cloudflared:2026.7.3
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65532
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           env:
             # Defines an environment variable for the tunnel token.
             - name: TUNNEL_TOKEN
