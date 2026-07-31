@@ -1,3 +1,18 @@
 - op: add
   path: /spec/storage/storageClass
   value: longhorn
+# 10Gi filled and CNPG halted the primary with "Not enough disk space", which took the whole
+# fbref stack down with it: fbref-db-rw has a single endpoint (the primary), so fbref-engine
+# got "No route to host", CrashLooped, stopped submitting, and the scraper platform's fbref
+# queue drained to zero.
+#
+# Overlay-scoped rather than raised in base: this is staging's Longhorn sizing, and base is
+# shared with a cluster whose disks are not this size.
+#
+# NOTE this is relief, not the fix. WAL archiving is broken (ContinuousArchiving=False,
+# barman-cloud-wal-archive exit status 4), so WAL cannot be recycled and the volume refills
+# whatever its size — the replica was already at 72% of the old one. Deliberately out of
+# scope here; the archiving failure needs its own change.
+- op: replace
+  path: /spec/storage/size
+  value: 50Gi
