@@ -74,7 +74,7 @@ spec:
         enabled: true
         # Realm `mcp` on the self-hosted Keycloak. Compared to the token's `iss`
         # by EXACT string — a trailing slash breaks every token.
-        issuerUrl: https://keycloak.eliorion.fr/realms/mcp
+        issuerUrl: https://staging-keycloak.eliorion.fr/realms/mcp
         # This server's identity, and the `aud` every token must carry. It is
         # what stops a token minted for another client in the realm being
         # replayed here, which matters because Keycloak 26 has no RFC 8707:

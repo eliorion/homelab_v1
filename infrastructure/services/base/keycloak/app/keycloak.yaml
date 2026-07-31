@@ -51,7 +51,7 @@ spec:
   hostname:
     # The PUBLIC face: what Cloudflare routes and what tokens are issued for.
     # Also the `iss` fbref-mcp verifies by exact string.
-    hostname: https://keycloak.eliorion.fr
+    hostname: https://staging-keycloak.eliorion.fr
     # The admin console's own URL, so its links and redirects point at the
     # tailnet device rather than the public hostname.
     #
@@ -68,7 +68,7 @@ spec:
     # API endpoints via the frontend URL specified by the hostname option."
     # Keeping the console off the internet is done at the reverse proxy, and
     # here that means TWO CLOUDFLARE-SIDE LAYERS, neither of them in git:
-    #   1. the tunnel publishes keycloak.eliorion.fr with path rules for
+    #   1. the tunnel publishes staging-keycloak.eliorion.fr with path rules for
     #      /realms/*, /resources/*, /js/* ONLY, so no route reaches /admin;
     #   2. a WAF rule blocks /admin* on that hostname at the edge.
     # Both are documented in infrastructure/services/staging/cloudflare/README.md.

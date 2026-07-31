@@ -5,9 +5,9 @@
 # the tailnet URL, but the realm still advertises its OIDC endpoints at the
 # global `spec.hostname.hostname` — verified on the live cluster, where
 # /realms/master/.well-known/openid-configuration returned
-# "issuer":"https://keycloak.eliorion.fr/realms/master" regardless of the Host
+# "issuer":"https://staging-keycloak.eliorion.fr/realms/master" regardless of the Host
 # header sent. So the console page loads from ts.net while its JS is told the
-# auth server is keycloak.eliorion.fr, the 3rd-party check iframe is
+# auth server is staging-keycloak.eliorion.fr, the 3rd-party check iframe is
 # cross-origin, the browser blocks its cookies, and the console dies with:
 #
 #     Something went wrong
