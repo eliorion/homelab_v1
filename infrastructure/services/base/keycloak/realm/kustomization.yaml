@@ -11,3 +11,6 @@ configMapGenerator:
   - name: keycloak-realm
     files:
       - realm-mcp.yaml
+      # master carries one attribute, and only to keep the admin console
+      # same-origin on the tailnet. See the file.
+      - realm-master.yaml

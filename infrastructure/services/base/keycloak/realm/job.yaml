@@ -77,8 +77,11 @@ spec:
               value: "true"
             - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
               value: 300s
+            # Both realm files. A glob would also work, but naming them means a
+            # file added to the ConfigMap and forgotten here fails loudly rather
+            # than being silently imported.
             - name: IMPORT_FILES_LOCATIONS
-              value: /config/realm-mcp.yaml
+              value: /config/realm-mcp.yaml,/config/realm-master.yaml
             # ADD AND UPDATE, NEVER DELETE, for components. Full management
             # would treat every client-registration policy absent from the file
             # as one to remove — including defaults Keycloak relies on, and any

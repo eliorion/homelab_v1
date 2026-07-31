@@ -55,6 +55,14 @@ spec:
     # The admin console's own URL, so its links and redirects point at the
     # tailnet device rather than the public hostname.
     #
+    # NOT SUFFICIENT ON ITS OWN. This makes Keycloak SERVE the console here, but
+    # the master realm still advertises its OIDC endpoints at `hostname` above,
+    # so the console's 3rd-party check iframe is cross-origin and the browser
+    # blocks it ("Timeout when waiting for 3rd party check iframe message" —
+    # keycloak/keycloak#42254). The realm file realm-master.yaml sets master's
+    # frontendUrl to this same URL, which is what actually makes the console
+    # work. Change one of these two and you must change the other.
+    #
     # THIS DOES NOT RESTRICT ANYTHING. Keycloak's docs are explicit: "Using the
     # hostname-admin option does not prevent accessing the Administration REST
     # API endpoints via the frontend URL specified by the hostname option."
@@ -76,6 +84,15 @@ spec:
     # TLS is terminated by Cloudflare at the edge; the pod must trust the
     # forwarded scheme/host or it builds redirect URLs as http://.
     headers: xforwarded
+
+  ingress:
+    # The operator creates an Ingress for `hostname` by DEFAULT. Nothing serves
+    # it — the only IngressClass on this cluster is `tailscale`, and there is no
+    # default class — so it sat there classless and inert, publishing the public
+    # hostname in an object no controller owns. Public traffic arrives through
+    # the Cloudflare tunnel straight to the Service, and the admin console has
+    # its own Tailscale Ingress; neither needs this.
+    enabled: false
 
   # The operator writes the NetworkPolicy, so ingress control ships with the CR
   # rather than as a separate object that can drift away from it.

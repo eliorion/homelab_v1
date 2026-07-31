@@ -62,6 +62,36 @@ a Keycloak bump, that skew is the first suspect.
 | `https://keycloak.eliorion.fr` | the OAuth surface (`/realms/*` and its assets) | Cloudflare tunnel → HTTPS listener |
 | `https://keycloak-admin.tail45b0ca.ts.net` | the admin console | Tailscale Ingress → HTTP listener |
 
+### The console needs TWO settings, not one
+
+`spec.hostname.admin` makes Keycloak **serve** the console at the tailnet URL. It
+does not change what the `master` realm advertises: that still comes from the
+global `hostname`, so the console page loads from `ts.net` while its JavaScript
+is told the auth server is `keycloak.eliorion.fr`. The 3rd-party check iframe is
+then cross-origin, the browser blocks its cookies, and the console dies with:
+
+> Something went wrong
+> Timeout when waiting for 3rd party check iframe message.
+
+The fix is a per-realm `frontendUrl` on **master** (`realm/realm-master.yaml`),
+which overrides the global hostname — upstream's own workaround for this report
+([keycloak#42254](https://github.com/keycloak/keycloak/issues/42254)). The two
+settings must always name the same URL.
+
+Only master. The `mcp` realm keeps the public frontend URL: fbref-mcp compares
+`iss` by exact string and the hosted connectors reach it over the internet, so
+pointing that realm at a `ts.net` URL would break the whole MCP flow. Verify both
+after any hostname change:
+
+```bash
+kubectl -n identity run kcprobe --rm -i --restart=Never --image=curlimages/curl:8.11.1 -q -- \
+  sh -c 'curl -sSk https://keycloak-service:8443/realms/master/.well-known/openid-configuration;
+         curl -sSk https://keycloak-service:8443/realms/mcp/.well-known/openid-configuration' \
+  | grep -o "\"issuer\":\"[^\"]*\""
+# master → https://keycloak-admin.tail45b0ca.ts.net/realms/master
+# mcp    → https://keycloak.eliorion.fr/realms/mcp
+```
+
 ### The admin console is not on the internet — and Keycloak is not what stops it
 
 `spec.hostname.admin` points the console at the tailnet URL so its links and
