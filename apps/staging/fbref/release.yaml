@@ -60,3 +60,43 @@ spec:
         annotations:
           tailscale.com/expose: "true"
           tailscale.com/hostname: fbref-admin-ui
+    mcp:
+      # THE ONE PUBLIC SURFACE IN THIS STACK. Reached at
+      # https://fbref-mcp.eliorion.fr/mcp through the Cloudflare tunnel (no
+      # Ingress object exists — see infrastructure/services/staging/cloudflare/
+      # README.md), so hosted AI providers can use it: claude.ai on the web and
+      # ChatGPT connectors call from the provider's cloud, where a port-forward
+      # is invisible.
+      auth:
+        # Without this the tunnel route would publish an unauthenticated reader
+        # of the whole fbref database. The server exits non-zero if the two URLs
+        # below are not both set, so a half-configured switch cannot ship.
+        enabled: true
+        # Realm `mcp` on the self-hosted Keycloak. Compared to the token's `iss`
+        # by EXACT string — a trailing slash breaks every token.
+        issuerUrl: https://keycloak.eliorion.fr/realms/mcp
+        # This server's identity, and the `aud` every token must carry. It is
+        # what stops a token minted for another client in the realm being
+        # replayed here, which matters because Keycloak 26 has no RFC 8707:
+        # the audience is stamped by a mapper on the mcp:tools DEFAULT client
+        # scope (infrastructure/services/base/keycloak/realm/realm-mcp.yaml).
+        resourceUrl: https://fbref-mcp.eliorion.fr/mcp
+        requiredScopes:
+          - mcp:tools
+      # DNS-rebinding protection. Both lists must be set together or the server
+      # refuses to start.
+      #
+      # The in-cluster entries are NOT optional: Host is matched exactly, and
+      # the chart's helm test hook POSTs to http://fbref-mcp:8080/mcp. Listing
+      # only the public hostname turns every helm test — and therefore every
+      # Flux upgrade — into an HTTP 421.
+      allowedHosts:
+        - fbref-mcp.eliorion.fr
+        - fbref-mcp:8080
+        - fbref-mcp.fbref.svc.cluster.local:8080
+        - localhost:*
+      # Browser origins for the hosted connectors. A MISSING Origin is always
+      # allowed, which is what keeps CLI clients working.
+      originAllowlist:
+        - https://claude.ai
+        - https://chatgpt.com
