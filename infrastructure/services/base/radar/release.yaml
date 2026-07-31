@@ -34,13 +34,16 @@ spec:
         tailscale.com/hostname: radar
     mcp:
       enabled: true
-    # Read-only posture: view everything, mutate nothing. GitOps cluster --
-    # never change resources by hand, so Radar needs no write verbs.
+    # Mostly read-only: helm/podExec/secrets stay off (no mutate, no exec).
+    # portForward is on because Radar reaches Cilium Hubble Relay by
+    # port-forwarding to the relay pod (kube-system/hubble-relay:4245) -- it's
+    # the traffic/flows view's transport. Grants create pods/portforward
+    # cluster-wide; access is gated by the tailnet.
     rbac:
       create: true
       helm: false
       podExec: false
-      portForward: false
+      portForward: true
       secrets: false
     resources:
       requests:
