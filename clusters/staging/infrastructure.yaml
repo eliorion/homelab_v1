@@ -275,7 +275,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./infrastructure/services/staging/keycloak-realm
+  path: ./infrastructure/services/staging/keycloak/realm
   prune: true
   force: true
   wait: true

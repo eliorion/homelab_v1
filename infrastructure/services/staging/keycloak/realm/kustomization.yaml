@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: identity
+# Applied by its OWN Flux Kustomization (`infra-keycloak-realm`), never by the
+# parent — see the note in ../kustomization.yaml. The realm import is a Job, so
+# it needs force: true to be recreated when the realm changes, and wait: true so
+# a failed import surfaces as NotReady. Applying it from the parent would extend
+# both to the Keycloak CR and the database.
+#
+# Nested here rather than as a sibling directory, matching
+# apps/staging/databases/db-migrations, which sits inside the `databases`
+# Kustomization's tree for exactly this reason.
+resources:
+  - ../../../base/keycloak/realm/
