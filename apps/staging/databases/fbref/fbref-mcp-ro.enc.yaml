@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: fbref-mcp-ro
+    namespace: fbref
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:QoA0ocII,iv:PcGP6JWMbmD5BvL73TvpexjRwex0qJBF5EnWxF6g9/Q=,tag:+RMN+jpGDlhKmzrr82Lm1w==,type:str]
+    password: ENC[AES256_GCM,data:gOEY8FftzNBNxJzeSspA++VXhHukaASPta7Njt7qCkXpVHVTU0bhrcSBzA==,iv:nz8MP3UYiK2Qu4TFx1CwuviPMTq0laLuUlgh5Xpepwg=,tag:R5apYDA61DpDSR27XErUTQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBPYUZleTFhYkpuV2E3SDFk
+            VkMyVVpDUXpENG9QTGZMbFo0SWt2dHR1RGd3CjZXeUlyVDJpb3ZHT2c3RUU3dkZP
+            YXA1eTZqNTI3ZjNNaHRtU0FHR08wemcKLS0tIHB3MTh3MFFtMUxKTWg1OEcxSkZZ
+            Q0s4aHZVQUdjbStIUXdORTRNaTBDZ0kK9rdHEHn8Iu9K2GMtjpV6/kttstAdxKuI
+            YVa6veKpVXCEpE1vmdfSEUpTrYULMcuf/mJONIHzmeT7h1t342eYLw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-07-31T13:53:34Z"
+    mac: ENC[AES256_GCM,data:ZzfGMASRKbdm8py072poZ3woPKxbPxZqJptvmRqdKLlUqsyFclresDFgiddn6l3SkLgDGQLGHgPCpLVOK7Q0yrgVhZeFeoBQFTgvHtcjLKqs9OzjaWQXtgZNHuBeYZWODdCT5sd3LO83NWaeXPIuUbKx53J6tDleYlaQ5qXxtv0=,iv:P86zio3Z+sb43KNcp/IgCYbKg7baZREd6H1l4Sf5XUc=,tag:xVoLKFO5poMn46qT1I8Jyw==,type:str]
+    version: 3.13.3
