@@ -71,6 +71,25 @@ On each of the four, under **Additional application settings → TLS**:
 | No TLS Verify | **On** | The origin certificate is signed by a private CA (cert-manager, `identity` namespace) that a dashboard-managed tunnel has no way to trust. The hop is encrypted but not authenticated. |
 | Origin Server Name | `keycloak-service` | Matches the certificate's SAN, so the handshake is still coherent. |
 
+**Symptom when No TLS Verify is off:** Cloudflare returns **502 Bad Gateway**
+with "Host — Error", and `kubectl -n cloudflare logs -l infrastructure=cloudflared`
+shows the real reason:
+
+```
+tls: failed to verify certificate: x509: certificate signed by unknown authority
+originService=https://keycloak-service.identity.svc.cluster.local:8443
+```
+
+That is a working route with a rejected handshake — DNS, the tunnel and the
+Service are all fine. Read the cloudflared log before changing anything else; a
+502 here says nothing about Keycloak's health.
+
+**Do not fix that 502 while the entry is still a catch-all.** If a request for
+`/` matches (the log line shows which `ingressRule` fired), the hostname is not
+path-scoped, and the TLS failure is the only thing keeping `/admin` unreachable.
+Enabling No TLS Verify then publishes the admin console. Scope the paths in the
+same sitting.
+
 **There is deliberately no catch-all entry for this hostname, and adding one
 would expose the Keycloak admin console to the internet.** Keycloak's
 `hostname-admin` setting does *not* refuse admin requests arriving on the public
