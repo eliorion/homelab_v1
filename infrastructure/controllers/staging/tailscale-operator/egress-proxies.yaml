@@ -21,18 +21,40 @@ spec:
   type: ExternalName
   externalName: placeholder # operator overwrites with the egress proxy's svc DNS
 ---
-# tailscale-proxy-01 — second residential exit (example). Uncomment + set the IP
-# when you add it, then add a matching scraper proxy lane in the app HelmRelease.
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: tailscale-proxy-01
-#   namespace: tailscale
-#   annotations:
-#     tailscale.com/tailnet-ip: "100.x.y.z"
-# spec:
-#   type: ExternalName
-#   externalName: placeholder
+# tailscale-proxy-scrape-c — node C's exit, the scraper's THIRD egress IP.
+#
+# The apps/staging/scraper HelmRelease has referenced this name since the pool `c`
+# entry landed, but only the CONSUMER side existed: engine-pool-c and solver-c
+# rendered and sat at 0 replicas while the name itself was NXDOMAIN, so the pool
+# could never have served anything. This is the provider half.
+#
+# Same host as garage-node-c below (100.92.142.13) — that Service proves the host
+# is on the tailnet, but it targets Garage's S3 API on 3900. This one needs an HTTP
+# proxy listening on 8888; verify before routing traffic (see README).
+#
+# Adding this does NOT start traffic. The platform routes only to pools flagged
+# `residential`, and pool `c` is deliberately not flagged — that switch now lives in
+# the scraper's `pools` table (admin UI → Egress pools → Routing), because the
+# backend adopts chart pools ON CONFLICT DO NOTHING and the table wins once the row
+# exists. Flip it only after confirming the exit is a distinct, non-datacenter IP:
+#
+#   kubectl -n scraper run ipcheck --rm -it --restart=Never \
+#     --image=curlimages/curl:8.11.1 -- curl -s \
+#     -x http://tailscale-proxy-scrape-c.tailscale.svc.cluster.local:8888 \
+#     https://ifconfig.me
+#
+# (direct egresses 37.65.67.42 and tailscale-proxy-00 an IPv6 in 2001:861::/32, so
+# a third distinct address is what "it works" looks like.)
+apiVersion: v1
+kind: Service
+metadata:
+  name: tailscale-proxy-scrape-c
+  namespace: tailscale
+  annotations:
+    tailscale.com/tailnet-ip: "100.92.142.13"
+spec:
+  type: ExternalName
+  externalName: placeholder # operator overwrites with the egress proxy's svc DNS
 ---
 # Garage S3 backup nodes. NOT consumed directly -- the in-cluster HAProxy gateway
 # (infrastructure/services/staging/garage-gateway) load-balances + health-checks
