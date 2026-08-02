@@ -60,6 +60,22 @@ spec:
         annotations:
           tailscale.com/expose: "true"
           tailscale.com/hostname: fbref-admin-ui
+    engine:
+      # transfermarkt joins fbref as a second source this ONE process drives
+      # (chart default is "fbref" alone — see k8s/charts/fbref values.yaml).
+      # Its own site_config/grammar row, antibot pin and egress floor are
+      # already live on the scraper platform, and a 200-request live verify
+      # through the pinned camoufox_replay lane showed zero antibot_escalated
+      # events (asp repo transfermarkt-onboarding study, Phase 0/1). This is
+      # the Phase 5 switch: comp_codes is seeded to ["GB1"] only and every
+      # crawl_* flag stays off except the confederation-index seed, so the
+      # very first crawl is deliberately small (one competition).
+      sites: "fbref,transfermarkt"
+      # Small on purpose for a newly-onboarded source sharing the SAME 3
+      # residential pools leboncoin/autoscout24/fbref already draw from —
+      # widen once Phase 5's throughput/error-rate checks are clear.
+      maxInFlightOverrides:
+        transfermarkt: 10
     mcp:
       # THE ONE PUBLIC SURFACE IN THIS STACK. Reached at
       # https://fbref-mcp.eliorion.fr/mcp through the Cloudflare tunnel (no
