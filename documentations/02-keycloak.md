@@ -159,12 +159,14 @@ token with no audience and every call fails.
 **Anonymous DCR is open, on purpose.** ChatGPT will not accept a pre-registered
 client, so `/realms/mcp/clients-registrations/openid-connect` is public and
 unauthenticated. It is fenced by the Trusted Hosts policy with
-`client-uris-must-match: true` (redirect URIs must live under `claude.ai` or
-`chatgpt.com`) and `host-sending-registration-request-must-match: false` —
-hosted providers register from arbitrary cloud IPs, so matching the caller's
-address would reject every real client while stopping no attacker. Plus a
-50-client cap and a protocol-mapper allowlist, the latter so a self-registered
-client cannot mint an `aud` of its own.
+`client-uris-must-match: true` (redirect URIs must use `claude.ai`,
+`chatgpt.com`, or loopback hosts used by ChatGPT's OAuth callback) and
+`host-sending-registration-request-must-match: false` — hosted providers register
+from arbitrary cloud IPs, so matching the caller's address would reject every
+real client while stopping no attacker. ChatGPT's current callback looks like
+`http://127.0.0.1:<random-port>/callback/<id>`; omitting loopback hosts causes
+Keycloak HTTP 403 during DCR. Plus a 50-client cap and a protocol-mapper
+allowlist, the latter so a self-registered client cannot mint an `aud` of its own.
 
 Review registered clients periodically. If ChatGPT support ever stops mattering,
 close DCR and pin a static Claude client — strictly safer.
