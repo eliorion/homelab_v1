@@ -150,6 +150,7 @@ components:
         # short-lived access token. Keep scope allowlist narrow; do not permit
         # arbitrary realm scopes during anonymous registration.
         allowed-client-scopes:
+          - openid
           - offline_access
     # A self-registered client must not be able to invent claims. Without this,
     # a client could add a mapper minting an `aud` of its own choosing — which
