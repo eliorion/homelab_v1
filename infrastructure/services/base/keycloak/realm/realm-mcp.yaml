@@ -152,6 +152,7 @@ components:
         allowed-client-scopes:
           - openid
           - offline_access
+          - service_account
     # A self-registered client must not be able to invent claims. Without this,
     # a client could add a mapper minting an `aud` of its own choosing — which
     # is precisely the check fbref-mcp relies on.
