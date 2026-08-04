@@ -115,6 +115,11 @@ components:
         trusted-hosts:
           - claude.ai
           - chatgpt.com
+          # ChatGPT DCR currently uses a loopback callback with a random port.
+          # Keycloak validates redirect URI hosts textually, so chatgpt.com alone
+          # rejects `http://127.0.0.1:<port>/callback/<id>` with HTTP 403.
+          - localhost
+          - 127.0.0.1
         # The HOST CHECK IS OFF and that is not laziness: hosted providers send
         # the registration request from arbitrary cloud egress IPs, so matching
         # the caller's address would reject every real client while providing no

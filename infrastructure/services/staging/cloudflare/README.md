@@ -28,7 +28,7 @@ MCP pod serves no TLS, and the OAuth token in flight is a bearer token whose
 audience is bound to this exact URL.
 
 The whole host is routed because the OAuth flow needs
-`/.well-known/oauth-protected-resource` as well as `/mcp`. Nothing else is
+`/.well-known/oauth-protected-resource/mcp` as well as `/mcp`. Nothing else is
 served by that pod except `/healthz`.
 
 ### 2. `staging-keycloak.eliorion.fr` — path-scoped, FOUR entries
@@ -149,7 +149,8 @@ Walk the flow end to end the way a connector does — each step feeds the next:
 curl -sS https://fbref-mcp.eliorion.fr/.well-known/oauth-protected-resource/mcp
 #    -> authorization_servers: ["https://staging-keycloak.eliorion.fr/realms/mcp"]
 # 2. that server must be reachable AND advertise a registration endpoint,
-#    because hosted clients register themselves
+#    because hosted clients register themselves. Keycloak's Trusted Hosts policy
+#    validates redirect URI hosts, including ChatGPT's loopback callback.
 curl -sS https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration \
   | grep -o '"registration_endpoint":"[^"]*"'
 ```
