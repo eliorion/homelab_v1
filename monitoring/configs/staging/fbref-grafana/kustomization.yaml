@@ -6,3 +6,7 @@ kind: Kustomization
 resources:
   - datasource.enc.yaml
   - dashboard.yaml
+  # Data-trust audit (asp fbref migration V24 + the fbref-audit CronJob). Its own
+  # ConfigMap, not extra panels on fbref-overview: overview answers "what is in
+  # the database", this answers "how much of fbref.com is that, and is it right".
+  - dashboard-audit.yaml
