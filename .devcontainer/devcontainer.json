@@ -4,7 +4,13 @@
     "dockerfile": "Dockerfile"
   },
   "containerEnv": {
-    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
+    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}",
+    // AI gateway contract — values come from the HOST environment, so no
+    // credential is baked into the image or committed here. Then inside the
+    // container: `source scripts/ai-gateway-env`.
+    // Token lives in the ai-gateway-token Secret; tailnet is e.g. tail1234.ts.net.
+    "AI_GATEWAY_TOKEN": "${localEnv:AI_GATEWAY_TOKEN}",
+    "AI_GATEWAY_TAILNET": "${localEnv:AI_GATEWAY_TAILNET}"
   },
   "postCreateCommand": "scripts/setup",
   "forwardPorts": [

@@ -1,0 +1,28 @@
+# The Bifrost chart templates no monitor object, so scraping is wired here.
+#
+# A PodMonitor rather than a ServiceMonitor on purpose: the chart renders TWO
+# Services (`ai-gateway` and `ai-gateway-headless`) carrying byte-identical
+# labels, so any ServiceMonitor selector matches both and Prometheus scrapes the
+# same pod twice — duplicate series with no way to tell them apart. Selecting
+# the pod directly yields exactly one target.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ai-gateway
+  namespace: ai-gateway
+  labels:
+    # Matches Prometheus podMonitorSelector.
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-gateway
+      app.kubernetes.io/instance: ai-gateway
+      app.kubernetes.io/component: server
+  podMetricsEndpoints:
+    # `http` is the container port name; /metrics is served on the same port as
+    # the API. If a future release starts gating /metrics behind the virtual
+    # key, this endpoint needs a bearerTokenSecret.
+    - port: http
+      path: /metrics
+      interval: 30s

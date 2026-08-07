@@ -9,5 +9,4 @@ kind: Kustomization
 # recipe the db-migrations Flyway Job uses. Folding it in here would make a
 # realm edit fail to apply forever, silently.
 resources:
-  - database/
   - app/

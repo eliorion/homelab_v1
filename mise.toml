@@ -19,7 +19,7 @@ run = "scripts/sops-updatekeys"
 
 [tasks.lint]
 description = "shellcheck all scripts"
-run = "shellcheck scripts/sops-updatekeys scripts/fetch-keycloak-operator"
+run = "shellcheck scripts/sops-updatekeys scripts/fetch-keycloak-operator scripts/ai-gateway-env"
 
 [tasks.etcd-drill]
 description = "Read-only etcd restore drill (doc 09): fetch newest Garage snapshot, decrypt with the offline age key, restore + verify. Pass -- --offline-key PATH [--keep]"
