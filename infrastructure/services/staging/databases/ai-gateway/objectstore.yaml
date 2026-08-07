@@ -1,0 +1,37 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: garage-store
+  namespace: ai-gateway
+spec:
+  retentionPolicy: "7d"
+  configuration:
+    # ai-gateway's OWN bucket + OWN key (ai-gateway-garage-backup-credentials,
+    # not fbref's garage-backup-credentials) — same bucket-scoped-credential
+    # reasoning fbref-db/keycloak-db/asp-db already apply.
+    destinationPath: "s3://cnpg-staging-ai-gateway"
+    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes. Same
+    # single endpoint fbref-db and the etcd backup use.
+    endpointURL: "http://garage-s3.garage-gw.svc.cluster.local:3900"
+    s3Credentials:
+      accessKeyId:
+        name: ai-gateway-garage-backup-credentials
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: ai-gateway-garage-backup-credentials
+        key: ACCESS_KEY_SECRET
+    wal:
+      compression: gzip
+      # NO `encryption:` here, same as fbref-db — Garage does not support
+      # SSE-S3/AES256 (SSE-C only); setting AES256 would fail every upload.
+    data:
+      compression: gzip
+      jobs: 2
+  instanceSidecarConfiguration:
+    # Same boto3 >= 1.36 data-integrity checksum workaround as fbref-db/R2
+    # clusters (plugin-barman-cloud #411). Harmless if Garage accepts them.
+    env:
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required

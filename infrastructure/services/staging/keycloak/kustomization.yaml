@@ -8,15 +8,9 @@ namespace: identity
 # apps/staging/databases/kustomization.yaml and db-migrations/.
 resources:
   - ../../base/keycloak/
-  - database/r2-backup-credentials.enc.yaml
-  - database/objectstore.yaml
-  - database/scheduledbackup.yaml
 # `app/` (the sops keycloak-secret) is gone: the operator generates the
 # bootstrap admin into `keycloak-initial-admin` itself, so that Secret held a
 # credential nothing read, in the KC_BOOTSTRAP_ADMIN_* key spellings only the
 # retired StatefulSet understood.
-patches:
-  - path: database/cluster-backup-patch.yaml
-    target:
-      kind: Cluster
-      name: keycloak-db
+# keycloak-db itself moved to ../databases/keycloak/ — every infra/services
+# database now lives together there, mirroring apps/staging/databases/.

@@ -1,0 +1,22 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: ai-gateway-db
+  namespace: ai-gateway
+spec:
+  # TWO instances — one primary, one hot standby — same reasoning as
+  # keycloak-db/asp-db/fbref-db/scraper-db: the gateway now runs multiple
+  # replicas against this database, so a single instance would make that HA
+  # decorative — every pod fails together with the one database pod.
+  instances: 2
+  bootstrap:
+    initdb:
+      # Matches the Bifrost chart's own default user/db name
+      # (values-examples/external-postgres.yaml) — no reason to diverge.
+      database: bifrost
+      owner: bifrost
+  storage:
+    # Starting size, mirroring keycloak-db's own note: sized for an unused
+    # install. Bifrost's logs store (request/response audit log, materialized
+    # views) is the thing likely to outgrow this, not the config store.
+    size: 10Gi

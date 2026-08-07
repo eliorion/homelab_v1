@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Point local tooling at the homelab AI gateway.
+#
+#   source scripts/ai-gateway-env            # tailnet (laptop / devcontainer)
+#   source scripts/ai-gateway-env --in-cluster   # from a pod in the cluster
+#
+# This script is the ONLY place that knows a client's vendor-specific variable
+# names. Everything else — this repo, agent pods, other projects — speaks the
+# provider-neutral contract (AI_GATEWAY_BASE_URL / AI_GATEWAY_TOKEN / the
+# ai/* model aliases). Swapping the gateway backend changes the HelmRelease;
+# swapping the client changes this file. Neither touches the other.
+#
+# Inputs (export these in your shell profile, or a .env the devcontainer reads):
+#   AI_GATEWAY_TOKEN    required — the gateway credential (SOPS: ai-gateway-token)
+#   AI_GATEWAY_TAILNET  optional — your tailnet name, e.g. tail1234.ts.net
+#   AI_GATEWAY_BASE_URL optional — full override; skips URL construction
+set -u
+
+_aigw_die() {
+	echo "ai-gateway-env: $1" >&2
+	# `return` because this file is meant to be sourced; `exit` would kill the shell.
+	return 1
+}
+
+_aigw_main() {
+	local in_cluster=0
+	[ "${1:-}" = "--in-cluster" ] && in_cluster=1
+
+	if [ -z "${AI_GATEWAY_BASE_URL:-}" ]; then
+		if [ "$in_cluster" -eq 1 ]; then
+			AI_GATEWAY_BASE_URL="http://ai-gateway.ai-gateway.svc.cluster.local:8080"
+		elif [ -n "${AI_GATEWAY_TAILNET:-}" ]; then
+			# Tailscale operator serves plain HTTP on 80, not 443.
+			AI_GATEWAY_BASE_URL="http://ai-gateway.${AI_GATEWAY_TAILNET}"
+		else
+			_aigw_die "set AI_GATEWAY_TAILNET (e.g. tail1234.ts.net) or AI_GATEWAY_BASE_URL" || return 1
+		fi
+	fi
+
+	[ -n "${AI_GATEWAY_TOKEN:-}" ] ||
+		_aigw_die "AI_GATEWAY_TOKEN is unset (get it from the ai-gateway-token Secret)" || return 1
+
+	export AI_GATEWAY_BASE_URL AI_GATEWAY_TOKEN
+	export AI_GATEWAY_MODEL_SMART="ai/opus"
+	export AI_GATEWAY_MODEL_DEFAULT="ai/sonnet"
+	export AI_GATEWAY_MODEL_FAST="ai/fast"
+
+	# --- client adapters -----------------------------------------------------
+	# Claude Code / any Anthropic SDK. The /anthropic suffix is the gateway's
+	# Anthropic-compatible surface; the SDK appends /v1/messages itself.
+	export ANTHROPIC_BASE_URL="${AI_GATEWAY_BASE_URL}/anthropic"
+	export ANTHROPIC_AUTH_TOKEN="$AI_GATEWAY_TOKEN"
+	export ANTHROPIC_MODEL="$AI_GATEWAY_MODEL_DEFAULT"
+	# ANTHROPIC_API_KEY would take precedence over ANTHROPIC_AUTH_TOKEN in the
+	# SDKs and send requests straight to Anthropic — unset it so the gateway is
+	# not silently bypassed.
+	unset ANTHROPIC_API_KEY
+
+	# OpenAI-compatible clients (openai-python, LangChain, Aider, ...).
+	export OPENAI_BASE_URL="${AI_GATEWAY_BASE_URL}/v1"
+	export OPENAI_API_KEY="$AI_GATEWAY_TOKEN"
+
+	echo "ai-gateway: ${AI_GATEWAY_BASE_URL} (model ${ANTHROPIC_MODEL})"
+	echo "  claude: run /logout then restart, so Claude Code drops its own credential"
+}
+
+_aigw_main "${1:-}"

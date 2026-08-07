@@ -1,0 +1,207 @@
+# The AI gateway. Bifrost is the CURRENT implementation, not the contract:
+# everything a client touches — the Service name `ai-gateway`, the tailnet
+# hostname `ai-gateway`, the `/anthropic` + `/v1` paths, and the model aliases
+# `ai/opus` | `ai/sonnet` | `ai/fast` — is chosen so a swap to LiteLLM changes
+# THIS FILE and nothing in any consumer. See README.md for the contract.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ai-gateway
+  namespace: flux-system
+spec:
+  targetNamespace: ai-gateway
+  releaseName: ai-gateway
+  interval: 30m
+  chart:
+    spec:
+      # Renovate keeps this pinned version current.
+      chart: bifrost
+      version: "2.1.34"
+      sourceRef:
+        kind: HelmRepository
+        name: bifrost
+        namespace: flux-system
+      interval: 12h
+  values:
+    # Both overrides are load-bearing: they make the Service, the selector
+    # labels and the ServiceMonitor read `ai-gateway`, never `bifrost`, so the
+    # in-cluster DNS name survives a backend swap.
+    nameOverride: ai-gateway
+    fullnameOverride: ai-gateway
+
+    # State lives in CNPG (storage.mode: postgres below), not on a per-pod
+    # volume, so multiple replicas share one consistent config/virtual-key
+    # store. Two is enough for the homelab's single-tenant load — matches the
+    # `instances: 2` on ai-gateway-db itself.
+    replicaCount: 2
+
+    image:
+      repository: docker.io/maximhq/bifrost
+      # renovate: datasource=docker depName=docker.io/maximhq/bifrost
+      # Chart 2.1.34 ships appVersion 1.5.12; the chart REQUIRES an explicit tag.
+      tag: "v1.5.12"
+
+    service:
+      type: ClusterIP
+      port: 8080
+      # Publish on the tailnet via the Tailscale operator — authed by tailnet
+      # identity, off-LAN, never internet-exposed (same pattern as Longhorn /
+      # Radar / the asp + fbref admin UIs). Reach it at
+      # http://ai-gateway.<your-tailnet>.ts.net (plain HTTP, not 443).
+      annotations:
+        tailscale.com/expose: "true"
+        tailscale.com/hostname: ai-gateway
+
+    # No Ingress: the gateway holds provider credentials and its dashboard is
+    # username/password only. Tailnet or nothing.
+    ingress:
+      enabled: false
+
+    storage:
+      mode: postgres
+      configStore:
+        enabled: true
+      logsStore:
+        enabled: true
+        # objectStorage stays disabled: no bucket wired for log offload yet,
+        # so request/response audit rows stay in ai-gateway-db itself.
+
+    # ai-gateway-db (infrastructure/services/base/ai-gateway/database/), NOT
+    # the chart's own bundled subchart — postgresql.enabled stays false so the
+    # chart never renders its own Postgres StatefulSet.
+    postgresql:
+      enabled: false
+      external:
+        enabled: true
+        host: ai-gateway-db-rw
+        port: 5432
+        user: bifrost
+        database: bifrost
+        # In-cluster ClusterIP traffic only; no other CNPG consumer in this
+        # repo sets sslMode either.
+        sslMode: disable
+        # CNPG generates this Secret from the Cluster's bootstrap.initdb —
+        # no password is ever written to git.
+        existingSecret: ai-gateway-db-app
+        passwordKey: password
+
+    # One Secret feeds every credential the gateway resolves by `env.NAME`.
+    # Provider keys and the virtual key never land in the rendered config.json
+    # ConfigMap this way — only the env var NAMES do.
+    envFrom:
+      - secretRef:
+          name: ai-gateway-providers
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: "2"
+        memory: 2Gi
+
+    bifrost:
+      appDir: /app/data
+      port: 8080
+      logLevel: info
+      logStyle: json
+      envLabel: staging
+
+      # Git wins over the database. Without this the chart's values and rows
+      # created through the dashboard merely coexist, so a section deleted here
+      # would keep working from the DB and the cluster would silently diverge
+      # from this file.
+      sourceOfTruth: "config.json"
+
+      encryptionKeySecret:
+        name: ai-gateway-providers
+        key: BIFROST_ENCRYPTION_KEY
+
+      # Dashboard/admin login. This gates the UI and the management API, NOT
+      # inference — inference is gated by the virtual key below.
+      authConfig:
+        isEnabled: true
+        existingSecret: ai-gateway-admin
+        usernameKey: username
+        passwordKey: password
+
+      client:
+        # Require a credential on every inference call. A virtual key alone
+        # satisfies it, which is what lets Claude Code authenticate with a
+        # single header. Leaving this false would make the gateway an open
+        # relay to paid provider keys for anyone on the tailnet.
+        enforceAuthOnInference: true
+        # CORS for the dashboard only. The gateway is unreachable off-tailnet,
+        # so the origin list is not the security boundary here.
+        allowedOrigins:
+          - "*"
+
+      providers:
+        anthropic:
+          keys:
+            - name: primary
+              value: "env.ANTHROPIC_API_KEY"
+              weight: 1
+        openai:
+          keys:
+            - name: primary
+              value: "env.OPENAI_API_KEY"
+              weight: 1
+        openrouter:
+          keys:
+            - name: primary
+              value: "env.OPENROUTER_API_KEY"
+              weight: 1
+
+      governance:
+        virtualKeys:
+          # The client-facing credential. `env.` is resolved at load time, so
+          # the key itself stays in the SOPS Secret and never reaches the
+          # config.json ConfigMap.
+          - id: devcontainer
+            name: devcontainer
+            description: Shared developer/devcontainer key. Rotate by editing the staging Secret.
+            value: "env.AI_GATEWAY_VK"
+            is_active: true
+
+        # THE ABSTRACTION SEAM. Clients ask for `ai/opus`; this table decides
+        # which provider and model actually serves it. Re-point a model here
+        # and every project follows — no client redeploy, no env var change.
+        routingRules:
+          - id: alias-opus
+            name: ai/opus
+            description: Deepest reasoning / hardest agentic work.
+            enabled: true
+            cel_expression: 'model == "ai/opus"'
+            targets:
+              - provider: anthropic
+                model: claude-opus-5
+                weight: 1.0
+            scope: global
+            priority: 10
+          - id: alias-sonnet
+            name: ai/sonnet
+            description: Balanced default for everyday coding and chat.
+            enabled: true
+            cel_expression: 'model == "ai/sonnet"'
+            targets:
+              - provider: anthropic
+                model: claude-sonnet-5
+                weight: 1.0
+            scope: global
+            priority: 20
+          - id: alias-fast
+            name: ai/fast
+            description: Cheap + low-latency; classification, summaries, subagents.
+            enabled: true
+            cel_expression: 'model == "ai/fast"'
+            targets:
+              - provider: anthropic
+                model: claude-haiku-4-5
+                weight: 1.0
+            scope: global
+            priority: 30
+        # NO cross-provider fallbacks are declared on purpose: silently serving
+        # `ai/opus` from a different vendor would change behaviour, tool-call
+        # semantics and cost without the caller knowing. Failover is an
+        # explicit edit here, not an implicit default.

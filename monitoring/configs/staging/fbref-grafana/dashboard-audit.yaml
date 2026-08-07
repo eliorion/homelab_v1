@@ -1,0 +1,288 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fbref-grafana-dashboard-audit
+  namespace: monitoring
+  labels:
+    # Picked up by the kube-prometheus-stack grafana dashboards sidecar.
+    grafana_dashboard: "1"
+data:
+  # Reads the `audit` schema (asp repo, fbref migration V24), written by the
+  # fbref-audit CronJob. Separate ConfigMap from fbref-overview because it
+  # answers a different question: overview is "what is in the database", this is
+  # "how much of fbref.com is that, and is any of it wrong".
+  #
+  # Every panel reads a VIEW, never a raw count over player_stats (49.5M rows) —
+  # the expensive anti-joins are computed once per audit run and cached in
+  # audit.finding. A dashboard that refreshes every 5m must not scan the EAV.
+  #
+  # Status is rendered as TEXT plus color (value mappings), never colour alone:
+  # 'fail'/'warn'/'unknown' are words on the panel, so the dashboard is readable
+  # in greyscale and to a colourblind reader.
+  fbref-audit.json: |
+    {
+      "uid": "fbref-audit",
+      "title": "fbref data trust",
+      "tags": ["fbref", "audit"],
+      "schemaVersion": 39,
+      "version": 1,
+      "time": { "from": "now-90d", "to": "now" },
+      "refresh": "15m",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Last audit",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 5, "x": 0, "y": 0 },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "options": { "textMode": "value_and_name", "colorMode": "background" },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "type": "value", "options": {
+                  "ok":      { "text": "ok",              "color": "green",      "index": 0 },
+                  "warn":    { "text": "warn",            "color": "orange",     "index": 1 },
+                  "fail":    { "text": "FAIL",            "color": "red",        "index": 2 },
+                  "error":   { "text": "audit errored",   "color": "purple",     "index": 3 },
+                  "running": { "text": "running",         "color": "blue",       "index": 4 },
+                  "never":   { "text": "NEVER RUN",       "color": "dark-red",   "index": 5 }
+                } }
+              ]
+            }
+          },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT coalesce((SELECT status FROM audit.latest_run), 'never') AS \"status\";" }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Audit ran",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 5, "x": 5, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "dateTimeFromNow" } },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT finished_at AS value FROM audit.latest_run;" }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Failing checks",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 4, "x": 10, "y": 0 },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 1 }
+              ] }
+            }
+          },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT count(*) AS value FROM audit.latest_finding WHERE status = 'fail';" }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Unevaluated checks",
+          "type": "stat",
+          "description": "A check the audit could not run (statement timeout, platform unreachable). NOT a pass.",
+          "gridPos": { "h": 4, "w": 5, "x": 14, "y": 0 },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "purple", "value": 1 }
+              ] }
+            }
+          },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT count(*) AS value FROM audit.latest_finding WHERE status = 'unknown';" }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Index pages errored",
+          "type": "stat",
+          "description": "fbref.com index pages the last runs could not fetch. Any non-zero means every site total below is a FLOOR and every percentage a ceiling.",
+          "gridPos": { "h": 4, "w": 5, "x": 19, "y": 0 },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "orange", "value": 1 }
+              ] }
+            }
+          },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT coalesce(sum(pages_errored), 0) AS value FROM audit.site_totals;" }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "How much of fbref.com we hold",
+          "description": "have = rows held / what fbref.com's index lists. usable = the same, counting only rows that carry actual data. A missing bar means the baseline has not been measured — NOT zero coverage.",
+          "type": "bargauge",
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "red", "value": null },
+                { "color": "orange", "value": 25 },
+                { "color": "yellow", "value": 75 },
+                { "color": "green", "value": 99 }
+              ] }
+            }
+          },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT entity || ' — have' AS metric, have_pct AS value FROM audit.coverage WHERE have_pct IS NOT NULL UNION ALL SELECT entity || ' — usable', usable_pct FROM audit.coverage WHERE usable_pct IS NOT NULL ORDER BY 1;" }
+          ]
+        },
+        {
+          "id": 7,
+          "title": "Entity rollup",
+          "description": "crawl_exp = pages this crawl already fetched (a shortfall is a BUG). site_exp = what fbref.com lists (a shortfall is usually deliberate scope). The two are never merged.",
+          "type": "table",
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "status" },
+                "properties": [
+                  { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+                  { "id": "mappings", "value": [
+                    { "type": "value", "options": {
+                      "ok":      { "text": "ok",       "color": "green",  "index": 0 },
+                      "warn":    { "text": "warn",     "color": "orange", "index": 1 },
+                      "fail":    { "text": "FAIL",     "color": "red",    "index": 2 },
+                      "unknown": { "text": "unknown",  "color": "purple", "index": 3 }
+                    } }
+                  ] }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT entity, db_count AS in_db, rows_with_data AS with_data, stubs AS husks, crawl_expected AS crawl_exp, site_expected AS site_exp, site_have_pct AS \"have %\", site_usable_pct AS \"usable %\", status FROM audit.summary ORDER BY entity;" }
+          ]
+        },
+        {
+          "id": 8,
+          "title": "Coverage of fbref.com over time",
+          "description": "One series per entity. Flat means the crawl is not gaining ground; a drop means fbref grew faster than the crawl, or index pages errored and the total is now a floor.",
+          "type": "timeseries",
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 13 },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "custom": { "lineWidth": 2, "fillOpacity": 0, "pointSize": 8, "showPoints": "always" }
+            }
+          },
+          "targets": [
+            { "refId": "A", "format": "time_series",
+              "rawSql": "SELECT r.started_at AS time, f.entity AS metric, f.observed::float8 AS value FROM audit.finding f JOIN audit.run r ON r.id = f.run_id WHERE f.check_name = 'site_coverage_pct' AND $__timeFilter(r.started_at) ORDER BY 1;" }
+          ]
+        },
+        {
+          "id": 9,
+          "title": "Fields missing data",
+          "description": "Live (not cached): per-column missing rate against audit.field_rule. 'info' severity is tracked and never failed on — fbref itself omits those.",
+          "type": "table",
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 13 },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "missing %" },
+                "properties": [
+                  { "id": "unit", "value": "percentunit" },
+                  { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } },
+                  { "id": "min", "value": 0 },
+                  { "id": "max", "value": 1 }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "status" },
+                "properties": [
+                  { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+                  { "id": "mappings", "value": [
+                    { "type": "value", "options": {
+                      "warn":    { "text": "warn",    "color": "orange", "index": 0 },
+                      "fail":    { "text": "FAIL",    "color": "red",    "index": 1 },
+                      "unknown": { "text": "unknown", "color": "purple", "index": 2 }
+                    } }
+                  ] }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT table_name, column_name, severity, missing, total, missing_frac AS \"missing %\", status, note FROM audit.field_completeness WHERE status <> 'ok' ORDER BY CASE status WHEN 'fail' THEN 0 WHEN 'warn' THEN 1 ELSE 2 END, missing_frac DESC;" }
+          ]
+        },
+        {
+          "id": 10,
+          "title": "What the last audit found wrong",
+          "description": "scope db = internal (nulls, husks, orphans). crawl = a page we fetched that produced no row — a bug. site = fewer rows than fbref.com lists — usually scope.",
+          "type": "table",
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 22 },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "status" },
+                "properties": [
+                  { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+                  { "id": "mappings", "value": [
+                    { "type": "value", "options": {
+                      "warn":    { "text": "warn",    "color": "orange", "index": 0 },
+                      "fail":    { "text": "FAIL",    "color": "red",    "index": 1 },
+                      "unknown": { "text": "unknown", "color": "purple", "index": 2 }
+                    } }
+                  ] }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT status, entity, check_name, scope, subject, observed, expected, detail FROM audit.latest_finding WHERE status <> 'ok' ORDER BY CASE status WHEN 'fail' THEN 0 WHEN 'warn' THEN 1 ELSE 2 END, entity, check_name LIMIT 100;" }
+          ]
+        },
+        {
+          "id": 11,
+          "title": "fbref.com index pages measured",
+          "description": "The rotating ground-truth cache. Each audit run refreshes one slice, so oldest_page_at is how stale the WHOLE total is — it is only as current as its stalest page.",
+          "type": "table",
+          "gridPos": { "h": 7, "w": 24, "x": 0, "y": 32 },
+          "datasource": { "type": "postgres", "uid": "fbref" },
+          "targets": [
+            { "refId": "A", "format": "table",
+              "rawSql": "SELECT entity, site_count, pages, pages_errored, oldest_page_at, newest_page_at FROM audit.site_totals ORDER BY entity;" }
+          ]
+        }
+      ]
+    }
