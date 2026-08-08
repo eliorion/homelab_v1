@@ -29,11 +29,30 @@ spec:
     nameOverride: ai-gateway
     fullnameOverride: ai-gateway
 
-    # State lives in CNPG (storage.mode: postgres below), not on a per-pod
-    # volume, so multiple replicas share one consistent config/virtual-key
-    # store. Two is enough for the homelab's single-tenant load — matches the
-    # `instances: 2` on ai-gateway-db itself.
-    replicaCount: 2
+    # ONE replica, and it is not a capacity decision.
+    #
+    # State does live in CNPG (storage.mode: postgres below) rather than on a
+    # per-pod volume — but that only makes the STORE shared, not the view of
+    # it. Bifrost loads virtual keys, providers and routing rules into memory
+    # at startup and a dashboard write does not invalidate the sibling's copy,
+    # so two pods answer the same request differently until both restart. Live,
+    # with one key created after boot:
+    #
+    #   10.244.1.211  ->  401 virtual_key_not_found
+    #   10.244.2.239  ->  200                          # same key, same second
+    #
+    # The Service round-robins, so half of a client's calls 401 and half of the
+    # dashboard's own page loads deny what the other half shows — which is
+    # exactly as confusing to debug as it sounds. Same lesson the scraper's
+    # FlareSolverr carries: state that cannot be shared must not be split.
+    #
+    # Nothing is lost. Inference is stateless, HA for the DATA is the CNPG
+    # cluster's job (`instances: 2` there is unrelated), and a homelab gateway
+    # has no load a second pod would relieve. The rollout still surges (default
+    # maxSurge 25% rounds up to 1, maxUnavailable 25% rounds down to 0), so an
+    # upgrade has no gap — during that overlap the split briefly exists again,
+    # which is the one moment not to be editing the dashboard.
+    replicaCount: 1
 
     image:
       repository: docker.io/maximhq/bifrost

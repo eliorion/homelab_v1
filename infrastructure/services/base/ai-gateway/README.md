@@ -147,6 +147,13 @@ differ in where the secret's system of record ends up:
 **Re-point a model tier.** Dashboard → the matching routing rule → change its
 target. No client change, no commit, no restart.
 
+"No restart" is why `replicaCount` is **1** (see `release.yaml`). Bifrost caches
+virtual keys, providers and routing rules in memory at startup, and a dashboard
+write does not invalidate a sibling pod's copy — with two replicas behind one
+Service, half of every client's calls saw the old config and half the new, and a
+dashboard edit only took effect after a rollout. Anything that changes that
+number brings the restart-after-every-edit back.
+
 **Rotate a project's token.** Create a new virtual key in the dashboard, disable
 the old one, then `sops` that project's own Secret and set `AI_GATEWAY_TOKEN` to
 the new value:
