@@ -89,6 +89,15 @@ spec:
             # The project comes from the PVC, not from a git clone at boot.
             - name: NAO_CONTEXT_SOURCE
               value: local
+            # Usage analytics to eu.i.posthog.com, which the NetworkPolicy beside
+            # this file does not allow — and the client does not give up quietly.
+            # `nao sync` finished its 39 real seconds of work, printed "Sync
+            # Complete", then sat parked on the upload for THIRTY MINUTES before
+            # it was killed. The same code runs in the chat process. Off, at the
+            # source: an egress rule for a telemetry endpoint is not the trade
+            # here (nao_core/tracking.py reads this).
+            - name: POSTHOG_DISABLED
+              value: "true"
             # MUST match the URL the browser uses, or every login redirect fails.
             # The staging overlay patches in the tailnet address.
             - name: BETTER_AUTH_URL

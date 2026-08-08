@@ -29,6 +29,12 @@ data:
     # The schema key is `schema_name` (PostgresConfig field), NOT `schema`.
     # Pydantic ignores unknown keys here, so `schema:` was accepted in silence
     # and every connection fell back to the default search_path.
+    #
+    # `templates` is stated on every entry because the DEFAULT is
+    # [columns, query_history, preview] and query_history reads
+    # pg_stat_statements, an extension none of these three clusters installs.
+    # It failed on every database and left an empty query_history.md beside each
+    # of the 39 tables. Restore it here the day the extension is enabled.
     databases:
       - name: asp
         type: postgres
@@ -38,6 +44,9 @@ data:
         schema_name: public
         user: "{{ env('ASP_DB_USER') }}"
         password: "{{ env('ASP_DB_PASSWORD') }}"
+        templates:
+          - columns
+          - preview
       - name: fbref
         type: postgres
         host: fbref-db-ro.fbref.svc.cluster.local
@@ -46,6 +55,9 @@ data:
         schema_name: public
         user: "{{ env('FBREF_DB_USER') }}"
         password: "{{ env('FBREF_DB_PASSWORD') }}"
+        templates:
+          - columns
+          - preview
       - name: scraper
         type: postgres
         host: scraper-db-ro.scraper.svc.cluster.local
@@ -54,6 +66,9 @@ data:
         schema_name: public
         user: "{{ env('SCRAPER_DB_USER') }}"
         password: "{{ env('SCRAPER_DB_PASSWORD') }}"
+        templates:
+          - columns
+          - preview
 
     # LLM access goes through ai-gateway, so the provider keys stay in that
     # namespace and nao holds only the gateway token.
