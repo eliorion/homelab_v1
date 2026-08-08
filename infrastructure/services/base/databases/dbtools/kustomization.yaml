@@ -27,3 +27,10 @@ resources:
   - nao-deployment.yaml
   - nao-service.yaml
   - nao-networkpolicy.yaml
+  # Postgres MCP Pro — one instance PER DATABASE, so an LLM client scoped to
+  # fbref cannot reach asp. Three objects each, grouped by kind rather than by
+  # project: the three documents in each file differ only in the project name,
+  # secret, host and database, which is easiest to review side by side.
+  - postgres-mcp-deployments.yaml
+  - postgres-mcp-services.yaml
+  - postgres-mcp-networkpolicies.yaml

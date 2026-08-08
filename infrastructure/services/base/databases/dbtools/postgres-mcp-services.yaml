@@ -1,0 +1,61 @@
+# One ClusterIP per Postgres MCP Pro instance. No Ingress and no tailscale
+# annotation: the only intended consumer is the ai-gateway, which reaches these
+# by Service DNS from inside the cluster —
+#
+#   http://postgres-mcp-<project>.database.svc.cluster.local:8000/sse
+#
+# That URL is what gets registered as an MCP client in the ai-gateway dashboard.
+# The SSE endpoint has NO authentication of its own, which is why
+# postgres-mcp-networkpolicies.yaml adds an ingress rule admitting only the
+# ai-gateway namespace.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-mcp-fbref
+  labels:
+    app: postgres-mcp-fbref
+    component: dbtools
+    project: fbref
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-mcp-fbref
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-mcp-asp
+  labels:
+    app: postgres-mcp-asp
+    component: dbtools
+    project: asp
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-mcp-asp
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-mcp-scraper
+  labels:
+    app: postgres-mcp-scraper
+    component: dbtools
+    project: scraper
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-mcp-scraper
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

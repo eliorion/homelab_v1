@@ -1,6 +1,6 @@
-# `database` namespace — pgAdmin + nao
+# `database` namespace — pgAdmin + nao + postgres-mcp
 
-Two clients that read the platform databases. Nothing here owns data. They sit
+Clients that read the platform databases. Nothing here owns data. They sit
 in `infrastructure/services` rather than `apps/` for the same reason
 `ai-gateway` does: they serve every project and belong to none.
 
@@ -8,8 +8,14 @@ in `infrastructure/services` rather than `apps/` for the same reason
 database ns
 ├── pgadmin   dpage/pgadmin4      SQL client            https://pgadmin.tail45b0ca.ts.net
 ├── nao       getnao/nao          analytics agent       https://nao.tail45b0ca.ts.net
+├── postgres-mcp-fbref    ┐
+├── postgres-mcp-asp      ├ crystaldba/postgres-mcp  MCP servers, ONE PER DATABASE
+├── postgres-mcp-scraper  ┘                          (no ingress — via ai-gateway)
 └── dbtools-db  CNPG (1 instance) their own state: db `pgadmin` + db `nao`
 ```
+
+pgAdmin and nao each hold all three DSNs. The postgres-mcp instances deliberately
+do not — see [Postgres MCP Pro](#postgres-mcp-pro).
 
 All three live in **this one directory** — cluster and tools together. The
 `databases/` tier here groups every `infrastructure/services` database, and
@@ -90,7 +96,7 @@ back with `sops -d <file>`.
 
 ## Why this is read-only
 
-Both tools authenticate as each cluster's `app` OWNER role, mirrored in by
+Every tool here authenticates as the cluster's `app` OWNER role, mirrored in by
 kubernetes-reflector from `<project>/<project>-db-app`. What makes that safe is
 the **host**: every connection targets the CNPG `-ro` service, which selects
 replicas only. A replica is in recovery and rejects any write with SQLSTATE
@@ -150,6 +156,128 @@ either without the UI:
 kubectl -n database exec deploy/nao -- sh -c \
   'curl -s -H "Authorization: Bearer $NAO_LLM_API_KEY" $NAO_LLM_BASE_URL/v1/models'
 ```
+
+## Postgres MCP Pro
+
+`crystaldba/postgres-mcp` — schema exploration, read-only SQL, `EXPLAIN` and
+database-health checks, exposed as MCP tools so an LLM client can query the
+platform databases. Reached through **ai-gateway**, never directly: no Ingress
+and no tailnet name.
+
+**One instance per database, and that is the whole design.** The server binds a
+single connection pool at startup and exposes no tool to switch database, so the
+fbref instance cannot read asp even if asked to:
+
+| instance | `project` label | database |
+| --- | --- | --- |
+| `postgres-mcp-fbref` | `fbref` | `fbref-db-ro.fbref` / `fbref` |
+| `postgres-mcp-asp` | `asp` | `asp-db-ro.asp` / `automarket` |
+| `postgres-mcp-scraper` | `scraper` | `scraper-db-ro.scraper` / `scraper` |
+
+Three independent layers hold that:
+
+1. **One DSN per pod** — pinned in `postgres-mcp-deployments.yaml`.
+2. **Per-instance egress NetworkPolicy** — each pod may reach only its own
+   `cnpg.io/cluster` on 5432, plus DNS. Unlike pgAdmin and nao, whose policies
+   list all three clusters. This is what turns "configured for fbref" into "can
+   only reach fbref".
+3. **Per-virtual-key scoping in the ai-gateway dashboard** — see below.
+
+The **write** boundary is the same as everything else here and is described in
+[Why this is read-only](#why-this-is-read-only): these authenticate as the `app`
+OWNER role, and the guarantee comes from the `-ro` replica, not the grant.
+`--access-mode=restricted` wraps every statement in a read-only transaction on
+top of that.
+
+### Which project a pod serves
+
+Four places say it, and they must agree — three identical containers in one
+namespace is exactly where a mislabelled pod costs an afternoon:
+
+```bash
+kubectl -n database get pods -l project=fbref        # the label
+kubectl -n database get deploy | grep postgres-mcp   # the object name
+kubectl -n database describe pod -l project=asp | grep PROJECT   # the env marker
+```
+
+and the Bifrost client name `postgres_<project>`, which puts the project into
+every tool name the model sees (`postgres_fbref-execute_sql`).
+
+### Registering them in ai-gateway
+
+Config lives in the dashboard, not in git — the same rule as everything else in
+`ai-gateway` (`sourceOfTruth: split`; git owns the infrastructure, the UI owns
+the configuration). At **MCP Gateway → New MCP Server**, three times:
+
+| field | value |
+| --- | --- |
+| name | `postgres_fbref` / `postgres_asp` / `postgres_scraper` |
+| connection type | `sse` |
+| connection string | `http://postgres-mcp-<project>.database.svc.cluster.local:8000/sse` |
+| auth | none |
+| tools to execute | `list_schemas, list_objects, get_object_details, execute_sql, explain_query, analyze_db_health` |
+
+Use **underscores** in the name: Bifrost's request-header filter format is
+`clientName-toolName`, so a hyphen in the name makes that filter ambiguous.
+
+Then scope access **per virtual key** — a VK's `mcp_configs` should name only
+the clients that key may use, and a VK with no MCP config gets no MCP tools at
+all. Rely on VK filtering rather than the `x-bf-mcp-include-clients` request
+header: the header does enforce execution, but still *lists* every client's
+tools (maximhq/bifrost#1697).
+
+No NetworkPolicy change is needed on the ai-gateway side — that namespace has no
+policy and its egress is unrestricted. The path is granted by the **ingress**
+rule in `postgres-mcp-networkpolicies.yaml`, which admits the `ai-gateway`
+namespace and nothing else; that rule exists because the SSE endpoint has no
+authentication of its own.
+
+### Which tools actually work
+
+Six of the nine. The three missing ones are environment, not configuration:
+
+| tool | |
+| --- | --- |
+| `list_schemas`, `list_objects`, `get_object_details` | works |
+| `execute_sql` (read-only) | works |
+| `explain_query` | works — plain `EXPLAIN`, no `ANALYZE` |
+| `analyze_db_health` | partial — `app` is DB owner, not superuser, so some checks report less |
+| `get_top_queries`, `analyze_workload_indexes` | **fail** — need `pg_stat_statements`, in no cluster's `shared_preload_libraries` |
+| `analyze_query_indexes` | **fail** — needs the `hypopg` extension, not bundled in the CNPG operand image |
+
+Unblocking the last three is not a small edit: `shared_preload_libraries` on each
+CNPG Cluster (a rolling Postgres restart), `CREATE EXTENSION` as superuser,
+connecting to `-rw` instead of `-ro` (a replica's statistics only cover the
+replica's own read traffic), and a custom operand image for `hypopg`. Listing the
+six in `tools_to_execute` above keeps agents from burning turns on tools that
+always error.
+
+### Operating notes
+
+- **The pod does not listen until the database is reachable.** postgres-mcp
+  completes its pool connect before starting the transport, so a pod that cannot
+  reach its replica never binds :8000 and never goes Ready. That makes the TCP
+  probe a real DB gate — and is why liveness is slack (5 min) rather than tight:
+  a DB restart should shed traffic, not start a restart loop.
+- Confirm a healthy start by the log line, not by the pod being up:
+  ```bash
+  kubectl -n database logs deploy/postgres-mcp-fbref | grep -E "RESTRICTED|Successfully connected"
+  ```
+  On a bad DSN it logs a warning and keeps serving nothing — treat a missing
+  `Successfully connected to database` as failure.
+- The image ships **no `USER`** and runs as root by default. The Deployment
+  overrides that: `runAsNonRoot` + `runAsUser: 1000` at both pod and container
+  level, `readOnlyRootFilesystem`, all capabilities dropped, no privilege
+  escalation, `seccompProfile: RuntimeDefault`, `automountServiceAccountToken:
+  false` and `enableServiceLinks: false` — it meets the Pod Security
+  "restricted" profile. Two consequences of the read-only rootfs: it needs an
+  `emptyDir` at `/tmp` **and** `HOME=/tmp`, or python has nowhere to write.
+  (The namespace is not labelled `pod-security.kubernetes.io/enforce:
+  restricted`, because nao legitimately runs as root with `SETUID`/`SETGID`.
+  These three are hardened individually, not by an admission rule.)
+- Transport is `sse`, not streamable-http: `main` has carried streamable-http
+  since 2026-01-22 but no release ships it, and the tag here is pinned to the
+  latest release (`0.3.0`).
 
 ## Where state lives
 
