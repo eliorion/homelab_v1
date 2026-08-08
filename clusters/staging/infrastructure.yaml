@@ -279,3 +279,16 @@ spec:
   prune: true
   force: true
   wait: true
+  # REQUIRED since that path gained its first sops Secret
+  # (cloudflare-access-client.enc.yaml). Without it Flux applies the manifest
+  # verbatim, so the Secret's values are the literal `ENC[AES256_GCM,...]`
+  # ciphertext — and nothing fails at apply time. The Job then substitutes that
+  # string into the realm's redirect URI and Keycloak rejects the client with
+  #   400 {"error":"invalid_input","error_description":"A redirect URI is not a valid URI"}
+  # which reads as a bad realm file rather than as a missing decryption block.
+  # Every other Kustomization carrying an .enc.yaml has this; this one had no
+  # secret to decrypt until now.
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
