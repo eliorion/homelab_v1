@@ -17,15 +17,25 @@ metadata:
     component: dbtools
 data:
   nao_config.yaml: |
+    # REQUIRED, and the whole file is rejected without it: NaoConfig.project_name
+    # has no default, so a missing one fails validation before any database is
+    # parsed — nao then starts with ZERO connections and the UI simply shows
+    # none, with the reason only in `nao debug`.
+    project_name: automarket
+
     # Automarket platform — three Postgres databases, all read through their
     # CNPG replica service.
+    #
+    # The schema key is `schema_name` (PostgresConfig field), NOT `schema`.
+    # Pydantic ignores unknown keys here, so `schema:` was accepted in silence
+    # and every connection fell back to the default search_path.
     databases:
       - name: asp
         type: postgres
         host: asp-db-ro.asp.svc.cluster.local
         port: 5432
         database: automarket
-        schema: public
+        schema_name: public
         user: "{{ env('ASP_DB_USER') }}"
         password: "{{ env('ASP_DB_PASSWORD') }}"
       - name: fbref
@@ -33,7 +43,7 @@ data:
         host: fbref-db-ro.fbref.svc.cluster.local
         port: 5432
         database: fbref
-        schema: public
+        schema_name: public
         user: "{{ env('FBREF_DB_USER') }}"
         password: "{{ env('FBREF_DB_PASSWORD') }}"
       - name: scraper
@@ -41,7 +51,7 @@ data:
         host: scraper-db-ro.scraper.svc.cluster.local
         port: 5432
         database: scraper
-        schema: public
+        schema_name: public
         user: "{{ env('SCRAPER_DB_USER') }}"
         password: "{{ env('SCRAPER_DB_PASSWORD') }}"
 
