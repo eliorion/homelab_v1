@@ -9,5 +9,8 @@ kind: Kustomization
 resources:
   - keycloak/
   - ai-gateway/
-  # pgAdmin's config database + nao's users/sessions/chat history.
+  # The whole `database` namespace: the dbtools-db cluster (pgAdmin's config
+  # database + nao's users/sessions/chat history) AND the two tools that live
+  # off it. The workload here IS database tooling, so it is not split a tier up
+  # the way keycloak's and ai-gateway's are.
   - dbtools/

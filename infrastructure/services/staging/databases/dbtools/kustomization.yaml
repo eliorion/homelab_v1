@@ -5,6 +5,21 @@ namespace: database
 
 resources:
   - ../../../base/databases/dbtools
+  # pgAdmin login (server mode) — consumed by the Deployment AND by the init
+  # container, which derives the pgpass storage path from the email.
+  - pgadmin-admin.enc.yaml
+  # nao session-signing key.
+  - nao-secrets.enc.yaml
+  # nao's OWN ai-gateway virtual key — created in the ai-gateway dashboard and
+  # held here, not mirrored in. One key per project: revocable and attributable
+  # on its own, and this namespace never has to be named in ai-gateway's config.
+  # Ships as a placeholder; fill it with `sops <this file>`.
+  - nao-ai-gateway-token.enc.yaml
+  # Tailnet exposure (Tailscale operator), HTTPS on 443 via MagicDNS. Ingress
+  # rather than the `tailscale.com/expose` Service annotation — see the header
+  # of either file. Both Services stay annotation-free: one hostname, one device.
+  - pgadmin-ingress-tailscale.yaml
+  - nao-ingress-tailscale.yaml
 
 patches:
   # PVCs on Longhorn (explicit — also the cluster default SC on Talos).
@@ -12,3 +27,8 @@ patches:
     target:
       kind: Cluster
       name: dbtools-db
+  # Public URL — must match the tailnet address byte for byte.
+  - path: nao-env-patch.yaml
+    target:
+      kind: Deployment
+      name: nao

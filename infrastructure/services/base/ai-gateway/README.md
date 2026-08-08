@@ -43,7 +43,7 @@ Three things, all in the consumer's own directory — nothing here changes:
 
 1. **Create a virtual key** for that project in the dashboard.
 2. **Store it** in a SOPS Secret in the project's namespace, and reference it
-   with `secretKeyRef` (see `staging/dbtools/nao-ai-gateway-token.enc.yaml`).
+   with `secretKeyRef` (see `staging/databases/dbtools/nao-ai-gateway-token.enc.yaml`).
    One key per project means it can be revoked, or have its spend read off,
    without touching any other consumer.
 3. **Allow egress** to the `ai-gateway` namespace (label `name: ai-gateway`) on
@@ -152,7 +152,7 @@ the old one, then `sops` that project's own Secret and set `AI_GATEWAY_TOKEN` to
 the new value:
 
 ```bash
-sops infrastructure/services/staging/dbtools/nao-ai-gateway-token.enc.yaml
+sops infrastructure/services/staging/databases/dbtools/nao-ai-gateway-token.enc.yaml
 ```
 
 Nothing in the `ai-gateway` namespace changes, and no other consumer is
