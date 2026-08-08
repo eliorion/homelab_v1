@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: n8n-config
+  namespace: n8n
+data:
+  # Reached over the tailnet at https://n8n.tail45b0ca.ts.net (no port) —
+  # the Tailscale Ingress terminates TLS with a MagicDNS certificate and
+  # forwards to the Service on 5678. Must match ingress-tailscale.yaml.
+  #
+  # Because the origin is HTTPS, N8N_SECURE_COOKIE stays at its secure default
+  # (true). If you ever fall back to the plain-HTTP `tailscale.com/expose`
+  # annotation you must set it to "false" or you can never finish signing in.
+  N8N_HOST: "n8n.tail45b0ca.ts.net"
+  N8N_PORT: "5678"
+  N8N_PROTOCOL: "https"
+  WEBHOOK_URL: "https://n8n.tail45b0ca.ts.net/"
+
+  # Schedule Triggers resolve their cron against this.
+  GENERIC_TIMEZONE: "Europe/Paris"
+  TZ: "Europe/Paris"
+
+  # Prometheus endpoint on /metrics — scraped by the ServiceMonitor in
+  # monitoring/configs/staging/n8n-metrics.
+  N8N_METRICS: "true"
+
+  N8N_DIAGNOSTICS_ENABLED: "false"
+  N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+  N8N_RUNNERS_ENABLED: "true"

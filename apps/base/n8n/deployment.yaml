@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n
+  namespace: n8n
+spec:
+  replicas: 1
+  # RWO Longhorn volume — the old pod must release it before the new one binds.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: n8n
+  template:
+    metadata:
+      labels:
+        app: n8n
+    spec:
+      securityContext:
+        # The n8n image runs as the `node` user (1000). fsGroup makes the
+        # Longhorn PVC writable by it.
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: n8n
+          # renovate: datasource=docker depName=docker.n8n.io/n8nio/n8n
+          image: docker.n8n.io/n8nio/n8n:2.33.7
+          ports:
+            - name: http
+              containerPort: 5678
+          env:
+            # Connection details come from the CNPG-generated n8n-db-app Secret
+            # (same secretKeyRef idiom the Flyway migration Jobs use).
+            - name: DB_TYPE
+              value: postgresdb
+            - name: DB_POSTGRESDB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-db-app
+                  key: host
+            - name: DB_POSTGRESDB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-db-app
+                  key: port
+            - name: DB_POSTGRESDB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-db-app
+                  key: dbname
+            - name: DB_POSTGRESDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-db-app
+                  key: username
+            - name: DB_POSTGRESDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-db-app
+                  key: password
+          envFrom:
+            # N8N_ENCRYPTION_KEY — the one secret that must never be rotated.
+            - secretRef:
+                name: n8n-secrets
+            - configMapRef:
+                name: n8n-config
+          # First boot runs the full TypeORM schema migration, so give it room
+          # before the liveness probe starts killing the pod.
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 1536Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            # DEVIATION from the house default (etcd-backup et al. use true):
+            # n8n writes caches and task-runner scratch outside /home/node/.n8n,
+            # so a read-only root filesystem makes it crash on boot.
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /home/node/.n8n
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: n8n-data-pvc
+        - name: tmp
+          emptyDir: {}

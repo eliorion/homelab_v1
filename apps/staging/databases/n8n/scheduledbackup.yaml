@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: n8n-db-daily
+spec:
+  # 6-field CNPG cron. 03:10 — offset from the asp/fbref 03:00 backups so the
+  # three do not contend for the single Garage gateway.
+  schedule: "0 10 3 * * *"
+  immediate: true
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  cluster:
+    name: n8n-db
