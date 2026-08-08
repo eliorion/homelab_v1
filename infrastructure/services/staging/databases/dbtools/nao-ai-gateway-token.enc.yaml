@@ -1,0 +1,39 @@
+# TEMPLATE — nao's OWN ai-gateway virtual key. Fill the value, then:
+#
+#   cd infrastructure/services/staging/databases/dbtools
+#   cp nao-ai-gateway-token.enc.yaml.example nao-ai-gateway-token.enc.yaml
+#   sops --encrypt --in-place nao-ai-gateway-token.enc.yaml
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.example`
+# matches nothing and is never encrypted — NEVER put the real key here.
+#
+# The key is CREATED IN THE AI-GATEWAY DASHBOARD (Virtual Keys) and only stored
+# here — nothing generates it locally. One key per project on purpose: spend is
+# attributable and revocation hits nao alone. Nothing is mirrored in from the
+# ai-gateway namespace, so that namespace never has to name this one.
+#
+# The Deployment reads it with `optional: true`, so a placeholder keeps nao
+# serving its UI — chat is what 401s, not the process.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: nao-ai-gateway-token
+    namespace: database
+type: Opaque
+stringData:
+    AI_GATEWAY_TOKEN: ENC[AES256_GCM,data:w8N/2e3QOr4eQdiTMj8wGy5q0kqFfZ4BegdhgkylxpMkxGkeiu4hjreX,iv:PkV3nH1+HZwxPRapCh2yRznfEHxSXrYgwzlZzfDZJ1g=,tag:gcxdylxZbgpCzo0YFVSFOw==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAxNmE0Si8yZW9jZi9YTWF3
+            TXZqcnFydVFvNytRVlVucUZKSFUxRzJ0c25BClJscmVmdzZUMGRvb3NQNWt1NnRR
+            UEFBMTU3TklGN0tJUUFRRlp1MVRFeFUKLS0tIDdFb29LWUJmSWdFa1VBZHBUV0Ez
+            LzBQbGtOVFQzM0xWdGYyMk10dmszRGMKrlfMGLZz7p1cQAPL4IB36z6O2u+GMhMO
+            GOw6L9yp19/o4DgnizJoBGAIsQw6qYZurcoHERxfKx5fpuy7f+noRQ==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-08-08T12:15:51Z"
+    mac: ENC[AES256_GCM,data:IuH3ueECWzbdu1Fe/ySbp804/wYSF9DLNTv27pTPzLU6PQ9NUngMuhJvuFDvUR7LMU1t0VkA4GBWQSL/2zwqOdOfauq2BJRHKndzQD7XqqXt6vN6nEEH0YwkcHMWgimn/Zw958Il/xdlfGu4MLxfTu9LP52pb58l8UvbDTsFh5U=,iv:lQ2+7n4cxEXKLWudQJaiG77BHMQdfXX8DAvNqdjCVa4=,tag:TTEoVzNdkJdm6hV450IvYA==,type:str]
+    version: 3.13.3

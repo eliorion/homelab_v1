@@ -11,5 +11,3 @@ resources:
   - garage-gateway/
   - radar/
   - ai-gateway/
-  # pgAdmin + nao in the `database` ns — read-only clients of every project DB.
-  - dbtools/

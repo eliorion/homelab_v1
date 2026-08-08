@@ -1,6 +1,6 @@
-# ClusterIP only — NO Ingress. The tailnet annotations are added by the staging
-# overlay (apps/staging/dbtools/), so this base object stays reachable by
-# port-forward alone:
+# ClusterIP only, and NO tailscale annotations — the staging overlay publishes
+# pgAdmin with a Tailscale Ingress (https, 443) instead, so this base object
+# stays reachable by port-forward alone:
 #   kubectl -n database port-forward svc/pgadmin 5050:80
 apiVersion: v1
 kind: Service

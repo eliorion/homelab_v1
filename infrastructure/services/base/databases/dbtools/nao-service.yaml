@@ -1,0 +1,21 @@
+# ClusterIP only, and NO tailscale annotations — the staging overlay publishes
+# nao with a Tailscale Ingress (https, 443) instead, so this base object stays
+# reachable by port-forward alone:
+#   kubectl -n database port-forward svc/nao 5005:5005
+# 5005 is only the in-cluster hop; the browser-visible address that
+# BETTER_AUTH_URL must match is the Ingress one.
+apiVersion: v1
+kind: Service
+metadata:
+  name: nao
+  labels:
+    app: nao
+    component: dbtools
+spec:
+  type: ClusterIP
+  selector:
+    app: nao
+  ports:
+    - name: http
+      port: 5005
+      targetPort: http

@@ -1,8 +1,10 @@
 # Environment-specific nao setting. Strategic-merge on env: entries merge by
 # `name`, so only BETTER_AUTH_URL is replaced.
 #
-# It must equal the browser-visible address exactly (scheme, host AND port) —
-# better-auth signs its callbacks against it, so a mismatch loops every login.
+# It must equal the browser-visible address exactly — better-auth signs its
+# callbacks against it, so a mismatch loops every login. The address is the
+# Tailscale Ingress device (nao-ingress-tailscale.yaml): https, no port, because
+# the proxy terminates TLS on 443 instead of forwarding the Service port.
 #
 # The LLM settings are not here: the gateway's Service DNS name and the model
 # alias are identical in every environment, so both sit in the base Deployment.
@@ -21,4 +23,4 @@ spec:
         - name: nao
           env:
             - name: BETTER_AUTH_URL
-              value: http://nao.tail45b0ca.ts.net:5005
+              value: https://nao.tail45b0ca.ts.net

@@ -1,5 +1,5 @@
 # pgAdmin's own login (server mode). Read it back with:
-#   sops -d apps/staging/dbtools/pgadmin-admin.enc.yaml
+#   sops -d apps/staging/databases/dbtools/pgadmin-admin.enc.yaml
 # The email doubles as the storage-directory name pgAdmin uses for the pgpass
 # file the init container writes (@ -> _), so changing it changes that path.
 apiVersion: v1

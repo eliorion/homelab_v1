@@ -108,7 +108,7 @@ spec:
             # Consumed by nao_config.yaml via {{ env('...') }}.
             #
             # nao's OWN virtual key, created in the ai-gateway dashboard and
-            # stored here (staging/dbtools/nao-ai-gateway-token.enc.yaml). One
+            # stored here (staging/databases/dbtools/nao-ai-gateway-token.enc.yaml). One
             # key per project, so it can be revoked or have its spend read off
             # without touching any other consumer. `optional: true` keeps the
             # pod serving its UI before the key is filled in — chat is what
