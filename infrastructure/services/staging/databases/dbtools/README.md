@@ -7,7 +7,7 @@ in `infrastructure/services` rather than `apps/` for the same reason
 ```
 database ns
 ├── pgadmin   dpage/pgadmin4      SQL client            https://pgadmin.tail45b0ca.ts.net
-├── nao       getnao/nao          analytics agent       https://nao.tail45b0ca.ts.net
+├── nao       getnao/nao          analytics agent       ts.net + nao.eliorion.fr
 ├── postgres-mcp-fbref    ┐
 ├── postgres-mcp-asp      ├ crystaldba/postgres-mcp  MCP servers, ONE PER DATABASE
 ├── postgres-mcp-scraper  ┘                          (no ingress — via ai-gateway)
@@ -34,7 +34,38 @@ Reads, across namespaces:
 | fbref   | `fbref-db-ro.fbref.svc.cluster.local`     | fbref      |
 | scraper | `scraper-db-ro.scraper.svc.cluster.local` | scraper    |
 
-## Tailnet exposure
+## Exposure
+
+```
+pgadmin   https://pgadmin.tail45b0ca.ts.net   tailnet
+nao       https://nao.tail45b0ca.ts.net       tailnet
+          https://nao.eliorion.fr             public, behind Cloudflare Access
+```
+
+**nao has two front doors and keeps both.** The tailnet Ingress is unchanged;
+the tunnel adds a public one gated by **Cloudflare Access with Keycloak (`apps`
+realm) as the identity provider**. The route and the Access application are
+dashboard-managed and written down in `../../cloudflare/README.md`; the realm is
+in git (`../../../base/keycloak/realm/realm-apps.yaml`).
+
+Three things follow, all load-bearing:
+
+- **`BETTER_AUTH_TRUSTED_ORIGINS` must list every host.** better-auth takes one
+  `BETTER_AUTH_URL` and rejects any non-GET from an untrusted Origin with 403
+  `INVALID_ORIGIN`, so the second host would refuse every login. The env var
+  (`nao-env-patch.yaml`) is what makes the pair work — comma-separated, **no
+  space after the comma**, because better-auth `.split(",")` without trimming.
+  The browser side needs nothing: nao's frontend resolves its API base from
+  `window.location.origin`, so calls are same-origin on whichever host you used.
+- **Sessions are per host.** Cookies are scoped to the host that set them, so
+  reaching nao the other way means logging in again. Nothing is invalidated.
+- **You log in twice on the public path**: Keycloak at the edge, then nao's own
+  better-auth form. nao is not an OIDC client — self-hosted `getnao/nao` has
+  local accounts only, and SSO is an Enterprise feature — so Keycloak
+  authenticates the request; it does not log you into nao. The tailnet path has
+  only nao's own login in front of it, as before.
+
+### Tailnet exposure
 
 Both UIs are published by the **Tailscale operator** as an `Ingress`
 (`ingressClassName: tailscale`), not by the `tailscale.com/expose` Service
@@ -58,17 +89,14 @@ Consequences worth knowing:
   certificate and both UIs are unreachable.
 - The Services carry **no** tailscale annotations. Both mechanisms at once
   register two devices contending for one hostname and the loser is suffixed
-  (`nao-1`) — which for nao is exactly the `BETTER_AUTH_URL` mismatch below.
-- `BETTER_AUTH_URL` (`nao-env-patch.yaml`) must equal the browser address byte
-  for byte, so it is `https://nao.tail45b0ca.ts.net` — **no port**. It moves
-  with the Ingress, never on its own.
+  (`nao-1`) — an origin nothing trusts, so nao's login breaks there.
 - Migrating off `expose`: the old `nao` / `pgadmin` devices must be gone from
   the Tailscale admin console before the Ingress proxies register, or MagicDNS
   hands the new ones a suffixed name. Check `kubectl -n tailscale get pods` and
   the Machines page.
 
-Tailnet identity is still the only authentication in front of either UI —
-see below.
+Tailnet identity is the only authentication in front of pgAdmin, and the only
+one in front of nao on **this** path — see below.
 
 ## Secrets
 
@@ -103,11 +131,20 @@ replicas only. A replica is in recovery and rejects any write with SQLSTATE
 25006 — no grant, no NetworkPolicy and no UI setting is in that path.
 
 The rw and ro Services select the **same pods**, so the NetworkPolicies cannot
-express "replica only". Anyone who can reach pgAdmin on the tailnet can register
-`<cluster>-rw` by hand and write. **Tailnet membership is therefore write
-access.** If that stops being acceptable, the replacement is a per-database
-read-only role (`analytics_ro`, NOLOGIN in Flyway + CNPG `managed.roles` + a
-sops Secret each), not a network rule.
+express "replica only". Anyone who reaches either UI can point it at
+`<cluster>-rw` by hand and write. **Reaching a UI is therefore write access to
+all three project databases.**
+
+For pgAdmin that gate is tailnet membership. nao now has **two** gates, and the
+weaker of the two is what counts: tailnet membership as before, OR a Keycloak
+account in the `apps` realm plus a nao account — the second being an
+internet-facing path, which raises the stakes of that unchanged credential. nao
+connects as each cluster's `app` OWNER role and executes model-authored SQL. The
+known fix is still the same one, and it has not been done: a per-database
+read-only role
+(`analytics_ro`, NOLOGIN in Flyway + CNPG `managed.roles` + a sops Secret each),
+not a network rule. Until it exists, treat `apps`-realm membership as
+production write access and keep the Access policy an explicit email allowlist.
 
 Reflection is permitted per source cluster in
 `apps/staging/databases/<project>/cluster-reflector-patch.yaml`; nothing is

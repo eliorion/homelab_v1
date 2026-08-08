@@ -14,3 +14,7 @@ configMapGenerator:
       # master carries one attribute, and only to keep the admin console
       # same-origin on the tailnet. See the file.
       - realm-master.yaml
+      # The login behind Cloudflare Access for tunnel-published UIs (nao).
+      # Its client secret and callback host come from the sops Secret in
+      # ../../../staging/keycloak/realm/, via $(env:...) in the Job.
+      - realm-apps.yaml

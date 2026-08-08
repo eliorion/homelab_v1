@@ -12,3 +12,8 @@ namespace: identity
 # Kustomization's tree for exactly this reason.
 resources:
   - ../../../base/keycloak/realm/
+  # The `apps` realm's Cloudflare Access client credential + the Zero Trust team
+  # domain, both read by the import Job as $(env:...). Environment-specific and
+  # secret, so it is here rather than in base/ — and the Job is in this same
+  # Kustomization, so the Secret is guaranteed to exist before it runs.
+  - cloudflare-access-client.enc.yaml

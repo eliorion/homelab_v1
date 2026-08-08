@@ -98,8 +98,10 @@ spec:
             # here (nao_core/tracking.py reads this).
             - name: POSTHOG_DISABLED
               value: "true"
-            # MUST match the URL the browser uses, or every login redirect fails.
-            # The staging overlay patches in the tailnet address.
+            # The canonical browser address. The staging overlay patches in the
+            # tunnel address AND a BETTER_AUTH_TRUSTED_ORIGINS list, because nao
+            # is published on two hosts and better-auth's origin check refuses
+            # any host it does not trust.
             - name: BETTER_AUTH_URL
               value: http://localhost:5005
             # Stable across restarts — a generated one would invalidate every

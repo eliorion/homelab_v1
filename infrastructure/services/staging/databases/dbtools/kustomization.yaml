@@ -18,6 +18,11 @@ resources:
   # Tailnet exposure (Tailscale operator), HTTPS on 443 via MagicDNS. Ingress
   # rather than the `tailscale.com/expose` Service annotation — see the header
   # of either file. Both Services stay annotation-free: one hostname, one device.
+  #
+  # nao ALSO has a second, public way in — the Cloudflare tunnel at
+  # https://nao.eliorion.fr behind Cloudflare Access. Both hosts must appear in
+  # BETTER_AUTH_TRUSTED_ORIGINS (nao-env-patch.yaml) or the one that is not
+  # BETTER_AUTH_URL refuses every login with 403 INVALID_ORIGIN.
   - pgadmin-ingress-tailscale.yaml
   - nao-ingress-tailscale.yaml
 
@@ -27,7 +32,7 @@ patches:
     target:
       kind: Cluster
       name: dbtools-db
-  # Public URL — must match the tailnet address byte for byte.
+  # Public URL — must match the browser address byte for byte.
   - path: nao-env-patch.yaml
     target:
       kind: Deployment
