@@ -38,8 +38,14 @@ spec:
     image:
       repository: docker.io/maximhq/bifrost
       # renovate: datasource=docker depName=docker.io/maximhq/bifrost
-      # Chart 2.1.34 ships appVersion 1.5.12; the chart REQUIRES an explicit tag.
-      tag: "v1.5.12"
+      # The chart REQUIRES an explicit tag (values.schema.json: "required —
+      # validated at template render time"), so this is the real version knob.
+      #
+      # DELIBERATELY AHEAD OF THE CHART'S appVersion, which still reads 1.5.12:
+      # upstream does not bump chart metadata per app release — chart 2.1.34 and
+      # image v1.6.9 were published the same day. Pinning the appVersion here
+      # would run a months-old gateway. Renovate tracks the image, not appVersion.
+      tag: "v1.6.9"
 
     service:
       type: ClusterIP
