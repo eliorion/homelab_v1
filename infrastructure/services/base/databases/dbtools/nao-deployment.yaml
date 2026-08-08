@@ -138,12 +138,9 @@ spec:
             # speaks is the client's business, not the gateway's.
             - name: NAO_LLM_BASE_URL
               value: "http://ai-gateway.ai-gateway.svc.cluster.local:8080"
-            # nao's OWN choice of alias. Every OpenAI-compatible request carries
-            # a model id in its body, so a client cannot discover this from the
-            # dashboard. It MUST match a routing rule created there, or the
-            # gateway rejects the call as an unknown model.
-            - name: NAO_LLM_MODEL
-              value: "ai/sonnet"
+            # NO model env var. The four tier aliases nao offers are listed
+            # in nao_config.yaml directly — a single env var cannot express a
+            # list, and the aliases are neither secret nor environment-specific.
             # Project DB credentials, consumed by nao_config.yaml's env() calls.
             - name: ASP_DB_USER
               valueFrom:
