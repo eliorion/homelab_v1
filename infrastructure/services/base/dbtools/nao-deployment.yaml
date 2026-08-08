@@ -102,9 +102,9 @@ spec:
             - name: DB_URI
               value: postgres://$(NAO_DB_USER):$(NAO_DB_PASSWORD)@dbtools-db-rw.database.svc.cluster.local:5432/nao
             # LLM access through the ai-gateway contract — nao never names a
-            # vendor or a vendor model. All three are `optional: true` so the pod
-            # still serves its UI if reflector has not mirrored the contract yet
-            # (chat is what fails, not the process).
+            # vendor or a vendor model. Both lookups are `optional: true` so the
+            # pod still serves its UI if reflector has not mirrored the contract
+            # yet (chat is what fails, not the process).
             #
             # Consumed by nao_config.yaml via {{ env('...') }}.
             - name: NAO_LLM_API_KEY
@@ -113,18 +113,22 @@ spec:
                   name: ai-gateway-token
                   key: AI_GATEWAY_TOKEN
                   optional: true
+            # The gateway's ADDRESS is all the contract publishes. nao appends
+            # its own `/v1` in nao_config.yaml, because which wire protocol a
+            # client speaks is the client's business, not the gateway's.
             - name: NAO_LLM_BASE_URL
               valueFrom:
                 configMapKeyRef:
                   name: ai-gateway-contract
-                  key: AI_GATEWAY_OPENAI_URL
+                  key: AI_GATEWAY_BASE_URL
                   optional: true
+            # nao's OWN choice of alias, not gateway configuration — every
+            # OpenAI-compatible request carries a model id in its body, so a
+            # client cannot discover this from the dashboard. It MUST match a
+            # routing rule created there, or the gateway rejects the call as an
+            # unknown model. Change it here, not in ai-gateway.
             - name: NAO_LLM_MODEL
-              valueFrom:
-                configMapKeyRef:
-                  name: ai-gateway-contract
-                  key: AI_GATEWAY_MODEL_DEFAULT
-                  optional: true
+              value: "ai/sonnet"
             # Project DB credentials, consumed by nao_config.yaml's env() calls.
             - name: ASP_DB_USER
               valueFrom:

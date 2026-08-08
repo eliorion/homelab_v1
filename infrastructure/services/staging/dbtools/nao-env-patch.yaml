@@ -4,9 +4,15 @@
 # It must equal the browser-visible address exactly (scheme, host AND port) —
 # better-auth signs its callbacks against it, so a mismatch loops every login.
 #
-# The LLM coordinates are NOT here: they come from the reflected
+# The gateway ADDRESS is not here: it comes from the reflected
 # ai-gateway-contract ConfigMap (see nao-deployment.yaml), which is the whole
-# point of that contract — no consumer hardcodes the gateway.
+# point of that contract — no consumer hardcodes where the gateway lives.
+#
+# The model alias is not here either, but for the opposite reason: it is the
+# same in every environment, so it sits in the base Deployment. It is nao's own
+# choice and must match a routing rule created in the ai-gateway dashboard —
+# the gateway cannot push it to its clients, because a model id travels in the
+# body of every request.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

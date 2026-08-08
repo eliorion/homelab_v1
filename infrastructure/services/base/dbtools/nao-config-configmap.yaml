@@ -45,16 +45,19 @@ data:
         user: "{{ env('SCRAPER_DB_USER') }}"
         password: "{{ env('SCRAPER_DB_PASSWORD') }}"
 
-    # LLM access goes through ai-gateway (OpenAI-compatible path), so the
-    # provider keys stay in that namespace and nao holds only the gateway token.
-    # base_url and the model ALIAS (ai/sonnet — never a vendor model id) come
-    # from the reflected ai-gateway-contract ConfigMap, via the env vars
-    # nao-deployment.yaml wires up.
+    # LLM access goes through ai-gateway, so the provider keys stay in that
+    # namespace and nao holds only the gateway token.
+    #
+    # `provider: openai` names the WIRE PROTOCOL, not a vendor — which vendor
+    # actually answers is decided by the routing rule behind the alias below,
+    # in the ai-gateway dashboard. Hence the `/v1` appended here: the contract
+    # publishes only the gateway's address, and each client appends the path
+    # for the protocol its SDK speaks.
     llm:
       providers:
         - provider: openai
           api_key: "{{ env('NAO_LLM_API_KEY') }}"
-          base_url: "{{ env('NAO_LLM_BASE_URL') }}"
+          base_url: "{{ env('NAO_LLM_BASE_URL') }}/v1"
           models:
             - id: "{{ env('NAO_LLM_MODEL') }}"
               default: true

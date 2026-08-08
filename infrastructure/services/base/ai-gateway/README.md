@@ -131,6 +131,34 @@ target. No client change, no commit, no restart.
 within seconds. `AI_GATEWAY_VK` is no longer used — the virtual key is created
 in the UI, not injected from the Secret.
 
+**Let a new namespace use the gateway.** Two objects grant it, and they must
+agree — the ConfigMap says *where the gateway is*, the Secret says *who may
+spend money through it*. A namespace on only one of them fails silently: the
+consumer resolves the address, gets no token, starts clean and 401s on every
+call.
+
+1. `infrastructure/services/base/ai-gateway/contract.yaml` — append the
+   namespace to **both** `reflection-allowed-namespaces` and
+   `reflection-auto-namespaces`.
+2. The Secret, which is SOPS-encrypted. The MAC covers the annotations too, so
+   it cannot be hand-edited — the file must go through `sops`:
+
+   ```bash
+   sops infrastructure/services/staging/ai-gateway/ai-gateway-secrets.enc.yaml
+   ```
+
+   Append the same namespace to the same two annotations on the
+   `ai-gateway-token` Secret, save, and the file re-encrypts on write. The
+   `.example` beside it carries the current correct list to copy from.
+3. Give the consumer a NetworkPolicy allowing egress to the `ai-gateway`
+   namespace (label `name: ai-gateway`) on 8080.
+
+Duplicating the list across two objects is the sharp edge of this design. The
+alternative is reflector's **pull** direction — the consumer declares an empty
+stub with `reflector.v1.k8s.emberstack.com/reflects: "ai-gateway/ai-gateway-token"`,
+the way `dbtools/db-reflect-stubs.yaml` already pulls the database credentials —
+which moves the per-consumer edit entirely into the consumer's own directory.
+
 **Swap the backend.** Rewrite `release.yaml` so the replacement keeps: the
 Service name `ai-gateway` on port 8080, the tailnet hostname, the `/anthropic`
 and `/v1` paths, virtual-key auth on one header, and the three `ai/*` aliases.
