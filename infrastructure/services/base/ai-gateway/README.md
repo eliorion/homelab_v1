@@ -12,28 +12,46 @@ anything else that speaks the same two wire protocols) is a change to
 
 ## The contract
 
-| Thing | Value | Set by |
-|---|---|---|
-| In-cluster base URL | `http://ai-gateway.ai-gateway.svc.cluster.local:8080` | `contract.yaml` (ConfigMap `ai-gateway-contract`) |
-| Tailnet base URL | `https://ai-gateway.<your-tailnet>.ts.net` | `ingress-tailscale.yaml` (Tailscale Ingress) |
-| Anthropic-compatible path | `<base>/anthropic` | backend |
-| OpenAI-compatible path | `<base>/v1` | backend |
-| Credential | `AI_GATEWAY_TOKEN` | Secret `ai-gateway-token` (staging overlay) |
-| Model aliases | whatever you create | routing rules **in the dashboard** |
+| Thing | Value |
+|---|---|
+| In-cluster base URL | `http://ai-gateway.ai-gateway.svc.cluster.local:8080` |
+| Tailnet base URL | `https://ai-gateway.<your-tailnet>.ts.net` |
+| Anthropic-compatible path | `<base>/anthropic` |
+| OpenAI-compatible path | `<base>/v1` |
+| Credential | a virtual key the consumer holds itself |
+| Model aliases | whatever you create in the dashboard |
 
 Two rules keep the abstraction honest:
 
 1. **Clients never name a vendor model.** They ask for an alias like
    `ai/sonnet`; the routing table decides which vendor model answers it.
    Re-pointing a tier is an edit in the dashboard, with no client redeploy.
-2. **Clients never see a `BIFROST_*` name.** The provider keys and the virtual
-   key stay in the `ai-gateway` namespace; consumers get `AI_GATEWAY_TOKEN`.
+2. **Clients never see a `BIFROST_*` name.** Provider keys never leave this
+   namespace; a consumer holds only its own virtual key.
 
-Git publishes only the **address**. It deliberately does not publish the alias
-names: routing rules are created in the dashboard, so a `AI_GATEWAY_MODEL_*`
-key in Git would assert a rule that might not exist. A consumer names the alias
-it needs, and that alias has to have been created in the UI — that coupling is
-what this design trades for UI ownership, and nothing enforces it.
+**This namespace exports nothing.** There is no ConfigMap and no Secret mirrored
+anywhere, because neither is needed: a Kubernetes Service resolves from any
+namespace, so a consumer just uses the DNS name above, and each project holds
+its own virtual key created in the dashboard. Earlier revisions reflected a
+contract ConfigMap and one shared token into every consumer namespace; that
+meant four annotations across two objects had to agree for a project to work,
+and a namespace listed on only one of them failed silently with a 401.
+
+## Connecting a project
+
+Three things, all in the consumer's own directory — nothing here changes:
+
+1. **Create a virtual key** for that project in the dashboard.
+2. **Store it** in a SOPS Secret in the project's namespace, and reference it
+   with `secretKeyRef` (see `staging/dbtools/nao-ai-gateway-token.enc.yaml`).
+   One key per project means it can be revoked, or have its spend read off,
+   without touching any other consumer.
+3. **Allow egress** to the `ai-gateway` namespace (label `name: ai-gateway`) on
+   8080 — this, not any mirrored object, is what actually grants the path.
+
+Then point the client at the base URL, append the path its SDK speaks, and name
+an alias that exists as a routing rule. That last coupling is the one thing
+nothing enforces: an alias no rule matches is rejected as an unknown model.
 
 ## Using it
 
@@ -66,22 +84,25 @@ curl -s "$AI_GATEWAY_BASE_URL/anthropic/v1/messages" \
 
 ### In-cluster (agent pods, jobs)
 
-Consume the contract as data. Nothing in the pod spec names the backend:
+Everything lives in the consumer's own namespace — see "Connecting a project"
+above. The address is a plain Service DNS name, the credential is that
+project's own virtual key:
 
 ```yaml
-envFrom:
-  - configMapRef:
-      name: ai-gateway-contract   # AI_GATEWAY_BASE_URL + the ai/* aliases
-  - secretRef:
-      name: ai-gateway-token      # AI_GATEWAY_TOKEN
+env:
+  - name: LLM_BASE_URL
+    value: "http://ai-gateway.ai-gateway.svc.cluster.local:8080"   # + /v1 or /anthropic
+  - name: LLM_MODEL
+    value: "ai/sonnet"                                             # must match a routing rule
+  - name: LLM_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: <project>-ai-gateway-token
+        key: AI_GATEWAY_TOKEN
 ```
 
-Both objects are mirrored by Reflector into `asp`, `fbref`, `lab` and `scraper`
-— extend the `reflection-*-namespaces` annotations in `contract.yaml` and the
-staging Secret to add a namespace.
-
-Agent pods also need a NetworkPolicy allowing egress to the `ai-gateway`
-namespace (label `name: ai-gateway`) on 8080.
+Plus a NetworkPolicy allowing egress to the `ai-gateway` namespace (label
+`name: ai-gateway`) on 8080. `dbtools/nao-deployment.yaml` is a worked example.
 
 ### Dashboard
 
@@ -106,11 +127,11 @@ gateway yet. In order:
 
 1. Log into the dashboard with the `ai-gateway-admin` credentials.
 2. Add a provider and its key (see the raw-vs-`env.` choice below).
-3. Create a virtual key — this is the value clients send.
-4. `sops infrastructure/services/staging/ai-gateway/ai-gateway-secrets.enc.yaml`
-   and set `AI_GATEWAY_TOKEN` to that virtual key. Commit.
-5. Create the three routing rules `ai/opus`, `ai/sonnet`, `ai/fast` so the
-   published contract resolves.
+3. Create the routing rules your projects ask for — e.g. `ai/opus`,
+   `ai/sonnet`, `ai/fast`. An alias no rule matches is rejected as an unknown
+   model, so create these before pointing a client at one.
+4. Create one virtual key **per consuming project**, and store each in that
+   project's own namespace — see "Connecting a project" above.
 
 **Add a provider.** Dashboard → Providers. Two ways to supply the key, and they
 differ in where the secret's system of record ends up:
@@ -126,38 +147,18 @@ differ in where the secret's system of record ends up:
 **Re-point a model tier.** Dashboard → the matching routing rule → change its
 target. No client change, no commit, no restart.
 
-**Rotate the client token.** Create a new virtual key in the dashboard, then
-`sops` the staging Secret and set `AI_GATEWAY_TOKEN` to it. Reflector re-mirrors
-within seconds. `AI_GATEWAY_VK` is no longer used — the virtual key is created
-in the UI, not injected from the Secret.
+**Rotate a project's token.** Create a new virtual key in the dashboard, disable
+the old one, then `sops` that project's own Secret and set `AI_GATEWAY_TOKEN` to
+the new value:
 
-**Let a new namespace use the gateway.** Two objects grant it, and they must
-agree — the ConfigMap says *where the gateway is*, the Secret says *who may
-spend money through it*. A namespace on only one of them fails silently: the
-consumer resolves the address, gets no token, starts clean and 401s on every
-call.
+```bash
+sops infrastructure/services/staging/dbtools/nao-ai-gateway-token.enc.yaml
+```
 
-1. `infrastructure/services/base/ai-gateway/contract.yaml` — append the
-   namespace to **both** `reflection-allowed-namespaces` and
-   `reflection-auto-namespaces`.
-2. The Secret, which is SOPS-encrypted. The MAC covers the annotations too, so
-   it cannot be hand-edited — the file must go through `sops`:
-
-   ```bash
-   sops infrastructure/services/staging/ai-gateway/ai-gateway-secrets.enc.yaml
-   ```
-
-   Append the same namespace to the same two annotations on the
-   `ai-gateway-token` Secret, save, and the file re-encrypts on write. The
-   `.example` beside it carries the current correct list to copy from.
-3. Give the consumer a NetworkPolicy allowing egress to the `ai-gateway`
-   namespace (label `name: ai-gateway`) on 8080.
-
-Duplicating the list across two objects is the sharp edge of this design. The
-alternative is reflector's **pull** direction — the consumer declares an empty
-stub with `reflector.v1.k8s.emberstack.com/reflects: "ai-gateway/ai-gateway-token"`,
-the way `dbtools/db-reflect-stubs.yaml` already pulls the database credentials —
-which moves the per-consumer edit entirely into the consumer's own directory.
+Nothing in the `ai-gateway` namespace changes, and no other consumer is
+affected. The cost of that isolation: rotating *everything* is one edit per
+project rather than one edit total — the trade this design makes for
+per-project revocation and per-project spend attribution.
 
 **Swap the backend.** Rewrite `release.yaml` so the replacement keeps: the
 Service name `ai-gateway` on port 8080, the tailnet hostname, the `/anthropic`

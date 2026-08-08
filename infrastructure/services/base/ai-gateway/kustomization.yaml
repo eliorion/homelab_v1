@@ -1,9 +1,11 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+# No contract ConfigMap and no Secret to mirror: consumers reach the gateway at
+# its Service DNS name and hold their OWN virtual key, so nothing here is
+# reflected into any other namespace. See README.md "Connecting a project".
 resources:
   - namespace.yaml
   - repository.yaml
   - release.yaml
   - ingress-tailscale.yaml
-  - contract.yaml
   - podmonitor.yaml

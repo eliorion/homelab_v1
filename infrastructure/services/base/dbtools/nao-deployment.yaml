@@ -101,32 +101,35 @@ spec:
             # $(VAR) is Kubernetes env expansion over the two vars declared above.
             - name: DB_URI
               value: postgres://$(NAO_DB_USER):$(NAO_DB_PASSWORD)@dbtools-db-rw.database.svc.cluster.local:5432/nao
-            # LLM access through the ai-gateway contract — nao never names a
-            # vendor or a vendor model. Both lookups are `optional: true` so the
-            # pod still serves its UI if reflector has not mirrored the contract
-            # yet (chat is what fails, not the process).
+            # LLM access through ai-gateway — nao never names a vendor or a
+            # vendor model. All three values are nao's OWN, held in this
+            # namespace: nothing is mirrored in from the ai-gateway namespace.
             #
             # Consumed by nao_config.yaml via {{ env('...') }}.
+            #
+            # nao's OWN virtual key, created in the ai-gateway dashboard and
+            # stored here (staging/dbtools/nao-ai-gateway-token.enc.yaml). One
+            # key per project, so it can be revoked or have its spend read off
+            # without touching any other consumer. `optional: true` keeps the
+            # pod serving its UI before the key is filled in — chat is what
+            # fails, not the process.
             - name: NAO_LLM_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: ai-gateway-token
+                  name: nao-ai-gateway-token
                   key: AI_GATEWAY_TOKEN
                   optional: true
-            # The gateway's ADDRESS is all the contract publishes. nao appends
-            # its own `/v1` in nao_config.yaml, because which wire protocol a
-            # client speaks is the client's business, not the gateway's.
+            # The gateway's in-cluster Service DNS name — reachable from any
+            # namespace, so this needs no mirrored ConfigMap; the NetworkPolicy
+            # beside this file is what actually grants the path. nao appends its
+            # own `/v1` in nao_config.yaml, because which wire protocol a client
+            # speaks is the client's business, not the gateway's.
             - name: NAO_LLM_BASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: ai-gateway-contract
-                  key: AI_GATEWAY_BASE_URL
-                  optional: true
-            # nao's OWN choice of alias, not gateway configuration — every
-            # OpenAI-compatible request carries a model id in its body, so a
-            # client cannot discover this from the dashboard. It MUST match a
-            # routing rule created there, or the gateway rejects the call as an
-            # unknown model. Change it here, not in ai-gateway.
+              value: "http://ai-gateway.ai-gateway.svc.cluster.local:8080"
+            # nao's OWN choice of alias. Every OpenAI-compatible request carries
+            # a model id in its body, so a client cannot discover this from the
+            # dashboard. It MUST match a routing rule created there, or the
+            # gateway rejects the call as an unknown model.
             - name: NAO_LLM_MODEL
               value: "ai/sonnet"
             # Project DB credentials, consumed by nao_config.yaml's env() calls.
