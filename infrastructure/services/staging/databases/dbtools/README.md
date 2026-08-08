@@ -214,11 +214,53 @@ the configuration). At **MCP Gateway → New MCP Server**, three times:
 | name | `postgres_fbref` / `postgres_asp` / `postgres_scraper` |
 | connection type | `sse` |
 | connection string | `http://postgres-mcp-<project>.database.svc.cluster.local:8000/sse` |
-| auth | none |
+| auth type | `none` |
+| allow on all virtual keys | off |
 | tools to execute | `list_schemas, list_objects, get_object_details, execute_sql, explain_query, analyze_db_health` |
 
-Use **underscores** in the name: Bifrost's request-header filter format is
-`clientName-toolName`, so a hyphen in the name makes that filter ambiguous.
+**`bifrost.mcp` is absent from `release.yaml`, and that is not an oversight.**
+The chart renders an `mcp` section into `config.json` only when
+`bifrost.mcp.enabled` is true, so the config mounted in the pod has none — yet
+the admin API's MCP routes are live, because they are gated on the CONFIG STORE
+(enabled here) and not on that section. `GET /api/mcp/clients` answering **401
+rather than 404 or 503** is how you tell those two apart. Clients added in the
+dashboard land in Postgres and survive restarts like every other setting, so
+nothing about MCP needs to enter git.
+
+Four things the form will not tell you:
+
+- **A hyphen in the name is rejected with a 400** — so are spaces, non-ASCII and
+  a leading digit (`ValidateMCPClientName`). Underscores are mandatory, not a
+  style choice, which is just as well: the request-header filter format is
+  `clientName-toolName`, so a hyphen would make that filter ambiguous too.
+- **An empty tools list means NO tools, not all of them.** `["*"]` is all, `[]`
+  is none, and omitting the field is treated as `[]`.
+- **Auth type defaults to `headers`, not `none`.** Set it explicitly or the
+  client cannot connect.
+- **Leave "allow on all virtual keys" off.** It defaults off, and that default
+  IS the isolation — a client is reachable only from keys that name it.
+
+The same thing over the API. Auth is **HTTP Basic** with the `ai-gateway-admin`
+credential; a Bearer token is rejected:
+
+```bash
+kubectl -n ai-gateway port-forward svc/ai-gateway 8080:8080 &
+AU=$(kubectl -n ai-gateway get secret ai-gateway-admin -o jsonpath='{.data.username}' | base64 -d)
+AP=$(kubectl -n ai-gateway get secret ai-gateway-admin -o jsonpath='{.data.password}' | base64 -d)
+
+curl -s -u "$AU:$AP" localhost:8080/api/mcp/clients
+curl -s -u "$AU:$AP" -X POST localhost:8080/api/mcp/client -H 'Content-Type: application/json' -d '{
+  "name": "postgres_fbref",
+  "connection_type": "sse",
+  "connection_string": "http://postgres-mcp-fbref.database.svc.cluster.local:8000/sse",
+  "auth_type": "none",
+  "allow_on_all_virtual_keys": false,
+  "tools_to_execute": ["list_schemas","list_objects","get_object_details","execute_sql","explain_query","analyze_db_health"]
+}'
+```
+
+Also `PUT /api/mcp/client/{id}`, `DELETE /api/mcp/client/{id}` and
+`POST /api/mcp/client/{id}/reconnect`.
 
 Then scope access **per virtual key** — a VK's `mcp_configs` should name only
 the clients that key may use, and a VK with no MCP config gets no MCP tools at
