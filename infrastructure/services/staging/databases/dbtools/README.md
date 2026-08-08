@@ -112,13 +112,44 @@ install the pods restart until the credentials arrive.
 
 ## LLM access
 
-nao calls **ai-gateway**, never a provider: `NAO_LLM_BASE_URL` and
-`NAO_LLM_MODEL` come from the reflected `ai-gateway-contract` ConfigMap
-(`/v1` + the `ai/sonnet` alias) and the credential from the `ai-gateway-token`
-Secret. The NetworkPolicy allows the `ai-gateway` namespace on 8080 and nothing
-else outbound — the agent has no route to the internet.
+nao calls **ai-gateway** and nothing else. Its `nao_config.yaml` holds exactly
+**one** provider entry — the gateway — so no vendor is named anywhere in this
+namespace. `provider: openai` there is the wire protocol, not a vendor.
 
-All three refs are `optional: true`, so a missing mirror costs chat, not the pod.
+Nothing is mirrored in: `NAO_LLM_BASE_URL` is the gateway's Service DNS name
+(set in the Deployment) and the credential is nao's own virtual key in
+`nao-ai-gateway-token.enc.yaml`. The NetworkPolicy allows the `ai-gateway`
+namespace on 8080 and nothing else outbound — the agent has no route to the
+internet, or to any provider.
+
+The model picker offers **four capability tiers**, not models:
+
+| alias | tier |
+| --- | --- |
+| `ai/low` | cheapest / fastest |
+| `ai/normal` | the default |
+| `ai/high` | harder work |
+| `ai/xhigh` | the most capable available |
+
+Which vendor and which model answers each one is a **routing rule in the
+ai-gateway dashboard**. Re-pointing a tier is a dashboard edit: no change here,
+no commit, no restart. Naming the tiers after capability rather than after a
+vendor's model (`ai/sonnet`) is what keeps the vendor out of nao's config.
+
+**Each alias must exist as a routing rule before it is selected** — an alias no
+rule matches is rejected as an unknown model, because every OpenAI-compatible
+request carries its model id in the body and a client cannot discover these
+from the gateway.
+
+The key ref is `optional: true`, so a missing or invalid key costs chat, not the
+pod. A revoked key fails at call time with
+`401 virtual_key_not_found`; a wrong alias fails as an unknown model. Reproduce
+either without the UI:
+
+```bash
+kubectl -n database exec deploy/nao -- sh -c \
+  'curl -s -H "Authorization: Bearer $NAO_LLM_API_KEY" $NAO_LLM_BASE_URL/v1/models'
+```
 
 ## Where state lives
 

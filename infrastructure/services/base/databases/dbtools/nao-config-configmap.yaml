@@ -48,16 +48,31 @@ data:
     # LLM access goes through ai-gateway, so the provider keys stay in that
     # namespace and nao holds only the gateway token.
     #
-    # `provider: openai` names the WIRE PROTOCOL, not a vendor — which vendor
-    # actually answers is decided by the routing rule behind the alias below,
-    # in the ai-gateway dashboard. Hence the `/v1` appended here: the contract
+    # ONE provider entry, and it is the gateway — nao never names a vendor.
+    # `provider: openai` names the WIRE PROTOCOL, not a vendor: which vendor
+    # actually answers is decided by the routing rule behind each alias below,
+    # in the ai-gateway dashboard. Hence the `/v1` appended here — the contract
     # publishes only the gateway's address, and each client appends the path
     # for the protocol its SDK speaks.
+    #
+    # The four ids are CAPABILITY TIERS, not models. Swapping the vendor or the
+    # model behind a tier is a routing-rule edit in the dashboard: no change
+    # here, no commit, no restart. That is the whole point of naming them this
+    # way rather than `ai/sonnet` — an alias that names a vendor's model puts
+    # the vendor back in nao's config by the back door.
+    #
+    # Each one MUST exist as a routing rule in the dashboard. Every
+    # OpenAI-compatible request carries its model id in the body, so a client
+    # cannot discover these from the gateway; an alias no rule matches is
+    # rejected as an unknown model.
     llm:
       providers:
         - provider: openai
           api_key: "{{ env('NAO_LLM_API_KEY') }}"
           base_url: "{{ env('NAO_LLM_BASE_URL') }}/v1"
           models:
-            - id: "{{ env('NAO_LLM_MODEL') }}"
+            - id: "ai/low"
+            - id: "ai/normal"
               default: true
+            - id: "ai/high"
+            - id: "ai/xhigh"
