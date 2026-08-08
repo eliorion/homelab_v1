@@ -1,0 +1,24 @@
+# Environment-specific nao setting. Strategic-merge on env: entries merge by
+# `name`, so only BETTER_AUTH_URL is replaced.
+#
+# It must equal the browser-visible address exactly (scheme, host AND port) —
+# better-auth signs its callbacks against it, so a mismatch loops every login.
+#
+# The LLM settings are not here: the gateway's Service DNS name and the model
+# alias are identical in every environment, so both sit in the base Deployment.
+# The alias is nao's own choice and must match a routing rule created in the
+# ai-gateway dashboard — the gateway cannot push it to its clients, because a
+# model id travels in the body of every request. The credential is nao's own
+# virtual key in nao-ai-gateway-token.enc.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nao
+spec:
+  template:
+    spec:
+      containers:
+        - name: nao
+          env:
+            - name: BETTER_AUTH_URL
+              value: http://nao.tail45b0ca.ts.net:5005

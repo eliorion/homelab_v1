@@ -1,0 +1,39 @@
+# Metadata store for the database tools — NOT project data. pgAdmin keeps its
+# users/servers/preferences here and nao its users, sessions and chat history;
+# both are useless without the tool that wrote them, so they share one small
+# cluster instead of one each.
+#
+# ONE instance on purpose: there is no read-only consumer to serve from a
+# replica, and losing this cluster costs a re-login plus a re-import of
+# servers.json — not data. That is also why it carries NO ScheduledBackup
+# (the asp/fbref clusters do, because they hold irreplaceable scrapes).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: dbtools-db
+  namespace: database
+spec:
+  instances: 1
+  # PostgreSQL image, pinned to what the operator deployed (Renovate bumps it).
+  # NOTE: field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg
+  # is the operator image and must never be used here.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+
+  postgresql:
+    parameters:
+      max_connections: "100"
+      effective_cache_size: "256MB"
+      work_mem: "4MB"
+      maintenance_work_mem: "64MB"
+
+  bootstrap:
+    initdb:
+      # nao's own database. pgAdmin's is created beside it by the Database CR in
+      # pgadmin-database.yaml — initdb can only bootstrap ONE database, and the
+      # two tools must not share a schema namespace (both run their own
+      # migrations at startup, into public).
+      database: nao
+      owner: app
+
+  storage:
+    size: 5Gi

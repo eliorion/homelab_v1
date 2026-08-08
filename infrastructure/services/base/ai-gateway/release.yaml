@@ -11,7 +11,7 @@ metadata:
 spec:
   targetNamespace: ai-gateway
   releaseName: ai-gateway
-  interval: 30m
+  interval: 1m
   chart:
     spec:
       # Renovate keeps this pinned version current.
@@ -44,16 +44,16 @@ spec:
     service:
       type: ClusterIP
       port: 8080
-      # Publish on the tailnet via the Tailscale operator — authed by tailnet
-      # identity, off-LAN, never internet-exposed (same pattern as Longhorn /
-      # Radar / the asp + fbref admin UIs). Reach it at
-      # http://ai-gateway.<your-tailnet>.ts.net (plain HTTP, not 443).
-      annotations:
-        tailscale.com/expose: "true"
-        tailscale.com/hostname: ai-gateway
+      # NO `tailscale.com/expose` annotation here. The tailnet is published by
+      # ingress-tailscale.yaml instead, which serves HTTPS on 443 with no port
+      # in the URL; `expose` would forward at L3 on :8080 over plain http.
+      # Running both would register two tailnet devices contending for the same
+      # `ai-gateway` hostname.
 
-    # No Ingress: the gateway holds provider credentials and its dashboard is
-    # username/password only. Tailnet or nothing.
+    # The CHART's ingress stays off — it hardcodes `secretName` and routes via
+    # rules/host, neither of which suits a Tailscale Ingress. The tailnet
+    # Ingress is its own object (ingress-tailscale.yaml); there is still no
+    # public/LAN ingress of any kind.
     ingress:
       enabled: false
 
@@ -107,11 +107,16 @@ spec:
       logStyle: json
       envLabel: staging
 
-      # Git wins over the database. Without this the chart's values and rows
-      # created through the dashboard merely coexist, so a section deleted here
-      # would keep working from the DB and the cluster would silently diverge
-      # from this file.
-      sourceOfTruth: "config.json"
+      # THE DATABASE WINS. `split` is Bifrost's default: config.json seeds a
+      # section on first boot and is otherwise left alone, so edits made in the
+      # dashboard survive every restart. Combined with declaring NO providers,
+      # virtual keys or routing rules below, nothing in Git can overwrite the UI.
+      #
+      # The previous value, "config.json", did the opposite: it re-applied the
+      # file's sections at EVERY startup — even when the stored config_hash
+      # matched, because UI edits deliberately do not update that hash. Every
+      # pod restart silently reverted the dashboard.
+      sourceOfTruth: "split"
 
       encryptionKeySecret:
         name: ai-gateway-providers
@@ -135,73 +140,3 @@ spec:
         # so the origin list is not the security boundary here.
         allowedOrigins:
           - "*"
-
-      providers:
-        anthropic:
-          keys:
-            - name: primary
-              value: "env.ANTHROPIC_API_KEY"
-              weight: 1
-        openai:
-          keys:
-            - name: primary
-              value: "env.OPENAI_API_KEY"
-              weight: 1
-        openrouter:
-          keys:
-            - name: primary
-              value: "env.OPENROUTER_API_KEY"
-              weight: 1
-
-      governance:
-        virtualKeys:
-          # The client-facing credential. `env.` is resolved at load time, so
-          # the key itself stays in the SOPS Secret and never reaches the
-          # config.json ConfigMap.
-          - id: devcontainer
-            name: devcontainer
-            description: Shared developer/devcontainer key. Rotate by editing the staging Secret.
-            value: "env.AI_GATEWAY_VK"
-            is_active: true
-
-        # THE ABSTRACTION SEAM. Clients ask for `ai/opus`; this table decides
-        # which provider and model actually serves it. Re-point a model here
-        # and every project follows — no client redeploy, no env var change.
-        routingRules:
-          - id: alias-opus
-            name: ai/opus
-            description: Deepest reasoning / hardest agentic work.
-            enabled: true
-            cel_expression: 'model == "ai/opus"'
-            targets:
-              - provider: anthropic
-                model: claude-opus-5
-                weight: 1.0
-            scope: global
-            priority: 10
-          - id: alias-sonnet
-            name: ai/sonnet
-            description: Balanced default for everyday coding and chat.
-            enabled: true
-            cel_expression: 'model == "ai/sonnet"'
-            targets:
-              - provider: anthropic
-                model: claude-sonnet-5
-                weight: 1.0
-            scope: global
-            priority: 20
-          - id: alias-fast
-            name: ai/fast
-            description: Cheap + low-latency; classification, summaries, subagents.
-            enabled: true
-            cel_expression: 'model == "ai/fast"'
-            targets:
-              - provider: anthropic
-                model: claude-haiku-4-5
-                weight: 1.0
-            scope: global
-            priority: 30
-        # NO cross-provider fallbacks are declared on purpose: silently serving
-        # `ai/opus` from a different vendor would change behaviour, tool-call
-        # semantics and cost without the caller knowing. Failover is an
-        # explicit edit here, not an implicit default.

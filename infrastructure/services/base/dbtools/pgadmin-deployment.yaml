@@ -1,0 +1,190 @@
+# pgAdmin 4 — SQL client for the asp / fbref / scraper databases.
+#
+# Its own state (users, saved servers, preferences) goes to the `pgadmin`
+# database on dbtools-db, NOT to the /var/lib/pgadmin volume: with the config DB
+# external the volume holds only sessions and the pgpass file, so it can be an
+# emptyDir and a rescheduled pod costs one re-login, nothing more.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  labels:
+    app: pgadmin
+    component: dbtools
+spec:
+  replicas: 1
+  # Sessions live on the pod's emptyDir — never run two.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+        component: dbtools
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5050 # the uid baked into dpage/pgadmin4
+        runAsGroup: 5050
+        fsGroup: 5050
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Build the pgpass the servers.json PassFile entries point at, from the
+        # reflected CNPG credentials. Written at every start, so a CNPG password
+        # rotation needs only a pod restart — and no project password is ever
+        # persisted in pgAdmin's config database.
+        - name: pgpass
+          image: busybox:1.37.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              # pgAdmin looks under storage/<email with @ and . replaced>: it maps
+              # '@' to '_' and leaves dots alone (dev@example.fr -> dev_example.fr).
+              dir="/var/lib/pgadmin/storage/$(echo "$PGADMIN_DEFAULT_EMAIL" | tr '@' '_')"
+              mkdir -p "$dir"
+              umask 077
+              cat > "$dir/pgpass" <<EOF
+              asp-db-ro.asp.svc.cluster.local:5432:*:app:${ASP_DB_PASSWORD}
+              fbref-db-ro.fbref.svc.cluster.local:5432:*:app:${FBREF_DB_PASSWORD}
+              scraper-db-ro.scraper.svc.cluster.local:5432:*:app:${SCRAPER_DB_PASSWORD}
+              EOF
+              chmod 600 "$dir/pgpass"
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin-admin
+                  key: email
+            - name: ASP_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: asp-db-app
+                  key: password
+            - name: FBREF_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fbref-db-app
+                  key: password
+            - name: SCRAPER_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: scraper-db-app
+                  key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/pgadmin
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      containers:
+        - name: pgadmin
+          image: dpage/pgadmin4:9.17
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5050
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin-admin
+                  key: email
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin-admin
+                  key: password
+            # Bind above 1024: the container runs as uid 5050 with every
+            # capability dropped, so it cannot take the image's default port 80.
+            - name: PGADMIN_LISTEN_PORT
+              value: "5050"
+            # No mail container in this pod; without this the entrypoint waits on
+            # a Postfix that will never come up.
+            - name: PGADMIN_DISABLE_POSTFIX
+              value: "true"
+            - name: PGADMIN_CONFIG_UPGRADE_CHECK_ENABLED
+              value: "False"
+            # Saved passwords are the only thing the master password protects, and
+            # this deployment stores none (the servers use a pgpass file), so the
+            # prompt would cost a second secret to gain nothing.
+            - name: PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED
+              value: "False"
+            - name: PGADMIN_SERVER_JSON_FILE
+              value: /pgadmin4/servers.json
+            - name: PGADMIN_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: dbtools-db-app
+                  key: username
+            - name: PGADMIN_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dbtools-db-app
+                  key: password
+            # PGADMIN_CONFIG_* values are evaluated as PYTHON literals, hence the
+            # inner quotes. $(VAR) is Kubernetes' own env expansion (the two vars
+            # above are declared first, which is what makes it resolve).
+            - name: PGADMIN_CONFIG_CONFIG_DATABASE_URI
+              value: "'postgresql://$(PGADMIN_DB_USER):$(PGADMIN_DB_PASSWORD)@dbtools-db-rw.database.svc.cluster.local:5432/pgadmin'"
+          securityContext:
+            allowPrivilegeEscalation: false
+            # The image writes its runtime config, logs and sessions under
+            # /var/lib/pgadmin AND regenerates files under /pgadmin4 at boot, so a
+            # read-only root filesystem does not survive startup here.
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/pgadmin
+            - name: servers
+              mountPath: /pgadmin4/servers.json
+              subPath: servers.json
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /misc/ping
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /misc/ping
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        # Sessions + pgpass only — the config database is external.
+        - name: data
+          emptyDir: {}
+        - name: servers
+          configMap:
+            name: pgadmin-servers

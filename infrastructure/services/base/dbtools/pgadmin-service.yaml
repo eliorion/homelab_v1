@@ -1,0 +1,19 @@
+# ClusterIP only — NO Ingress. The tailnet annotations are added by the staging
+# overlay (apps/staging/dbtools/), so this base object stays reachable by
+# port-forward alone:
+#   kubectl -n database port-forward svc/pgadmin 5050:80
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin
+  labels:
+    app: pgadmin
+    component: dbtools
+spec:
+  type: ClusterIP
+  selector:
+    app: pgadmin
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

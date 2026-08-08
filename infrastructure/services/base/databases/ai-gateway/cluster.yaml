@@ -9,12 +9,23 @@ spec:
   # replicas against this database, so a single instance would make that HA
   # decorative — every pod fails together with the one database pod.
   instances: 2
+  # NO Flyway Job here, unlike asp-db / fbref-db / scraper-db. Those apps do not
+  # migrate themselves — their schema is hand-written SQL and Flyway is its
+  # source of truth. Bifrost is the inverse: it ships a numbered migration
+  # ladder (framework/configstore/migrations.go) and runs it against this
+  # database at startup. A Flyway Job would race the app's own migrator and
+  # force a hand-transcribed V-file for every Bifrost upgrade. Same reason
+  # keycloak-db has no migration Job.
   bootstrap:
     initdb:
       # Matches the Bifrost chart's own default user/db name
       # (values-examples/external-postgres.yaml) — no reason to diverge.
       database: bifrost
       owner: bifrost
+      # Bifrost's config store REQUIRES a UTF8 database. This is already CNPG's
+      # default; stated explicitly so a future default change cannot break the
+      # gateway quietly.
+      encoding: UTF8
   storage:
     # Starting size, mirroring keycloak-db's own note: sized for an unused
     # install. Bifrost's logs store (request/response audit log, materialized

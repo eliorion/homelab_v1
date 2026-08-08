@@ -1,0 +1,19 @@
+# ClusterIP only — NO Ingress. Tailnet annotations come from the staging overlay.
+# Port 5005 is kept end to end because BETTER_AUTH_URL must match the address the
+# browser actually uses, port included.
+#   kubectl -n database port-forward svc/nao 5005:5005
+apiVersion: v1
+kind: Service
+metadata:
+  name: nao
+  labels:
+    app: nao
+    component: dbtools
+spec:
+  type: ClusterIP
+  selector:
+    app: nao
+  ports:
+    - name: http
+      port: 5005
+      targetPort: http

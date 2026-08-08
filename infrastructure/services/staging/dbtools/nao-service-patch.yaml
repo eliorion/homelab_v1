@@ -1,0 +1,10 @@
+# Publish nao on the tailnet. Reach it at http://nao.tail45b0ca.ts.net:5005 —
+# the port matters: BETTER_AUTH_URL (nao-env-patch.yaml) must be byte-identical
+# to the address the browser uses, or the login redirect loops.
+apiVersion: v1
+kind: Service
+metadata:
+  name: nao
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: nao

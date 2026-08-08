@@ -1,0 +1,28 @@
+# pgAdmin's own login (server mode). Read it back with:
+#   sops -d apps/staging/dbtools/pgadmin-admin.enc.yaml
+# The email doubles as the storage-directory name pgAdmin uses for the pgpass
+# file the init container writes (@ -> _), so changing it changes that path.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: pgadmin-admin
+    namespace: database
+type: Opaque
+stringData:
+    email: ENC[AES256_GCM,data:PBc7KY0dsa3BGSYH6Tyt,iv:5F5KLolfUwnfloBrxmFmHDe6JY5NnEX9Vi8/0pfcbK8=,tag:8AgconPdHjm6r6chC8IE3w==,type:str]
+    password: ENC[AES256_GCM,data:bn8fozIUTmxw1oJ3chKnQC3aJpwLBENtu8bJdQ==,iv:Q9MvQ6lB9CT884Rzq+bXIeYSBnmVWce7zJ6UJRNW6bQ=,tag:me1kiNzZFeUReKcy51dUyA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBRTnpRdVRDeWxRWWwrcVRE
+            UG05a3RnTjRTMlBOZ1o4ZUJoc05oNmc3aEJ3Cll0dy9YRVVHQUhBczZud0VmQmpR
+            TzJQVHNZSnlKTkpYb04rN0dZZHBXa1kKLS0tIDlVeGd0UGZqR2JmVTFjcUVDVS9M
+            N0t5SHhER0p5QjJPNURFUThFQUZtRjgKebZ/JNNlHCuewqFlS6ZmZblo6c7frENB
+            WpI8C0cocmD24w8p13tEy4k2IZzaAgS2n7c5jSRslpdKiWwbdnSOZg==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-08-07T20:17:33Z"
+    mac: ENC[AES256_GCM,data:VqCplhYk6WkQ45gHSZTSN+EecNsRbJ37mkO3OiZyxDkY3PDVxec25CbEWI+rKcBqeLu973tKukDcu3QL7sYAmol5MpJ7a9BLsy3UXQRPp88tk+Rqo9msvQsO9sI9aY65cLuwlXwu/kEpKaXTVBt8mL7pABGHRNLQnBtMR/P6j7A=,iv:Qqtjs0PYA1J7SzWE4kMUBiCYHaqThytPxiBnMdVAq3I=,tag:CYBz3ZmyzM/ldt6rviuYGA==,type:str]
+    version: 3.13.3
