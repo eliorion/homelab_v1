@@ -102,8 +102,11 @@ clients:
     # policies match on email addresses and its JWT carries the email claim. A
     # Keycloak account with no email set therefore authenticates and is then
     # refused by every Access policy, which reads as a broken login.
+    # `openid` is NOT one of these. It is a request-time OIDC scope, not a
+    # Keycloak client scope, so listing it makes the server log
+    # "Referenced client scope 'openid' doesn't exist. Ignoring" on every
+    # import — a warning that looks like the cause of any nearby failure.
     defaultClientScopes:
-      - openid
       - email
       - profile
       - roles
