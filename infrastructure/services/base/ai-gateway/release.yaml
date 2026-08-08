@@ -106,6 +106,22 @@ spec:
         cpu: "2"
         memory: 2Gi
 
+    # PodSecurity `restricted` compliance. The chart already sets runAsNonRoot,
+    # runAsUser 1000 and drops ALL capabilities; these are the only two the
+    # admission warning named as missing. Helm merges maps, so naming just these
+    # keeps every chart default around them.
+    #
+    # The namespace only WARNS today, so the pods schedule either way — but a
+    # warning is the version of this that gets ignored until the day the label
+    # flips to `enforce` and the Deployment stops admitting.
+    podSecurityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      seccompProfile:
+        type: RuntimeDefault
+
     bifrost:
       appDir: /app/data
       port: 8080
@@ -146,3 +162,25 @@ spec:
         # so the origin list is not the security boundary here.
         allowedOrigins:
           - "*"
+
+      plugins:
+        # VIRTUAL KEYS LIVE HERE. The chart defaults this to false, and with it
+        # off the whole governance surface — virtual keys, budgets, rate limits,
+        # routing rules — has no API routes registered. The dashboard's requests
+        # then fall through to the SPA catch-all, so a GET returns 200 with HTML
+        # the UI cannot parse ("Failed to load virtual keys: An unexpected error
+        # occurred") and a POST returns a bare 405.
+        #
+        # This is infrastructure, not configuration: the plugin has to be on
+        # before the dashboard can own anything inside it.
+        governance:
+          enabled: true
+          version: 1
+          config:
+            # Inference must present a VIRTUAL key, not merely some credential.
+            # enforceAuthOnInference above only demands *a* credential; without
+            # this the admin password would also buy provider calls, which would
+            # make the per-project keys pointless as a spend boundary.
+            is_vk_mandatory: true
+            required_headers: []
+            is_enterprise: false
