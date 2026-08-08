@@ -25,7 +25,27 @@ spec:
         app: nao
         component: dbtools
     spec:
+      # Run as the `nao` user the image already provisions (uid/gid 1000), NOT as
+      # root. The image's entrypoint starts as root and `exec`s supervisord as
+      # root, but `/var/log/supervisor` is owned `nao:nao` 0755 — and with
+      # `capabilities: drop: [ALL]` root has no CAP_DAC_OVERRIDE, so it cannot
+      # write into a directory it does not own. supervisord died on its own log
+      # file at every start:
+      #   PermissionError: [Errno 13] Permission denied:
+      #     '/var/log/supervisor/supervisord.log'
+      # Starting as 1000 fixes it at the source instead of handing DAC_OVERRIDE
+      # back. Safe here because NAO_CONTEXT_SOURCE=local: the entrypoint's two
+      # `chown -R nao:nao` calls sit in its `git` and `api` branches and never
+      # run, and its `su nao … test -w` probe is warn-only.
+      #
+      # fsGroup makes the nao-project PVC (and the seeded nao_config.yaml the
+      # init container writes into it) group-writable, which is what `nao sync`
+      # and MCP tool discovery need. It applies to the init container too — pod
+      # level, not per container.
       securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       initContainers:
@@ -165,10 +185,11 @@ spec:
                   key: password
           securityContext:
             allowPrivilegeEscalation: false
-            # The image declares no USER and its entrypoint writes inside /app,
-            # so it runs as root with a writable root filesystem. Capabilities
-            # are still dropped, and the pod reaches nothing but the databases
-            # and the LLM gateway (see nao-networkpolicy.yaml).
+            # The image declares no USER and its entrypoint writes inside /app
+            # (owned `nao:nao`, which is why the pod runs as 1000 — see the pod
+            # securityContext), so the root filesystem stays writable.
+            # Capabilities are still dropped, and the pod reaches nothing but
+            # the databases and the LLM gateway (see nao-networkpolicy.yaml).
             readOnlyRootFilesystem: false
             capabilities:
               drop:
