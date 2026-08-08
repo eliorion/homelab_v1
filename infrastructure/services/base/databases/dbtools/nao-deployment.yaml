@@ -25,26 +25,18 @@ spec:
         app: nao
         component: dbtools
     spec:
-      # Run as the `nao` user the image already provisions (uid/gid 1000), NOT as
-      # root. The image's entrypoint starts as root and `exec`s supervisord as
-      # root, but `/var/log/supervisor` is owned `nao:nao` 0755 — and with
-      # `capabilities: drop: [ALL]` root has no CAP_DAC_OVERRIDE, so it cannot
-      # write into a directory it does not own. supervisord died on its own log
-      # file at every start:
-      #   PermissionError: [Errno 13] Permission denied:
-      #     '/var/log/supervisor/supervisord.log'
-      # Starting as 1000 fixes it at the source instead of handing DAC_OVERRIDE
-      # back. Safe here because NAO_CONTEXT_SOURCE=local: the entrypoint's two
-      # `chown -R nao:nao` calls sit in its `git` and `api` branches and never
-      # run, and its `su nao … test -w` probe is warn-only.
+      # Runs as ROOT, and it has to: /etc/supervisor/conf.d/nao.conf declares
+      # `[supervisord] user=root` with `user=nao` on both programs, so
+      # supervisord refuses to start as anyone else —
+      #   Error: Can't drop privilege as nonroot user
+      # — and then setuids to `nao` per program. Running the pod as 1000 was
+      # tried and fails exactly there.
       #
-      # fsGroup makes the nao-project PVC (and the seeded nao_config.yaml the
-      # init container writes into it) group-writable, which is what `nao sync`
-      # and MCP tool discovery need. It applies to the init container too — pod
-      # level, not per container.
+      # fsGroup is what the `nao` those programs drop to needs: it makes the
+      # nao-project PVC (and the nao_config.yaml the init container seeds into
+      # it) group-writable, so `nao sync` and MCP tool discovery can write. Pod
+      # level, so the init container is covered too.
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
@@ -185,20 +177,44 @@ spec:
                   key: password
           securityContext:
             allowPrivilegeEscalation: false
-            # The image declares no USER and its entrypoint writes inside /app
-            # (owned `nao:nao`, which is why the pod runs as 1000 — see the pod
-            # securityContext), so the root filesystem stays writable.
-            # Capabilities are still dropped, and the pod reaches nothing but
-            # the databases and the LLM gateway (see nao-networkpolicy.yaml).
+            # The image declares no USER and its entrypoint writes inside /app,
+            # so it runs as root with a writable root filesystem. The pod
+            # reaches nothing but the databases and the LLM gateway (see
+            # nao-networkpolicy.yaml).
             readOnlyRootFilesystem: false
             capabilities:
               drop:
                 - ALL
+              # The ONLY two handed back, and only because supervisord setuids
+              # to `nao` for each program (`user=nao` in nao.conf) and the
+              # entrypoint's `su nao … test -w` probe does the same. Without
+              # them the spawn fails and the probe prints a spurious
+              # "not writable" warning.
+              #
+              # NOT DAC_OVERRIDE. supervisord's own logfile lives in
+              # /var/log/supervisor, which the image ships owned `nao:nao` 0755
+              # — unwritable by a capability-less root, which is what crashed
+              # every boot with
+              #   PermissionError: [Errno 13] Permission denied:
+              #     '/var/log/supervisor/supervisord.log'
+              # An emptyDir over that path (see volumes) gives root a directory
+              # it owns, so the broadest of the three capabilities stays
+              # dropped. The log is supervisord's own supervision chatter; both
+              # programs already log to /dev/stdout and /dev/stderr, so nothing
+              # kubectl can show is lost by making it ephemeral.
+              add:
+                - SETUID
+                - SETGID
           volumeMounts:
             - name: project
               mountPath: /app/project
             - name: tmp
               mountPath: /tmp
+            # supervisord's own logfile, over the image's `nao:nao` 0755 dir —
+            # see the capabilities block for why this exists instead of
+            # CAP_DAC_OVERRIDE.
+            - name: supervisor-log
+              mountPath: /var/log/supervisor
           # TCP, not HTTP: the app runs its own DB migrations on boot and serves
           # no documented health path.
           readinessProbe:
@@ -230,4 +246,6 @@ spec:
           configMap:
             name: nao-config
         - name: tmp
+          emptyDir: {}
+        - name: supervisor-log
           emptyDir: {}
