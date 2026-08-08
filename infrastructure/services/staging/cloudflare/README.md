@@ -98,6 +98,126 @@ proxy, and these four path rules are that restriction. The admin console is
 reached over the tailnet
 (`https://keycloak-admin.tail45b0ca.ts.net`), never here.
 
+### 3. `nao.eliorion.fr` — the only hostname behind Cloudflare Access
+
+| Field | Value |
+|---|---|
+| Subdomain / Domain | `nao` / `eliorion.fr` |
+| Path | *(empty — the whole host)* |
+| Service | `http://nao.database.svc.cluster.local:5005` |
+| HTTP Host Header | *(leave empty — pass the original through)* |
+
+nao serves no TLS and the `database` namespace has no ingress NetworkPolicy, so
+the hop is plain HTTP inside the cluster, same as fbref-mcp.
+
+**This route is unauthenticated on its own.** Everything protecting it is the
+Access application below. Create the route and the application in the same
+sitting, in that order, and do not leave the route published in between: nao
+holds the owner-role credential for the asp, fbref and scraper databases and an
+ai-gateway key, and its own login is a self-service better-auth signup form.
+
+`BETTER_AUTH_URL` (`../databases/dbtools/nao-env-patch.yaml`) is
+`https://nao.eliorion.fr` and must equal this hostname byte for byte.
+
+**nao stays reachable on the tailnet too** (`https://nao.tail45b0ca.ts.net`),
+which better-auth allows only because both origins are listed in
+`BETTER_AUTH_TRUSTED_ORIGINS` in that same patch — its origin check answers 403
+`INVALID_ORIGIN` to any host it does not trust. Publishing a further hostname
+here means adding it there in the same sitting.
+
+That second door is a deliberate bypass of everything below: a tailnet user
+reaches nao without Cloudflare Access and without Keycloak. It is not a hole in
+this design, it is the pre-existing gate — but it does mean **Access is not a
+complete access-control boundary for nao**. Revoking someone means removing them
+from the Access policy AND from the tailnet.
+
+## Cloudflare Access — the login in front of nao
+
+Keycloak cannot be nao's own identity provider: self-hosted `getnao/nao` runs
+better-auth with local accounts, and SSO is a nao Enterprise feature. So
+Keycloak authenticates at the EDGE, before the tunnel is consulted, and nao's
+own login still follows it. **Two logins is expected, not a misconfiguration.**
+
+### The identity provider — Zero Trust → Settings → Authentication → Login methods → Add → Generic OIDC
+
+| Field | Value |
+|---|---|
+| Name | `Keycloak` |
+| App ID (client id) | `cloudflare-access` |
+| Client secret | `sops -d ../keycloak/realm/cloudflare-access-client.enc.yaml` |
+| Auth URL | `https://staging-keycloak.eliorion.fr/realms/apps/protocol/openid-connect/auth` |
+| Token URL | `https://staging-keycloak.eliorion.fr/realms/apps/protocol/openid-connect/token` |
+| Certificate (JWKS) URL | `https://staging-keycloak.eliorion.fr/realms/apps/protocol/openid-connect/certs` |
+| OIDC scopes | `openid`, `email`, `profile` |
+| PKCE | On |
+
+The realm is `apps` — declared in
+`../../base/keycloak/realm/realm-apps.yaml`, applied by the realm-config Job.
+It is **not** the `mcp` realm: that one has anonymous dynamic client
+registration open to claude.ai and chatgpt.com, and membership of it is already
+permission to read the fbref database.
+
+All three URLs live under `/realms/*`, which is **already routed** by hostname 2
+above — publishing this needs no new Keycloak route. Only the browser hits the
+Auth URL; the Token and JWKS URLs are called from Cloudflare's edge, so they too
+must resolve publicly, which they do.
+
+Two values must match on both sides or the flow fails at the last step:
+
+- the client secret, from the sops Secret above (Keycloak holds the same string
+  because the realm file declares it — it is not Keycloak-generated, precisely
+  so an import cannot rotate it silently);
+- the redirect URI. Keycloak allows exactly
+  `https://<team-name>.cloudflareaccess.com/cdn-cgi/access/callback`, built from
+  the `team-domain` key of that Secret. **It ships as a placeholder** — set it
+  before testing, or every login ends on *"Invalid parameter: redirect_uri"*.
+
+**Every Keycloak account in the `apps` realm needs an email address set.**
+Access identifies users by email and its policies match on it; a user with none
+authenticates successfully and is then refused by the policy, which reads as a
+broken login rather than a denied one.
+
+### The application — Zero Trust → Access → Applications → Add → Self-hosted
+
+| Field | Value |
+|---|---|
+| Application name | `nao` |
+| Session duration | 24h |
+| Public hostname | `nao.eliorion.fr` (whole host, no path) |
+| Identity providers | `Keycloak` **only** — untick everything else, including One-time PIN |
+| Instant Auth | On (single IdP, so skip the chooser) |
+
+Policy: **Allow**, `Include → Emails` listing the operator addresses. Do **not**
+use `Include → Everyone` with the IdP as the only gate — the `apps` realm has
+`registrationAllowed: false`, but an emails include keeps the two independent.
+
+Leaving One-time PIN enabled would let anyone with any email address bypass
+Keycloak entirely; it is on by default when an application is created.
+
+### Verifying
+
+```bash
+# From OFF the tailnet. Unauthenticated: Access intercepts before the tunnel.
+curl -sI https://nao.eliorion.fr/ | head -1          # 302 to cloudflareaccess.com
+
+# Follow it far enough to see WHERE it lands — it must be the Keycloak realm,
+# not the one-time-PIN page.
+curl -sIL https://nao.eliorion.fr/ | grep -i '^location:'
+
+# The realm's discovery document answers over the already-routed /realms/* path.
+curl -sS https://staging-keycloak.eliorion.fr/realms/apps/.well-known/openid-configuration \
+  | head -c 120
+
+# The tailnet path is UNCHANGED and still bypasses Access by design — confirm it
+# still works rather than assuming, since the same pod now serves two origins.
+# From ON the tailnet:
+curl -sI https://nao.tail45b0ca.ts.net/ | head -1     # 200, no Access redirect
+
+# A login that 403s on ONE host only means that origin is missing from
+# BETTER_AUTH_TRUSTED_ORIGINS. better-auth names it in the pod log:
+kubectl -n database logs -l app=nao | grep -i "invalid origin"
+```
+
 ## WAF rule — the second layer
 
 Security → WAF → Custom rules. One rule, on the `eliorion.fr` zone:
@@ -157,8 +277,12 @@ curl -sS https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-conf
 
 ## What is NOT configured here
 
-- **No Cloudflare Access application, and no Managed OAuth.** Authentication is
-  self-hosted in Keycloak; Cloudflare is transport only. Enabling Access on
-  these hostnames would put a second, conflicting OAuth flow in front of the
-  first.
-- **No Access service tokens.** Same reason.
+- **No Access application on `fbref-mcp.eliorion.fr` or
+  `staging-keycloak.eliorion.fr`, and no Managed OAuth.** Those two carry their
+  own OAuth flow — the MCP server is an OAuth resource server and Keycloak is
+  the authorization server behind it — so an Access application would put a
+  second, conflicting flow in front of the first. Access is used on
+  `nao.eliorion.fr` alone, and only because nao has no OAuth of its own.
+- **No Access service tokens.** Nothing machine-to-machine goes through Access.
+- **No WAF rule for `nao.eliorion.fr`.** Access blocks the whole host before the
+  tunnel; there is no admin path to carve out the way Keycloak's `/admin` is.

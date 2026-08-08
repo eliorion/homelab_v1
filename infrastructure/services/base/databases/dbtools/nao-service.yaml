@@ -1,9 +1,16 @@
 # ClusterIP only, and NO tailscale annotations — the staging overlay publishes
-# nao with a Tailscale Ingress (https, 443) instead, so this base object stays
-# reachable by port-forward alone:
+# nao two ways instead, both pointed at this Service:
+#   · a Tailscale Ingress (https, 443)  nao-ingress-tailscale.yaml
+#   · the Cloudflare tunnel, which routes https://nao.eliorion.fr at this
+#     Service by cluster DNS (http://nao.database.svc.cluster.local:5005).
+#     That route lives in the Zero Trust dashboard (the tunnel is
+#     token-managed), written down in
+#     infrastructure/services/staging/cloudflare/README.md.
+#
+# So this base object stays reachable by port-forward alone:
 #   kubectl -n database port-forward svc/nao 5005:5005
-# 5005 is only the in-cluster hop; the browser-visible address that
-# BETTER_AUTH_URL must match is the Ingress one.
+# 5005 is only the in-cluster hop. Every browser-visible address must appear in
+# BETTER_AUTH_TRUSTED_ORIGINS; one of them is also BETTER_AUTH_URL.
 apiVersion: v1
 kind: Service
 metadata:

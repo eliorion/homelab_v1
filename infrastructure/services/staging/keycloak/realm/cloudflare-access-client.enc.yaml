@@ -1,0 +1,36 @@
+# The Cloudflare Access OIDC client credential for the `apps` realm.
+# Template + full instructions: cloudflare-access-client.enc.yaml.example
+#
+# ACTION REQUIRED ON FIRST INSTALL: `team-domain` below is a placeholder. Set it
+# to the real Zero Trust team domain before the Access login method can work —
+# Keycloak matches redirect URIs textually, so the callback is rejected with
+# "Invalid parameter: redirect_uri" until it matches.
+#
+#   sops infrastructure/services/staging/keycloak/realm/cloudflare-access-client.enc.yaml
+#
+# The client secret IS real and already generated. Read it back the same way to
+# paste into Zero Trust → Settings → Authentication → the Keycloak login method.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: cloudflare-access-client
+    namespace: identity
+type: Opaque
+stringData:
+    client-secret: ENC[AES256_GCM,data:3Rak84fBvBIudWBKTwLuhQNn/+PTkU2UqeoqumvRARV5EaB8lwkcUYTqo7g=,iv:/n+xNx9qfWWjHEQYzitnsnf2DPNMbUIby9kCDv+PugA=,tag:TA6zzDYKpf8bnnDcdtcX7g==,type:str]
+    team-domain: ENC[AES256_GCM,data:EeXm5OVUIrPq5Xji7eDadSjeufoYl0xurMdT5Gevlpya9e2fnofwgQ+4cPBSQikp4UPr,iv:xmN6lpfpaS2g9rARqlwmTpHG7fO6KWtp2jGh0ls81m8=,tag:eyoLjOVUqhhos0vAQgdkig==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBQbmN5Y3RDczJ1WG9Nbmtq
+            cERpZkI2bytnV05vR3JiRklFVEQ3cDk1WlU4CmJrTFppUTlXODZtY0NzL0I4TFJY
+            bUIwYVA5d2pQeTA0QTFIc21BZVBjVm8KLS0tIEpqVWo5RFJVUGc1Tnl4MTY2akky
+            ZlY5ZjI1Ym5iVVREZnhubEpmN1dCMWsKnnDtmLeRTBcNKxMRKVcpps3DIWXXsh9q
+            kmwHIn2e7aXx3iNHBcF6SPMdrxutpeBi2pKyulfoFskDUmyHGKxnjw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-08-08T20:58:21Z"
+    mac: ENC[AES256_GCM,data:XghAvJ+hLbWT+0VNXJL/AtqdX0OCSJbjBt3S5M1Sa8TGaBcC7vEb98BBRCLRC464Bjr3QeaIP49cu0gdbCpgF5XTaa9QZ+Szh/79my3YnZ4Q0QBBXh3B3DRYKHej2T/SjVievd1TsuEyvCroMNx5w1iXW5RjuOoB4D4gHIM9tjg=,iv:4ev3Y9ajyub9ES1mIrae7WNOJDP+BURsbniGm4yszwQ=,tag:/eTOU+7rtv65o+X72NbmDw==,type:str]
+    version: 3.13.3
