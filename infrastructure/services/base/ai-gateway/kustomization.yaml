@@ -4,5 +4,6 @@ resources:
   - namespace.yaml
   - repository.yaml
   - release.yaml
+  - ingress-tailscale.yaml
   - contract.yaml
   - podmonitor.yaml

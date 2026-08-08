@@ -1,9 +1,16 @@
-# THE CLIENT CONTRACT, as data.
+# WHERE THE GATEWAY IS, as data.
 #
-# In-cluster consumers (agent pods, jobs) read these keys instead of hardcoding
-# a backend. Nothing here names Bifrost, so replacing the backend is a change to
+# In-cluster consumers (agent pods, jobs) read this instead of hardcoding a
+# backend. Nothing here names Bifrost, so replacing the backend is a change to
 # release.yaml alone. The matching credential is the `ai-gateway-token` Secret
 # (staging overlay), mirrored into the same namespaces.
+#
+# DELIBERATELY only the address. Model aliases and the per-protocol paths used
+# to live here too, and both were a promise this file could not keep: routing
+# rules are created in the dashboard, so publishing `ai/sonnet` from Git
+# asserted a rule that may not exist, and the /anthropic + /v1 paths were just
+# the base URL with a suffix each consumer can append itself. A consumer picks
+# its own protocol path and names whatever alias it created in the UI.
 #
 # Reflector mirrors this into every consumer namespace, because a ConfigMap
 # cannot be read across namespaces.
@@ -14,20 +21,14 @@ metadata:
   namespace: ai-gateway
   annotations:
     reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: asp,fbref,lab,scraper
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: asp,fbref,lab,scraper,database
     reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: asp,fbref,lab,scraper
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: asp,fbref,lab,scraper,database
 data:
   # Base URL for in-cluster callers. Off-cluster callers (laptop, devcontainer)
   # use the tailnet host instead — see README.md.
+  #
+  # Append the path your SDK speaks: `/anthropic` for Anthropic-compatible
+  # clients, `/v1` for OpenAI-compatible ones. Both are served by the same
+  # process on the same port.
   AI_GATEWAY_BASE_URL: "http://ai-gateway.ai-gateway.svc.cluster.local:8080"
-  # The two wire protocols the gateway speaks. A client picks the one its SDK
-  # already talks; both are served by the same process on the same port.
-  AI_GATEWAY_ANTHROPIC_URL: "http://ai-gateway.ai-gateway.svc.cluster.local:8080/anthropic"
-  AI_GATEWAY_OPENAI_URL: "http://ai-gateway.ai-gateway.svc.cluster.local:8080/v1"
-  # Provider-neutral model aliases. Ask for these, never for a vendor model id
-  # — which model actually answers is decided by the routing rules in
-  # release.yaml, so re-pointing a tier costs no client change.
-  AI_GATEWAY_MODEL_SMART: "ai/opus"
-  AI_GATEWAY_MODEL_DEFAULT: "ai/sonnet"
-  AI_GATEWAY_MODEL_FAST: "ai/fast"
