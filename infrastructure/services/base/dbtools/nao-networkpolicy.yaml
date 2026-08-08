@@ -1,0 +1,55 @@
+# nao reaches the three project databases, its own metadata cluster, DNS, and
+# the in-cluster LLM gateway. No 443 rule: every LLM call goes through
+# ai-gateway, so the agent has no path to a provider (or anywhere else) directly.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nao
+  labels:
+    app: nao
+    component: dbtools
+spec:
+  podSelector:
+    matchLabels:
+      app: nao
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: asp-db
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: asp
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: fbref-db
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: fbref
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: scraper-db
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: scraper
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: dbtools-db
+      ports:
+        - protocol: TCP
+          port: 5432
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # The LLM gateway, by namespace label (never by pod IP).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: ai-gateway
+      ports:
+        - protocol: TCP
+          port: 8080

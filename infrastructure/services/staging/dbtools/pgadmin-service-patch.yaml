@@ -1,0 +1,11 @@
+# Publish pgAdmin on the tailnet via the Tailscale operator — authed by tailnet
+# identity, off-LAN, never internet-exposed (same pattern as the asp/fbref admin
+# UIs and Longhorn). Reach it at http://pgadmin.tail45b0ca.ts.net (Service port
+# 80, plain HTTP).
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: pgadmin

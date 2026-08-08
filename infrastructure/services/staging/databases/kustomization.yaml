@@ -9,3 +9,5 @@ kind: Kustomization
 resources:
   - keycloak/
   - ai-gateway/
+  # pgAdmin's config database + nao's users/sessions/chat history.
+  - dbtools/

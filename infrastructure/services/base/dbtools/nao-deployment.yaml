@@ -1,0 +1,205 @@
+# nao — open-source analytics agent (getnao/nao). Reads the three project
+# databases through their replica services and answers questions about them.
+#
+# Two stores, deliberately separate:
+#   /app/project (PVC)  — the context: nao_config.yaml + `nao sync` output
+#   DB_URI (dbtools-db) — users, sessions, chat history; migrated at startup
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nao
+  labels:
+    app: nao
+    component: dbtools
+spec:
+  replicas: 1
+  # One RWO project volume — never two pods.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nao
+  template:
+    metadata:
+      labels:
+        app: nao
+        component: dbtools
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Seed the project directory ONCE. `cp -n` is the whole point: after the
+        # first boot the PVC copy wins, so `nao init` inside the pod is not
+        # silently reverted on the next restart.
+        - name: seed-project
+          image: busybox:1.37.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              mkdir -p /app/project
+              cp -n /seed/nao_config.yaml /app/project/nao_config.yaml
+              echo "project dir:"; ls -la /app/project
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: project
+              mountPath: /app/project
+            - name: seed
+              mountPath: /seed
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      containers:
+        - name: nao
+          # No semver tags are published — `latest` and the commit tags are all
+          # there is. Pinned to a commit so a restart cannot silently change the
+          # running version; bump it deliberately.
+          image: getnao/nao:b325bba
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5005
+          env:
+            - name: NAO_DEFAULT_PROJECT_PATH
+              value: /app/project
+            # The project comes from the PVC, not from a git clone at boot.
+            - name: NAO_CONTEXT_SOURCE
+              value: local
+            # MUST match the URL the browser uses, or every login redirect fails.
+            # The staging overlay patches in the tailnet address.
+            - name: BETTER_AUTH_URL
+              value: http://localhost:5005
+            # Stable across restarts — a generated one would invalidate every
+            # session on each rollout.
+            - name: BETTER_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: nao-secrets
+                  key: better-auth-secret
+            - name: NAO_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: dbtools-db-app
+                  key: username
+            - name: NAO_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dbtools-db-app
+                  key: password
+            # $(VAR) is Kubernetes env expansion over the two vars declared above.
+            - name: DB_URI
+              value: postgres://$(NAO_DB_USER):$(NAO_DB_PASSWORD)@dbtools-db-rw.database.svc.cluster.local:5432/nao
+            # LLM access through the ai-gateway contract — nao never names a
+            # vendor or a vendor model. All three are `optional: true` so the pod
+            # still serves its UI if reflector has not mirrored the contract yet
+            # (chat is what fails, not the process).
+            #
+            # Consumed by nao_config.yaml via {{ env('...') }}.
+            - name: NAO_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-gateway-token
+                  key: AI_GATEWAY_TOKEN
+                  optional: true
+            - name: NAO_LLM_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ai-gateway-contract
+                  key: AI_GATEWAY_OPENAI_URL
+                  optional: true
+            - name: NAO_LLM_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: ai-gateway-contract
+                  key: AI_GATEWAY_MODEL_DEFAULT
+                  optional: true
+            # Project DB credentials, consumed by nao_config.yaml's env() calls.
+            - name: ASP_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: asp-db-app
+                  key: username
+            - name: ASP_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: asp-db-app
+                  key: password
+            - name: FBREF_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: fbref-db-app
+                  key: username
+            - name: FBREF_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fbref-db-app
+                  key: password
+            - name: SCRAPER_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: scraper-db-app
+                  key: username
+            - name: SCRAPER_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: scraper-db-app
+                  key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            # The image declares no USER and its entrypoint writes inside /app,
+            # so it runs as root with a writable root filesystem. Capabilities
+            # are still dropped, and the pod reaches nothing but the databases
+            # and the LLM gateway (see nao-networkpolicy.yaml).
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: project
+              mountPath: /app/project
+            - name: tmp
+              mountPath: /tmp
+          # TCP, not HTTP: the app runs its own DB migrations on boot and serves
+          # no documented health path.
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+      volumes:
+        - name: project
+          persistentVolumeClaim:
+            claimName: nao-project
+        - name: seed
+          configMap:
+            name: nao-config
+        - name: tmp
+          emptyDir: {}

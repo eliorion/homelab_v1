@@ -1,0 +1,21 @@
+# Environment-specific nao setting. Strategic-merge on env: entries merge by
+# `name`, so only BETTER_AUTH_URL is replaced.
+#
+# It must equal the browser-visible address exactly (scheme, host AND port) —
+# better-auth signs its callbacks against it, so a mismatch loops every login.
+#
+# The LLM coordinates are NOT here: they come from the reflected
+# ai-gateway-contract ConfigMap (see nao-deployment.yaml), which is the whole
+# point of that contract — no consumer hardcodes the gateway.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nao
+spec:
+  template:
+    spec:
+      containers:
+        - name: nao
+          env:
+            - name: BETTER_AUTH_URL
+              value: http://nao.tail45b0ca.ts.net:5005

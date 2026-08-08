@@ -1,0 +1,51 @@
+# pgAdmin talks to exactly four Postgres clusters and DNS. No 443: it is a SQL
+# client, and the version check is disabled.
+#
+# NOTE the rw/ro Services select the SAME pods, so this policy cannot express
+# "replica only" — the read-only guarantee comes from the host in servers.json
+# pointing at <cluster>-ro, not from here.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pgadmin
+  labels:
+    app: pgadmin
+    component: dbtools
+spec:
+  podSelector:
+    matchLabels:
+      app: pgadmin
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: asp-db
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: asp
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: fbref-db
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: fbref
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: scraper-db
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: scraper
+        # Its own config database, in this namespace.
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: dbtools-db
+      ports:
+        - protocol: TCP
+          port: 5432
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

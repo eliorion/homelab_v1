@@ -16,3 +16,9 @@ patches:
     target:
       kind: Cluster
       name: scraper-db
+  # Permit kubernetes-reflector to mirror the -app secret into the `database` ns
+  # (pgAdmin + nao read this DB through scraper-db-ro).
+  - path: cluster-reflector-patch.yaml
+    target:
+      kind: Cluster
+      name: scraper-db
