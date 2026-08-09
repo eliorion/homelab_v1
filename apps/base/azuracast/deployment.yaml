@@ -36,6 +36,17 @@ spec:
           env:
             - name: APPLICATION_ENV
               value: production
+            # Required, not optional. MYSQL_USER/PASSWORD/DATABASE are baked into
+            # the image; the root-password choice is not, and without one of the
+            # four MARIADB_*ROOT_PASSWORD options the first-boot init aborts with
+            # "Database is uninitialized and password option is not specified".
+            # MariaDB then starts on a datadir with no `mysql` schema and dies on
+            # "Table 'mysql.db' doesn't exist", taking nginx, php-fpm, Icecast and
+            # Liquidsoap with it — supervisord gates them all behind it.
+            # Random is right here: nothing needs the root account, since the app
+            # connects as `azuracast` over the container's own socket.
+            - name: MYSQL_RANDOM_ROOT_PASSWORD
+              value: "yes"
           # MariaDB, Redis, PHP-FPM, Icecast and Liquidsoap share this one
           # container, so the request is for the whole stack, not a web app.
           resources:
