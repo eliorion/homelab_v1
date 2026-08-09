@@ -1,0 +1,19 @@
+# Permit kubernetes-reflector to mirror this cluster's generated Secrets into the
+# `database` namespace (pgAdmin + nao — infrastructure/services/staging/databases/dbtools/). inheritedMetadata
+# is CNPG's only hook for annotating generated Secrets (the -app connection secret;
+# see cloudnative-pg #5883) — it stamps ALL cluster objects, so we ONLY permit
+# reflection here. The database ns pulls EXACTLY the -app secret via an explicit
+# `reflects` stub (infrastructure/services/base/databases/dbtools/db-reflect-stubs.yaml); with no auto-mirror
+# the -ca / -server / -replication secrets are never copied out of this namespace.
+#
+# `lab` is NOT listed: the lab chart's projects list is asp + fbref only, and a
+# permit with no consumer is a permit nobody audits.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: scraper-db
+spec:
+  inheritedMetadata:
+    annotations:
+      reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+      reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "database"

@@ -1,0 +1,26 @@
+# TEMPLATE — pgAdmin's own login (server mode). Fill the two values, then:
+#
+#   cd infrastructure/services/staging/databases/dbtools
+#   cp pgadmin-admin.enc.yaml.example pgadmin-admin.enc.yaml
+#   sops --encrypt --in-place pgadmin-admin.enc.yaml
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.example`
+# matches nothing and is never encrypted — NEVER put a real password here.
+#
+# Read an existing one back with:
+#   sops -d infrastructure/services/staging/dbtools/pgadmin-admin.enc.yaml
+#
+# The email is not cosmetic. The init container derives the pgpass storage
+# directory from it (`@` -> `_`, dots kept), so changing it moves that path and
+# every pre-registered server starts prompting for a password; it is also the
+# pgAdmin user that owns the imported servers.json in the `pgadmin` database on
+# dbtools-db, and servers.json is imported once per user.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pgadmin-admin
+  namespace: database
+type: Opaque
+stringData:
+  email: REPLACE_WITH_LOGIN_EMAIL
+  password: REPLACE_WITH_LOGIN_PASSWORD

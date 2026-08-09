@@ -1,0 +1,259 @@
+# nao — open-source analytics agent (getnao/nao). Reads the three project
+# databases through their replica services and answers questions about them.
+#
+# Two stores, deliberately separate:
+#   /app/project (PVC)  — the context: nao_config.yaml + `nao sync` output
+#   DB_URI (dbtools-db) — users, sessions, chat history; migrated at startup
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nao
+  labels:
+    app: nao
+    component: dbtools
+spec:
+  replicas: 1
+  # One RWO project volume — never two pods.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nao
+  template:
+    metadata:
+      labels:
+        app: nao
+        component: dbtools
+    spec:
+      # Runs as ROOT, and it has to: /etc/supervisor/conf.d/nao.conf declares
+      # `[supervisord] user=root` with `user=nao` on both programs, so
+      # supervisord refuses to start as anyone else —
+      #   Error: Can't drop privilege as nonroot user
+      # — and then setuids to `nao` per program. Running the pod as 1000 was
+      # tried and fails exactly there.
+      #
+      # fsGroup is what the `nao` those programs drop to needs: it makes the
+      # nao-project PVC (and the nao_config.yaml the init container seeds into
+      # it) group-writable, so `nao sync` and MCP tool discovery can write. Pod
+      # level, so the init container is covered too.
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Seed the project directory ONCE. `cp -n` is the whole point: after the
+        # first boot the PVC copy wins, so `nao init` inside the pod is not
+        # silently reverted on the next restart.
+        - name: seed-project
+          image: busybox:1.37.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              mkdir -p /app/project
+              cp -n /seed/nao_config.yaml /app/project/nao_config.yaml
+              echo "project dir:"; ls -la /app/project
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: project
+              mountPath: /app/project
+            - name: seed
+              mountPath: /seed
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      containers:
+        - name: nao
+          # No semver tags are published — `latest` and the commit tags are all
+          # there is. Pinned to a commit so a restart cannot silently change the
+          # running version; bump it deliberately.
+          image: getnao/nao:b325bba
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5005
+          env:
+            - name: NAO_DEFAULT_PROJECT_PATH
+              value: /app/project
+            # The project comes from the PVC, not from a git clone at boot.
+            - name: NAO_CONTEXT_SOURCE
+              value: local
+            # Usage analytics to eu.i.posthog.com, which the NetworkPolicy beside
+            # this file does not allow — and the client does not give up quietly.
+            # `nao sync` finished its 39 real seconds of work, printed "Sync
+            # Complete", then sat parked on the upload for THIRTY MINUTES before
+            # it was killed. The same code runs in the chat process. Off, at the
+            # source: an egress rule for a telemetry endpoint is not the trade
+            # here (nao_core/tracking.py reads this).
+            - name: POSTHOG_DISABLED
+              value: "true"
+            # The canonical browser address. The staging overlay patches in the
+            # tunnel address AND a BETTER_AUTH_TRUSTED_ORIGINS list, because nao
+            # is published on two hosts and better-auth's origin check refuses
+            # any host it does not trust.
+            - name: BETTER_AUTH_URL
+              value: http://localhost:5005
+            # Stable across restarts — a generated one would invalidate every
+            # session on each rollout.
+            - name: BETTER_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: nao-secrets
+                  key: better-auth-secret
+            - name: NAO_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: dbtools-db-app
+                  key: username
+            - name: NAO_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dbtools-db-app
+                  key: password
+            # $(VAR) is Kubernetes env expansion over the two vars declared above.
+            - name: DB_URI
+              value: postgres://$(NAO_DB_USER):$(NAO_DB_PASSWORD)@dbtools-db-rw.database.svc.cluster.local:5432/nao
+            # LLM access through ai-gateway — nao never names a vendor or a
+            # vendor model. All three values are nao's OWN, held in this
+            # namespace: nothing is mirrored in from the ai-gateway namespace.
+            #
+            # Consumed by nao_config.yaml via {{ env('...') }}.
+            #
+            # nao's OWN virtual key, created in the ai-gateway dashboard and
+            # stored here (staging/databases/dbtools/nao-ai-gateway-token.enc.yaml). One
+            # key per project, so it can be revoked or have its spend read off
+            # without touching any other consumer. `optional: true` keeps the
+            # pod serving its UI before the key is filled in — chat is what
+            # fails, not the process.
+            - name: NAO_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: nao-ai-gateway-token
+                  key: AI_GATEWAY_TOKEN
+                  optional: true
+            # The gateway's in-cluster Service DNS name — reachable from any
+            # namespace, so this needs no mirrored ConfigMap; the NetworkPolicy
+            # beside this file is what actually grants the path. nao appends its
+            # own `/v1` in nao_config.yaml, because which wire protocol a client
+            # speaks is the client's business, not the gateway's.
+            - name: NAO_LLM_BASE_URL
+              value: "http://ai-gateway.ai-gateway.svc.cluster.local:8080"
+            # NO model env var. The four tier aliases nao offers are listed
+            # in nao_config.yaml directly — a single env var cannot express a
+            # list, and the aliases are neither secret nor environment-specific.
+            # Project DB credentials, consumed by nao_config.yaml's env() calls.
+            - name: ASP_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: asp-db-app
+                  key: username
+            - name: ASP_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: asp-db-app
+                  key: password
+            - name: FBREF_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: fbref-db-app
+                  key: username
+            - name: FBREF_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fbref-db-app
+                  key: password
+            - name: SCRAPER_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: scraper-db-app
+                  key: username
+            - name: SCRAPER_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: scraper-db-app
+                  key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            # The image declares no USER and its entrypoint writes inside /app,
+            # so it runs as root with a writable root filesystem. The pod
+            # reaches nothing but the databases and the LLM gateway (see
+            # nao-networkpolicy.yaml).
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+              # The ONLY two handed back, and only because supervisord setuids
+              # to `nao` for each program (`user=nao` in nao.conf) and the
+              # entrypoint's `su nao … test -w` probe does the same. Without
+              # them the spawn fails and the probe prints a spurious
+              # "not writable" warning.
+              #
+              # NOT DAC_OVERRIDE. supervisord's own logfile lives in
+              # /var/log/supervisor, which the image ships owned `nao:nao` 0755
+              # — unwritable by a capability-less root, which is what crashed
+              # every boot with
+              #   PermissionError: [Errno 13] Permission denied:
+              #     '/var/log/supervisor/supervisord.log'
+              # An emptyDir over that path (see volumes) gives root a directory
+              # it owns, so the broadest of the three capabilities stays
+              # dropped. The log is supervisord's own supervision chatter; both
+              # programs already log to /dev/stdout and /dev/stderr, so nothing
+              # kubectl can show is lost by making it ephemeral.
+              add:
+                - SETUID
+                - SETGID
+          volumeMounts:
+            - name: project
+              mountPath: /app/project
+            - name: tmp
+              mountPath: /tmp
+            # supervisord's own logfile, over the image's `nao:nao` 0755 dir —
+            # see the capabilities block for why this exists instead of
+            # CAP_DAC_OVERRIDE.
+            - name: supervisor-log
+              mountPath: /var/log/supervisor
+          # TCP, not HTTP: the app runs its own DB migrations on boot and serves
+          # no documented health path.
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+      volumes:
+        - name: project
+          persistentVolumeClaim:
+            claimName: nao-project
+        - name: seed
+          configMap:
+            name: nao-config
+        - name: tmp
+          emptyDir: {}
+        - name: supervisor-log
+          emptyDir: {}

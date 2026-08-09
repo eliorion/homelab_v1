@@ -1,0 +1,127 @@
+# The `apps` realm — the login for self-hosted web UIs published through the
+# Cloudflare tunnel, authenticated at the EDGE by Cloudflare Access.
+#
+# Today that is exactly one UI, nao (https://nao.eliorion.fr). The realm is not
+# named after it because a Cloudflare Access identity provider is configured
+# ONCE per Zero Trust account and reused by every Access application: a second
+# published UI adds an Access application and a policy, not a second realm and a
+# second IdP. Naming this `nao` would have meant renaming it the first time
+# anything else was published.
+#
+# WHY NOT THE `mcp` REALM. That realm has anonymous dynamic client registration
+# open to claude.ai and chatgpt.com, and its own comment states the access rule
+# plainly: a user existing there IS permission to read the fbref database.
+# Adding nao's operators to it would silently grant that, and adding nao's
+# client would put a browser SSO client in a realm whose registration surface is
+# public. Two audiences, two realms.
+#
+# WHAT THIS REALM DOES NOT DO. nao has no OIDC of its own — self-hosted
+# `getnao/nao` runs better-auth with local accounts and SSO is an Enterprise
+# feature — so Keycloak is not nao's identity provider. It authenticates the
+# request BEFORE it reaches the tunnel; nao's own login still follows. Two
+# logins is the cost of fronting an app that cannot delegate its own.
+realm: apps
+enabled: true
+displayName: Apps
+
+# Every flow here crosses the public internet.
+sslRequired: all
+
+# Nobody self-registers. Accounts are created in the admin console over the
+# tailnet, exactly like the `mcp` realm — see documentations/02-keycloak.md.
+registrationAllowed: false
+registrationEmailAsUsername: false
+resetPasswordAllowed: false
+loginWithEmailAllowed: true
+duplicateEmailsAllowed: false
+verifyEmail: false
+rememberMe: false
+
+# The login page is on the public internet, so brute-force protection is not
+# optional. Same shape as the `mcp` realm: five failures, exponential wait
+# capped at 15 minutes, and NOT permanent — with a handful of human accounts a
+# permanent lock is a self-inflicted outage anybody can trigger.
+bruteForceProtected: true
+permanentLockout: false
+failureFactor: 5
+waitIncrementSeconds: 60
+maxFailureWaitSeconds: 900
+minimumQuickLoginWaitSeconds: 60
+quickLoginCheckMilliSeconds: 1000
+maxDeltaTimeSeconds: 43200
+
+otpPolicyType: totp
+otpPolicyAlgorithm: HmacSHA1
+otpPolicyDigits: 6
+otpPolicyPeriod: 30
+otpPolicyLookAheadWindow: 1
+
+# The code is exchanged once, immediately, by Cloudflare's edge; after that the
+# session is Access's own cookie and these tokens are never used again. Short is
+# free. The SSO session is what decides how often the Keycloak login page is
+# shown again when Access re-authenticates.
+accessTokenLifespan: 300
+ssoSessionIdleTimeout: 1800
+ssoSessionMaxLifespan: 36000
+
+clients:
+  # The ONE client. Cloudflare Access speaks generic OIDC authorization code
+  # flow: it sends the browser to /auth, then exchanges the code from its own
+  # edge against /token and validates the id_token against /certs.
+  - clientId: cloudflare-access
+    name: Cloudflare Access
+    description: Zero Trust edge authentication for tunnel-published UIs
+    protocol: openid-connect
+    enabled: true
+    # Confidential. The code exchange happens server-to-server from Cloudflare's
+    # edge, so there is a real secret and no reason to run this public.
+    publicClient: false
+    # Substituted from CF_ACCESS_CLIENT_SECRET by keycloak-config-cli (job.yaml
+    # enables var substitution and sources it from a sops Secret). Declared here
+    # rather than left to Keycloak's generator so the value is stable across
+    # imports — a regenerated secret breaks the Cloudflare side silently, and
+    # the only symptom is a failed token exchange nobody sees.
+    secret: $(env:CF_ACCESS_CLIENT_SECRET)
+    standardFlowEnabled: true
+    # Off, all of them: a browser SSO client needs the code flow and nothing
+    # else. Direct access grants would turn this client into a password oracle
+    # on the public internet.
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    # The Zero Trust team domain, from CF_ACCESS_TEAM_DOMAIN — e.g.
+    # https://<team-name>.cloudflareaccess.com. Access always calls back to the
+    # same path regardless of which application the user was reaching, so ONE
+    # entry covers every UI published behind it.
+    redirectUris:
+      - $(env:CF_ACCESS_TEAM_DOMAIN)/cdn-cgi/access/callback
+    # No browser JavaScript talks to this client — Cloudflare's edge does. An
+    # empty list means no CORS origin is granted.
+    webOrigins: []
+    # Access asks for `openid email profile` and identifies users BY EMAIL: its
+    # policies match on email addresses and its JWT carries the email claim. A
+    # Keycloak account with no email set therefore authenticates and is then
+    # refused by every Access policy, which reads as a broken login.
+    # `openid` is NOT one of these. It is a request-time OIDC scope, not a
+    # Keycloak client scope, so listing it makes the server log
+    # "Referenced client scope 'openid' doesn't exist. Ignoring" on every
+    # import — a warning that looks like the cause of any nearby failure.
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    # This client carries no roles of its own and must not inherit the realm's.
+    fullScopeAllowed: false
+    # Consent would be shown on every login to an application the operator owns
+    # outright, and Access cannot render it.
+    consentRequired: false
+
+# NO `users:` BLOCK, DELIBERATELY — same rule as realm-mcp.yaml. Accounts are
+# created in the admin console over the tailnet, and the import Job's
+# IMPORT_MANAGED_USER=no-delete is what keeps a realm edit from deleting them
+# all. Membership of this realm is not itself permission: the Cloudflare Access
+# policy on each application decides which of these users reaches which UI.

@@ -1,0 +1,61 @@
+# Environment-specific nao settings. Strategic-merge on env: entries merge by
+# `name`, so only the two variables below are replaced.
+#
+# nao is reachable on TWO addresses, each with its own gate:
+#
+#   https://nao.eliorion.fr        Cloudflare tunnel + Access (Keycloak `apps` realm)
+#   https://nao.tail45b0ca.ts.net  tailnet (Tailscale Ingress)
+#
+# better-auth does not take two base URLs, so the pair needs both variables:
+#
+# BETTER_AUTH_URL is the ONE canonical address. It is the public one because
+# that is the address a link is shared as. Server-side it is only the base for
+# absolute URL construction — nao has no email verification and no social
+# provider, so nothing is actually built from it in this deployment. The
+# BROWSER never uses it: the frontend bundle resolves its API base from
+# window.location.origin (verified in the image, apps/frontend/dist), so every
+# call is same-origin on whichever host you arrived on.
+#
+# BETTER_AUTH_TRUSTED_ORIGINS is what actually makes the second host work.
+# better-auth's origin check rejects any non-GET whose Origin is not trusted
+# with 403 INVALID_ORIGIN, and the default trust list is baseURL alone — so
+# without this, logging in over the tailnet fails while the same login over the
+# tunnel succeeds. Read at dist/context/helpers.mjs:
+#
+#     const envTrustedOrigins = env.BETTER_AUTH_TRUSTED_ORIGINS;
+#     if (envTrustedOrigins) trustedOrigins.push(...envTrustedOrigins.split(","));
+#
+# TWO CONSEQUENCES OF THAT ONE LINE. It is `.split(",")` with NO trim, so a
+# space after the comma produces the origin " https://…" and trusts nothing;
+# and it PUSHES, so this list adds to baseURL rather than replacing it. Values
+# are origins — scheme + host, no path, no trailing slash.
+#
+# EVERY WAY IN MUST BE LISTED HERE. Adding an Ingress or a tunnel hostname
+# without adding its origin to this line ships a UI that loads and then refuses
+# every login, which reads as "nao is broken" rather than as a config gap.
+#
+# Changing either value does NOT invalidate sessions: better-auth signs those
+# with BETTER_AUTH_SECRET (nao-secrets.enc.yaml). Cookies are per-host though,
+# so each address carries its own session and you log in once per address.
+#
+# The LLM settings are not here: the gateway's Service DNS name and the model
+# alias are identical in every environment, so both sit in the base Deployment.
+# The alias is nao's own choice and must match a routing rule created in the
+# ai-gateway dashboard — the gateway cannot push it to its clients, because a
+# model id travels in the body of every request. The credential is nao's own
+# virtual key in nao-ai-gateway-token.enc.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nao
+spec:
+  template:
+    spec:
+      containers:
+        - name: nao
+          env:
+            - name: BETTER_AUTH_URL
+              value: https://nao.eliorion.fr
+            # NO SPACE after the comma — see above.
+            - name: BETTER_AUTH_TRUSTED_ORIGINS
+              value: https://nao.eliorion.fr,https://nao.tail45b0ca.ts.net

@@ -1,0 +1,60 @@
+# The three servers pgAdmin pre-registers on first login (PGADMIN_SERVER_JSON_FILE).
+#
+# Every host is the CNPG `-ro` REPLICA service: a replica is in recovery and
+# rejects writes at the server, so a mistyped UPDATE fails with SQLSTATE 25006
+# rather than mutating a project database.
+#
+# PassFile is resolved RELATIVE TO the pgAdmin storage directory of the logged-in
+# user (/var/lib/pgadmin/storage/<email with @ -> _>/), which is why the leading
+# "/" here is not a filesystem root. The init container writes that file from the
+# reflected CNPG secrets on every start — so no password is stored in pgAdmin's
+# config database, and a CNPG credential rotation is picked up by a pod restart.
+#
+# The import runs ONCE per user (pgAdmin records it in its config DB). Editing
+# this ConfigMap will not re-import; delete the server in the UI first, or the
+# rows in the pgadmin database's `server` table.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgadmin-servers
+  labels:
+    component: dbtools
+data:
+  servers.json: |
+    {
+      "Servers": {
+        "1": {
+          "Name": "asp (replica, read-only)",
+          "Group": "Automarket",
+          "Host": "asp-db-ro.asp.svc.cluster.local",
+          "Port": 5432,
+          "MaintenanceDB": "automarket",
+          "Username": "app",
+          "PassFile": "/pgpass",
+          "SSLMode": "prefer",
+          "Comment": "Listings, price history, scrape_queue, search_requests."
+        },
+        "2": {
+          "Name": "fbref (replica, read-only)",
+          "Group": "Automarket",
+          "Host": "fbref-db-ro.fbref.svc.cluster.local",
+          "Port": 5432,
+          "MaintenanceDB": "fbref",
+          "Username": "app",
+          "PassFile": "/pgpass",
+          "SSLMode": "prefer",
+          "Comment": "Football-reference + transfermarkt: public, mcp, tm, xwalk, cmp, audit."
+        },
+        "3": {
+          "Name": "scraper (replica, read-only)",
+          "Group": "Automarket",
+          "Host": "scraper-db-ro.scraper.svc.cluster.local",
+          "Port": 5432,
+          "MaintenanceDB": "scraper",
+          "Username": "app",
+          "PassFile": "/pgpass",
+          "SSLMode": "prefer",
+          "Comment": "Scraping platform: lanes, scrape_requests, result_queue, site_config."
+        }
+      }
+    }

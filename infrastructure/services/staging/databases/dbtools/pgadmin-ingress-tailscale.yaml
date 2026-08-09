@@ -1,0 +1,42 @@
+# pgAdmin, published on the tailnet over HTTPS and NOWHERE ELSE.
+#
+#   https://pgadmin.tail45b0ca.ts.net
+#
+# A Tailscale INGRESS rather than the `tailscale.com/expose` annotation this
+# Service used to carry — the same call keycloak's admin console and the
+# ai-gateway dashboard make. `expose` is an L3 forward that PRESERVES the
+# Service port, so it published a password-authenticated console over plain
+# http on :80. An Ingress gets HTTPS on 443 with a MagicDNS-issued certificate
+# (no cert-manager Certificate, no DNS record to keep in sync), which is where
+# the session cookie belongs, and drops the port from the URL.
+#
+# The Service therefore carries NO tailscale annotations: both mechanisms at
+# once register two tailnet devices contending for one hostname, and the loser
+# is silently suffixed (`pgadmin-1`).
+#
+# pgAdmin builds its own redirects, so it has to learn the scheme from the
+# proxy. The tailscale proxy sets X-Forwarded-Proto and pgAdmin applies
+# werkzeug's ProxyFix in server mode (PROXY_X_PROTO_COUNT defaults to 1), so no
+# extra PGADMIN_CONFIG_* is needed.
+#
+# PRECONDITION: HTTPS Certificates enabled in the Tailscale admin console
+# (DNS -> HTTPS Certificates). Without it the proxy comes up with no
+# certificate and pgAdmin is unreachable.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pgadmin
+  labels:
+    app: pgadmin
+    component: dbtools
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: pgadmin
+      port:
+        number: 80
+  tls:
+    # The device name. MagicDNS serves it at https://pgadmin.tail45b0ca.ts.net.
+    - hosts:
+        - pgadmin

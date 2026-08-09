@@ -1,0 +1,51 @@
+# nao on the tailnet, over HTTPS.
+#
+#   https://nao.tail45b0ca.ts.net
+#
+# ONE OF TWO ways in. The other is the Cloudflare tunnel
+# (https://nao.eliorion.fr, behind Cloudflare Access with Keycloak as the
+# identity provider — infrastructure/services/staging/cloudflare/README.md).
+# Both are live at once, and each has its own gate: tailnet membership here,
+# an Access policy there.
+#
+# WHAT MAKES TWO HOSTS SAFE FOR better-auth. `BETTER_AUTH_URL` takes exactly
+# one value, so the second host would normally fail its CSRF origin check with
+# 403 INVALID_ORIGIN. `BETTER_AUTH_TRUSTED_ORIGINS` (nao-env-patch.yaml) lists
+# BOTH, which is what makes the pair work — verified in the running image:
+# better-auth reads that variable in dist/context/helpers.mjs and the browser
+# bundle resolves its API base from window.location.origin, so every call is
+# same-origin whichever host you arrived on. Add a host HERE and you must add
+# it THERE in the same sitting.
+#
+# A Tailscale INGRESS rather than the `tailscale.com/expose` annotation this
+# Service used to carry. `expose` is an L3 forward that PRESERVES the Service
+# port, so nao was served as plain http on :5005 — and that port then had to be
+# carried in the auth URL. An Ingress terminates TLS at the proxy with a
+# MagicDNS-issued certificate: better-auth's session cookie lands on a secure
+# origin, and the URL loses its port.
+#
+# The Service therefore carries NO tailscale annotations: both mechanisms at
+# once register two tailnet devices contending for one hostname, and the loser
+# is silently suffixed (`nao-1`) — which is an origin nothing trusts.
+#
+# PRECONDITION: HTTPS Certificates enabled in the Tailscale admin console
+# (DNS -> HTTPS Certificates). Without it the proxy comes up with no
+# certificate and nao is unreachable on the tailnet.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nao
+  labels:
+    app: nao
+    component: dbtools
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: nao
+      port:
+        number: 5005
+  tls:
+    # The device name. MagicDNS serves it at https://nao.tail45b0ca.ts.net.
+    - hosts:
+        - nao

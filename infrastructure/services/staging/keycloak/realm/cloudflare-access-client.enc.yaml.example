@@ -1,0 +1,37 @@
+# TEMPLATE — the Cloudflare Access OIDC client credential for the `apps` realm.
+# Fill both values, then:
+#
+#   cd infrastructure/services/staging/keycloak/realm
+#   cp cloudflare-access-client.enc.yaml.example cloudflare-access-client.enc.yaml
+#   openssl rand -base64 32          # paste as client-secret
+#   $EDITOR cloudflare-access-client.enc.yaml
+#   sops --encrypt --in-place cloudflare-access-client.enc.yaml
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.example`
+# matches nothing and is never encrypted — NEVER put the real secret here.
+#
+# Read an existing one back with:
+#   sops -d infrastructure/services/staging/keycloak/realm/cloudflare-access-client.enc.yaml
+#
+# BOTH values are read by the keycloak-realm-config Job as $(env:...) references
+# inside base/keycloak/realm/realm-apps.yaml. Changing either one means
+# re-running the import (the ConfigMap hash does not change when only the Secret
+# does — delete the Job, or touch the realm file, to force it).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-access-client
+  namespace: identity
+type: Opaque
+stringData:
+  # The client secret of the `cloudflare-access` client. Generated here, NOT by
+  # Keycloak: it is entered by hand in Zero Trust → Settings → Authentication →
+  # the Keycloak login method, and a Keycloak-generated one would be rotated by
+  # the next realm import with no symptom other than a failed token exchange.
+  client-secret: REPLACE_WITH_OPENSSL_RAND_BASE64_32
+  # The Zero Trust team domain, WITH scheme and NO trailing slash. Zero Trust →
+  # Settings → Custom Pages shows the team name; the domain is
+  # https://<team-name>.cloudflareaccess.com. Keycloak matches redirect URIs
+  # textually, so a trailing slash or a missing scheme rejects every callback
+  # with "Invalid parameter: redirect_uri".
+  team-domain: https://REPLACE_WITH_TEAM_NAME.cloudflareaccess.com

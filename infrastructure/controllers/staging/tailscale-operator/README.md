@@ -83,8 +83,27 @@ http://asp-admin-ui.tail45b0ca.ts.net:8080
 http://fbref-admin-ui.tail45b0ca.ts.net:8080
 http://longhorn.tail45b0ca.ts.net          # Service port 80
 ```
-(For HTTPS on 443 you would switch to a Tailscale **Ingress** —
-`ingressClassName: tailscale` + MagicDNS HTTPS — not configured here.)
+Four services deliberately do **not** use `expose`, and take a Tailscale
+**Ingress** (`ingressClassName: tailscale` + MagicDNS HTTPS) instead — HTTPS on
+443, no port in the URL:
+```
+https://keycloak-admin.tail45b0ca.ts.net   # admin console (ns identity)
+https://ai-gateway.tail45b0ca.ts.net       # dashboard + LLM API (ns ai-gateway)
+https://pgadmin.tail45b0ca.ts.net          # SQL client (ns database)
+https://nao.tail45b0ca.ts.net              # analytics agent (ns database)
+```
+All four are password-authenticated consoles, and `ai-gateway` additionally
+carries API credentials in request headers. That path needs **HTTPS
+Certificates** enabled in the Tailscale admin console (DNS → HTTPS
+Certificates).
+
+`nao` is the one entry whose address is load-bearing beyond reachability: its
+`BETTER_AUTH_URL`
+(`infrastructure/services/staging/databases/dbtools/nao-env-patch.yaml`) must match the
+browser URL byte for byte — `https://`, no port — or every login redirect
+fails. That is also why a leftover `nao` device from the old `expose` setup
+matters: MagicDNS suffixes the newcomer (`nao-1`) and the mismatch loops the
+login.
 
 ## Egress — reach `rsp-asp` from inside the cluster  (`egress-proxies.yaml`)
 

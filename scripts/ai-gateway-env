@@ -30,8 +30,10 @@ _aigw_main() {
 		if [ "$in_cluster" -eq 1 ]; then
 			AI_GATEWAY_BASE_URL="http://ai-gateway.ai-gateway.svc.cluster.local:8080"
 		elif [ -n "${AI_GATEWAY_TAILNET:-}" ]; then
-			# Tailscale operator serves plain HTTP on 80, not 443.
-			AI_GATEWAY_BASE_URL="http://ai-gateway.${AI_GATEWAY_TAILNET}"
+			# HTTPS on 443, no port: the tailnet Ingress (ingressClassName
+			# tailscale) terminates TLS with a MagicDNS-issued certificate.
+			# `ai-gateway` is the device name from that Ingress's tls.hosts.
+			AI_GATEWAY_BASE_URL="https://ai-gateway.${AI_GATEWAY_TAILNET}"
 		else
 			_aigw_die "set AI_GATEWAY_TAILNET (e.g. tail1234.ts.net) or AI_GATEWAY_BASE_URL" || return 1
 		fi

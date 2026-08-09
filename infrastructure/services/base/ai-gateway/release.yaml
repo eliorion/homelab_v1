@@ -11,7 +11,7 @@ metadata:
 spec:
   targetNamespace: ai-gateway
   releaseName: ai-gateway
-  interval: 30m
+  interval: 1m
   chart:
     spec:
       # Renovate keeps this pinned version current.
@@ -29,31 +29,56 @@ spec:
     nameOverride: ai-gateway
     fullnameOverride: ai-gateway
 
-    # State lives in CNPG (storage.mode: postgres below), not on a per-pod
-    # volume, so multiple replicas share one consistent config/virtual-key
-    # store. Two is enough for the homelab's single-tenant load — matches the
-    # `instances: 2` on ai-gateway-db itself.
-    replicaCount: 2
+    # ONE replica, and it is not a capacity decision.
+    #
+    # State does live in CNPG (storage.mode: postgres below) rather than on a
+    # per-pod volume — but that only makes the STORE shared, not the view of
+    # it. Bifrost loads virtual keys, providers and routing rules into memory
+    # at startup and a dashboard write does not invalidate the sibling's copy,
+    # so two pods answer the same request differently until both restart. Live,
+    # with one key created after boot:
+    #
+    #   10.244.1.211  ->  401 virtual_key_not_found
+    #   10.244.2.239  ->  200                          # same key, same second
+    #
+    # The Service round-robins, so half of a client's calls 401 and half of the
+    # dashboard's own page loads deny what the other half shows — which is
+    # exactly as confusing to debug as it sounds. Same lesson the scraper's
+    # FlareSolverr carries: state that cannot be shared must not be split.
+    #
+    # Nothing is lost. Inference is stateless, HA for the DATA is the CNPG
+    # cluster's job (`instances: 2` there is unrelated), and a homelab gateway
+    # has no load a second pod would relieve. The rollout still surges (default
+    # maxSurge 25% rounds up to 1, maxUnavailable 25% rounds down to 0), so an
+    # upgrade has no gap — during that overlap the split briefly exists again,
+    # which is the one moment not to be editing the dashboard.
+    replicaCount: 1
 
     image:
       repository: docker.io/maximhq/bifrost
       # renovate: datasource=docker depName=docker.io/maximhq/bifrost
-      # Chart 2.1.34 ships appVersion 1.5.12; the chart REQUIRES an explicit tag.
-      tag: "v1.5.12"
+      # The chart REQUIRES an explicit tag (values.schema.json: "required —
+      # validated at template render time"), so this is the real version knob.
+      #
+      # DELIBERATELY AHEAD OF THE CHART'S appVersion, which still reads 1.5.12:
+      # upstream does not bump chart metadata per app release — chart 2.1.34 and
+      # image v1.6.9 were published the same day. Pinning the appVersion here
+      # would run a months-old gateway. Renovate tracks the image, not appVersion.
+      tag: "v1.6.9"
 
     service:
       type: ClusterIP
       port: 8080
-      # Publish on the tailnet via the Tailscale operator — authed by tailnet
-      # identity, off-LAN, never internet-exposed (same pattern as Longhorn /
-      # Radar / the asp + fbref admin UIs). Reach it at
-      # http://ai-gateway.<your-tailnet>.ts.net (plain HTTP, not 443).
-      annotations:
-        tailscale.com/expose: "true"
-        tailscale.com/hostname: ai-gateway
+      # NO `tailscale.com/expose` annotation here. The tailnet is published by
+      # ingress-tailscale.yaml instead, which serves HTTPS on 443 with no port
+      # in the URL; `expose` would forward at L3 on :8080 over plain http.
+      # Running both would register two tailnet devices contending for the same
+      # `ai-gateway` hostname.
 
-    # No Ingress: the gateway holds provider credentials and its dashboard is
-    # username/password only. Tailnet or nothing.
+    # The CHART's ingress stays off — it hardcodes `secretName` and routes via
+    # rules/host, neither of which suits a Tailscale Ingress. The tailnet
+    # Ingress is its own object (ingress-tailscale.yaml); there is still no
+    # public/LAN ingress of any kind.
     ingress:
       enabled: false
 
@@ -100,6 +125,22 @@ spec:
         cpu: "2"
         memory: 2Gi
 
+    # PodSecurity `restricted` compliance. The chart already sets runAsNonRoot,
+    # runAsUser 1000 and drops ALL capabilities; these are the only two the
+    # admission warning named as missing. Helm merges maps, so naming just these
+    # keeps every chart default around them.
+    #
+    # The namespace only WARNS today, so the pods schedule either way — but a
+    # warning is the version of this that gets ignored until the day the label
+    # flips to `enforce` and the Deployment stops admitting.
+    podSecurityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      seccompProfile:
+        type: RuntimeDefault
+
     bifrost:
       appDir: /app/data
       port: 8080
@@ -107,11 +148,16 @@ spec:
       logStyle: json
       envLabel: staging
 
-      # Git wins over the database. Without this the chart's values and rows
-      # created through the dashboard merely coexist, so a section deleted here
-      # would keep working from the DB and the cluster would silently diverge
-      # from this file.
-      sourceOfTruth: "config.json"
+      # THE DATABASE WINS. `split` is Bifrost's default: config.json seeds a
+      # section on first boot and is otherwise left alone, so edits made in the
+      # dashboard survive every restart. Combined with declaring NO providers,
+      # virtual keys or routing rules below, nothing in Git can overwrite the UI.
+      #
+      # The previous value, "config.json", did the opposite: it re-applied the
+      # file's sections at EVERY startup — even when the stored config_hash
+      # matched, because UI edits deliberately do not update that hash. Every
+      # pod restart silently reverted the dashboard.
+      sourceOfTruth: "split"
 
       encryptionKeySecret:
         name: ai-gateway-providers
@@ -136,72 +182,24 @@ spec:
         allowedOrigins:
           - "*"
 
-      providers:
-        anthropic:
-          keys:
-            - name: primary
-              value: "env.ANTHROPIC_API_KEY"
-              weight: 1
-        openai:
-          keys:
-            - name: primary
-              value: "env.OPENAI_API_KEY"
-              weight: 1
-        openrouter:
-          keys:
-            - name: primary
-              value: "env.OPENROUTER_API_KEY"
-              weight: 1
-
-      governance:
-        virtualKeys:
-          # The client-facing credential. `env.` is resolved at load time, so
-          # the key itself stays in the SOPS Secret and never reaches the
-          # config.json ConfigMap.
-          - id: devcontainer
-            name: devcontainer
-            description: Shared developer/devcontainer key. Rotate by editing the staging Secret.
-            value: "env.AI_GATEWAY_VK"
-            is_active: true
-
-        # THE ABSTRACTION SEAM. Clients ask for `ai/opus`; this table decides
-        # which provider and model actually serves it. Re-point a model here
-        # and every project follows — no client redeploy, no env var change.
-        routingRules:
-          - id: alias-opus
-            name: ai/opus
-            description: Deepest reasoning / hardest agentic work.
-            enabled: true
-            cel_expression: 'model == "ai/opus"'
-            targets:
-              - provider: anthropic
-                model: claude-opus-5
-                weight: 1.0
-            scope: global
-            priority: 10
-          - id: alias-sonnet
-            name: ai/sonnet
-            description: Balanced default for everyday coding and chat.
-            enabled: true
-            cel_expression: 'model == "ai/sonnet"'
-            targets:
-              - provider: anthropic
-                model: claude-sonnet-5
-                weight: 1.0
-            scope: global
-            priority: 20
-          - id: alias-fast
-            name: ai/fast
-            description: Cheap + low-latency; classification, summaries, subagents.
-            enabled: true
-            cel_expression: 'model == "ai/fast"'
-            targets:
-              - provider: anthropic
-                model: claude-haiku-4-5
-                weight: 1.0
-            scope: global
-            priority: 30
-        # NO cross-provider fallbacks are declared on purpose: silently serving
-        # `ai/opus` from a different vendor would change behaviour, tool-call
-        # semantics and cost without the caller knowing. Failover is an
-        # explicit edit here, not an implicit default.
+      plugins:
+        # VIRTUAL KEYS LIVE HERE. The chart defaults this to false, and with it
+        # off the whole governance surface — virtual keys, budgets, rate limits,
+        # routing rules — has no API routes registered. The dashboard's requests
+        # then fall through to the SPA catch-all, so a GET returns 200 with HTML
+        # the UI cannot parse ("Failed to load virtual keys: An unexpected error
+        # occurred") and a POST returns a bare 405.
+        #
+        # This is infrastructure, not configuration: the plugin has to be on
+        # before the dashboard can own anything inside it.
+        governance:
+          enabled: true
+          version: 1
+          config:
+            # Inference must present a VIRTUAL key, not merely some credential.
+            # enforceAuthOnInference above only demands *a* credential; without
+            # this the admin password would also buy provider calls, which would
+            # make the per-project keys pointless as a spend boundary.
+            is_vk_mandatory: true
+            required_headers: []
+            is_enterprise: false

@@ -1,0 +1,103 @@
+# SEED copy of nao_config.yaml. The init container installs it into the project
+# PVC only when the file is ABSENT, so `nao init` / edits made inside the pod
+# survive restarts and this ConfigMap is a starting point, not the live config.
+# To re-seed from git: delete the file in the pod and restart —
+#   kubectl -n database exec deploy/nao -- rm /app/project/nao_config.yaml
+#   kubectl -n database rollout restart deploy/nao
+#
+# No secret appears here: `{{ env('...') }}` is nao's own interpolation, resolved
+# in the pod against the env vars the Deployment injects from the reflected CNPG
+# secrets. Every host is the `-ro` REPLICA service — the agent reads, and the
+# server rejects a write even if it tries one.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nao-config
+  labels:
+    component: dbtools
+data:
+  nao_config.yaml: |
+    # REQUIRED, and the whole file is rejected without it: NaoConfig.project_name
+    # has no default, so a missing one fails validation before any database is
+    # parsed — nao then starts with ZERO connections and the UI simply shows
+    # none, with the reason only in `nao debug`.
+    project_name: automarket
+
+    # Automarket platform — three Postgres databases, all read through their
+    # CNPG replica service.
+    #
+    # The schema key is `schema_name` (PostgresConfig field), NOT `schema`.
+    # Pydantic ignores unknown keys here, so `schema:` was accepted in silence
+    # and every connection fell back to the default search_path.
+    #
+    # `templates` is stated on every entry because the DEFAULT is
+    # [columns, query_history, preview] and query_history reads
+    # pg_stat_statements, an extension none of these three clusters installs.
+    # It failed on every database and left an empty query_history.md beside each
+    # of the 39 tables. Restore it here the day the extension is enabled.
+    databases:
+      - name: asp
+        type: postgres
+        host: asp-db-ro.asp.svc.cluster.local
+        port: 5432
+        database: automarket
+        schema_name: public
+        user: "{{ env('ASP_DB_USER') }}"
+        password: "{{ env('ASP_DB_PASSWORD') }}"
+        templates:
+          - columns
+          - preview
+      - name: fbref
+        type: postgres
+        host: fbref-db-ro.fbref.svc.cluster.local
+        port: 5432
+        database: fbref
+        schema_name: public
+        user: "{{ env('FBREF_DB_USER') }}"
+        password: "{{ env('FBREF_DB_PASSWORD') }}"
+        templates:
+          - columns
+          - preview
+      - name: scraper
+        type: postgres
+        host: scraper-db-ro.scraper.svc.cluster.local
+        port: 5432
+        database: scraper
+        schema_name: public
+        user: "{{ env('SCRAPER_DB_USER') }}"
+        password: "{{ env('SCRAPER_DB_PASSWORD') }}"
+        templates:
+          - columns
+          - preview
+
+    # LLM access goes through ai-gateway, so the provider keys stay in that
+    # namespace and nao holds only the gateway token.
+    #
+    # ONE provider entry, and it is the gateway — nao never names a vendor.
+    # `provider: openai` names the WIRE PROTOCOL, not a vendor: which vendor
+    # actually answers is decided by the routing rule behind each alias below,
+    # in the ai-gateway dashboard. Hence the `/v1` appended here — the contract
+    # publishes only the gateway's address, and each client appends the path
+    # for the protocol its SDK speaks.
+    #
+    # The four ids are CAPABILITY TIERS, not models. Swapping the vendor or the
+    # model behind a tier is a routing-rule edit in the dashboard: no change
+    # here, no commit, no restart. That is the whole point of naming them this
+    # way rather than `ai/sonnet` — an alias that names a vendor's model puts
+    # the vendor back in nao's config by the back door.
+    #
+    # Each one MUST exist as a routing rule in the dashboard. Every
+    # OpenAI-compatible request carries its model id in the body, so a client
+    # cannot discover these from the gateway; an alias no rule matches is
+    # rejected as an unknown model.
+    llm:
+      providers:
+        - provider: openai
+          api_key: "{{ env('NAO_LLM_API_KEY') }}"
+          base_url: "{{ env('NAO_LLM_BASE_URL') }}/v1"
+          models:
+            - id: "ai/low"
+            - id: "ai/normal"
+              default: true
+            - id: "ai/high"
+            - id: "ai/xhigh"
