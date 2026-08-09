@@ -6,6 +6,7 @@ kind: Kustomization
 resources:
   - asp/
   - audiobookshelf/
+  - azuracast/
   - fbref/
   - glpi/
   - linkding/
