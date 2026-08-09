@@ -1,0 +1,53 @@
+# One PVC per volume the upstream docker-compose declares, so each grows on its
+# own. A Deployment (not a StatefulSet) owns them, which keeps them resizable —
+# the music library is the one volume here guaranteed to fill up.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azuracast-db
+  namespace: azuracast
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Station media, playlists and recordings.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azuracast-stations
+  namespace: azuracast
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+# /var/azuracast/storage — upstream splits this into uploads, geoip, sftpgo,
+# acme, shoutcast2, stereo_tool and rsas sub-volumes; one mount covers them all.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azuracast-storage
+  namespace: azuracast
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azuracast-backups
+  namespace: azuracast
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

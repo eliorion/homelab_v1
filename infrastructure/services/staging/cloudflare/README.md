@@ -98,6 +98,45 @@ proxy, and these four path rules are that restriction. The admin console is
 reached over the tailnet
 (`https://keycloak-admin.tail45b0ca.ts.net`), never here.
 
+### 3. `mve-azuracast.eliorion.fr`
+
+| Field | Value |
+|---|---|
+| Subdomain / Domain | `mve-azuracast` / `eliorion.fr` |
+| Path | *(empty — the whole host)* |
+| Service | `http://azuracast.azuracast.svc.cluster.local:80` |
+| HTTP Host Header | *(leave empty — pass the original through)* |
+
+Check for a conflicting DNS record before adding this, the same way section 2
+describes: a leftover `A` record for this name means the tunnel is bypassed and
+you get a TLS failure with no HTTP status to read.
+
+AzuraCast builds its own absolute URLs from the request host (`prefer_browser_url`
+defaults on), so rewriting the Host header here produces a working page whose
+links all point somewhere else. Leave it empty. Plain HTTP to the origin is
+deliberate — the pod serves no TLS, and the hop is inside the cluster.
+
+**First run:** the container boots into a setup wizard, which asks for the site
+base URL. Enter `https://mve-azuracast.eliorion.fr` — that value is what
+security-critical emails (password resets) are built from.
+
+**Do not enable "Use Web Proxy for Radio" in Administration → System Settings.**
+That setting moves station audio onto port 80 under `/listen/*`, which is this
+tunnel's route, so every listener's stream would then flow through the Cloudflare
+proxy — the sustained non-HTML traffic Cloudflare's ToS §2.8 restricts. Streams
+are meant to stay on the cluster Service (`azuracast.azuracast.svc:8000` and the
+per-station ports above it); only the web UI belongs on this hostname.
+
+**The admin login is internet-facing on this hostname.** Unlike section 2 there
+is no path scoping to apply — AzuraCast serves its UI and its admin area from the
+same routes, so they cannot be separated at the edge. The compensating controls
+are the image pin (`0.23.8`; CVE-2026-42606 lets an unauthenticated attacker
+poison `X-Forwarded-Host` to steal password-reset links and wipe 2FA, fixed in
+0.23.6) and a strong admin password set at first run. A Cloudflare Access policy
+in front of this hostname is the obvious hardening step if the public player is
+not needed; it does not conflict with anything, because AzuraCast has no OAuth
+flow of its own.
+
 ## WAF rule — the second layer
 
 Security → WAF → Custom rules. One rule, on the `eliorion.fr` zone:

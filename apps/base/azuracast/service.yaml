@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: azuracast
+  namespace: azuracast
+spec:
+  type: ClusterIP
+  selector:
+    app: azuracast
+  ports:
+    # cloudflared targets this port for mve-azuracast.eliorion.fr.
+    - name: http
+      port: 80
+      targetPort: http
+    # First auto-assigned station mount (AUTO_ASSIGN_PORT_MIN). ClusterIP only —
+    # audio deliberately does not leave the cluster through the tunnel. Extra
+    # stations get ports 8005, 8010, … and need their own entries here.
+    - name: icecast
+      port: 8000
+      targetPort: icecast

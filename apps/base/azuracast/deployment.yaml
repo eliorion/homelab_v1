@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azuracast
+  namespace: azuracast
+spec:
+  replicas: 1
+  strategy:
+    # RWO Longhorn volumes and an embedded MariaDB: the old pod must release the
+    # volumes before the new one attaches. RollingUpdate deadlocks here.
+    type: Recreate
+  selector:
+    matchLabels:
+      app: azuracast
+  template:
+    metadata:
+      labels:
+        app: azuracast
+    spec:
+      containers:
+        - name: azuracast
+          # Pinned; Renovate bumps it. Do NOT pin below 0.23.6 — CVE-2026-42606
+          # (CVSS 8.1) lets any client poison X-Forwarded-Host to redirect
+          # password-reset links to an attacker host, taking over admin accounts
+          # and wiping 2FA. That matters here specifically because this instance
+          # is reachable from the internet through the tunnel.
+          image: ghcr.io/azuracast/azuracast:0.23.8
+          # No securityContext: the all-in-one image starts supervisord as root
+          # and drops privileges per-process itself. runAsNonRoot or a capability
+          # drop stops it booting.
+          ports:
+            - name: http
+              containerPort: 80
+            - name: icecast
+              containerPort: 8000
+          env:
+            - name: APPLICATION_ENV
+              value: production
+          # MariaDB, Redis, PHP-FPM, Icecast and Liquidsoap share this one
+          # container, so the request is for the whole stack, not a web app.
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          # First boot initialises MariaDB and runs migrations — minutes, not
+          # seconds. The startup probe carries that window (10 min) so the
+          # liveness probe can stay tight afterwards.
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+          volumeMounts:
+            - name: db
+              mountPath: /var/lib/mysql
+            - name: stations
+              mountPath: /var/azuracast/stations
+            - name: storage
+              mountPath: /var/azuracast/storage
+            - name: backups
+              mountPath: /var/azuracast/backups
+      volumes:
+        - name: db
+          persistentVolumeClaim:
+            claimName: azuracast-db
+        - name: stations
+          persistentVolumeClaim:
+            claimName: azuracast-stations
+        - name: storage
+          persistentVolumeClaim:
+            claimName: azuracast-storage
+        - name: backups
+          persistentVolumeClaim:
+            claimName: azuracast-backups
