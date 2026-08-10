@@ -1,6 +1,6 @@
 # AzuraCast — remote listeners without a VPS
 
-Doc 10 measured what a listener costs the *server*: **0.202 Mbps**, everything
+Doc 13 measured what a listener costs the *server*: **0.202 Mbps**, everything
 else flat. It could not measure the thing that actually decides audience size,
 because every byte stayed inside the building.
 
