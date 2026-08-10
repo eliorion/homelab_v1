@@ -1,0 +1,174 @@
+# Listeners that are actually somewhere else.
+#
+# The sweep in listener-sim.yaml proved what the SERVER costs, but every byte
+# stayed inside the building. These pods reach the stream THROUGH the tailnet
+# HTTP proxies at the two off-site nodes, so the audio path is:
+#
+#   Icecast ──uplink──► remote site ──downlink──► curl
+#
+# which means the home uplink carries N × 192 kbps exactly as it would for N
+# real remote listeners. That is the number this test exists to find: where the
+# uplink gives out, measured rather than calculated.
+#
+# TWO deployments, one per site, deliberately scaled together. If one site
+# degrades and the other does not, the limit is that site's connection, not the
+# uplink — a single generator could not tell those apart.
+#
+# Each simulated listener reports the throughput it actually achieved, once per
+# window. A listener that cannot sustain ~24 000 B/s is one a real player would
+# have dropped out on.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: listener-sim-site-b
+  namespace: azuracast-loadtest
+  labels: { app: listener-sim-remote, site: b }
+spec:
+  replicas: 0
+  selector:
+    matchLabels: { app: listener-sim-remote, site: b }
+  template:
+    metadata:
+      labels: { app: listener-sim-remote, site: b }
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: { app: azuracast }
+              namespaces: ["azuracast"]
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: listener
+          image: curlimages/curl:8.19.0
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+            seccompProfile: { type: RuntimeDefault }
+          env:
+            - name: LISTENERS
+              value: "1"
+            - name: PROXY
+              value: http://tailscale-proxy-00.tailscale.svc.cluster.local:8888
+            - name: STREAM_URL
+              value: http://azuracast-stream.tail45b0ca.ts.net:8000/radio.mp3
+            # Long enough that Icecast's connect burst (64 KiB) is a rounding
+            # error on the average rather than a few percent of it.
+            - name: WINDOW
+              value: "120"
+          command:
+            - sh
+            - -c
+            - |
+              set -u
+              echo "site=$SITE listeners=$LISTENERS via $PROXY"
+              i=1
+              while [ "$i" -le "$LISTENERS" ]; do
+                (
+                  while true; do
+                    # No "|| echo 0" fallback. --max-time makes curl exit 28 on
+                    # every completed window, but -w has already printed the real
+                    # rate — a fallback fires alongside it and puts a phantom
+                    # zero after every reading, halving the median and reporting
+                    # saturation at one listener.
+                    curl -sS -x "$PROXY" -o /dev/null --max-time "$WINDOW" \
+                      -w "rate %{speed_download}\n" "$STREAM_URL" 2>/dev/null || true
+                  done
+                ) &
+                i=$((i + 1))
+                sleep 0.05
+              done
+              wait
+          envFrom:
+            - configMapRef:
+                name: listener-sim-site-b
+          resources:
+            requests: { cpu: 200m, memory: 128Mi }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: listener-sim-site-b
+  namespace: azuracast-loadtest
+data:
+  SITE: "b"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: listener-sim-site-c
+  namespace: azuracast-loadtest
+  labels: { app: listener-sim-remote, site: c }
+spec:
+  replicas: 0
+  selector:
+    matchLabels: { app: listener-sim-remote, site: c }
+  template:
+    metadata:
+      labels: { app: listener-sim-remote, site: c }
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: { app: azuracast }
+              namespaces: ["azuracast"]
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: listener
+          image: curlimages/curl:8.19.0
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+            seccompProfile: { type: RuntimeDefault }
+          env:
+            - name: LISTENERS
+              value: "1"
+            - name: PROXY
+              value: http://tailscale-proxy-scrape-c.tailscale.svc.cluster.local:8888
+            - name: STREAM_URL
+              value: http://azuracast-stream.tail45b0ca.ts.net:8000/radio.mp3
+            - name: WINDOW
+              value: "120"
+          command:
+            - sh
+            - -c
+            - |
+              set -u
+              echo "site=$SITE listeners=$LISTENERS via $PROXY"
+              i=1
+              while [ "$i" -le "$LISTENERS" ]; do
+                (
+                  while true; do
+                    # No "|| echo 0" fallback. --max-time makes curl exit 28 on
+                    # every completed window, but -w has already printed the real
+                    # rate — a fallback fires alongside it and puts a phantom
+                    # zero after every reading, halving the median and reporting
+                    # saturation at one listener.
+                    curl -sS -x "$PROXY" -o /dev/null --max-time "$WINDOW" \
+                      -w "rate %{speed_download}\n" "$STREAM_URL" 2>/dev/null || true
+                  done
+                ) &
+                i=$((i + 1))
+                sleep 0.05
+              done
+              wait
+          envFrom:
+            - configMapRef:
+                name: listener-sim-site-c
+          resources:
+            requests: { cpu: 200m, memory: 128Mi }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: listener-sim-site-c
+  namespace: azuracast-loadtest
+data:
+  SITE: "c"

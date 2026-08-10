@@ -27,7 +27,16 @@ spec:
       # gateway quietly.
       encoding: UTF8
   storage:
-    # Starting size, mirroring keycloak-db's own note: sized for an unused
-    # install. Bifrost's logs store (request/response audit log, materialized
-    # views) is the thing likely to outgrow this, not the config store.
-    size: 10Gi
+    # Was 10Gi — "sized for an unused install", mirroring keycloak-db's note.
+    # What actually filled it was not data: WAL archiving to Garage never
+    # succeeded (region bug, see the ObjectStore in the staging overlay), so
+    # Postgres could not recycle a single segment and pg_wal grew until the
+    # volume hit 9.94Gi of 10Gi. CNPG then shut the primary down on its
+    # low-disk check, `ai-gateway-db-rw` lost its only endpoint, and the
+    # gateway pod crash-looped on "no route to host".
+    #
+    # 20Gi is the headroom that lets the primary start again WITH the archive
+    # broken — recovery needs Postgres up before it can drain anything, and
+    # every future archive outage gets the same grace instead of a hard stop.
+    # Full incident + runbook: documentations/12-garage-object-storage.md.
+    size: 20Gi
