@@ -1,4 +1,7 @@
 *.envrc
+# Relay credentials live in scripts/azuracast-relay/.env (admin/source/relay
+# passwords). Only .env.example is committed.
+.env
 *.json
 key.txt
 *.pem

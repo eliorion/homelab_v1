@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stream connection test</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ground: #EFF3F4; --surface: #FAFCFC; --ink: #0F1A1E; --ink-2: #46585F;
+    --ink-3: #6E8189; --hairline: #D3DEE1; --ok: #0891B2; --warn: #B45309;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0D1417; --surface: #131D21; --ink: #E8F1F3; --ink-2: #A8BEC5;
+      --ink-3: #7E949C; --hairline: #243338; --ok: #17A2C4; --warn: #D4762E;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 20px 64px; background: var(--ground); color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 620px; margin: 0 auto; }
+  .eyebrow {
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--ok); margin: 0 0 14px;
+  }
+  h1 { font-size: 30px; line-height: 1.15; letter-spacing: -.02em; margin: 0 0 12px; }
+  p { margin: 0 0 14px; color: var(--ink-2); }
+  .card {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 3px;
+    padding: 22px; margin: 24px 0;
+  }
+  button {
+    font: inherit; font-weight: 600; padding: 12px 22px; border-radius: 3px;
+    border: 1px solid var(--ok); background: var(--ok); color: var(--surface); cursor: pointer;
+  }
+  button.ghost { background: transparent; color: var(--ok); }
+  button[disabled] { opacity: .5; cursor: default; }
+  button:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .bar { height: 6px; background: var(--hairline); border-radius: 3px; overflow: hidden; margin: 18px 0 6px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .3s linear; }
+  .status { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; color: var(--ink-3); }
+  dl { display: grid; grid-template-columns: 1fr auto; gap: 10px 16px; margin: 18px 0 0; }
+  dt { color: var(--ink-3); font-size: 14.5px; }
+  dd {
+    margin: 0; text-align: right; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums; font-weight: 600;
+  }
+  .verdict { margin-top: 20px; padding: 14px 16px; border-left: 2px solid var(--ok); border-radius: 0 3px 3px 0; }
+  .verdict.bad { border-color: var(--warn); }
+  .verdict b { display: block; margin-bottom: 4px; color: var(--ink); }
+  .verdict span { color: var(--ink-2); font-size: 14.5px; }
+  .lang { float: right; display: flex; gap: 6px; }
+  .lang button {
+    background: transparent; border: 1px solid var(--hairline); color: var(--ink-3);
+    font-size: 11px; letter-spacing: .12em; text-transform: uppercase; padding: 5px 10px; font-weight: 500;
+  }
+  .lang button[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  [data-l] { display: none; }
+  body[data-lang="en"] [data-l="en"], body[data-lang="fr"] [data-l="fr"] { display: revert; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; }
+  audio { width: 100%; margin-top: 14px; }
+</style>
+</head>
+<body data-lang="en">
+<main>
+  <div class="lang">
+    <button type="button" data-set="en" aria-pressed="true">EN</button>
+    <button type="button" data-set="fr" aria-pressed="false">FR</button>
+  </div>
+
+  <p class="eyebrow"><span data-l="en">Listener test</span><span data-l="fr">Test auditeur</span></p>
+  <h1>
+    <span data-l="en">Can your connection carry this stream?</span>
+    <span data-l="fr">Votre connexion supporte-t-elle ce flux&nbsp;?</span>
+  </h1>
+  <p>
+    <span data-l="en">This runs for one minute and measures whether the audio arrives fast enough
+      and without gaps. It uses about 1.5&nbsp;MB of data. Nothing is installed and no personal
+      information is collected.</span>
+    <span data-l="fr">Ce test dure une minute et mesure si l'audio arrive assez vite et sans
+      coupures. Il consomme environ 1,5&nbsp;Mo de données. Rien n'est installé et aucune donnée
+      personnelle n'est collectée.</span>
+  </p>
+
+  <div class="card">
+    <div class="row">
+      <button type="button" id="go">
+        <span data-l="en">Start the test</span><span data-l="fr">Lancer le test</span>
+      </button>
+      <button type="button" class="ghost" id="listen">
+        <span data-l="en">Just listen</span><span data-l="fr">Écouter simplement</span>
+      </button>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+    <p class="status" id="status">—</p>
+    <div id="player"></div>
+    <dl id="out" hidden>
+      <dt><span data-l="en">Sustained rate</span><span data-l="fr">Débit soutenu</span></dt>
+      <dd id="m-rate">—</dd>
+      <dt><span data-l="en">Stream needs</span><span data-l="fr">Le flux exige</span></dt>
+      <dd id="m-need">—</dd>
+      <dt><span data-l="en">Time to first audio</span><span data-l="fr">Délai avant le premier son</span></dt>
+      <dd id="m-ttfb">—</dd>
+      <dt><span data-l="en">Longest gap</span><span data-l="fr">Plus longue interruption</span></dt>
+      <dd id="m-gap">—</dd>
+      <dt><span data-l="en">Interruptions</span><span data-l="fr">Interruptions</span></dt>
+      <dd id="m-stalls">—</dd>
+      <dt><span data-l="en">Data received</span><span data-l="fr">Données reçues</span></dt>
+      <dd id="m-bytes">—</dd>
+    </dl>
+    <div id="verdict"></div>
+  </div>
+
+  <p style="font-size:14px">
+    <span data-l="en"><b>How to read it.</b> The server sends audio at a fixed speed, so a healthy
+      result is the rate matching what the stream needs — not exceeding it. What actually reveals a
+      weak connection is the gaps: a player only skips when the audio stops arriving.</span>
+    <span data-l="fr"><b>Comment le lire.</b> Le serveur envoie l'audio à vitesse fixe : un bon
+      résultat est donc un débit égal à ce qu'exige le flux, et non supérieur. Ce qui révèle
+      réellement une connexion faible, ce sont les interruptions — un lecteur ne saute que lorsque
+      l'audio cesse d'arriver.</span>
+  </p>
+</main>
+
+<script>
+(function () {
+  var params  = new URLSearchParams(location.search);
+  var MOUNT   = params.get("mount") || "/radio.mp3";
+  var SECONDS = 60;
+  var STALL   = 2000;   // ms without a byte counts as an interruption
+  var WARMUP  = 5000;   // ignore the connect burst before rating the steady state
+
+  var $ = function (id) { return document.getElementById(id); };
+  var lang = "en";
+
+  document.querySelectorAll(".lang button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      lang = b.dataset.set;
+      document.body.dataset.lang = lang;
+      document.documentElement.lang = lang;
+      document.querySelectorAll(".lang button").forEach(function (o) {
+        o.setAttribute("aria-pressed", String(o.dataset.set === lang));
+      });
+    });
+  });
+
+  var TXT = {
+    en: {
+      run: function (s) { return "measuring… " + s + "s left"; },
+      done: "done", fail: "could not reach the stream — ",
+      good: ["Your connection carries this stream.",
+             "Audio arrived at full speed with no interruptions."],
+      okish: ["Mostly fine, with hiccups.",
+              "The audio paused briefly. A player would likely recover, but on a weaker moment it could skip."],
+      bad: ["This connection struggles with the stream.",
+            "The audio stopped arriving long enough that a player would go silent."],
+      unit: " kbps",
+    },
+    fr: {
+      run: function (s) { return "mesure en cours… " + s + " s restantes"; },
+      done: "terminé", fail: "flux injoignable — ",
+      good: ["Votre connexion supporte ce flux.",
+             "L'audio est arrivé à pleine vitesse, sans interruption."],
+      okish: ["Globalement correct, avec des à-coups.",
+              "L'audio s'est brièvement interrompu. Un lecteur s'en remettrait sans doute, mais un moment plus faible provoquerait une coupure."],
+      bad: ["Cette connexion peine à suivre le flux.",
+            "L'audio a cessé d'arriver assez longtemps pour qu'un lecteur devienne muet."],
+      unit: " kbit/s",
+    },
+  };
+
+  $("listen").addEventListener("click", function () {
+    $("player").innerHTML = '<audio controls autoplay src="' + MOUNT + '"></audio>';
+  });
+
+  $("go").addEventListener("click", async function () {
+    var btn = $("go");
+    btn.disabled = true;
+    $("out").hidden = true;
+    $("verdict").innerHTML = "";
+
+    var t0 = performance.now(), first = null, last = t0;
+    var bytes = 0, warmBytes = 0, warmAt = null, stalls = 0, maxGap = 0;
+    var ctrl = new AbortController();
+    var timer = setInterval(function () {
+      var el = (performance.now() - t0) / 1000;
+      $("bar").style.width = Math.min(100, el / SECONDS * 100) + "%";
+      $("status").textContent = TXT[lang].run(Math.max(0, Math.ceil(SECONDS - el)));
+    }, 250);
+
+    try {
+      // Cache-buster: a proxy or the browser serving this from cache would
+      // measure the cache, not the network.
+      var res = await fetch(MOUNT + "?t=" + Date.now(), { signal: ctrl.signal, cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var reader = res.body.getReader();
+
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        var now = performance.now();
+        if (first === null) first = now - t0;
+
+        var gap = now - last;
+        if (gap > maxGap) maxGap = gap;
+        if (gap > STALL) stalls++;
+        last = now;
+
+        bytes += chunk.value.length;
+        if (warmAt === null && now - t0 >= WARMUP) { warmAt = now; warmBytes = bytes; }
+        if (now - t0 >= SECONDS * 1000) { ctrl.abort(); break; }
+      }
+    } catch (e) {
+      if (e.name !== "AbortError") {
+        clearInterval(timer);
+        $("status").textContent = TXT[lang].fail + e.message;
+        btn.disabled = false;
+        return;
+      }
+    }
+    clearInterval(timer);
+
+    // Rate over the steady state only — the burst Icecast sends on connect
+    // would otherwise inflate the first seconds into a meaningless number.
+    var span = warmAt ? (last - warmAt) / 1000 : (last - t0) / 1000;
+    var used = warmAt ? bytes - warmBytes : bytes;
+    var kbps = span > 0 ? (used * 8 / 1000) / span : 0;
+
+    $("bar").style.width = "100%";
+    $("status").textContent = TXT[lang].done;
+    $("out").hidden = false;
+    $("m-rate").textContent   = kbps.toFixed(0) + TXT[lang].unit;
+    $("m-need").textContent   = "192" + TXT[lang].unit;
+    $("m-ttfb").textContent   = first === null ? "—" : (first / 1000).toFixed(2) + " s";
+    $("m-gap").textContent    = (maxGap / 1000).toFixed(2) + " s";
+    $("m-stalls").textContent = String(stalls);
+    $("m-bytes").textContent  = (bytes / 1048576).toFixed(2) + " MB";
+
+    var verdict = stalls === 0 && kbps >= 180 ? "good" : (stalls <= 1 && kbps >= 150 ? "okish" : "bad");
+    var v = TXT[lang][verdict];
+    $("verdict").innerHTML =
+      '<div class="verdict' + (verdict === "good" ? "" : " bad") + '">' +
+      "<b></b><span></span></div>";
+    $("verdict").querySelector("b").textContent = v[0];
+    $("verdict").querySelector("span").textContent = v[1];
+
+    // Report home with no backend: this 404s, and Icecast writes the query
+    // string to its access log, where collect-reports.sh reads it. Nothing
+    // identifying is sent — only the six numbers already on screen.
+    var q = new URLSearchParams({
+      kbps: kbps.toFixed(0), stalls: String(stalls),
+      maxgap: (maxGap / 1000).toFixed(2), ttfb: first === null ? "" : (first / 1000).toFixed(2),
+      mb: (bytes / 1048576).toFixed(2), verdict: verdict,
+    });
+    fetch("/report?" + q.toString(), { cache: "no-store" }).catch(function () {});
+
+    btn.disabled = false;
+  });
+})();
+</script>
+</body>
+</html>

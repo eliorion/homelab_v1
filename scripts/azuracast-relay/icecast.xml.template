@@ -1,0 +1,72 @@
+<icecast>
+    <location>relay</location>
+    <admin>admin@localhost</admin>
+    <hostname>${RELAY_PUBLIC_HOST}</hostname>
+
+    <limits>
+        <!-- The spend control. Every occupied slot is ~65 GB/month of transfer. -->
+        <clients>${MAX_CLIENTS}</clients>
+        <sources>2</sources>
+        <queue-size>524288</queue-size>
+        <client-timeout>30</client-timeout>
+        <header-timeout>15</header-timeout>
+        <source-timeout>10</source-timeout>
+        <!-- Sends a small backlog on connect so players start instantly instead
+             of buffering. Costs one burst per listener, not per second. -->
+        <burst-on-connect>1</burst-on-connect>
+        <burst-size>65535</burst-size>
+    </limits>
+
+    <authentication>
+        <source-password>${SOURCE_PASSWORD}</source-password>
+        <relay-password>${RELAY_PASSWORD}</relay-password>
+        <admin-user>admin</admin-user>
+        <admin-password>${ADMIN_PASSWORD}</admin-password>
+    </authentication>
+
+    <listen-socket>
+        <port>8000</port>
+    </listen-socket>
+
+    <!-- Pulls one copy from the master over the tailnet.
+
+         on-demand=1: nothing is pulled while nobody is listening, so an idle
+         relay costs the home uplink nothing at all. The first listener waits
+         for the pull to establish — a second or so — which is the right trade
+         for a test that spends most of its life idle. -->
+    <relay>
+        <server>${MASTER_HOST}</server>
+        <port>${MASTER_PORT}</port>
+        <mount>${MOUNT}</mount>
+        <local-mount>${MOUNT}</local-mount>
+        <on-demand>1</on-demand>
+    </relay>
+
+    <mount type="normal">
+        <mount-name>${MOUNT}</mount-name>
+        <max-listeners>${MAX_CLIENTS}</max-listeners>
+        <!-- Never advertise to the public YP directories. This host is for a
+             measured test with people you invited, not for discovery. -->
+        <public>0</public>
+    </mount>
+
+    <paths>
+        <basedir>/usr/share/icecast</basedir>
+        <logdir>/var/log/icecast</logdir>
+        <webroot>/usr/share/icecast/web</webroot>
+        <adminroot>/usr/share/icecast/admin</adminroot>
+        <alias source="/" destination="/index.html"/>
+    </paths>
+
+    <logging>
+        <!-- Both logs to the container's stdout, so `docker compose logs` is the
+             whole story and the access log is where listener reports land. -->
+        <accesslog>/dev/stdout</accesslog>
+        <errorlog>/dev/stderr</errorlog>
+        <loglevel>3</loglevel>
+    </logging>
+
+    <security>
+        <chroot>0</chroot>
+    </security>
+</icecast>
