@@ -1,0 +1,88 @@
+# WAL archiving and database-volume alerts for every CNPG cluster.
+#
+# Written after the 2026-08-10 outage (documentations/12-garage-object-storage.md):
+# ai-gateway-db never archived a single WAL segment from the day it was created,
+# pg_wal grew until the 10Gi volume filled, CNPG shut the primary down, and the
+# Bifrost gateway crash-looped for two days. Backup monitoring stayed green the
+# whole time -- the base backups really were succeeding. Nothing watched the
+# archive, and nothing watched the disk.
+#
+# `cnpg_pg_stat_archiver_*` is exported by PRIMARIES ONLY (the collector's
+# queries are primary-scoped), so none of these need a role filter; a replica
+# simply contributes no series. Series carry `namespace` and `pod`, which is
+# what the annotations use.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cnpg-alerts
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: cnpg-wal-archiving.rules
+      rules:
+        # A failing archive_command is not a backup problem, it is an
+        # availability problem: Postgres cannot recycle a segment it has not
+        # archived, so every failure is also disk filling up.
+        - alert: CNPGWALArchivingFailing
+          expr: |
+            increase(cnpg_pg_stat_archiver_failed_count[15m]) > 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "WAL archiving is failing on {{ $labels.namespace }}/{{ $labels.pod }}"
+            description: "pg_stat_archiver.failed_count is climbing. Until this clears, pg_wal grows without bound and the volume will fill. Run: kubectl -n {{ $labels.namespace }} logs {{ $labels.pod }} -c plugin-barman-cloud | grep -i error. See documentations/12-garage-object-storage.md."
+        # The exact ai-gateway-db signature: a cluster that has NEVER archived.
+        # `barman-cloud-check-wal-archive` gates the first segment, so a
+        # misconfigured object store fails here and only here -- and stays
+        # invisible to every backup check, because base backups still upload.
+        - alert: CNPGWALNeverArchived
+          expr: |
+            cnpg_pg_stat_archiver_last_archived_time == 0
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} has never archived a WAL segment"
+            description: "No successful archive since this instance started. A new cluster that cannot reach its object store looks healthy for about two days, then fills its volume. Check the ObjectStore (region, endpoint, credentials) and documentations/12-garage-object-storage.md."
+        # Catches archiving that WAS working and stopped. Safe as a blanket
+        # rule because CNPG sets archive_timeout=300s, so a healthy primary
+        # archives at least every 5 minutes even when completely idle.
+        - alert: CNPGWALArchiveStalled
+          expr: |
+            cnpg_pg_stat_archiver_seconds_since_last_archival > 1800
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No WAL archived for over 30m on {{ $labels.namespace }}/{{ $labels.pod }}"
+            description: "archive_timeout is 5m, so a healthy primary archives even while idle. PITR coverage is already broken and pg_wal is growing. See documentations/12-garage-object-storage.md."
+    - name: cnpg-storage.rules
+      rules:
+        # The second miss of the outage: the volume went from healthy to 9.94Gi
+        # of 10Gi with nothing said. CNPG stops the instance on its own low-disk
+        # check, so hitting 100% is a hard outage, not a degradation. Scoped to
+        # CNPG's PVC naming (`<cluster>-<n>`) to stay out of every other PVC.
+        - alert: CNPGVolumeFillingUp
+          expr: |
+            kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".+-db-[0-9]+"}
+              / kubelet_volume_stats_capacity_bytes > 0.80
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CNPG volume {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+            description: "Growing steadily is normal; growing because WAL cannot be archived is not -- check the archiving alerts first. Resizing means bumping storage.size on the Cluster (Longhorn expands online)."
+        - alert: CNPGVolumeAlmostFull
+          expr: |
+            kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".+-db-[0-9]+"}
+              / kubelet_volume_stats_capacity_bytes > 0.90
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "CNPG volume {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full"
+            description: "CNPG shuts the instance down on low disk, which takes the -rw Service's only endpoint with it and every client fails to connect. Bump storage.size now. See documentations/12-garage-object-storage.md."

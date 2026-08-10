@@ -6,4 +6,5 @@ resources:
   - flux-am
   - fbref-grafana
   - etcd-backup-alerts
+  - cnpg-alerts
   - n8n-metrics
