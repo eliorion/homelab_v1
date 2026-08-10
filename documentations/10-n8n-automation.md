@@ -53,20 +53,35 @@ nothing is pruned, no outage, same deliberate behaviour as the reflector secret.
 
 ### 2. Backups (required follow-up — n8n's DB is the only copy of your workflows)
 
+`apps/staging/databases/n8n/garage-backup-credentials.enc.yaml` ships **in
+plaintext with placeholder values** so it can be filled in directly in the
+devcontainer. It is the one file in this repo whose `.enc.yaml` name does not
+yet mean what it says — fix that before it ever holds a real key:
+
 ```bash
 garage bucket create cnpg-staging-n8n
 garage key create n8n-cnpg-staging
 garage bucket allow --read --write cnpg-staging-n8n --key n8n-cnpg-staging
 
 cd apps/staging/databases/n8n
-cp garage-backup-credentials.enc.yaml.exemple garage-backup-credentials.enc.yaml
-sops -e -i garage-backup-credentials.enc.yaml
+$EDITOR garage-backup-credentials.enc.yaml    # replace both PLACEHOLDER values
+sops -e -i garage-backup-credentials.enc.yaml # BEFORE `git add`
+
+grep -q 'ENC\[' garage-backup-credentials.enc.yaml && echo SAFE || echo PLAINTEXT
 ```
+
+Committing it with real values still in plaintext puts the Garage key in git
+history permanently; rotating the key is then the only fix.
 
 Then uncomment the three resources and the `cluster-backup-patch.yaml` entry in
 `apps/staging/databases/n8n/kustomization.yaml`. Daily base backup at 03:10
 (offset from the asp/fbref 03:00 runs so the three don't contend for the single
 Garage gateway), 30d retention.
+
+**Uncomment only after the real key is in.** With placeholder credentials the
+barman WAL archiver fails, which degrades the CNPG cluster — and `databases`
+reconciles with `wait: true` gating `db-migrations` → `apps`, so it stalls the
+whole app tier, not just n8n.
 
 ### 3. Reaching the UI
 
