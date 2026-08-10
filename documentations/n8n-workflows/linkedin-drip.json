@@ -1,0 +1,666 @@
+{
+  "name": "linkedin-drip",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "47 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "drip-schedule",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        300
+      ],
+      "notes": "47 7 * * 1-5 Europe/Paris — the exact slot plan-auto-post-linkedin.md specifies."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "owner",
+              "value": "eliorion",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "repo",
+              "value": "My-blog",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "branch",
+              "value": "dev",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "personUrn",
+              "value": "urn:li:person:DxKqhDF5zi",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "apiVersion",
+              "value": "202606",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "userAgent",
+              "value": "linkedin-drip/1.0 (blog publishing; +https://eliorion.github.io/My-blog)",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "timezone",
+              "value": "Europe/Paris",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "drip-config",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        300
+      ],
+      "notes": "Every environment-specific value. apiVersion and userAgent mirror publish.py.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.github.com/repos/' + $json.owner + '/' + $json.repo + '/git/trees/' + $json.branch + '?recursive=1' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "drip-tree",
+      "name": "List repo tree",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE_ME",
+          "name": "GitHub My-blog PAT"
+        }
+      },
+      "notes": "One call for every path, so we can tell which drafts have a PNG sibling.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enumerate the draft queue from one git-tree call.\n//\n// Ordering is a literal port of publish.py `_draft_posts()`:\n//   sorted(dirs) then sorted(dir.glob('post_*.md')) inside each dir\n// i.e. plain lexicographic on the directory name, then on the file name\n// (so post_10.md sorts before post_2.md, exactly as Python does). Do not\n// \"improve\" this into a natural sort — it changes which post goes out.\nconst tree = $input.first().json.tree || [];\nif ($input.first().json.truncated) {\n  throw new Error('git tree response was truncated — the repo outgrew a single tree call');\n}\n\nconst paths = new Set(tree.filter((e) => e.type === 'blob').map((e) => e.path));\nconst drafts = [...paths]\n  .filter((p) => /^linkedin\\/drafts\\/[^/]+\\/post_\\d+\\.md$/.test(p))\n  .sort((a, b) => {\n    const A = a.split('/');\n    const B = b.split('/');\n    return A[2] < B[2] ? -1 : A[2] > B[2] ? 1 : A[3] < B[3] ? -1 : A[3] > B[3] ? 1 : 0;\n  });\n\nif (!drafts.length) throw new Error('no drafts found under linkedin/drafts/');\n\n// publish.py attaches `post_N.png` when it sits next to the markdown.\nreturn drafts.map((p) => ({ json: { path: p, pngPath: paths.has(p.replace(/\\.md$/, '.png')) ? p.replace(/\\.md$/, '.png') : null } }));\n"
+      },
+      "id": "drip-enumerate",
+      "name": "Enumerate drafts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.github.com/repos/' + $('Config').first().json.owner + '/' + $('Config').first().json.repo + '/contents/' + $json.path + '?ref=' + $('Config').first().json.branch }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "drip-fetch",
+      "name": "Fetch draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE_ME",
+          "name": "GitHub My-blog PAT"
+        }
+      },
+      "notes": "Runs once per draft. Uses the API, not raw.githubusercontent, so a just-written marker is never served from CDN cache — and it returns the blob sha needed to write back.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Port of publish.py `cmd_next()` — pick the post to publish, or nothing.\n//\n// Two independent stops, both from publish.py:\n//   1. ANY draft already carries today's `published:` date  -> \"Already published\n//      today\". This is the idempotency guard; it is what makes a manual re-run or\n//      an overlapping trigger safe. Returning [] here stops the workflow.\n//   2. no draft without a `published:` marker               -> queue empty\nconst cfg = $('Config').first().json;\nconst meta = new Map($('Enumerate drafts').all().map((i) => [i.json.path, i.json]));\n\n// publish.py `_split_frontmatter`: ^---\\n(.*?)\\n---\\n\\n?(.*)$ with DOTALL.\nconst splitFrontmatter = (text) => {\n  const m = /^---\\n([\\s\\S]*?)\\n---\\n\\n?([\\s\\S]*)$/.exec(text);\n  if (!m) throw new Error('no frontmatter');\n  return { fm: m[1], body: m[2] };\n};\n\nconst drafts = $input.all().map((item) => {\n  const j = item.json;\n  const text = Buffer.from(j.content, 'base64').toString('utf8');\n  const { fm, body } = splitFrontmatter(text);\n  return { path: j.path, sha: j.sha, fm, body };\n});\n\n// The pod runs on Europe/Paris (TZ in the n8n ConfigMap), matching the CronJob\n// timezone the drip schedule was specified in.\nconst today = new Date().toLocaleDateString('en-CA', { timeZone: cfg.timezone });\n\n// publish.py `_published_today`: ^published:\\s*(YYYY-MM-DD) anywhere in frontmatter.\n// Tolerates a trailing comment on the line, e.g. \"published: ... # posted manually\".\nfor (const d of drafts) {\n  const m = /^published:\\s*(\\d{4}-\\d{2}-\\d{2})/m.exec(d.fm);\n  if (m && m[1] === today) return [];\n}\n\n// publish.py `_is_published` is a SUBSTRING test on the frontmatter, not a regex.\nconst next = drafts.find((d) => !d.fm.includes('published:'));\nif (!next) return [];\n\n// publish.py: alt text is the `angle:` frontmatter value, else \"cover\".\nconst angle = /^angle:\\s*(.+)$/m.exec(next.fm);\n\nreturn [\n  {\n    json: {\n      path: next.path,\n      sha: next.sha,\n      fm: next.fm,\n      body: next.body,\n      pngPath: meta.get(next.path)?.pngPath ?? null,\n      altText: angle ? angle[1].trim() : 'cover',\n      remaining: drafts.filter((d) => !d.fm.includes('published:')).length,\n    },\n  },\n];\n"
+      },
+      "id": "drip-select",
+      "name": "Select draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        300
+      ],
+      "notes": "Returns NO items when a post already went out today, or when the queue is empty. That stops the workflow — a clean, empty execution.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has-png",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.pngPath }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "drip-hasimage",
+      "name": "Has cover image?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://raw.githubusercontent.com/' + $('Config').first().json.owner + '/' + $('Config').first().json.repo + '/' + $('Config').first().json.branch + '/' + $json.pngPath }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "drip-png",
+      "name": "Fetch cover PNG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        200
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/images?action=initializeUpload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            },
+            {
+              "name": "LinkedIn-Version",
+              "value": "={{ $('Config').first().json.apiVersion }}"
+            },
+            {
+              "name": "User-Agent",
+              "value": "={{ $('Config').first().json.userAgent }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ initializeUploadRequest: { owner: $('Config').first().json.personUrn } }) }}",
+        "options": {}
+      },
+      "id": "drip-imginit",
+      "name": "Init image upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        200
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "This is the call LinkedIn's WAF 400s from datacenter IPs. It works here only because the n8n namespace egresses via the home ISP — do not route it through Tailscale.",
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "LinkedIn Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.value.uploadUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "={{ $('Config').first().json.userAgent }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "drip-imgput",
+      "name": "Upload image bytes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        200
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "LinkedIn Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Port of publish.py `publish_file()` payload construction.\nconst cfg = $('Config').first().json;\nconst draft = $('Select draft').first().json;\n\n// publish.py `_ESCAPE_CHARS`. Note what is NOT here: '#' is deliberately left\n// unescaped so hashtags keep working, and '*', '_', '~' are not escaped either.\n// Widening this set turns every hashtag into literal text.\nconst ESCAPE_CHARS = '\\\\|{}@[]()<>';\nconst escapeCommentary = (s) =>\n  Array.from(s)\n    .map((c) => (ESCAPE_CHARS.includes(c) ? '\\\\' + c : c))\n    .join('');\n\nconst post = {\n  author: cfg.personUrn,\n  commentary: escapeCommentary(draft.body.trim()),\n  visibility: 'PUBLIC',\n  distribution: {\n    feedDistribution: 'MAIN_FEED',\n    targetEntities: [],\n    thirdPartyDistributionChannels: [],\n  },\n  lifecycleState: 'PUBLISHED',\n  isReshareDisabledByAuthor: false,\n};\n\n// The image nodes run with onError: continueRegularOutput, mirroring publish.py's\n// \"log the body and post text-only rather than abort\". imageUrn is null when the\n// draft has no PNG, or when the upload failed.\nlet imageUrn = null;\ntry {\n  imageUrn = $('Init image upload').first().json?.value?.image ?? null;\n} catch (e) {\n  imageUrn = null;\n}\nconst uploaded = imageUrn && $('Upload image bytes').first().json?.__uploaded !== false;\n\nif (uploaded) {\n  post.content = { media: { id: imageUrn, altText: draft.altText } };\n}\n\nreturn [\n  {\n    json: {\n      post,\n      imageAttached: Boolean(uploaded),\n      imageSkipped: draft.pngPath && !uploaded ? draft.pngPath : null,\n    },\n  },\n];\n"
+      },
+      "id": "drip-payload",
+      "name": "Build payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        300
+      ],
+      "notes": "Text-only if the draft has no PNG or the upload failed — publish.py degrades the same way rather than aborting.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            },
+            {
+              "name": "LinkedIn-Version",
+              "value": "={{ $('Config').first().json.apiVersion }}"
+            },
+            {
+              "name": "User-Agent",
+              "value": "={{ $('Config').first().json.userAgent }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.post) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "drip-post",
+      "name": "Post to LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        300
+      ],
+      "retryOnFail": false,
+      "notes": "RETRY MUST STAY OFF: a retry after a partial success posts twice. fullResponse because the created URN comes back in the x-restli-id HEADER, not the body.",
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "LinkedIn Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Port of publish.py's frontmatter rewrite (its lines 252-254), then base64 for\n// the GitHub Contents API. Writing through the API instead of clone/commit/push\n// means the file `sha` read a few seconds ago is the optimistic-concurrency\n// token: if anything else touched this draft meanwhile GitHub returns 409 and\n// the execution fails loudly rather than clobbering.\nconst draft = $('Select draft').first().json;\nconst built = $('Build payload').first().json;\nconst resp = $input.first().json;\n\nconst postUrn = (resp.headers || {})['x-restli-id'] || '';\nif (!postUrn) throw new Error('LinkedIn returned no x-restli-id header — cannot record the marker');\n\n// publish.py uses datetime.now().isoformat() (naive, pod-local). Same shape here,\n// in the workflow timezone. Only the date part is ever parsed back.\nconst cfg = $('Config').first().json;\nconst parts = new Intl.DateTimeFormat('sv-SE', {\n  timeZone: cfg.timezone,\n  year: 'numeric', month: '2-digit', day: '2-digit',\n  hour: '2-digit', minute: '2-digit', second: '2-digit',\n  hour12: false,\n}).format(new Date());\nconst nowIso = parts.replace(' ', 'T');\n\nconst newFm = `${draft.fm}\\npublished: ${nowIso}\\npost_urn: ${postUrn}`;\nconst newText = `---\\n${newFm}\\n---\\n\\n${draft.body}`;\n\nreturn [\n  {\n    json: {\n      path: draft.path,\n      sha: draft.sha,\n      postUrn,\n      imageAttached: built.imageAttached,\n      imageSkipped: built.imageSkipped,\n      contentBase64: Buffer.from(newText, 'utf8').toString('base64'),\n    },\n  },\n];\n"
+      },
+      "id": "drip-marker",
+      "name": "Record marker",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://api.github.com/repos/' + $('Config').first().json.owner + '/' + $('Config').first().json.repo + '/contents/' + $json.path }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: 'chore(linkedin): mark draft as published [skip ci]', content: $json.contentBase64, sha: $json.sha, branch: $('Config').first().json.branch, committer: { name: 'linkedin-drip[bot]', email: 'linkedin-drip@users.noreply.github.com' } }) }}"
+      },
+      "id": "drip-commit",
+      "name": "Commit marker",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE_ME",
+          "name": "GitHub My-blog PAT"
+        }
+      },
+      "notes": "Same commit subject the CronJob used, so the [skip ci] convention and the 'gap of more than a day' check in the plan still hold.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "draft",
+              "value": "={{ $('Record marker').first().json.path }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "postUrn",
+              "value": "={{ $('Record marker').first().json.postUrn }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "imageAttached",
+              "value": "={{ $('Record marker').first().json.imageAttached }}",
+              "type": "boolean"
+            },
+            {
+              "id": "4",
+              "name": "imageSkipped",
+              "value": "={{ $('Record marker').first().json.imageSkipped }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "remaining",
+              "value": "={{ $('Select draft').first().json.remaining - 1 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "drip-result",
+      "name": "Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2860,
+        300
+      ],
+      "notes": "imageSkipped non-empty means the post went out text-only — check egress."
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "List repo tree",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List repo tree": {
+      "main": [
+        [
+          {
+            "node": "Enumerate drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enumerate drafts": {
+      "main": [
+        [
+          {
+            "node": "Fetch draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch draft": {
+      "main": [
+        [
+          {
+            "node": "Select draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select draft": {
+      "main": [
+        [
+          {
+            "node": "Has cover image?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has cover image?": {
+      "main": [
+        [
+          {
+            "node": "Fetch cover PNG",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch cover PNG": {
+      "main": [
+        [
+          {
+            "node": "Init image upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init image upload": {
+      "main": [
+        [
+          {
+            "node": "Upload image bytes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image bytes": {
+      "main": [
+        [
+          {
+            "node": "Build payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build payload": {
+      "main": [
+        [
+          {
+            "node": "Post to LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post to LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Record marker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record marker": {
+      "main": [
+        [
+          {
+            "node": "Commit marker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit marker": {
+      "main": [
+        [
+          {
+            "node": "Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Paris"
+  },
+  "pinData": {}
+}

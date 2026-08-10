@@ -18,6 +18,7 @@ optional.
 | `apps/base/n8n/` | Deployment, Service, 1Gi PVC, Tailscale Ingress |
 | `apps/staging/n8n/` | `n8n-config` ConfigMap + `n8n-secrets.enc.yaml` (SOPS) |
 | `monitoring/configs/staging/n8n-metrics/` | ServiceMonitor + `N8nDown` / `N8nMetricsMissing` |
+| `documentations/n8n-workflows/` | workflow import templates — **not applied by Flux** |
 
 Wired into `apps/staging/databases/kustomization.yaml`,
 `apps/staging/kustomization.yaml` and

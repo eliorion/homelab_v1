@@ -2,7 +2,12 @@
 # Relay credentials live in scripts/azuracast-relay/.env (admin/source/relay
 # passwords). Only .env.example is committed.
 .env
+# Blanket catch-all for kubeconfig/service-account style JSON credentials.
 *.json
+# ...except the n8n workflow import templates, which carry no secrets (the
+# credential is referenced by id/name only). Without this negation a re-exported
+# workflow silently fails to commit. NEVER export n8n credentials themselves.
+!documentations/n8n-workflows/*.json
 key.txt
 *.pem
 kubeconfig*
