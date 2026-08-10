@@ -1,0 +1,7 @@
+per_site,total,site_b_median_Bps,site_c_median_Bps,reports_b,reports_c,master_cpu_cores,master_tx_KiB_s,verdict
+1,2,24433,24519,1,1,0.1583,42.5,ok
+5,10,24372,24530,5,5,0.1708,231.1,ok
+15,30,10001,24521,15,15,0.1570,643.6,one-site-limited
+30,60,0,24503,31,30,0.1772,1158.6,one-site-limited
+60,120,416,24428,97,60,0.1379,1718.6,one-site-limited
+100,200,314,18798,116,100,0.1671,2021.9,uplink-saturated
