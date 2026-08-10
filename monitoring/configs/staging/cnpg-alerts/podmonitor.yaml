@@ -1,0 +1,28 @@
+# CNPG exposes per-instance metrics on port 9187 of every database pod, but
+# NOTHING was scraping them: the Clusters keep `enablePodMonitor: false`, so no
+# PodMonitor existed and `cnpg_*` returned empty in Prometheus. That is why the
+# ai-gateway WAL-archiving failure ran for three days unseen
+# (documentations/12-garage-object-storage.md).
+#
+# One PodMonitor here rather than `enablePodMonitor: true` on each Cluster: the
+# operator-generated PodMonitor carries no `release: kube-prometheus-stack`
+# label and the CRD has no field to add one, so Prometheus' podMonitorSelector
+# would ignore it. This one is labelled correctly and picks up every current and
+# future CNPG instance, in any namespace, with no per-cluster wiring.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cnpg-instances
+  namespace: monitoring
+  labels:
+    # Matches Prometheus podMonitorSelector.
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      cnpg.io/podRole: instance
+  podMetricsEndpoints:
+    # Named port on the postgres container; plain HTTP, no auth.
+    - port: metrics

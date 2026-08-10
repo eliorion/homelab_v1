@@ -263,15 +263,41 @@ If `pg_wal` is still near-full after the primary starts, let it run: the
 archiver drains the backlog and the next checkpoint recycles the segments. Do
 **not** delete files from `pg_wal` by hand — that corrupts the timeline.
 
-**Follow-ups, not done here:**
+## Alerting on this class of failure
 
-- **No alert covers this.** `03-backups.md` monitors backups, not archiving, and
-  the cluster reported `LastBackupSucceeded=True` throughout a total archiving
-  failure. A `PrometheusRule` on the CNPG archiver metrics (CNPG's PodMonitors
-  are already enabled) — `cnpg_pg_stat_archiver_failed_count` climbing, or
-  `ContinuousArchiving=False` for 15m — would have caught this on day one, and
-  a disk-usage alert on the CNPG PVCs would have caught it again on day two.
-  Model it on `monitoring/configs/staging/etcd-backup-alerts/prometheusrule.yaml`.
+Two things had to go unnoticed for this outage to happen, and now neither can.
+`monitoring/configs/staging/cnpg-alerts/` adds both halves:
+
+**The scrape.** No `cnpg_*` metric existed in Prometheus at all — the Clusters
+keep `enablePodMonitor: false`, and the PodMonitor the operator would create
+carries no `release: kube-prometheus-stack` label (the CRD has no field to add
+one), so Prometheus' `podMonitorSelector` would drop it anyway. A single
+hand-written PodMonitor in the `monitoring` namespace selects
+`cnpg.io/podRole: instance` across all namespaces on the `metrics` port (9187,
+plain HTTP), and picks up every future cluster with no per-cluster wiring.
+
+**The rules.** `cnpg_pg_stat_archiver_*` is exported by **primaries only** — the
+collector's queries are primary-scoped and a replica contributes no series — so
+none of these need a role filter:
+
+| Alert | Expression | Catches |
+|---|---|---|
+| `CNPGWALArchivingFailing` | `increase(cnpg_pg_stat_archiver_failed_count[15m]) > 0` | archiving breaking on a working cluster |
+| `CNPGWALNeverArchived` | `cnpg_pg_stat_archiver_last_archived_time == 0` | **this outage** — a cluster that never archived once |
+| `CNPGWALArchiveStalled` | `cnpg_pg_stat_archiver_seconds_since_last_archival > 1800` | archiving that silently stopped |
+| `CNPGVolumeFillingUp` / `AlmostFull` | `kubelet_volume_stats_used_bytes / …_capacity_bytes > 0.80` / `> 0.90` | the consequence, whatever the cause |
+
+`CNPGWALArchiveStalled` is safe as a blanket rule because CNPG sets
+`archive_timeout = 300s`: a healthy primary archives at least every 5 minutes
+even while completely idle. The volume rules are scoped to CNPG's
+`<cluster>-<n>` PVC naming so they stay out of every other PVC in the cluster.
+
+Backup alerting (`03-backups.md`) does **not** substitute for any of this: this
+cluster reported `LastBackupSucceeded=True` through three days of total
+archiving failure, because the base backups genuinely were succeeding.
+
+**Follow-up, not done here:**
+
 - Re-run the CNPG restore drill (`03-backups.md`) against
   `cnpg-staging-ai-gateway` once `wals/` is populated. Until then the AI
   gateway's database has **base backups but no PITR** — the 3 days of WAL
