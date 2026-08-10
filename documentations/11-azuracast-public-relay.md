@@ -1,124 +1,116 @@
-# AzuraCast — public listeners via an off-site relay
+# AzuraCast — remote listeners without a VPS
 
-How real people reach the stream without the cluster being reachable from the
-internet, and how to measure what that actually costs.
+Doc 10 measured what a listener costs the *server*: **0.202 Mbps**, everything
+else flat. It could not measure the thing that actually decides audience size,
+because every byte stayed inside the building.
 
-Doc 10 measured the server: **0.202 Mbps per listener**, everything else flat.
-This doc is about where those megabits come from, and it changes that document's
-conclusion — the home uplink stops being the ceiling.
+This doc is the wide-area half: how many remote listeners the **home uplink**
+can really serve, measured over the real internet, with no rented server, no
+router port opened and nothing exposed.
 
-## The shape
+## The idea
+
+There are already two tailnet HTTP proxies at other sites — `tailscale-proxy-00`
+(`100.100.98.5`, a residential line) and `tailscale-proxy-scrape-c`
+(`100.92.142.13`, node C). They exist for the scraper's egress pools. They are
+also, conveniently, real internet endpoints somewhere else.
+
+Point in-cluster clients at the stream *through* them and the audio path becomes:
 
 ```mermaid
 flowchart LR
-  L["Listeners<br/>(public internet)"] -->|"N × 0.202 Mbps"| R
-  R["VPS · Icecast relay<br/>scripts/azuracast-relay/"] -->|"ONE stream<br/>0.202 Mbps, on demand"| T
-  T["tailnet"] --> M["azuracast-stream Service<br/>cluster · never public"]
+  I["Icecast<br/>(cluster)"] -->|"uplink · N × 192 kbps"| R["remote site<br/>HTTP proxy"]
+  R -->|"downlink"| C["curl<br/>(cluster)"]
 ```
 
-The relay dials **out** to the tailnet. No router port is opened, nothing at home
-is reachable from the internet, and the home uplink carries a single stream
-whatever the audience does. With `on-demand=1` it carries nothing at all while
-nobody is listening.
+The stream leaves on the home uplink exactly as it would for a real listener at
+that site. Ramp the count until listeners can no longer keep up, and the point
+where that happens is the uplink's real capacity — measured, not calculated from
+a link-speed figure.
 
-The alternative — forwarding a router port to a LoadBalancer address — makes the
-home uplink the ceiling (about 99 listeners on a typical 20 Mbps upload) and puts
-Icecast on the public internet from the family connection. The relay costs one
-rented machine and removes both problems.
+Verified before trusting any of it: the tailnet path is **direct**, not relayed
+through Tailscale's DERP servers (`tailscale ping` → `direct 176.171.110.96:41641`,
+30 ms). A relayed path would still leave the uplink, but it would add somebody
+else's capacity limit to the measurement.
 
-## The constraint is transfer, not bandwidth
+### Why two sites, always scaled together
 
-On a rented server the interesting limit is the **monthly transfer allowance**,
-and it binds far earlier than throughput does:
+A single generator cannot tell "the uplink is full" from "that one remote line is
+full". Two independent sites can:
 
-> 0.202 Mbps sustained for 30 days ≈ **65 GB per listener-month**
+| Symptom | Meaning |
+|---|---|
+| Both sites slow at once | The shared leg — the home uplink — is the limit |
+| One site slow, one fine | That site's own connection is the limit; the uplink has more to give |
 
-| Continuous listeners | Per month | Fits a plan of |
-|---:|---:|---|
-| 10 | 0.65 TB | 1 TB |
-| 50 | 3.3 TB | 4 TB |
-| 100 | 6.5 TB | 10 TB |
-| 1 000 | 65 TB | few consumer plans |
+`run-remote-sweep.sh` encodes exactly this as its `verdict` column and stops the
+ramp on `uplink-saturated`.
 
-A 1 TB/month VPS sustains roughly **15 continuous listeners**. This is why
-`MAX_CLIENTS` in the relay's `.env` is documented as a spend control rather than
-a performance setting: it is the cap that keeps a popular evening from becoming
-an overage bill. Real audiences are not continuous, so the true figure is average
-concurrency × 65 GB — but size the cap against the worst case.
-
-If the allowance is the binding limit, the lever is the same one doc 10 found:
-**bitrate**. 128 kbps is 43 GB per listener-month, 96 kbps is 32 GB.
-
-## Measuring the real test
-
-Two halves, because a bad listening experience has two possible owners.
-
-### Server side — `scripts/azuracast-load-test/watch-live.sh`
-
-Samples every 10 s into a CSV: relay listener count, master CPU, RAM and egress.
-Drives nothing; real listeners arrive when they arrive, and the file records the
-arrival curve and the peak.
-
-**Read the audience size from the relay, never from AzuraCast.** The master sees
-exactly one listener — the relay — no matter how many people are connected. The
-AzuraCast dashboard will say 1 all evening, and it is not wrong about what it
-measures; it is just not measuring the audience.
-
-### Listener side — the page at the relay's `/`
-
-Each tester opens it and runs a 60-second measurement of their own connection:
-sustained rate, time to first audio, longest gap, interruption count. It reports
-the result by requesting `/report?kbps=…`, which **404s on purpose** — Icecast
-writes the query string to its access log, and `collect-reports.sh` reads it back
-out. No endpoint to write, nothing to secure, nothing to keep running.
-
-Two details that make the numbers mean something:
-
-- **The first five seconds are discarded.** Icecast bursts a backlog on connect
-  so players start instantly; measuring through that reports a rate several times
-  the real one.
-- **Rate is not the signal — gaps are.** Icecast paces the socket at the mount
-  bitrate, so every healthy listener measures ≈192 kbps and no one measures more.
-  What separates a good connection from a bad one is whether the audio ever
-  stopped arriving. The page says so, in both languages, because a tester reading
-  "192 kbps" needs to know that matching is the pass condition.
-
-## Security posture
-
-- **Master never public.** The only egress is the `azuracast-stream` tailnet
-  Service, carrying :8000 alone — deliberately not the main Service, whose :80 is
-  the admin console.
-- **`MAX_CLIENTS` is the bill cap.** Set it against the transfer allowance.
-- **Icecast's admin console shares port 8000.** Password-protected, but block
-  `/admin` at the reverse proxy too; the test needs nothing from it.
-- **`<public>0</public>`** keeps the mount out of the Icecast YP directories.
-- **Reports carry no identity** — six numbers, and the collector truncates client
-  IPs to two octets.
-- **TLS belongs in front of Icecast**, which serves plain HTTP. A browser will
-  refuse audio loaded over HTTP from an HTTPS page: the page appears, the sound
-  never starts.
-
-## Runbook
+### Running it
 
 ```bash
-# 1. cluster: the tailnet Service ships with the app (Flux). Confirm the device:
-tailscale status | grep azuracast-stream
-
-# 2. VPS:
-tailscale up
-cd scripts/azuracast-relay && cp .env.example .env && $EDITOR .env
-docker compose up -d --build
-curl -sI http://localhost:8000/radio.mp3          # 200 once a listener triggers the pull
-
-# 3. send people the link, then watch both halves:
-RELAY=https://radio.example.com ../azuracast-load-test/watch-live.sh 90
-./collect-reports.sh > reports.csv
+kubectl apply -f scripts/azuracast-load-test/namespace.yaml \
+              -f scripts/azuracast-load-test/listener-sim-remote.yaml
+scripts/azuracast-load-test/run-remote-sweep.sh
 ```
 
-## What this still will not tell you
+**This deliberately saturates the household internet connection while it runs.**
+Steps are per site, so `100` means 200 concurrent listeners. The sweep stops as
+soon as it finds the ceiling — there is nothing to learn past it, and holding a
+saturated uplink degrades everything else at that site.
 
-The relay's own bandwidth becomes the new ceiling, and it is not measured here —
-a 1 Gbps VPS port serves ~4 000 listeners, but its transfer allowance runs out
-long before. And real audiences churn: people connect and drop, and connection
-setup scales with churn rather than with concurrency, which the synthetic sweep
-in doc 10 deliberately excluded.
+The manifest ships `replicas: 0`, so re-applying it always parks the generators.
+A `kubectl apply` after scaling resets them to zero; scale after applying, not
+before.
+
+### Reading the output
+
+Each simulated listener reports the throughput it actually achieved, once per
+120-second window. The floor is **24 000 B/s** — 192 kbps of payload. Below it a
+real player is draining its buffer and will eventually go silent.
+
+The headline is a **median**, not a mean: one stalled listener among fifty should
+not drag the number down, and fifty struggling ones should not hide behind one
+fast one.
+
+Two traps this rig already avoids, both of which produce confident wrong answers:
+
+- **`curl --max-time` exits non-zero on every completed window** while `-w` has
+  already printed the real rate. An `|| echo 0` fallback therefore fires
+  *alongside* each reading, and the median collapses to zero — the first version
+  of this reported saturation at one listener.
+- **Icecast bursts ~64 KiB on connect.** A short measurement window turns that
+  into several percent of inflated throughput; the window is 120 s so it rounds
+  away.
+
+## The caveat that matters
+
+The audio crosses the home connection **twice** — out on the uplink to the remote
+proxy, back on the downlink to the measuring client. The ceiling this finds is
+therefore `min(uplink, downlink) ÷ 192 kbps`.
+
+On any connection where the downlink is the larger of the two — which is nearly
+all of them — that equals the uplink figure, and the result is exactly right. It
+would only understate the truth on a symmetric link whose two directions share
+one pool of capacity.
+
+## Public listeners are still an open question
+
+This measures capacity. It does not publish anything: the stream remains
+reachable only from the tailnet.
+
+Serving the general public needs one of:
+
+- **A port forward** at the cluster's site to a LoadBalancer address from the
+  Cilium pool. Simple, and makes the home uplink the ceiling — which is precisely
+  the number this test gives you.
+- **A relay on an off-site machine you already own** (node C, say). The code is in
+  `scripts/azuracast-relay/` and is written for exactly this: it pulls one copy
+  over the tailnet and fans out locally, so the home uplink carries a single
+  stream no matter the audience. It still needs a public path at *that* site —
+  a port forward there, or Tailscale Funnel.
+- **Not the Cloudflare tunnel.** Sustained audio is the ToS §2.8 case the
+  cloudflare README documents; that hostname carries the web UI only.
+
+If a relay ever runs on a metered connection, the number to plan against is
+**~65 GB per listener-month** at 192 kbps — the relay README works that through.
