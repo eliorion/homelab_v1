@@ -4,7 +4,7 @@
 #
 # envsubst (gettext) renders the config at start, so every secret and limit
 # comes from the environment and icecast.xml holds no credentials.
-FROM alpine:3.22
+FROM alpine:3.24
 
 RUN apk add --no-cache icecast gettext curl \
  && mkdir -p /etc/icecast /var/log/icecast \
