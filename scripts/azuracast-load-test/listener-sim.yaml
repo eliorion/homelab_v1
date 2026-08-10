@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: listener-sim
+  namespace: azuracast-loadtest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: listener-sim
+  template:
+    metadata:
+      labels:
+        app: listener-sim
+    spec:
+      affinity:
+        podAntiAffinity:
+          # Required, not preferred. On the same node as AzuraCast the stream
+          # never touches a NIC — it crosses a veth pair, so the network figures
+          # come out too low — and the generator's CPU competes with the thing
+          # being measured. Both errors flatter the result.
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: azuracast
+              namespaces: ["azuracast"]
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: listener
+          image: curlimages/curl:8.19.0
+          # Nothing here needs privilege; satisfies the `restricted` PSA level
+          # that Talos audits against, so the apply is silent.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: LISTENERS
+              value: "1"
+            - name: STREAM_URL
+              value: http://azuracast.azuracast.svc.cluster.local:8000/radio.mp3
+          # One curl per simulated listener, each holding the mount open and
+          # consuming at the stream's own pace. Icecast paces the socket at the
+          # mount bitrate, so a client that reads continuously IS a listener.
+          # The 0.05s stagger keeps 100 connections from arriving in one burst,
+          # which would measure connection setup rather than steady state.
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              echo "opening $LISTENERS listener(s) against $STREAM_URL"
+              i=1
+              while [ "$i" -le "$LISTENERS" ]; do
+                curl -sS -o /dev/null --no-buffer "$STREAM_URL" &
+                i=$((i + 1))
+                sleep 0.05
+              done
+              echo "all $LISTENERS connected"
+              wait
+          # Requests only. A CPU limit would throttle the readers, Icecast's send
+          # buffer would back up, and the measured byte rate would fall below the
+          # real cost of serving them.
+          resources:
+            requests:
+              cpu: 200m
+              memory: 128Mi
