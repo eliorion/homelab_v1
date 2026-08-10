@@ -35,31 +35,30 @@ spec:
           annotations:
             summary: "WAL archiving is failing on {{ $labels.namespace }}/{{ $labels.pod }}"
             description: "pg_stat_archiver.failed_count is climbing. Until this clears, pg_wal grows without bound and the volume will fill. Run: kubectl -n {{ $labels.namespace }} logs {{ $labels.pod }} -c plugin-barman-cloud | grep -i error. See documentations/12-garage-object-storage.md."
-        # The exact ai-gateway-db signature: a cluster that has NEVER archived.
-        # `barman-cloud-check-wal-archive` gates the first segment, so a
-        # misconfigured object store fails here and only here -- and stays
-        # invisible to every backup check, because base backups still upload.
-        - alert: CNPGWALNeverArchived
+        # Segments finished and waiting in pg_wal/archive_status, not yet
+        # shipped. This is the direct measure of what actually hurts: every
+        # `.ready` file is a segment Postgres may not recycle, so a sustained
+        # backlog IS the disk filling up. It covers both failure shapes at once
+        # -- a cluster that never archived at all (ai-gateway-db was sitting at
+        # 119 waiting) and archiving that worked and then stopped.
+        #
+        # NOT `seconds_since_last_archival`, which was the first attempt here
+        # and was wrong: a quiet database legitimately archives nothing for
+        # days. archive_timeout=300s forces a segment switch only when there is
+        # WAL to switch, so a time-since rule fires on asp-db -- 47h since its
+        # last archive, last archived WAL ...48, current ...49, nothing pending
+        # and nothing wrong -- while saying nothing about whether anything is
+        # actually stuck. A brief non-zero right after a segment switch is
+        # normal, hence `for: 15m`.
+        - alert: CNPGWALArchiveBacklog
           expr: |
-            cnpg_pg_stat_archiver_last_archived_time == 0
-          for: 30m
+            cnpg_collector_pg_wal_archive_status{value="ready"} > 0
+          for: 15m
           labels:
             severity: critical
           annotations:
-            summary: "{{ $labels.namespace }}/{{ $labels.pod }} has never archived a WAL segment"
-            description: "No successful archive since this instance started. A new cluster that cannot reach its object store looks healthy for about two days, then fills its volume. Check the ObjectStore (region, endpoint, credentials) and documentations/12-garage-object-storage.md."
-        # Catches archiving that WAS working and stopped. Safe as a blanket
-        # rule because CNPG sets archive_timeout=300s, so a healthy primary
-        # archives at least every 5 minutes even when completely idle.
-        - alert: CNPGWALArchiveStalled
-          expr: |
-            cnpg_pg_stat_archiver_seconds_since_last_archival > 1800
-          for: 10m
-          labels:
-            severity: critical
-          annotations:
-            summary: "No WAL archived for over 30m on {{ $labels.namespace }}/{{ $labels.pod }}"
-            description: "archive_timeout is 5m, so a healthy primary archives even while idle. PITR coverage is already broken and pg_wal is growing. See documentations/12-garage-object-storage.md."
+            summary: "{{ $value }} WAL segments waiting to be archived on {{ $labels.namespace }}/{{ $labels.pod }}"
+            description: "Segments are finished but not shipped, so Postgres cannot recycle them and pg_wal only grows -- this ends with CNPG shutting the instance down on low disk and every client losing the -rw Service. Check the ObjectStore (region, endpoint, credentials) and the plugin-barman-cloud sidecar logs. See documentations/12-garage-object-storage.md."
     - name: cnpg-storage.rules
       rules:
         # The second miss of the outage: the volume went from healthy to 9.94Gi

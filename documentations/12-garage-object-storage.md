@@ -282,15 +282,23 @@ none of these need a role filter:
 
 | Alert | Expression | Catches |
 |---|---|---|
+| `CNPGWALArchiveBacklog` | `cnpg_collector_pg_wal_archive_status{value="ready"} > 0` (15m) | **this outage** — segments finished but never shipped |
 | `CNPGWALArchivingFailing` | `increase(cnpg_pg_stat_archiver_failed_count[15m]) > 0` | archiving breaking on a working cluster |
-| `CNPGWALNeverArchived` | `cnpg_pg_stat_archiver_last_archived_time == 0` | **this outage** — a cluster that never archived once |
-| `CNPGWALArchiveStalled` | `cnpg_pg_stat_archiver_seconds_since_last_archival > 1800` | archiving that silently stopped |
 | `CNPGVolumeFillingUp` / `AlmostFull` | `kubelet_volume_stats_used_bytes / …_capacity_bytes > 0.80` / `> 0.90` | the consequence, whatever the cause |
 
-`CNPGWALArchiveStalled` is safe as a blanket rule because CNPG sets
-`archive_timeout = 300s`: a healthy primary archives at least every 5 minutes
-even while completely idle. The volume rules are scoped to CNPG's
-`<cluster>-<n>` PVC naming so they stay out of every other PVC in the cluster.
+The backlog rule counts `.ready` files in `pg_wal/archive_status` — segments
+Postgres has finished and may not recycle until they ship. A sustained backlog
+**is** the disk filling up, which is why it beats the obvious alternative:
+`seconds_since_last_archival` looks equivalent and is not. `archive_timeout`
+forces a segment switch only when there is WAL to switch, so a quiet database
+legitimately archives nothing for days — `asp-db` sits 47h past its last
+archive with nothing pending and nothing wrong, and a time-since rule calls
+that an outage while staying silent about whether anything is actually stuck.
+During the real outage `ai-gateway-db-1` reported **119** segments waiting and
+every other instance reported 0.
+
+The volume rules are scoped to CNPG's `<cluster>-<n>` PVC naming so they stay
+out of every other PVC in the cluster.
 
 Backup alerting (`03-backups.md`) does **not** substitute for any of this: this
 cluster reported `LastBackupSucceeded=True` through three days of total
