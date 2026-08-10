@@ -53,10 +53,17 @@ nothing is pruned, no outage, same deliberate behaviour as the reflector secret.
 
 ### 2. Backups (required follow-up — n8n's DB is the only copy of your workflows)
 
-`apps/staging/databases/n8n/garage-backup-credentials.enc.yaml` ships **in
-plaintext with placeholder values** so it can be filled in directly in the
-devcontainer. It is the one file in this repo whose `.enc.yaml` name does not
-yet mean what it says — fix that before it ever holds a real key:
+Two files sit side by side, same convention as `fbref`:
+
+- `garage-backup-credentials.enc.yaml` — the **working** file. Ships in
+  plaintext with placeholder values so it can be filled in directly in the
+  devcontainer. It is the one file in this repo whose `.enc.yaml` name does not
+  yet mean what it says.
+- `garage-backup-credentials.enc.yaml.exemple` — the pristine template. Stays
+  readable after the working file is encrypted, as the record of which keys
+  exist and how to mint them. Never edited, never applied.
+
+Fix the naming lie before that file ever holds a real key:
 
 ```bash
 garage bucket create cnpg-staging-n8n

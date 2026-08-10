@@ -16,8 +16,10 @@ resources:
   #
   #   cd apps/staging/databases/n8n
   #   # garage-backup-credentials.enc.yaml already exists with PLACEHOLDER
-  #   # values — edit it, then:
+  #   # values — edit THAT one (the .exemple beside it is the pristine
+  #   # reference copy and stays untouched), then:
   #   sops -e -i garage-backup-credentials.enc.yaml
+  #   grep -q 'ENC\[' garage-backup-credentials.enc.yaml || echo STILL PLAINTEXT
   #
   # then uncomment the three lines below AND the cluster-backup-patch entry.
   #
