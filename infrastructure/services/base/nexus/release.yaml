@@ -29,6 +29,27 @@ spec:
       # Talos cluster: Longhorn CSI (local-path was the k3s provisioner).
       storageClass: longhorn
       size: 350Gi
+      # ONE Longhorn replica, deliberately — everything in this volume is a
+      # cache. Proxied PyPI/Docker artifacts re-download on the next miss, and
+      # the hosted docker-cache is CI output that gets rebuilt. Losing the node
+      # costs a cold cache and a slow first CI run, not data.
+      #
+      # It also costs the most of any volume here: 350Gi provisioned per replica
+      # against ~287Gi actual, which at the default 3 was 1TB of the cluster's
+      # ~2.1TB of schedulable Longhorn space and left routine growth elsewhere
+      # (fbref-db) with nowhere to go.
+      #
+      # The count is NOT settable from these values: Longhorn takes it from the
+      # StorageClass, and both the PVC's storageClassName and the StatefulSet's
+      # volumeClaimTemplate are immutable, so pointing at a 1-replica class
+      # would mean deleting the StatefulSet and the volume with it. It lives on
+      # the Longhorn Volume CR instead:
+      #
+      #   kubectl -n longhorn-system patch volumes.longhorn.io <pv-name> \
+      #     --type=merge -p '{"spec":{"numberOfReplicas":1}}'
+      #
+      # Longhorn persists that per-volume, so it survives restarts and upgrades
+      # — but a recreated PVC would come back at the class default of 3.
     # Keep heap modest: single-node homelab. Raise -Xmx and the memory limit
     # together if Nexus OOMs under heavier use.
     install4jAddVmParams: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2048m"
