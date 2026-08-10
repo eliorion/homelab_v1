@@ -526,6 +526,55 @@ Plus: Phase 4 done — nothing depends on `192.168.1.200` anymore.
   leaves the etcd peer URL on the old IP. Avoid; if it happens, the clean
   fix is reset + rejoin (fresh member, correct peer URL).
 
+## Growing a volume, and the storage reserve
+
+Expanding a CNPG volume is a `storage.size` bump in git — CNPG patches the PVC
+and Longhorn expands online, no pod restart. Two things stop that silently:
+
+**CNPG will not reconcile PVCs while the cluster is in `Not enough disk space`.**
+That is a deadlock: Postgres needs free space to start, and the operator will not
+grant it until the instance is healthy. Break it by patching the PVC directly to
+the size already in git — CNPG then agrees and rolls the pod:
+
+```bash
+kubectl -n <ns> patch pvc <cluster>-<n> \
+  -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
+```
+
+**Longhorn refuses expansions that exceed its schedulable space**, which is
+`disk_max - reserved`, capped by `storage-over-provisioning-percentage` (100%
+here — Longhorn never schedules more than the disk physically holds, and that
+guarantee is deliberate):
+
+```
+admission webhook "validator.longhorn.io" denied the request:
+cannot schedule 53687091200 more bytes to disk ...
+```
+
+Longhorn's stock 30% reserve took 299GB of each 997GB disk and left 26GB
+schedulable, blocking a routine fbref-db growth while real usage was ~537GB.
+`storageReservedPercentageForDefaultDisk: 15` in the HelmRelease is the fix —
+these disks are dedicated Talos data partitions, so nothing else competes for
+what the reserve protects.
+
+**That setting only applies to disks Longhorn adds afterwards.** Existing disks
+keep the reserve they were created with and must be patched per node:
+
+```bash
+kubectl -n longhorn-system get nodes.longhorn.io -o custom-columns=\
+NAME:.metadata.name,RESERVED:.spec.disks.*.storageReserved
+# then per node, per disk key:
+kubectl -n longhorn-system patch nodes.longhorn.io <node> --type=merge \
+  -p '{"spec":{"disks":{"<disk-key>":{"storageReserved":149611031347}}}}'
+```
+
+Check headroom before promising a size — every replica of a volume needs the
+space on its own node:
+
+```bash
+kubectl -n longhorn-system get nodes.longhorn.io -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{range .status.diskStatus.*}max={.storageMaximum} avail={.storageAvailable} sched={.storageScheduled}{end}{"\n"}{end}'
+```
+
 ## Gotchas carried forward
 
 - Never add a Talos `UserVolumeConfig` while the `/var/lib/longhorn` kubelet
