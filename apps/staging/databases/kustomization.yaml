@@ -7,4 +7,5 @@ kind: Kustomization
 resources:
   - asp/
   - fbref/
+  - n8n/
   - scraper/

@@ -10,4 +10,5 @@ resources:
   - fbref/
   - glpi/
   - linkding/
+  - n8n/
   - scraper/

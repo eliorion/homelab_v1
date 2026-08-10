@@ -1,0 +1,45 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: n8n
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: n8n.rules
+      rules:
+        # The one alert that has to be a push. Every OTHER failure in this stack
+        # surfaces as a failed execution inside n8n's own Executions view --
+        # which only works while n8n is up. If it is down, nothing tells you and
+        # every scheduled workflow silently stops firing.
+        - alert: N8nDown
+          expr: |
+            up{job="n8n"} == 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "n8n is down — all homelab automations are stopped"
+            description: >-
+              The n8n scrape target has been down for 10m. No scheduled workflow
+              is running, and n8n's own Executions view cannot report that.
+              Run: kubectl -n n8n get pods && kubectl -n n8n logs deploy/n8n
+              See documentations/10-n8n-automation.md.
+        # Catches the case the `up` alert cannot: the ServiceMonitor stops
+        # matching (Service relabelled, chart selector drift), so the target
+        # vanishes entirely instead of reporting 0. Absent until the first
+        # successful scrape, so it will not fire on a fresh deploy.
+        - alert: N8nMetricsMissing
+          expr: |
+            absent(up{job="n8n"}) == 1
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "n8n scrape target has disappeared from Prometheus"
+            description: >-
+              No `up` series for job="n8n" for 30m. n8n may be running fine
+              while monitoring is blind — check the ServiceMonitor selector in
+              monitoring/configs/staging/n8n-metrics and the Service labels.

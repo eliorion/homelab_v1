@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: n8n
+
+resources:
+  - ../../../base/databases/n8n
+  # ---------------------------------------------------------------------------
+  # BACKUPS ARE OFF UNTIL YOU MINT A GARAGE KEY.  n8n stores every workflow and
+  # every credential in this database, so this is the first follow-up, not an
+  # optional extra.  See documentations/10-n8n-automation.md.
+  #
+  #   garage bucket create cnpg-staging-n8n
+  #   garage key create n8n-cnpg-staging
+  #   garage bucket allow --read --write cnpg-staging-n8n --key n8n-cnpg-staging
+  #
+  #   cd apps/staging/databases/n8n
+  #   # garage-backup-credentials.enc.yaml already exists with PLACEHOLDER
+  #   # values — edit THAT one (the .exemple beside it is the pristine
+  #   # reference copy and stays untouched), then:
+  #   sops -e -i garage-backup-credentials.enc.yaml
+  #   grep -q 'ENC\[' garage-backup-credentials.enc.yaml || echo STILL PLAINTEXT
+  #
+  # then uncomment the three lines below AND the cluster-backup-patch entry.
+  #
+  # Order matters: uncommenting BEFORE the real key is in makes the barman WAL
+  # archiver fail against a bogus credential, which degrades the CNPG cluster.
+  # `databases` reconciles with wait:true and gates db-migrations -> apps, so
+  # that stalls the whole app tier, not just n8n.
+  # ---------------------------------------------------------------------------
+  # - garage-backup-credentials.enc.yaml
+  # - objectstore.yaml
+  # - scheduledbackup.yaml
+
+patches:
+  # Attach the Barman Cloud plugin -> Garage (WAL archiver + daily base backup).
+  # Uncomment together with the three resources above.
+  # - path: cluster-backup-patch.yaml
+  #   target:
+  #     kind: Cluster
+  #     name: n8n-db
+  # PVCs on Longhorn (explicit — also the cluster default SC on Talos).
+  - path: cluster-storage-patch.yaml
+    target:
+      kind: Cluster
+      name: n8n-db
