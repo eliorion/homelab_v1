@@ -29,6 +29,16 @@ spec:
     # Path-style verified: barman-cloud-backup-list against this bucket via the
     # gateway returned cleanly (boto3 uses path-style for the custom endpoint).
     env:
+      # Garage's own region. Not a live bug HERE — this archive is non-empty, so
+      # the one call that rejects a mismatched region (HeadBucket, issued by
+      # `barman-cloud-check-wal-archive` for the FIRST wal only) no longer runs.
+      # It is a restore-time landmine: bootstrapping a fresh cluster off this
+      # bucket starts with an empty archive again, which is exactly how
+      # ai-gateway-db filled its disk. See documentations/12-garage-object-storage.md.
+      - name: AWS_REGION
+        value: garage
+      - name: AWS_DEFAULT_REGION
+        value: garage
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required
       - name: AWS_RESPONSE_CHECKSUM_VALIDATION
