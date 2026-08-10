@@ -9,10 +9,14 @@
 # Overlay-scoped rather than raised in base: this is staging's Longhorn sizing, and base is
 # shared with a cluster whose disks are not this size.
 #
-# NOTE this is relief, not the fix. WAL archiving is broken (ContinuousArchiving=False,
-# barman-cloud-wal-archive exit status 4), so WAL cannot be recycled and the volume refills
-# whatever its size — the replica was already at 72% of the old one. Deliberately out of
-# scope here; the archiving failure needs its own change.
+# The archiving failure this note used to defer HAS since been fixed: the `exit status 4` was
+# barman-cloud signing HeadBucket for `us-east-1` while Garage's region is `garage`, and the
+# ObjectStore here now sets it (see objectstore.yaml and
+# documentations/12-garage-object-storage.md). ContinuousArchiving is True and WAL recycles.
+#
+# 50Gi -> 100Gi is therefore ordinary growth, not relief: both instances reached 85% of 50Gi
+# on real data — fbref is the largest database in the cluster and the one that actually grows.
+# Longhorn thin-provisions, so the extra is provisioned, not consumed.
 - op: replace
   path: /spec/storage/size
-  value: 50Gi
+  value: 100Gi
