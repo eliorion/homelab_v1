@@ -22,7 +22,8 @@ box — the repo name is historical; see `documentations/06`–`08`.)
   `06`/`07` (Talos + Longhorn migration & HA),
   `08-cilium-cni-ingress-migration.md` (Cilium CNI),
   `09-etcd-backup-dr.md` (etcd backup + disaster recovery),
-  `10-n8n-automation.md` (n8n automation host)
+  `10-n8n-automation.md` (n8n automation host),
+  `11`/`13` (AzuraCast listener capacity + remote-listener testing)
 - Each tier uses `base/` + `staging/` (+ `production/`) kustomize overlays
 
 ## Conventions
