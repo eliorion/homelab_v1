@@ -1,0 +1,178 @@
+<!-- AzuraCast player + now-playing, for a website hosted anywhere.
+     Drop this block into a page. Nothing else is required: the API already
+     sends Access-Control-Allow-Origin: *, so the fetch works cross-origin
+     with no proxy and no backend.
+
+     To repoint at a different audio path later, change STREAM_OVERRIDE below.
+     Everything else follows the API.
+
+     Styles are scoped under .azc and set their own colors, so the widget does
+     not inherit or leak into the host page's stylesheet. -->
+
+<div class="azc" id="azc">
+  <div class="azc-art" id="azc-art" aria-hidden="true"></div>
+  <div class="azc-body">
+    <p class="azc-label">
+      <span class="azc-dot" id="azc-dot"></span>
+      <span id="azc-station">…</span>
+    </p>
+    <p class="azc-title" id="azc-title">Connecting…</p>
+    <p class="azc-artist" id="azc-artist"></p>
+    <div class="azc-bar"><i id="azc-prog"></i></div>
+  </div>
+  <button class="azc-play" id="azc-play" type="button" aria-label="Play">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path id="azc-icon" fill="currentColor" d="M8 5v14l11-7z"></path>
+    </svg>
+  </button>
+  <!-- Announced to screen readers when the track changes, without moving focus. -->
+  <p class="azc-sr" id="azc-live" role="status" aria-live="polite"></p>
+</div>
+
+<style>
+  .azc {
+    --azc-bg: #FAFCFC; --azc-ink: #0F1A1E; --azc-ink2: #46585F;
+    --azc-line: #D3DEE1; --azc-accent: #0891B2;
+    display: flex; align-items: center; gap: 14px;
+    max-width: 460px; padding: 14px; border: 1px solid var(--azc-line);
+    border-radius: 4px; background: var(--azc-bg); color: var(--azc-ink);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: dark) {
+    .azc {
+      --azc-bg: #131D21; --azc-ink: #E8F1F3; --azc-ink2: #A8BEC5;
+      --azc-line: #243338; --azc-accent: #17A2C4;
+    }
+  }
+  .azc * { box-sizing: border-box; }
+  .azc-art {
+    width: 58px; height: 58px; flex: none; border-radius: 3px;
+    background: var(--azc-line) center/cover no-repeat;
+  }
+  .azc-body { flex: 1; min-width: 0; }
+  .azc-label {
+    margin: 0 0 3px; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--azc-ink2); display: flex; align-items: center; gap: 6px;
+  }
+  .azc-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--azc-line); flex: none;
+  }
+  .azc-dot.on { background: var(--azc-accent); }
+  .azc-title, .azc-artist {
+    margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .azc-title { font-weight: 600; }
+  .azc-artist { font-size: 13.5px; color: var(--azc-ink2); }
+  .azc-bar { height: 3px; margin-top: 8px; background: var(--azc-line); border-radius: 2px; overflow: hidden; }
+  .azc-bar i { display: block; height: 100%; width: 0; background: var(--azc-accent); }
+  .azc-play {
+    flex: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--azc-accent); background: var(--azc-accent); color: var(--azc-bg);
+    display: grid; place-items: center; padding: 0;
+  }
+  .azc-play[disabled] { opacity: .45; cursor: default; }
+  .azc-play:focus-visible { outline: 2px solid var(--azc-ink); outline-offset: 2px; }
+  .azc-sr {
+    position: absolute; width: 1px; height: 1px; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  @media (prefers-reduced-motion: reduce) { .azc-bar i { transition: none !important; } }
+</style>
+
+<script>
+(function () {
+  var BASE    = "https://mve-azuracast.eliorion.fr";
+  var STATION = "sysadmin";
+  // Leave null to use whatever the API advertises as listen_url. Set a URL here
+  // if the audio ever moves off that host — this is the only line that changes.
+  var STREAM_OVERRIDE = null;
+  var POLL_MS = 15000;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var audio = new Audio();
+  audio.preload = "none";
+  audio.crossOrigin = "anonymous";
+
+  var streamUrl = null, playing = false, lastTrack = "", timer = null;
+  var elapsed = 0, duration = 0, tick = null;
+
+  function paint(np) {
+    var song = np.now_playing && np.now_playing.song ? np.now_playing.song : {};
+    var live = np.live && np.live.is_live;
+
+    $("azc-station").textContent = live && np.live.streamer_name
+      ? np.live.streamer_name
+      : (np.station && np.station.name) || STATION;
+    $("azc-dot").className = "azc-dot" + (np.is_online ? " on" : "");
+    $("azc-title").textContent  = np.is_online ? (song.title || "Live") : "Offline";
+    $("azc-artist").textContent = np.is_online ? (song.artist || "") : "";
+    $("azc-art").style.backgroundImage = song.art ? 'url("' + song.art + '")' : "";
+
+    var label = (song.title || "") + (song.artist ? " — " + song.artist : "");
+    if (label && label !== lastTrack) { lastTrack = label; $("azc-live").textContent = label; }
+
+    // The API reports where the track is; the bar is advanced locally between
+    // polls so it moves smoothly instead of jumping every 15 seconds.
+    elapsed  = (np.now_playing && np.now_playing.elapsed)  || 0;
+    duration = (np.now_playing && np.now_playing.duration) || 0;
+
+    if (!STREAM_OVERRIDE && np.station && np.station.listen_url) {
+      streamUrl = np.station.listen_url;
+    }
+    $("azc-play").disabled = !np.is_online || !streamUrl;
+  }
+
+  function poll() {
+    fetch(BASE + "/api/nowplaying/" + encodeURIComponent(STATION), { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(paint)
+      .catch(function () {
+        $("azc-title").textContent = "Unavailable";
+        $("azc-artist").textContent = "";
+        $("azc-dot").className = "azc-dot";
+      });
+  }
+
+  if (STREAM_OVERRIDE) streamUrl = STREAM_OVERRIDE;
+
+  $("azc-play").addEventListener("click", function () {
+    if (playing) {
+      audio.pause();
+      // A live stream has no meaningful position to resume from. Dropping the
+      // src releases the connection instead of leaving it buffering silently in
+      // the background, which costs the server a listener slot for nothing.
+      audio.removeAttribute("src");
+      audio.load();
+      playing = false;
+      $("azc-icon").setAttribute("d", "M8 5v14l11-7z");
+      $("azc-play").setAttribute("aria-label", "Play");
+      return;
+    }
+    audio.src = streamUrl;
+    audio.play().then(function () {
+      playing = true;
+      $("azc-icon").setAttribute("d", "M6 5h4v14H6zM14 5h4v14h-4z");
+      $("azc-play").setAttribute("aria-label", "Pause");
+    }).catch(function () {
+      // Autoplay policies reject play() without a gesture; this one has a
+      // gesture, so a rejection here means the stream itself refused.
+      $("azc-title").textContent = "Playback blocked";
+    });
+  });
+
+  poll();
+  timer = setInterval(poll, POLL_MS);
+  tick = setInterval(function () {
+    if (duration > 0 && elapsed < duration) elapsed++;
+    $("azc-prog").style.width = duration > 0 ? Math.min(100, elapsed / duration * 100) + "%" : "0";
+  }, 1000);
+
+  // Stop polling while the tab is hidden; a background tab does not need to ask
+  // every fifteen seconds, and this is somebody else's page.
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { clearInterval(timer); timer = null; }
+    else if (!timer) { poll(); timer = setInterval(poll, POLL_MS); }
+  });
+})();
+</script>
