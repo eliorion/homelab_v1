@@ -180,11 +180,16 @@ port 80 the tunnel already routes, so publishing the host published the audio
 with it. The API confirms it — `listen_url` advertises exactly that URL, so any
 player or embed will use it by default.
 
-This is the sustained non-HTML streaming Cloudflare's ToS §2.8 restricts, and it
-is the arrangement doc 13 and the cloudflare README both describe as
-deliberately avoided. Whether to keep it is an operator decision; it should not
-be an accident. Closing it means either a path-scoped tunnel route (the trick
-already used for Keycloak) or a WAF rule on `/listen/*`.
+This is the sustained non-HTML streaming Cloudflare's ToS §2.8 restricts.
+
+**Decided 2026-08-10: keep it.** The arrangement stands as the audio path for
+now, with the risk accepted knowingly rather than inherited by accident, and the
+cloudflare README has been corrected to describe what the hostname actually
+serves. The fallbacks, if Cloudflare ever throttles or objects, are a direct path
+(port forward to a Cilium LB-IPAM address — the uplink sustains at least 80
+concurrent listeners, measured above) or an off-site relay. Closing it would be a
+path-scoped tunnel route, the trick already used for Keycloak, or a WAF rule on
+`/listen/*`.
 
 If a relay ever runs on a metered connection, the number to plan against is
 **~65 GB per listener-month** at 192 kbps — the relay README works that through.

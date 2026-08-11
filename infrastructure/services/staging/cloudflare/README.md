@@ -153,12 +153,34 @@ deliberate — the pod serves no TLS, and the hop is inside the cluster.
 base URL. Enter `https://mve-azuracast.eliorion.fr` — that value is what
 security-critical emails (password resets) are built from.
 
-**Do not enable "Use Web Proxy for Radio" in Administration → System Settings.**
-That setting moves station audio onto port 80 under `/listen/*`, which is this
-tunnel's route, so every listener's stream would then flow through the Cloudflare
-proxy — the sustained non-HTML traffic Cloudflare's ToS §2.8 restricts. Streams
-are meant to stay on the cluster Service (`azuracast.azuracast.svc:8000` and the
-per-station ports above it); only the web UI belongs on this hostname.
+**This hostname carries the AUDIO as well as the UI, and that is an accepted
+decision rather than an accident.** An earlier version of this file claimed the
+UI only. It was wrong: nginx proxies `/listen/*` to the local Icecast on the same
+port 80 this route already points at, so publishing the host published the
+stream with it. Measured from outside the network on 2026-08-10:
+
+```
+$ curl -D- https://mve-azuracast.eliorion.fr/listen/sysadmin/radio.mp3
+HTTP/2 200
+content-type: audio/mpeg
+icy-br: 192
+server: cloudflare                    27 666 B/s sustained over 15 s
+```
+
+`/api/nowplaying` advertises that same URL as `listen_url`, so every embed and
+player uses it by default — including the snippet in `scripts/azuracast-embed/`.
+
+**The trade being accepted:** this is the sustained non-HTML streaming
+Cloudflare's ToS §2.8 restricts. At the current audience it is unlikely to be
+noticed; at scale Cloudflare may throttle or object, and the fallback is a direct
+path (a port forward to a Cilium LB-IPAM address) or an off-site relay
+(`scripts/azuracast-relay/`). Doc 11 measured the alternative: the home uplink
+sustains at least 80 concurrent listeners.
+
+**To close it instead**, path-scope this route the way section 2 does for
+Keycloak, or add a WAF rule on `/listen/*`. Keeping `/api/*` open is harmless —
+it is small JSON, and its `Access-Control-Allow-Origin: *` is what lets an
+external site show what is playing.
 
 **The admin login is internet-facing on this hostname.** Unlike section 2 there
 is no path scoping to apply — AzuraCast serves its UI and its admin area from the
