@@ -39,9 +39,29 @@ spec:
   # Flyway V6 (webapp_ro) and V8 (grafana_ro) CREATE ROLE while connected as
   # `app`, which needs CREATEROLE — without it the migration image fails at V6
   # and, once the chart runs it as a pre-upgrade hook, takes every asp upgrade
-  # down with it. This is why asp-db is stuck at V5 while db-migrations is at
-  # v0.6.0. fbref-db already carries the same grant (added after the identical
-  # failure on 2026-06-12, doc 07); asp-db never got it.
+  # down with it. fbref-db carries the same grant, added after the identical
+  # failure on 2026-06-12 (doc 07).
+  #
+  # RESOLVED — the grant below is what fixed it. The previous version of this
+  # comment said "asp-db is stuck at V5 while db-migrations is at v0.6.0",
+  # which has not been true for some time and was actively misleading: it was
+  # read as an open incident and used to justify work that had already landed.
+  # Measured on staging 2026-08-12:
+  #
+  #   flyway_schema_history  max(version) = 9, all success
+  #   app                    login=true  createrole=true
+  #   webapp_ro / grafana_ro exist, NOLOGIN, grafana_ro holds 7 table grants
+  #
+  # Both read-only roles are deliberately NOLOGIN here and appear under
+  # managedRolesStatus.byStatus["not-managed"]. That is the correct state, not
+  # a gap: Flyway creates the role and its grants (the privilege boundary), and
+  # CNPG is what would attach a credential. Nothing has needed one yet.
+  #
+  # To give grafana_ro a login, add it to the roles list below WITH a
+  # passwordSecret — but do it in the STAGING OVERLAY as a patch, never here.
+  # This base is consumed by apps/production/databases/asp as well, which
+  # clusters/production/apps.yaml reconciles, so a role in this file pointing
+  # at a Secret that exists only in staging fails reconciliation in production.
   managed:
     roles:
       - name: app
