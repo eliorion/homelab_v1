@@ -26,9 +26,24 @@ spec:
       compression: gzip
       jobs: 2
   instanceSidecarConfiguration:
-    # Defensive: same class of boto3 >= 1.36 data-integrity checksum rejection
-    # seen with R2 (plugin-barman-cloud #411). Harmless if Garage accepts them.
     env:
+      # THE REGION IS LOAD-BEARING. Garage runs with `s3_region = "garage"` and
+      # rejects a HeadBucket signed for any other region with a bare 400, while
+      # GET, PUT and ListObjectsV2 with the same wrong region succeed. Only
+      # `barman-cloud-check-wal-archive` "checking the first wal" calls it, and
+      # only while the archive is empty -- so a missing region is invisible on
+      # an established cluster and fatal on a new one. This store has never
+      # archived anything, so it is exactly the new-cluster case: enabling it
+      # without these two lines reproduces the 2026-08-10 ai-gateway outage
+      # (documentations/12-garage-object-storage.md) on the database that holds
+      # the only copy of every n8n workflow and credential.
+      # Both names: boto3 reads AWS_REGION, the aws CLI honours AWS_DEFAULT_REGION.
+      - name: AWS_REGION
+        value: garage
+      - name: AWS_DEFAULT_REGION
+        value: garage
+      # Defensive: same class of boto3 >= 1.36 data-integrity checksum rejection
+      # seen with R2 (plugin-barman-cloud #411). Harmless if Garage accepts them.
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required
       - name: AWS_RESPONSE_CHECKSUM_VALIDATION
