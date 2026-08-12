@@ -1,0 +1,85 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-capacity
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: node-capacity.rules
+      rules:
+        # ------------------------------------------------------------------
+        # WHY THIS EXISTS ALONGSIDE THE CHART'S NodeFilesystemSpaceFillingUp.
+        #
+        # The shipped rule is percentage-gated (<15% avail warning, <10%
+        # critical) and predicts from a [6h] window. Two consequences, both
+        # measured on this cluster rather than assumed:
+        #
+        # 1. A [6h] window on a filesystem with CI churn measures the last
+        #    build, not the trend. Evaluated across three days, the shipped
+        #    rule's own prediction for node 1 swung between -148.6 GiB and
+        #    +428.2 GiB and crossed zero repeatedly. The same query over [7d]
+        #    is smooth and monotonic. A rule that flaps is a rule that gets
+        #    ignored, and this one guards the failure that takes the node.
+        #
+        # 2. 15% is a different amount of runway on different disks. Node 1 is
+        #    463 GiB and nodes 2-3 are 929 GiB, so the percentage gate gives
+        #    node 1 -- the one actually filling -- the LEAST absolute warning.
+        #    At its measured -11.7 GiB/day, 15% is reached with about six days
+        #    left, which is not enough time to source a disk.
+        #
+        # This rule is rate-based and percentage-blind: "at the trend of the
+        # last 7 days, does this filesystem run out inside N days". It fires
+        # earlier and it does not flap. The chart's rules are deliberately left
+        # enabled as the backstop for a sudden fill that a 7-day trend cannot
+        # see coming.
+        #
+        # EXPECT THE WARNING TO FIRE IN A FEW DAYS. Measured at authoring time:
+        # node 1 has 209.4 GiB free and is losing 11.7 GiB/day, so it has ~18
+        # days. The 14-day projection is +45 GiB today and crosses zero around
+        # 16 August. That is the alert working as designed -- it is meant to
+        # arrive with two weeks of runway in hand, not to stay silent until
+        # the situation is unrecoverable.
+        # ------------------------------------------------------------------
+        - alert: NodeFilesystemRunwayShort
+          expr: |
+            predict_linear(
+              node_filesystem_avail_bytes{job="node-exporter",fstype!="",fstype!="tmpfs",mountpoint!=""}[7d]
+            , 14 * 24 * 3600) < 0
+          # 6h, not 1h: the 7-day window already smooths the input, so a long
+          # for: here is not about noise -- it is to avoid arming on a single
+          # scrape gap after a node-exporter restart.
+          for: 6h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.instance }} {{ $labels.mountpoint }} projects full within 14 days"
+            description: >-
+              At the trend of the last 7 days this filesystem runs out inside
+              14 days. This is a planning alert, not an incident -- there is
+              still time to act, which is the point of raising it here rather
+              than waiting for the 15%-of-disk rule. Check what is growing
+              before adding capacity: on this cluster the driver is CI churn
+              (container image layers and ARC runner ephemeral volumes), and
+              Longhorn replicas are provisioned space that does NOT shrink when
+              pods move.
+
+        - alert: NodeFilesystemRunwayCritical
+          expr: |
+            predict_linear(
+              node_filesystem_avail_bytes{job="node-exporter",fstype!="",fstype!="tmpfs",mountpoint!=""}[7d]
+            , 3 * 24 * 3600) < 0
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.instance }} {{ $labels.mountpoint }} projects full within 3 days"
+            description: >-
+              Three days of runway at the 7-day trend. On a control-plane node
+              a full /var stops etcd writes and the kubelet, so this takes the
+              node and -- with three of three nodes being control-plane here --
+              a meaningful share of the cluster. Free space now: prune container
+              images, and check Longhorn replica placement before assuming pod
+              rescheduling will help, because it will not.
