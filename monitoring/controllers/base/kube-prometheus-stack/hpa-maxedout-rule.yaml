@@ -1,0 +1,57 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kube-prometheus-stack-hpa-maxedout
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: kubernetes-apps-hpa-maxedout
+      rules:
+        # Replacement for the chart's KubeHpaMaxedOut, which is disabled in
+        # release.yaml via defaultRules.disabled. It lives NEXT TO that switch
+        # on purpose: the disable and the replacement are one change, and
+        # separating them is how a cluster ends up with neither.
+        #
+        # Restated verbatim from the shipped rule -- same expression, same
+        # for:, same severity, same annotations including the upstream
+        # runbook_url -- plus ONE added clause:
+        #
+        #     and (spec_max_replicas > spec_min_replicas)
+        #
+        # "Running at max" is only meaningful for an autoscaler that has room
+        # to scale. An HPA pinned at min == max is at max by definition, on
+        # every evaluation, forever.
+        #
+        # That is the state of all three FlareSolverr HPAs (solver-c,
+        # solver-direct, solver-tailscale), each minReplicas: 1 /
+        # maxReplicas: 1 because FlareSolverr holds its sessions in per-pod
+        # memory -- a second replica splits them across pods that cannot see
+        # each other's state and silently degrades every fetch to a full
+        # ~90s solve. The pin is a correctness requirement, not a capacity cap.
+        #
+        # Coverage is preserved where it matters: keda-hpa-engine-worker
+        # (max 6) still alerts, and is the only HPA here that scaling could
+        # ever help.
+        - alert: KubeHpaMaxedOut
+          expr: |
+            (
+              kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics", namespace=~".*"}
+                ==
+              kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics", namespace=~".*"}
+            )
+            and
+            (
+              kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics", namespace=~".*"}
+                >
+              kube_horizontalpodautoscaler_spec_min_replicas{job="kube-state-metrics", namespace=~".*"}
+            )
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            description: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has been running at max replicas for longer than 15 minutes."
+            runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubehpamaxedout
+            summary: "HPA is running at max replicas"

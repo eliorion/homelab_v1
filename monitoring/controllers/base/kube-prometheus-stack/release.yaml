@@ -29,6 +29,27 @@ spec:
         target:
           kind: PrometheusRule
   values:
+    defaultRules:
+      disabled:
+        # Replaced, not dropped -- see hpa-maxedout-rule.yaml in this same
+        # directory, which re-adds it with one extra guard. The two must move
+        # together; disabling without the replacement removes real coverage of
+        # keda-hpa-engine-worker.
+        #
+        # The shipped rule is `current == max`, with no test for whether the
+        # HPA can scale at all. All three FlareSolverr HPAs are
+        # minReplicas: 1 / maxReplicas: 1 by deliberate chart design --
+        # FlareSolverr keeps its sessions in per-pod memory, so a second
+        # replica is a correctness bug, not extra capacity. current == max is
+        # therefore their permanent, intended, healthy state, and the alert
+        # fired on all three continuously while saying nothing about load.
+        #
+        # It was actively misleading, not merely noisy: three HPAs "maxed out"
+        # reads as a capacity signal, and the one autoscaler that CAN scale
+        # (keda-hpa-engine-worker, max 6) has been flat at 1 for a week
+        # because the fleet is idle. The board said saturated; the cluster was
+        # asleep.
+        KubeHpaMaxedOut: true
     # ---------------------------------------------------------------------
     # Control-plane scrape jobs that cannot exist on this cluster.
     #
@@ -188,6 +209,33 @@ spec:
                   {{ .Annotations.summary }}
                   {{ .Annotations.description }}
                   {{ end }}
+    kube-state-metrics:
+      # This pod declared NO requests and NO limits, so it ran BestEffort --
+      # the first QoS class the kubelet evicts under node memory pressure --
+      # on a cluster where node 1 sits at 193% memory-limit overcommit.
+      #
+      # It is the wrong component to leave in that tier. Nearly every alert in
+      # this cluster is derived from kube-state-metrics, and when it restarts
+      # every derived alert is recreated with a fresh activeAt. That is the
+      # measured reason alert onset times here are untrustworthy: the pod went
+      # 18 -> 37 restarts between 29 July and 7 August, and every alert stuck
+      # at 2026-08-07T07:09 is one it feeds.
+      #
+      # HONEST SCOPE: this is not a proven fix for those restarts. The last
+      # termination was "Error" exit 2 with no panic in the logs, which is not
+      # an OOMKill signature, and the pod has been stable for five days -- so
+      # the cause is still open. What is certain is that BestEffort is
+      # indefensible here regardless of what caused them.
+      #
+      # Requests only, deliberately no memory limit: kube-state-metrics memory
+      # scales with the number of objects in the cluster, so a fixed ceiling
+      # turns cluster growth into an OOMKill loop in the one component that
+      # would be needed to see it. Measured usage at the time of writing is
+      # 27Mi / 3m, so 128Mi is ~5x headroom for growth.
+      resources:
+        requests:
+          cpu: 20m
+          memory: 128Mi
     prometheus-node-exporter:
       # node-exporter needs hostPID + host mounts to read node metrics -- that
       # finding is by-design and left as-is. It does NOT need to escalate

@@ -10,3 +10,5 @@ resources:
   # HelmRelease would fail its timeout and roll back.
   - storageclass.yaml
   - release.yaml
+  # Replaces the chart's KubeHpaMaxedOut, which release.yaml disables.
+  - hpa-maxedout-rule.yaml
