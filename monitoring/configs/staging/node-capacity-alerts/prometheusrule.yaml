@@ -43,11 +43,39 @@ spec:
         # arrive with two weeks of runway in hand, not to stay silent until
         # the situation is unrecoverable.
         # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # HISTORY GUARD -- added after this rule armed on garbage.
+        #
+        # predict_linear over [7d] is only meaningful once [7d] actually holds
+        # data. When Prometheus restarts, it does not: minutes after the TSDB
+        # moved from emptyDir to a PVC, the window held ELEVEN samples and the
+        # 3-day projection read
+        #
+        #   node1 +160.9 GiB    node2 -160.9 GiB    node3 +52.6 GiB
+        #
+        # against a node 2 that has 416 GiB free and was gaining space. That put
+        # NodeFilesystemRunwayCritical into pending on pure noise, an hour away
+        # from paging.
+        #
+        # count_over_time(...[7d]) > 12000 requires roughly 4.2 days of samples
+        # at the 30s node-exporter interval (7d full = ~20160). Below that the
+        # rule stays silent rather than guessing. That silence is covered: the
+        # chart's own NodeFilesystemSpaceFillingUp and
+        # NodeFilesystemAlmostOutOfSpace are percentage-based, need no history,
+        # and are deliberately left enabled as exactly this backstop.
+        #
+        # If the node-exporter scrape interval changes, this constant must move
+        # with it -- 12000 is a sample COUNT, not a duration.
+        # ------------------------------------------------------------------
         - alert: NodeFilesystemRunwayShort
           expr: |
             predict_linear(
               node_filesystem_avail_bytes{job="node-exporter",fstype!="",fstype!="tmpfs",mountpoint!=""}[7d]
             , 14 * 24 * 3600) < 0
+            and
+            count_over_time(
+              node_filesystem_avail_bytes{job="node-exporter",fstype!="",fstype!="tmpfs",mountpoint!=""}[7d]
+            ) > 12000
           # 6h, not 1h: the 7-day window already smooths the input, so a long
           # for: here is not about noise -- it is to avoid arming on a single
           # scrape gap after a node-exporter restart.
@@ -71,6 +99,10 @@ spec:
             predict_linear(
               node_filesystem_avail_bytes{job="node-exporter",fstype!="",fstype!="tmpfs",mountpoint!=""}[7d]
             , 3 * 24 * 3600) < 0
+            and
+            count_over_time(
+              node_filesystem_avail_bytes{job="node-exporter",fstype!="",fstype!="tmpfs",mountpoint!=""}[7d]
+            ) > 12000
           for: 1h
           labels:
             severity: critical
