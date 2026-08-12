@@ -43,14 +43,18 @@ certificate.
 |---|---|---|
 | `asp-admin-ui` | `apps/staging/asp/release.yaml` (`adminUi.service.annotations`) | 8080 |
 | `fbref-admin-ui` | `apps/staging/fbref/release.yaml` (`adminUi.service.annotations`) | 8080 |
-| `scraper-admin-ui` | `apps/staging/scraper/release.yaml` (`adminUi.service.annotations`) | |
-| `longhorn` | `infrastructure/controllers/base/longhorn/release.yaml` (`values.service.ui.annotations`) | 80 |
+| `scraper-admin-ui` | `apps/staging/scraper/release.yaml` (`adminUi.service.annotations`) | set by the chart (`k8s/charts/scraper`), not in `release.yaml` |
+| `longhorn` | `infrastructure/controllers/base/longhorn/release.yaml` (`values.service.ui.annotations`) | 80 (Service `longhorn-frontend`) |
 | `radar` | `infrastructure/services/base/radar/release.yaml` (`service.annotations`) | 9280 |
 | `azuracast-stream` | `apps/base/azuracast/service-stream-tailscale.yaml` | 8000 |
 
 The `adminUi.service.annotations` values need that template to exist in the
 chart (asp repo `k8s/charts/{asp,fbref}`, shipped on `main`); the deployed
-HelmRelease must be on a chart revision that has it.
+HelmRelease must be on a chart revision that has it. Longhorn needs no such
+change: upstream's chart already passes `service.ui.annotations` through to the
+Service it names `longhorn-frontend` — the name to look for in
+`kubectl -n longhorn-system get svc` — so the annotations live in the
+HelmRelease and nothing else moves.
 
 Tailscale `Ingress` (HTTPS on 443, no port in the URL):
 
@@ -64,10 +68,12 @@ Tailscale `Ingress` (HTTPS on 443, no port in the URL):
 
 ### Egress Services (`egress-proxies.yaml`)
 
-Each entry is an `ExternalName` Service annotated with `tailscale.com/tailnet-ip`.
-The operator creates a proxy pod (`ts-<service-name>-…`, the only tailnet member
-in the path) and overwrites `externalName` with that proxy's DNS name. The TCP
-port is preserved end to end, and any namespace can consume the local name.
+Each entry is an `ExternalName` Service naming its target either by tailnet IP
+(`tailscale.com/tailnet-ip`, which is what all five entries here use) or by
+MagicDNS name (`tailscale.com/tailnet-fqdn`). The operator creates a proxy pod
+(`ts-<service-name>-…`, the only tailnet member in the path) and overwrites
+`externalName` with that proxy's DNS name. The TCP port is preserved end to end,
+and any namespace can consume the local name.
 
 | Service | Tailnet IP | Port | Consumer |
 |---|---|---|---|
@@ -113,11 +119,21 @@ A password-authenticated console whose session cookie belongs on a secure origin
 gets the `Ingress` (HTTPS, MagicDNS certificate). A byte stream or a plain UI
 where the Service port must be preserved gets the `tailscale.com/expose`
 annotation. `ai-gateway` additionally carries API credentials in request headers,
-which is why it is on the HTTPS path. `nao` is the one case where the address is
-load-bearing beyond reachability: its `BETTER_AUTH_URL`
-(`infrastructure/services/staging/databases/dbtools/nao-env-patch.yaml`) must match
-the browser URL byte for byte — `https://`, no port — or every login redirect
-fails.
+which is why it is on the HTTPS path. For three of the `Ingress` devices the
+address is load-bearing beyond reachability, so the device name cannot be
+changed alone.
+`keycloak-admin` is one value in three places: `spec.hostname.admin` in
+`infrastructure/services/base/keycloak/app/keycloak.yaml`, the `master` realm's
+`frontendUrl` in `infrastructure/services/base/keycloak/realm/realm-master.yaml`
+— the URL that realm then advertises as its OIDC issuer — and the device name
+itself; a mismatch kills the console with
+`Timeout when waiting for 3rd party check iframe message.` `n8n` needs
+`N8N_HOST` and `WEBHOOK_URL` (`apps/staging/n8n/configmap.yaml`) to be that same
+tailnet host. `nao` is reachable on two hosts, so `BETTER_AUTH_TRUSTED_ORIGINS`
+(`infrastructure/services/staging/databases/dbtools/nao-env-patch.yaml`) must
+list `https://nao.tail45b0ca.ts.net` next to the public origin — its
+`BETTER_AUTH_URL` is the public address — or every login on the tailnet path is
+refused with 403 `INVALID_ORIGIN`.
 
 ### OAuth client, and `oauth: {}`
 
@@ -140,9 +156,10 @@ Labelling the namespace `privileged` is what makes the proxies creatable.
 impersonates the caller's tailnet identity and Kubernetes RBAC (driven by an ACL
 grant) decides access, so no client certificate ever ships to a laptop.
 `allowImpersonation: "true"` creates the ClusterRole the proxy needs to do that.
-The proxy is the operator's own tailnet device, `tailscale-operator`
-(`operatorConfig.hostname`). The Talos API is not covered by this: `talosctl`
-(apid `:50000`) would need the `.200` subnet route or the Talos
+The proxy is the operator's own tailnet device, named `tailscale-operator`
+because that is the chart default — `release.yaml` sets only `values.oauth` and
+`values.apiServerProxyConfig`, no `operatorConfig`. The Talos API is not covered
+by this: `talosctl` (apid `:50000`) would need the `.200` subnet route or the Talos
 `siderolabs/tailscale` extension, neither of which is reachable without LAN or
 Talos access.
 
@@ -150,9 +167,10 @@ Talos access.
 
 Keeping all exits here means the consumers point at stable local names instead of
 raw `100.x` tailnet addresses, and a new exit is one block copied in
-`egress-proxies.yaml` plus one lane on the consumer side. For Garage the same
-argument is made one level up: the Talos nodes are not tailnet members, only the
-operator's proxy pods are, and the HAProxy gateway turns three tailnet devices
+`egress-proxies.yaml` — bump the number (`tailscale-proxy-01`, `-02`, …) and
+point it at the new target — plus one lane on the consumer side. For Garage the
+same argument is made one level up: the Talos nodes are not tailnet members, only
+the operator's proxy pods are, and the HAProxy gateway turns three tailnet devices
 into one ClusterIP with health checking so no consumer has to know three
 addresses. A restore deliberately does not retrace that path and goes direct to a
 node's tailnet IP, because the gateway is in-cluster only.

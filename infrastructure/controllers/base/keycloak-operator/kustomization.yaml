@@ -6,8 +6,8 @@ kind: Kustomization
 # renovate: datasource=github-releases depName=keycloak/keycloak-k8s-resources
 # keycloakOperatorVersion: 26.7.0
 
-# Upstream publishes these as `.yml`; they are vendored as `.yaml`. Both
-# extensions present would apply every CRD twice.
+# Upstream publishes these as `.yml`; the fetch script normalises the extension
+# and writes them as `.yaml`. This list must name the files it writes.
 resources:
   - namespace.yaml
   - upstream/keycloakoidcclients.k8s.keycloak.org-v1.yaml

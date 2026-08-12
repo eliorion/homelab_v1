@@ -2,14 +2,16 @@
 
 The CloudNativePG operator: the controller that manages every Postgres `Cluster`
 in this repository (`keycloak-db` in `identity`, `asp-db` in `asp`, `fbref-db` in
-`fbref`, `ai-gateway-db` in `ai-gateway`, `n8n-db` in `n8n`). It runs in the
-`cnpg-system` namespace and is installed as a Flux `HelmRelease` from the
-upstream `cloudnative-pg` chart. No database lives in this directory — only the
-operator, plus, under `plugin/`, the separate barman-cloud CNPG-I plugin that
-every one of those clusters uses to archive WAL and take base backups. When a
-`Cluster` declares the plugin, the operator injects a `barman-cloud` sidecar into
-each instance pod; the plugin itself supplies the `ObjectStore` CRD and does the
-uploads and downloads against Cloudflare R2 or Garage.
+`fbref`, `ai-gateway-db` in `ai-gateway`, `n8n-db` in `n8n`, `scraper-db` in
+`scraper`, `dbtools-db` in `database`). It runs in the `cnpg-system` namespace
+and is installed as a Flux `HelmRelease` from the upstream `cloudnative-pg`
+chart. No database lives in this directory — only the operator, plus, under
+`plugin/`, the separate barman-cloud CNPG-I plugin that the first five of those
+clusters use to archive WAL and take base backups. `scraper-db` and `dbtools-db`
+declare no plugin: neither holds anything restorable, so neither is backed up.
+When a `Cluster` declares the plugin, the operator injects a `barman-cloud`
+sidecar into each instance pod; the plugin itself supplies the `ObjectStore` CRD
+and does the uploads and downloads against Cloudflare R2 or Garage.
 
 ## How it is wired
 
@@ -82,9 +84,12 @@ ai-gateway WAL-archiving failure ran for three days unseen.
 ## Traps
 
 - **Anything that declares an `ObjectStore` must `dependsOn: infra-cnpg-plugin`.**
-  The CRD ships with the plugin; the CRs live in `infrastructure-controllers`,
-  `apps` and elsewhere. Drop the dependency and the consuming Kustomization fails
-  with `no matches for kind ObjectStore`.
+  The CRD ships with the plugin; the CRs are applied by the `databases`
+  Kustomization (`path: ./apps/staging/databases`), which declares that
+  `dependsOn` directly, and by `infrastructure-services`
+  (`path: ./infrastructure/services/staging`), which inherits it through
+  `infrastructure-controllers`. Drop the dependency and the consuming
+  Kustomization fails with `no matches for kind ObjectStore`.
 - **`infra-cnpg-plugin` must stay gated on `infra-certmanager`.** cert-manager
   mints the TLS certificate for the plugin's gRPC endpoint to the operator.
   Without it the `plugin-barman-cloud` HelmRelease never goes Ready, and because

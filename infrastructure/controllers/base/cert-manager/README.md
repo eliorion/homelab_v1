@@ -117,9 +117,10 @@ natively — no annotation comment is required in the file.
   every `cert-manager.io` object, so a Ready controller alone is not enough for
   downstream Kustomizations. Both Deployments stay in the `healthChecks` list.
 - **The `HelmRelease` lives in `flux-system` and targets `cert-manager`.** The
-  Namespace is created twice over — by `namespace.yaml` and by
-  `install.createNamespace: true` — which is intentional redundancy, not a
-  duplicate to clean up.
+  Namespace is declared twice over — by `namespace.yaml` and by
+  `install.createNamespace: true`. Both produce the same object, so applying it
+  twice is harmless: the namespace exists whether Flux applies `namespace.yaml`
+  first or Helm gets there first.
 
 ## Operating it
 

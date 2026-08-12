@@ -17,9 +17,10 @@ spec:
       interval: 12h
   install:
     createNamespace: true
-    # Helm owns the chart's crds/ dir; upgrade.crds must stay CreateReplace or CRDs go stale.
+    # Helm owns the chart's crds/ dir.
     crds: Create
   upgrade:
+    # Must stay CreateReplace or the CRDs go stale on a chart bump.
     crds: CreateReplace
   values:
     resources:

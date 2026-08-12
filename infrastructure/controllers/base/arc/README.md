@@ -112,6 +112,14 @@ applies a Kustomization atomically, so the CRD provider has to be a separate,
 - **Anything that declares an ARC custom resource must `dependsOn:
   infra-arc-controller`.** That is why `infrastructure-services` lists it; drop
   the dependency and the runner-set Kustomization races the CRDs.
+- **The `infra-arc-controller` health check names `arc-system`, not
+  `arc-systems`.** In `clusters/staging/infrastructure.yaml` that health check
+  entry carries `namespace: arc-system` (singular), while `release.yaml`'s
+  `targetNamespace` and `namespace.yaml` both say `arc-systems` (plural).
+  `arc-system` appears exactly once in the whole repo, at that line — nothing
+  else defines or references it. The file lives outside this component, so it is
+  recorded here as an observation: worth checking before assuming the namespace
+  name here is wrong.
 
 ## Operating it
 
@@ -120,7 +128,8 @@ Render check before commit, then the usual Flux status:
 ```sh
 kubectl kustomize infrastructure/controllers/base/arc
 flux get kustomizations            # infra-arc-controller Ready
-flux get helmreleases -A           # arc-controller, arc-runner-set-asp Ready
+flux get helmreleases -A           # arc-controller, arc-runner-set-asp,
+                                   # arc-runner-set-asp-xl Ready
 ```
 
 Where to look when it breaks:

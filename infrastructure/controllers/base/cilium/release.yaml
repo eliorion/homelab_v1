@@ -35,9 +35,10 @@ spec:
       autoMount:
         enabled: false
       hostRoot: /sys/fs/cgroup
-    # DO NOT enable: breaks CoreDNS while machine.features.hostDNS.forwardKubeDNSToHost is true.
+    # DO NOT enable: breaks CoreDNS while machine.features.hostDNS.forwardKubeDNSToHost is true (Sidero docs).
     bpf:
       masquerade: false
+    # A migration-era safe default, not a topology requirement. See README.md.
     routingMode: tunnel
     tunnelProtocol: vxlan
     # Needs the gateway-api v1.4.1 CRDs from extraManifests in bootstraping/talconfig.yaml.

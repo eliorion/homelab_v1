@@ -65,17 +65,25 @@ reflector or keycloak-operator. It is wired but no production cluster is deploye
 as scaffolding rather than as a second environment, as recorded in
 [`../../documentations/01-architecture.md`](../../documentations/01-architecture.md#a-note-on-production).
 
-Encrypted files never live in `base/`. That is why `tailscale-operator/` and `reflector/`
-exist only under `staging/`: both ship a sops-encrypted Secret
-(`operator-oauth.enc.yaml`, `ghcr-pull-secret.enc.yaml`), so a `base/` kustomization stays
-renderable without a key.
+Encrypted files never live in `base/`. That is a convention, not a rendering requirement:
+kustomize does not decrypt anything, so a `.enc.yaml` is ordinary YAML and
+`kubectl kustomize infrastructure/controllers/staging` succeeds with no age key — the
+ciphertext simply passes through, and Flux decrypts at apply time. `tailscale-operator/` is
+the one component with no base counterpart at all; its `operator-oauth.enc.yaml` and the whole
+directory sit under `staging/`. `reflector/` does have a base counterpart:
+`staging/reflector/` lists `../../base/reflector` and adds only the sops-encrypted
+`ghcr-pull-secret.enc.yaml`.
 
 ## Why it is like this
 
-**No aggregate kustomization at `base/`.** The eight controller units under `base/` are
-deliberately separate Flux Kustomizations so that cert-manager can gate the CNPG plugin,
-the Cilium chart can gate its IP pool and Gateway objects, and Longhorn can have its own
-15m cold-pull timeout. One atomic aggregate is the pattern
+**No aggregate kustomization at `base/`.** Eight paths under `base/` are named directly by
+their own Flux Kustomization — `cert-manager`, `cnpg/plugin`, `arc`, `longhorn`, `cilium`,
+`cilium/config`, `keda`, `keycloak-operator` — deliberately separate so that cert-manager can
+gate the CNPG plugin, the Cilium chart can gate its IP pool and Gateway objects, and Longhorn
+can have its own 15m cold-pull timeout. The two remaining directories are named by no Flux
+Kustomization at all: `base/cnpg` is reconciled through `staging/cnpg/` inside the aggregate
+`infrastructure-controllers`, and `base/reflector` through `staging/reflector` under
+`infra-reflector`. One atomic aggregate is the pattern
 [`01-architecture.md`](../../documentations/01-architecture.md) and
 [`14-design-decisions.md`](../../documentations/14-design-decisions.md) record as rejected:
 Flux applies a Kustomization atomically, so a custom resource sharing a Kustomization with

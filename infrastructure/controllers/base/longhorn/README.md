@@ -24,7 +24,7 @@ rejected).
 | `kustomization.yaml` | Lists the four resources below. |
 | `namespace.yaml` | Creates `longhorn-system` with `pod-security.kubernetes.io/enforce\|audit\|warn: privileged`. |
 | `repository.yaml` | `HelmRepository` `longhorn` in `flux-system`, `https://charts.longhorn.io`, refreshed every 24h. |
-| `release.yaml` | `HelmRelease` `longhorn` (chart `1.12.0`) into `longhorn-system`: replica counts, data path, disk reserve, and the Tailscale annotations on the UI Service. |
+| `release.yaml` | `HelmRelease` `longhorn` (chart `1.12.0`, kept current by Renovate) into `longhorn-system`: replica counts, data path, disk reserve, and the Tailscale annotations on the UI Service. |
 | `recurringjob-trim.yaml` | `RecurringJob` `trim`, daily `filesystem-trim` on the `default` volume group. |
 
 Flux drives the directory from `clusters/staging/infrastructure.yaml`
@@ -88,12 +88,15 @@ volume that carries no explicit recurring-job labels — here, all of them. The
 cost is trim I/O on every volume at once, bounded only by `concurrency: 2`; the
 before/after effect has never been quantified.
 
-**UI on the tailnet.** The chart's UI Service carries `tailscale.com/expose`
-and `tailscale.com/hostname` annotations, so the Longhorn UI is published
-through the Tailscale operator: authenticated by tailnet identity, reachable
-off-LAN, never internet-exposed. It is the same pattern as the asp and fbref
-admin UIs, and it needs no extra ACL work because the operator already owns
-`tag:k8s`. This matters because the Longhorn UI can delete volumes.
+**UI on the tailnet.** The chart's UI Service, `longhorn-frontend`, carries
+`tailscale.com/expose` and `tailscale.com/hostname` annotations, so the Longhorn
+UI is published through the Tailscale operator: authenticated by tailnet
+identity, reachable off-LAN, never internet-exposed. The annotations are inert
+no-ops until that operator is installed, which happens in
+`infrastructure/controllers/staging/tailscale-operator`. It is the same pattern
+as the asp and fbref admin UIs, and it needs no extra ACL work because the
+operator already owns `tag:k8s`. This matters because the Longhorn UI can delete
+volumes.
 
 ## Traps
 
