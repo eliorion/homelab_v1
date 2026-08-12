@@ -11,7 +11,7 @@ spec:
     branch: main
   secretRef:
     name: flux-system
-  url: ssh://git@github.com/eliorion/k3s_cluster_for_learning
+  url: ssh://git@github.com/eliorion/homelab_v1
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

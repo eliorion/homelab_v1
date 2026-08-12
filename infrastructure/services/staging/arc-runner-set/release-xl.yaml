@@ -25,9 +25,9 @@ spec:
     # `runs-on: self-hosted-arc-xl` (CI_RUNNER_XL var) targets this scale set —
     # the heavy k3d e2e leg. Distinct name from the default pool (must be unique).
     runnerScaleSetName: self-hosted-arc-xl
-    # Bigger, fewer runners for the full in-dind k3d stack. One warm (min 1);
-    # podAntiAffinity below spreads up to maxRunners=3 one-per-node across the
-    # 3-node cluster so two/three concurrent e2e runs never share a node.
+    # Bigger, fewer runners for the full in-dind k3d stack. Two warm; the
+    # podAntiAffinity below spreads them one-per-node across the 3-node cluster
+    # so concurrent e2e runs never share a node.
     minRunners: 2
     maxRunners: 4
     # containerMode: dind reproduced manually (same as the default pool) so
@@ -40,8 +40,11 @@ spec:
           runner-tier: xl
       spec:
         # One XL pod per node: the full k3d stack wants a node mostly to itself
-        # on this 50Gi/3-node cluster. Hard rule — a 4th would stay Pending
-        # (maxRunners is 3 = node count, so that only happens if a node is down).
+        # on this 50Gi/3-node cluster. Hard rule, so schedulable concurrency is
+        # capped at the node count (3) regardless of maxRunners. With
+        # maxRunners: 4 the 4th runner is therefore always Pending until it is
+        # either lowered to 3 or the cluster gains a node — queued, self-healing,
+        # the deliberate safe failure mode.
         affinity:
           podAntiAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
