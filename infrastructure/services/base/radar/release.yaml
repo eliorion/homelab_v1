@@ -19,6 +19,17 @@ spec:
       interval: 12h
   install:
     createNamespace: true
+  # NOT the default. `retries` defaults to 0, and 0 does not mean "retry on the
+  # next reconcile" -- it means helm-controller marks this release Stalled after
+  # ONE failed upgrade and never attempts it again, while the Kustomization above
+  # it stays Ready. It also leaves the failed upgrade UNREMEDIATED, so a chart
+  # that half-applied stays half-applied. Nexus sat Ready=False for 16 days on
+  # exactly this. See documentations/14-design-decisions.md, "Every HelmRelease
+  # sets upgrade.remediation.retries".
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
   values:
     fullnameOverride: radar
     replicaCount: 1
