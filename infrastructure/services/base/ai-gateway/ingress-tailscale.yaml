@@ -8,8 +8,8 @@
 #     so its session cookies belong on a secure origin.
 #   · the SAME port also serves the inference API, and every call to it carries
 #     a virtual key in a header. https://…/anthropic and https://…/v1 with no
-#     port is also just a normal base URL for an SDK — `scripts/ai-gateway-env`
-#     builds it without a port because of this file.
+#     port is also just a normal base URL for an SDK, which is why every client
+#     base URL in the README is portless: TLS terminates here on 443.
 #   · MagicDNS issues the certificate, so there is no cert-manager Certificate
 #     and no DNS record to keep in sync.
 #
