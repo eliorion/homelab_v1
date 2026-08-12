@@ -9,3 +9,4 @@ resources:
   - cnpg-alerts
   - n8n-metrics
   - longhorn-monitoring
+  - node-capacity-alerts
