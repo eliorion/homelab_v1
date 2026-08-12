@@ -1,9 +1,10 @@
 # Garage Object Storage — Operating It, and the WAL-Archiving Outage It Caused
 
 **Garage** is the off-cluster, self-hosted S3 backend for this homelab: three
-nodes on the tailnet, reached from the cluster through an in-cluster HAProxy
-gateway. It stores the etcd snapshots (`09-etcd-backup-dr.md`) and the CNPG
-backups that do not go to Cloudflare R2 (`03-backups.md`).
+NixOS nodes joined by Tailscale — one at the home site, two at other physical
+locations — reached from the cluster through an in-cluster HAProxy gateway. It
+stores the etcd snapshots (`09-etcd-backup-dr.md`) and the CNPG backups that do
+not go to Cloudflare R2 (`03-backups.md`).
 
 This document is the operator's side of it: how to reach the cluster, how to add
 a bucket + key for a new consumer, how to verify a consumer is really writing,
@@ -14,28 +15,53 @@ the AI gateway down for two days.
 
 ```mermaid
 graph LR
-  subgraph k8s["Talos cluster"]
-    cnpg["CNPG barman sidecar<br/>(fbref-db, ai-gateway-db)"]
-    etcd["etcd-backup CronJob"]
-    hap["HAProxy gateway<br/>garage-s3.garage-gw.svc:3900"]
-    egr["Tailscale operator egress<br/>garage-node-{a,b,c}.tailscale.svc"]
+  subgraph home["Home site"]
+    subgraph k8s["Talos cluster"]
+      cnpg["CNPG sidecars"]
+      etcd["etcd-backup CronJob"]
+      hap["HAProxy gateway"]
+      egr["Tailscale egress"]
+    end
+    ga[("Garage node a")]
   end
-  subgraph tailnet["Tailnet (off-cluster)"]
-    ga["garage node a<br/>100.122.58.119"]
-    gb["garage node b<br/>100.122.210.124"]
-    gc["garage node c<br/>100.92.142.13"]
+  subgraph offsite["Off site"]
+    gb[("Garage node b")]
+    gc[("Garage node c")]
   end
   cnpg --> hap
   etcd --> hap
   hap --> egr
-  egr --> ga
-  egr --> gb
-  egr --> gc
+  egr ==>|Tailscale| ga
+  egr ==>|Tailscale| gb
+  egr ==>|Tailscale| gc
+  ga <==>|Tailscale| gb
+  ga <==>|Tailscale| gc
+  gb <==>|Tailscale| gc
+
+  classDef store fill:#2ea04322,stroke:#2ea043,stroke-width:1px
+  classDef gw fill:#1f6feb22,stroke:#1f6feb,stroke-width:1px
+  class ga,gb,gc store
+  class hap,egr gw
 ```
 
+| Node | Tailnet IP | Placement |
+|---|---|---|
+| `garage node a` | `100.122.58.119` | home site, same building as the cluster |
+| `garage node b` | `100.122.210.124` | off site |
+| `garage node c` | `100.92.142.13` | off site |
+
+- **Two of the three nodes are off site**, on separate hardware in separate
+  buildings, so a fire, a theft or a power event where the Kubernetes cluster
+  lives cannot take every copy of the backups with it. Longhorn replicas and a
+  three-member etcd all survive a node dying and all die together with the room.
+- **The nodes are NixOS**, declaratively configured like the cluster, and joined
+  only by Tailscale — no site-to-site VPN, no forwarded port, no public S3
+  endpoint. The tailnet identity is what the transport authenticates.
 - **One in-cluster endpoint**: `http://garage-s3.garage-gw.svc.cluster.local:3900`.
-  Nothing in the cluster should dial a raw `100.x` address — HAProxy is not a
-  tailnet member and load-balances + health-checks the three egress Services
+  The CNPG barman sidecars (`fbref-db`, `ai-gateway-db`) and the etcd CronJob all
+  go through it. Nothing in the cluster should dial a raw `100.x` address —
+  HAProxy is not a tailnet member and load-balances + health-checks the three
+  egress Services `garage-node-{a,b,c}.tailscale.svc`
   (`infrastructure/services/staging/garage-gateway/haproxy.cfg`).
 - **Backend health**: `/stats` on port `8404` of a `garage-gateway` pod shows
   which nodes are up. The k8s probes deliberately do **not** gate on it.
