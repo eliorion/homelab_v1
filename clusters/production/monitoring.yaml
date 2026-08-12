@@ -14,3 +14,12 @@ spec:
     name: flux-system
   path: ./monitoring/controllers/production
   prune: true
+
+  # REQUIRED since this path gained its first sops Secret
+  # (kube-prometheus-stack/grafana-admin.enc.yaml). See the same note in
+  # clusters/staging/monitoring.yaml: without this, the ciphertext is applied
+  # verbatim and nothing errors.
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
