@@ -99,6 +99,45 @@ patches:
         disableManifestsDirectory: true
         extraArgs:
           rotate-server-certificates: true
+        extraConfig:
+          # Image GC must reclaim BEFORE Longhorn stops scheduling, not after.
+          #
+          # The kubelet defaults are high=85 / low=80, and on this cluster that
+          # ordering is inverted against the storage layer. Longhorn's
+          # storage-minimal-available-percentage is 25, so a disk goes
+          # UNSCHEDULABLE at 25% free. Measured on node 1 (463.4 GiB, shared
+          # /var, so imagefs == nodefs) on 2026-08-12:
+          #
+          #   115.8 GiB free   Longhorn marks the disk unschedulable
+          #    69.5 GiB free   kubelet image GC finally runs (85% used)
+          #    46.3 GiB free   kubelet starts evicting pods (nodefs 10%)
+          #
+          # i.e. storage breaks with 46 GiB still to go before the kubelet
+          # deletes a single image -- while 86.8 GiB of container images sit on
+          # that node doing nothing. This is a CI cluster; images are the churn.
+          #
+          # 70/60 moves the GC trigger to 139.0 GiB free on node 1, ahead of
+          # Longhorn's floor. Both numbers were checked against every node
+          # before being chosen:
+          #
+          #   node     used    images   non-image (the floor GC cannot go below)
+          #   node 1   52.8%   86.8Gi   34.1%
+          #   node 2   55.7%   70.6Gi   48.1%
+          #   node 3   34.0%  143.1Gi   18.6%
+          #
+          # Every node is already below 60%, so this triggers NO garbage
+          # collection on apply -- it arms a valve, it does not fire one. And
+          # low=60 is reachable by deleting images alone on all three, which
+          # matters: an unreachable low threshold makes the kubelet retry GC
+          # every pass forever.
+          #
+          # Deliberately NOT set: imageMaximumGCAge. That deletes images by age
+          # regardless of pressure, which is a proactive policy rather than a
+          # correction to this ordering bug. It is the next lever if growth
+          # resumes -- re-pulls come from the in-cluster Nexus proxy, so it is
+          # cheap here -- but it is a separate decision from this one.
+          imageGCHighThresholdPercent: 70
+          imageGCLowThresholdPercent: 60
         extraMounts:
           - destination: /var/lib/longhorn
             type: bind
