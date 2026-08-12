@@ -21,8 +21,37 @@ spec:
       app.kubernetes.io/component: server
   podMetricsEndpoints:
     # `http` is the container port name; /metrics is served on the same port as
-    # the API. If a future release starts gating /metrics behind the virtual
-    # key, this endpoint needs a bearerTokenSecret.
+    # the API.
+    #
+    # The comment that used to sit here predicted this exactly: "if a future
+    # release starts gating /metrics behind the virtual key, this endpoint
+    # needs a bearerTokenSecret." It happened -- but through authConfig, not
+    # the virtual key, so the mechanism is basic auth rather than a bearer
+    # token. Unauthenticated the endpoint answers 401, so the target had been
+    # up: 0 with a permanent TargetDown warning against it.
+    #
+    # Measured against the running pod before writing this:
+    #   no credential                  -> 401
+    #   Authorization: Bearer <admin>  -> 401
+    #   basic auth, admin user/pass    -> 200
+    #
+    # So it is authConfig (the dashboard/management credential) gating
+    # /metrics, and NOT the governance plugin's is_vk_mandatory -- a virtual
+    # key is for inference and does not open this path. Do not "fix" this by
+    # swapping in a virtual key; it will 401 again.
+    #
+    # The Secret must live in THIS namespace, which it does: the operator (not
+    # Prometheus) resolves it and inlines the credential into the generated
+    # scrape config, and the operator's ServiceAccount can read Secrets here.
+    # Nothing is added to git -- ai-gateway-admin is the existing SOPS secret
+    # already referenced by authConfig.existingSecret in the HelmRelease.
     - port: http
       path: /metrics
       interval: 30s
+      basicAuth:
+        username:
+          name: ai-gateway-admin
+          key: username
+        password:
+          name: ai-gateway-admin
+          key: password
