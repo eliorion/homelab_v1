@@ -2,3 +2,29 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: cloudflare
+  labels:
+    # enforce: restricted is REAL added protection here, not a pin. The
+    # cluster-wide default from Talos is enforce=baseline / warn=audit=restricted
+    # (verified by server-side dry run: a privileged pod into an unlabelled
+    # namespace is rejected as "violates PodSecurity baseline:latest", and a
+    # plain pod warns against restricted:latest). So labelling a namespace
+    # baseline would change nothing at all -- every other PSA label in this repo
+    # is `privileged`, i.e. an opt-OUT of that default. This is an opt-IN, and
+    # the only PSA label in the repo that tightens anything.
+    #
+    # Safe for THIS namespace specifically, checked two independent ways before
+    # labelling: every running pod, and every workload TEMPLATE (Deployment,
+    # StatefulSet, DaemonSet, CronJob, Job), already satisfies all four
+    # restricted requirements -- allowPrivilegeEscalation: false,
+    # capabilities.drop [ALL], runAsNonRoot, seccompProfile RuntimeDefault.
+    # The template pass is the load-bearing one: a CronJob that has not run
+    # recently has no pod to inspect, and would otherwise start failing
+    # admission silently at its next schedule.
+    #
+    # Namespaces where a CONTROLLER mints pods from a template that is not in
+    # git are deliberately excluded even when currently clean -- CNPG database
+    # pods, cert-manager ACME solvers -- because there the failure mode is a
+    # database pod that cannot be created, discovered at 3am.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
