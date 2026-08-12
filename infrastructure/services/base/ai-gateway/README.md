@@ -57,15 +57,34 @@ nothing enforces: an alias no rule matches is rejected as an unknown model.
 
 ### Laptop / devcontainer (over Tailscale)
 
+The tailnet Ingress terminates TLS on 443 with a MagicDNS certificate, so the
+base URL carries no port. `ai-gateway` is the device name from that Ingress's
+`tls.hosts`.
+
 ```bash
-export AI_GATEWAY_TAILNET=tail1234.ts.net       # your tailnet
-export AI_GATEWAY_TOKEN=sk-bf-...               # from the ai-gateway-token Secret
-source scripts/ai-gateway-env
+GW=https://ai-gateway.tail1234.ts.net           # your tailnet
+KEY=sk-bf-...                                   # a virtual key from the dashboard
+
+# Claude Code / any Anthropic SDK. The SDK appends /v1/messages itself.
+export ANTHROPIC_BASE_URL="$GW/anthropic"
+export ANTHROPIC_AUTH_TOKEN="$KEY"
+export ANTHROPIC_MODEL=ai/sonnet
+unset ANTHROPIC_API_KEY
+
+# OpenAI-compatible clients (openai-python, LangChain, Aider, ...).
+export OPENAI_BASE_URL="$GW/v1"
+export OPENAI_API_KEY="$KEY"
 ```
 
-That script is the only place any vendor-specific variable name appears — it
-maps the contract onto `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` for Claude
-Code and `OPENAI_BASE_URL` / `OPENAI_API_KEY` for OpenAI-compatible clients.
+From inside the cluster the base URL is
+`http://ai-gateway.ai-gateway.svc.cluster.local:8080` instead, and each consumer
+holds its own virtual key in its own namespace (see below).
+
+> **`unset ANTHROPIC_API_KEY` is load-bearing.** The SDKs prefer it over
+> `ANTHROPIC_AUTH_TOKEN`, so leaving it set sends requests straight to Anthropic
+> and silently bypasses the gateway, its budgets and its audit log. A
+> devcontainer helper used to do this unset for you; it was removed, so it is
+> now yours to remember.
 
 Claude Code caches its own credential, so after changing auth run `/logout` and
 restart it. It also honours `ANTHROPIC_API_KEY` **above** `ANTHROPIC_AUTH_TOKEN`

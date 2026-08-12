@@ -6,16 +6,29 @@ fbref. The design gives **point-in-time recovery (PITR)**: a daily physical base
 backup plus continuous WAL archiving, so the database can be restored to any
 moment within the retention window.
 
-Three clusters are protected:
+Four clusters are protected:
 
-| Cluster | Namespace | Backend | Holds |
-|---|---|---|---|
-| `keycloak-db` | `identity` | Cloudflare R2 | Keycloak realms, users, sessions |
-| `asp-db` | `asp` | Cloudflare R2 | Automarket scraper data |
-| `fbref-db` | `fbref` | **Garage** (off-cluster, via the gateway) | fbref scraper data (~3.5 GB) |
+| Cluster | Namespace | Backend | Bucket | Holds |
+|---|---|---|---|---|
+| `keycloak-db` | `identity` | Cloudflare R2 | `keycloak-cnpg-staging` | Keycloak realms, users, sessions |
+| `asp-db` | `asp` | Cloudflare R2 | `asp-cnpg-staging` | Automarket scraper data |
+| `fbref-db` | `fbref` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-fbref` | fbref scraper data, the largest DB in the cluster |
+| `ai-gateway-db` | `ai-gateway` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-ai-gateway` | Bifrost providers, virtual keys, routing rules |
+
+Three are **not** protected, deliberately or otherwise:
+
+| Cluster | Why |
+|---|---|
+| `n8n-db` | ObjectStore is written and staged but commented out of the kustomization until a Garage key is minted. This is the highest priority gap in the repo: it is the only copy of every workflow and every stored credential. See `10-n8n-automation.md`. |
+| `scraper-db` | Queues, config and health only; rebuilt from the platform. |
+| `dbtools-db` | Scratch database for pgAdmin and nao. |
+
+GLPI's MariaDB StatefulSet has no backup of any kind either, and neither does
+AzuraCast's embedded MariaDB. With no Longhorn `backupTarget`, none of that
+survives a full-cluster rebuild.
 
 R2 and Garage use the **same** barman-cloud plugin; only the ObjectStore endpoint
-+ credentials differ. The Garage path is detailed below and in `09`.
++ credentials differ. The Garage path is detailed below and in `09` and `12`.
 
 ## Components and how they interact
 
@@ -63,26 +76,42 @@ graph TD
   the WAL archiver; sets `serverName`, the per-cluster prefix inside the bucket.
 - **ScheduledBackup** — fires a daily physical base backup via the plugin method.
 
-## Storage layout in R2
+## Storage layout
 
-One bucket per **environment** (isolation: a staging compromise cannot reach
-production backups). Both clusters share an env bucket, separated by `serverName`:
+**One bucket per consumer**, with a key scoped to that bucket. The original design
+was one shared bucket per environment separated by `serverName`, and it was
+abandoned for a specific reason: sharing asp's bucket would put a credential in
+the `identity` namespace that can also rewrite the asp archive — which is the
+archive you would be restoring from on the day you need both.
 
 ```
-asp-cnpg-staging/                 asp-cnpg-production/
-├── keycloak-db/   (serverName)   ├── keycloak-db/
-│   ├── base/                     │   ├── base/
-│   └── wals/                     │   └── wals/
-└── asp-db/                       └── asp-db/
-    ├── base/                         ├── base/
-    └── wals/                         └── wals/
+keycloak-cnpg-staging/     asp-cnpg-staging/     cnpg-staging-fbref/     cnpg-staging-ai-gateway/
+└── keycloak-db/           └── asp-db/           └── fbref-db/           └── ai-gateway-db/
+    ├── base/                  ├── base/             ├── base/               ├── base/
+    └── wals/                  └── wals/             └── wals/               └── wals/
 ```
 
-- **Credentials**: one R2 API token per env, scoped Object Read & Write to that
-  env's bucket only.
-- **Encryption**: AES256 server-side on both base data and WAL; gzip compression.
-- **Retention**: `7d` — the plugin prunes base backups + WAL older than 7 days.
-- **Versioning** enabled on each bucket to guard against accidental delete.
+`serverName` is still the prefix inside the bucket, because barman's layout needs
+it and because a recovered cluster must archive under a **different** name than
+the one it restored from.
+
+- **Credentials**: one token per bucket, Object Read & Write on that bucket only.
+- **Encryption**: AES256 server-side on R2. **Not on Garage** — it supports only
+  SSE-C, so setting AES256 there fails every upload. Garage objects are gzip
+  compressed and nothing more.
+- **Region**: every Garage ObjectStore must set `AWS_REGION` **and**
+  `AWS_DEFAULT_REGION` to `garage`. Only `HeadBucket` enforces it, so a missing
+  region is invisible on an established cluster and fatal on a new one. This cost
+  two days of downtime on 2026-08-10; the postmortem is in `12`.
+- **Retention**: `7d` everywhere except n8n's `30d`, since a bad workflow edit can
+  go unnoticed for days. The plugin prunes base backups + WAL past the window.
+- **Versioning and object lock**: enabled on the R2 buckets. **Garage has
+  neither**, so anyone holding a write key can delete every object in its bucket.
+  The mitigation is blast-radius reduction (per bucket keys), not prevention.
+
+> The production overlays still point both prod clusters at a single shared
+> `asp-cnpg-production` bucket, which is the layout staging moved away from. That
+> tree is not deployed; fix it before it ever is.
 
 ## Backup data flow
 

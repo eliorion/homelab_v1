@@ -5,5 +5,3 @@ namespace: asp
 
 resources:
   - release.yaml
-  - orchestrator-secrets.enc.yaml
-  - frontend-secrets.enc.yaml

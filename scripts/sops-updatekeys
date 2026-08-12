@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# Rewrap SOPS-encrypted files onto the recipients currently declared in
+# .sops.yaml, so a recipient change (added key, rotated key) is applied to every
+# committed secret instead of only to the next file someone happens to edit.
+#
+#   scripts/sops-updatekeys                  # rewrap every encrypted file
+#   scripts/sops-updatekeys --check          # report stale files, change nothing
+#   scripts/sops-updatekeys -k FILE          # one file
+#   scripts/sops-updatekeys -k FILE --check
+#
+# Via mise:  mise run sops-updatekeys -- --check
+#
+# Recipients are read from .sops.yaml (first matching creation_rule wins, same
+# as SOPS itself), never hardcoded here. The private key needed to rewrap a file
+# is chosen by deriving each candidate key's public half with `age-keygen -y`
+# and matching it against that file's target recipient, so adding a third
+# environment needs no change to this script.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+CHECK=0
+ONE_FILE=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check) CHECK=1 ;;
+    -k)
+      shift
+      [ $# -gt 0 ] || { echo "sops-updatekeys: -k needs a file" >&2; exit 2; }
+      ONE_FILE="$1"
+      ;;
+    -h | --help)
+      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *) echo "sops-updatekeys: unknown argument '$1'" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+for bin in sops age-keygen git; do
+  command -v "$bin" >/dev/null || { echo "sops-updatekeys: $bin not found" >&2; exit 1; }
+done
+[ -f .sops.yaml ] || { echo "sops-updatekeys: no .sops.yaml at repo root" >&2; exit 1; }
+
+# --- creation_rules: "path_regex<TAB>recipient", in file order -----------------
+RULES=$(awk '
+  /^[[:space:]]*-?[[:space:]]*path_regex:/ { re = $NF; next }
+  /^[[:space:]]*age:/ { if (re != "") { print re "\t" $NF; re = "" } }
+' .sops.yaml)
+[ -n "$RULES" ] || { echo "sops-updatekeys: no creation_rules found in .sops.yaml" >&2; exit 1; }
+
+# --- candidate private keys, indexed by their public half ---------------------
+KEYMAP=""
+for key in ${SOPS_AGE_KEY_FILE:-} clusters/*/age.agekey; do
+  [ -f "$key" ] || continue
+  pub=$(age-keygen -y "$key" 2>/dev/null) || continue
+  KEYMAP="${KEYMAP}${pub}\t${key}"$'\n'
+done
+
+recipient_for() {  # $1 = path -> the recipient SOPS would use, or empty
+  while IFS=$'\t' read -r re age; do
+    [ -n "$re" ] || continue
+    if printf '%s' "$1" | grep -Eq "$re"; then printf '%s' "$age"; return; fi
+  done <<< "$RULES"
+}
+
+keyfile_for() {  # $1 = recipient -> a private key that can decrypt, or empty
+  printf '%b' "$KEYMAP" | awk -F'\t' -v want="$1" '$1 == want { print $2; exit }'
+}
+
+# --- the file list ------------------------------------------------------------
+if [ -n "$ONE_FILE" ]; then
+  [ -f "$ONE_FILE" ] || { echo "sops-updatekeys: no such file: $ONE_FILE" >&2; exit 1; }
+  FILES="$ONE_FILE"
+else
+  FILES=$(git ls-files | grep -E '(\.enc\.ya?ml|talsecret\.sops\.ya?ml)$' || true)
+fi
+[ -n "$FILES" ] || { echo "sops-updatekeys: nothing to do"; exit 0; }
+
+stale=0
+rewrapped=0
+skipped=0
+
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+
+  want=$(recipient_for "$f")
+  if [ -z "$want" ]; then
+    echo "SKIP    $f (no creation_rule matches)"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  # Recipients currently baked into the file's sops metadata block.
+  have=$(grep -oE 'age1[0-9a-z]{20,}' "$f" | sort -u || true)
+  if [ -z "$have" ]; then
+    echo "SKIP    $f (not SOPS-encrypted?)"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  if [ "$have" = "$want" ]; then
+    echo "ok      $f"
+    continue
+  fi
+
+  stale=$((stale + 1))
+  if [ "$CHECK" -eq 1 ]; then
+    echo "STALE   $f"
+    echo "          want: $want"
+    while IFS= read -r r; do echo "          have: $r"; done <<< "$have"
+    continue
+  fi
+
+  # `sops updatekeys` has to DECRYPT the file before it can re-encrypt it, so
+  # the key we need is one of the recipients the file carries TODAY, not the one
+  # it is being moved to. Fall back to the target's key for the case where the
+  # file already lists it alongside a recipient being removed.
+  key=""
+  while IFS= read -r r; do
+    key=$(keyfile_for "$r")
+    [ -n "$key" ] && break
+  done <<< "$have"
+  [ -n "$key" ] || key=$(keyfile_for "$want")
+  if [ -z "$key" ]; then
+    echo "FAIL    $f: no readable private key for any of its current recipients" >&2
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  SOPS_AGE_KEY_FILE="$key" sops updatekeys -y "$f"
+  echo "rewrap  $f"
+  rewrapped=$((rewrapped + 1))
+done <<< "$FILES"
+
+if [ "$CHECK" -eq 1 ]; then
+  echo
+  echo "$stale stale, $skipped skipped"
+  [ "$stale" -eq 0 ] || exit 1
+else
+  echo
+  echo "$rewrapped rewrapped, $skipped skipped"
+fi

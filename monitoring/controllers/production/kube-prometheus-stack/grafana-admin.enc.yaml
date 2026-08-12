@@ -1,0 +1,29 @@
+# Grafana admin credentials. Referenced by the chart as
+# grafana.admin.existingSecret in ../../base/kube-prometheus-stack/release.yaml.
+#
+# Read the password back with:
+#   sops -d monitoring/controllers/production/kube-prometheus-stack/grafana-admin.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+    name: grafana-admin
+    namespace: monitoring
+type: Opaque
+stringData:
+    admin-user: ENC[AES256_GCM,data:tZjLly8=,iv:1+qF5kddEYnAVFb89n6wpHUPr6mhKFJyDHJA9IRVtwU=,tag:SgKIEWjePPURPA+tzJ96cw==,type:str]
+    admin-password: ENC[AES256_GCM,data:/uCUTEu1sjSCvyobdVdKz2kfidJ3AJSztsia0ouGKHc=,iv:Ut9uoYIetCdW7HSGIXu2D44inPRv/5IVHqPoDnXnPME=,tag:+d64bT1rn0MEXhl3qoIowQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBxMlZTaXU1ai91TkQyV29I
+            dm5xaSs0T1VWQ1ZuZUZFaGZjcUo2d1RnQlRnCnJKOUZQaUNPN0xmdnFXVkt2RWxr
+            L3Z6eDY5ZmVveTZrMDFVS3NEM0RkTmMKLS0tIHBzd3Nxc1puUGcrQ2M2eUJnOFdM
+            N1U0VDdIZzh2NnhZTTBJcU4rWnNzM0EKSeBnpZXboxExy/jxp5TK9wHTYI0Es2ol
+            AztwbwY7BABjvmYq6aX2j3PnKlIWY25dYwdktkCbUF6USRwYvgP+DA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1heestkhtxgn5afg9jdww4dpxlk39qztjgcanu8pr4g8usufww36sdx732h
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-08-11T22:23:17Z"
+    mac: ENC[AES256_GCM,data:WHHsK9w4PCRtOksguvZ6XbLxtTlVu+sp0PDAfzRg5UUuT+mngzYQS55DwzDh6CUpoGJfsKeMM0H4yQraLB8CxR1v8EOO2GreN9LXG6PdDM1eXNyw1R3lM9CGgZ5tty4qHpDRw5GA2uo2UrCBn2C0nwfUg86TyyhBiKk1Rpq8F0I=,iv:npqI0xE+CUClNstjVidB9hD8mBEsQDNJLNhCs/iBUw8=,tag:O0l+OtmuGBYfDLYx3SC99w==,type:str]
+    version: 3.13.3

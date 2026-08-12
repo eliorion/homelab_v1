@@ -15,10 +15,15 @@ spec:
   path: ./monitoring/controllers/staging
   prune: true
 
-  #decryption:
-  #  provider: sops
-  #  secretRef:
-  #    name: sops-age
+  # REQUIRED since this path gained its first sops Secret
+  # (kube-prometheus-stack/grafana-admin.enc.yaml). Without it Flux applies the
+  # manifest verbatim, so the Secret's values are the literal
+  # ENC[AES256_GCM,...] ciphertext and NOTHING fails at apply time -- Grafana
+  # simply refuses the admin login with no error anywhere in the chain.
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
 
 ---
 

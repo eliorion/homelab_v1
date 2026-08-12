@@ -47,8 +47,11 @@ box — the repo name is historical; see `documentations/06`–`08`.)
 
 ## CI stack (summary — full detail in documentations/04-ci-runners-cache.md)
 
-- ARC runner scale set `self-hosted-arc` runs `Eliorion/asp` workflows,
-  0→5 ephemeral pods, one job per pod.
+- Two ARC runner scale sets run `Eliorion/asp` workflows, one job per ephemeral
+  pod: `self-hosted-arc` (default, `minRunners: 5` / `maxRunners: 25`) and
+  `self-hosted-arc-xl` (k3d e2e, `minRunners: 2` / `maxRunners: 4`, hard
+  one-pod-per-node antiAffinity). Neither scales to zero: the warm minimum is
+  always resident.
 - Runner pods use a **manual dind template** (not `containerMode: dind`)
   so dockerd gets `--insecure-registry` for the HTTP-only Nexus connectors.
 - Nexus repos: `pypi-proxy` (8081), `docker-hub` proxy (5000), `ghcr`

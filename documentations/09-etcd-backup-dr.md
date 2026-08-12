@@ -459,11 +459,20 @@ the Postgres data** — that lives on Longhorn PVs and in the CNPG object store,
 in etcd. A complete DR proof therefore also restores each database from its backup
 with `bootstrap.recovery` (the drill in `03-backups.md`).
 
-That CNPG object store is **Cloudflare R2 today, not Garage** — there is no
-CNPG-to-Garage configuration anywhere in the repo (`grep -ri garage` finds only
-this etcd-backup stack). Moving CNPG to Garage would be a separate, deliberate
-change (repoint each `objectstore.yaml` endpoint + credentials), not an
-assumption to fold into this drill.
+That CNPG object store is **split across both backends**: `keycloak-db` and
+`asp-db` archive to Cloudflare R2, while `fbref-db` and `ai-gateway-db` archive to
+Garage through the same `garage-s3.garage-gw.svc:3900` gateway this etcd stack
+uses (`03-backups.md`, `12-garage-object-storage.md`). Three CNPG clusters have no
+off-cluster backup at all (`n8n-db`, `scraper-db`, `dbtools-db`), so a Case 2
+recovery loses them outright along with every non-CNPG volume.
+
+Two consequences for this drill:
+
+- Garage is now a **shared dependency** of the control-plane backup and half the
+  data-tier backups. A Garage outage degrades both at once, which is exactly the
+  correlation an offsite second copy would break.
+- A restore of `fbref-db` or `ai-gateway-db` runs through the same tailnet path as
+  an etcd restore, so the three offsite prerequisites below cover both.
 
 ### What a pass looks like — capture it
 

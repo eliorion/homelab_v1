@@ -30,7 +30,14 @@ spec:
           kind: PrometheusRule
   values:
     grafana:
-      adminPassword: skh
+      # Credentials come from the SOPS-encrypted `grafana-admin` Secret in each
+      # overlay (grafana-admin.enc.yaml), never from this file. The overlay's
+      # Flux Kustomization MUST carry a `decryption` block or the Secret is
+      # applied as the literal ENC[AES256_GCM,...] string with no error.
+      admin:
+        existingSecret: grafana-admin
+        userKey: admin-user
+        passwordKey: admin-password
       ingress:
         enabled: true
         ingressClassName: traefik

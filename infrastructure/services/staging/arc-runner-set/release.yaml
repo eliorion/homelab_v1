@@ -24,9 +24,9 @@ spec:
     githubConfigSecret: arc-github-pat
     # `runs-on: self-hosted-arc` in workflow files targets this scale set.
     runnerScaleSetName: self-hosted-arc
-    # Max capped from 15 to 10 to free RAM for the self-hosted-arc-xl pool
-    # (release-xl.yaml) on the 50Gi/3-node cluster; 5 warm runners kept for fast
-    # PR feedback.
+    # 5 warm runners kept for fast PR feedback, so this pool never scales to
+    # zero — that is ~15Gi permanently reserved on the 50Gi/3-node cluster,
+    # shared with the self-hosted-arc-xl pool (release-xl.yaml).
     minRunners: 5
     maxRunners: 25
     # containerMode: dind removed — the auto-injected dind sidecar accepts no
