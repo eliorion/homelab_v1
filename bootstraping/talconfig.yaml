@@ -174,6 +174,34 @@ patches:
   # exemptions list gets a duplicate kube-system entry.
   - |-
     cluster:
+      etcd:
+        extraArgs:
+          # Expose etcd's own metrics so this cluster can SEE its storage layer.
+          #
+          # It could not. On 2026-08-12 the apiserver logged `etcdserver: no
+          # leader` at 15:40, 15:43, 18:29 and 18:48, which produced 256 apiserver
+          # 504s, 500s on unrelated resources (postgresql.cnpg.io/clusters 193,
+          # leases 38) and killed the leader-election lease of every
+          # controller-runtime operator on the cluster -- plugin-barman-cloud has
+          # 109 restarts, source-controller 11, cainjector 6. Nothing alerted,
+          # because there is no etcd target at all: etcd listens on 127.0.0.1 with
+          # client-cert auth, so `kubeEtcd` in kube-prometheus-stack scraped
+          # nothing and was switched off. Every etcd-side number that would
+          # explain a leader loss -- wal_fsync, backend_commit, leader_changes,
+          # heartbeat sends failed -- was simply unavailable.
+          #
+          # 2381 is etcd's dedicated metrics listener. It serves ONLY /metrics and
+          # /health: no key material, no read or write path to the keyspace, and
+          # no client-cert requirement, which is why binding it plaintext is the
+          # documented way to do this. It is reachable on the node's LAN address
+          # -- acceptable here (private VLAN, and the etcd CLIENT port keeps its
+          # mTLS on 2379) but it IS a new listening port on every control plane,
+          # so it is called out rather than buried.
+          #
+          # Nothing scrapes this until kubeEtcd is re-enabled in the monitoring
+          # chart. THAT CHANGE MUST LAND AFTER THIS ONE, or KubeEtcdDown fires
+          # against a port that is not open yet.
+          listen-metrics-urls: http://0.0.0.0:2381
       # Cilium replaces kube-proxy -- do not deploy it.
       proxy:
         disabled: true
