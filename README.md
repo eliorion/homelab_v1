@@ -21,6 +21,7 @@ prove work because I restored them rather than because I configured them.
 | **Secrets** | SOPS with age, 42 encrypted files, private key never committed |
 | **Public surface** | 4 hostnames through a Cloudflare Tunnel. No inbound port is open on the router |
 | **Admin surface** | Tailscale only. No admin console is reachable from the LAN or the internet |
+| **Off site copies** | Garage S3 on 3 NixOS nodes joined by Tailscale, 2 of them at other physical sites |
 
 Migrated from a single node k3s VM in June 2026. The repository name is historical.
 
@@ -33,10 +34,9 @@ Migrated from a single node k3s VM in June 2026. The repository name is historic
 3. [How the cluster is operated](#how-the-cluster-is-operated)
 4. [Data, backups and disaster recovery](#data-backups-and-disaster-recovery)
 5. [Three incidents that shaped the design](#three-incidents-that-shaped-the-design)
-6. [What is measured, not assumed](#what-is-measured-not-assumed)
-7. [Known limitations](#known-limitations)
-8. [Repository layout](#repository-layout)
-9. [Documentation index](#documentation-index)
+6. [Known limitations](#known-limitations)
+7. [Repository layout](#repository-layout)
+8. [Documentation index](#documentation-index)
 
 ---
 
@@ -52,42 +52,47 @@ authentication.
 flowchart TB
     subgraph internet["Internet"]
         user["Public visitor"]
-        ai["Hosted AI clients<br/>claude.ai, chatgpt.com"]
+        ai["Hosted AI clients"]
     end
 
     subgraph cf["Cloudflare edge"]
-        tls["TLS termination<br/>WAF rule blocks /admin*"]
-        access["Cloudflare Access<br/>OIDC to Keycloak"]
+        tls["TLS and WAF"]
+        access["Cloudflare Access"]
     end
 
-    subgraph tailnet["Tailnet"]
+    subgraph tailnet["Tailscale tailnet"]
         op["Operator laptop"]
-        garage[("Garage S3<br/>3 nodes, off cluster")]
     end
 
-    subgraph lan["Home LAN 192.168.1.0/24"]
+    subgraph home["Home site, LAN 192.168.1.0/24"]
         subgraph cluster["Talos cluster"]
             direction TB
-            cfd["cloudflared<br/>outbound only"]
-            ts["Tailscale operator<br/>ingress and egress proxies"]
-            subgraph public["Reachable from the internet"]
-                mcp["fbref-mcp<br/>OAuth, audience bound"]
-                kc["Keycloak<br/>4 path rules, no catch all"]
-                nao["nao<br/>behind Access"]
-                azu["AzuraCast<br/>UI and audio, no auth"]
+            cfd["cloudflared"]
+            ts["Tailscale operator"]
+            subgraph public["Public services"]
+                mcp["fbref MCP"]
+                kc["Keycloak"]
+                nao["nao"]
+                azu["AzuraCast"]
             end
-            subgraph private["Tailnet only, no auth of their own"]
+            subgraph private["Admin services"]
                 lh["Longhorn UI"]
                 pga["pgAdmin"]
                 n8n["n8n"]
-                kca["Keycloak admin console"]
-                api["kube-apiserver proxy"]
+                kca["Keycloak admin"]
+                api["Kubernetes API"]
             end
         end
-        vip(["API VIP 192.168.1.100"])
-        n1["staging-controlplane-1<br/>192.168.1.101"]
-        n2["staging-controlplane-2<br/>192.168.1.102"]
-        n3["staging-controlplane-3<br/>192.168.1.103"]
+        vip(["API VIP .100"])
+        n1["Node 1, .101"]
+        n2["Node 2, .102"]
+        n3["Node 3, .103"]
+        ga[("Garage node A")]
+    end
+
+    subgraph offsite["Off site locations"]
+        gb[("Garage node B")]
+        gc[("Garage node C")]
     end
 
     user --> tls
@@ -105,13 +110,30 @@ flowchart TB
     ts --> n8n
     ts --> kca
     ts --> api
-    ts --> garage
+    ts ==>|Tailscale| ga
+    ga <==>|Tailscale| gb
+    ga <==>|Tailscale| gc
+    gb <==>|Tailscale| gc
     vip -.->|etcd lease| n1
     vip -.-> n2
     vip -.-> n3
+
+    classDef edge fill:#f6820022,stroke:#f68200,stroke-width:1px
+    classDef store fill:#2ea04322,stroke:#2ea043,stroke-width:1px
+    classDef node fill:#8957e522,stroke:#8957e5,stroke-width:1px
+    class tls,access,cfd,ts edge
+    class ga,gb,gc store
+    class n1,n2,n3,vip node
 ```
 
-Three properties of that picture are deliberate:
+Detail the boxes leave out: `cloudflared` only ever dials outward, the WAF rule
+blocks `/admin*` at the edge, the MCP endpoint is OAuth with an audience bound
+token, Keycloak publishes four explicit path rules and no catch all, `nao` sits
+behind Cloudflare Access with OIDC back to Keycloak, and AzuraCast serves both a
+UI and a 24/7 audio stream with no authentication in front of either. The admin
+services have no login of their own; the tailnet identity is the authentication.
+
+Four properties of that picture are deliberate:
 
 **The API VIP is not a daemon.** Talos elects it through an etcd lease. The winner adds
 `.100` to its NIC and broadcasts a gratuitous ARP. If it dies, another node claims the
@@ -131,6 +153,13 @@ survivability or loses capacity. The cost is real and named in
 [the limitations](#known-limitations): etcd and application workloads share the same
 three boxes with no isolation between them.
 
+**Backup storage is a separate cluster, on separate hardware, in separate buildings.**
+The Garage S3 cluster is three NixOS machines, and only one of them is at home. The
+other two live at other physical sites, so a fire, a theft or a flooded room where the
+Kubernetes cluster sits does not take the backups with it. There is no site to site VPN
+and no port forwarded anywhere: the three Garage nodes and the cluster find each other
+over Tailscale, and that tailnet identity is the only credential the transport needs.
+
 Details: [documentations/07-talos-ha-expansion.md](documentations/07-talos-ha-expansion.md),
 [documentations/08-cilium-cni-ingress-migration.md](documentations/08-cilium-cni-ingress-migration.md).
 
@@ -148,7 +177,7 @@ Details: [documentations/07-talos-ha-expansion.md](documentations/07-talos-ha-ex
 | L7 ingress | Gateway API | `v1.4.1` | The chart already provides a GatewayClass; no second ingress controller to own | Traefik, retired with k3s |
 | Storage | Longhorn | `1.12.0` | Replicated block storage across three nodes with online volume expansion | `local-path`, single node only |
 | Databases | CloudNativePG plus the barman-cloud plugin | operator `0.28.2` | The operator owns failover, and the plugin is the path upstream is moving to | in tree `barmanObjectStore`, deprecated |
-| Object storage | Cloudflare R2 and self hosted Garage | | R2 gives versioning and object lock; Garage gives capacity I own for the large datasets | |
+| Object storage | Cloudflare R2 and self hosted Garage | | R2 gives versioning and object lock; Garage gives capacity I own, on 3 NixOS nodes joined by Tailscale with 2 of them off site | |
 | Identity | Keycloak on the official operator | operator `26.7.0` | OAuth 2.1 with dynamic client registration, which hosted AI clients require | a hand written StatefulSet |
 | Certificates | cert-manager | `v1.16.2` | Issues one private namespaced CA for a single internal hop | |
 | CI | Actions Runner Controller plus Nexus | ARC `0.14.2` | Ephemeral one job per pod runners, plus a local proxy cache for PyPI, Docker Hub and GHCR | GitHub hosted runners |
@@ -175,7 +204,7 @@ custom resource that shares a Kustomization with its own CRD deadlocks on
 
 ```mermaid
 flowchart LR
-    git[("GitRepository<br/>branch main, 1m")] --> root["flux-system<br/>./clusters/staging"]
+    git[("GitRepository")] --> root["flux-system"]
 
     root --> cm["infra-certmanager"]
     root --> arc["infra-arc-controller"]
@@ -184,7 +213,7 @@ flowchart LR
     root --> refl["infra-reflector"]
     root --> keda["infra-keda"]
     root --> kco["infra-keycloak-operator"]
-    root --> mon["monitoring-controllers<br/>monitoring-configs"]
+    root --> mon["monitoring"]
 
     cm --> plugin["infra-cnpg-plugin"]
     plugin --> ctrl["infrastructure-controllers"]
@@ -206,8 +235,10 @@ flowchart LR
     class cm,plugin,arc,lh,cil,refl,keda,kco,lab gate
 ```
 
-Blue nodes are hard gates: `wait: true` plus a health check, so nothing downstream is
-applied until the operator is genuinely Ready.
+The root Kustomization tracks branch `main` at a one minute interval and points at
+`./clusters/staging`; `monitoring` is two Kustomizations, `monitoring-controllers` and
+`monitoring-configs`. Blue nodes are hard gates: `wait: true` plus a health check, so
+nothing downstream is applied until the operator is genuinely Ready.
 
 A few things worth pointing at:
 
@@ -237,36 +268,66 @@ does not retrace the write path.
 
 ```mermaid
 flowchart LR
-    subgraph clusterb["Cluster"]
+    subgraph clusterb["Talos cluster"]
         kcdb[("keycloak-db")]
         aspdb[("asp-db")]
         fbdb[("fbref-db")]
         aidb[("ai-gateway-db")]
         etcd[("etcd")]
-        cron["talos-backup CronJob<br/>every 6h, age encrypted"]
-        hap["HAProxy gateway<br/>garage-s3.garage-gw.svc:3900"]
-        lhv[("Longhorn volumes<br/>3 replicas")]
+        cron["talos-backup CronJob"]
+        hap["HAProxy gateway"]
+        lhv[("Longhorn volumes")]
     end
 
-    subgraph off["Off cluster"]
-        r2[("Cloudflare R2<br/>SSE, versioning, object lock")]
-        gar[("Garage on the tailnet<br/>no SSE, no versioning")]
+    subgraph cfr2["Cloudflare"]
+        r2[("R2 bucket")]
     end
 
-    kcdb -->|"WAL + daily base, 7d PITR"| r2
-    aspdb -->|"WAL + daily base, 7d PITR"| r2
-    fbdb --> hap
-    aidb --> hap
-    etcd --> cron --> hap
-    hap -->|"Tailscale egress proxies"| gar
+    subgraph garage["Garage S3, NixOS on Tailscale"]
+        ga[("Node A, home")]
+        gb[("Node B, off site")]
+        gc[("Node C, off site")]
+    end
 
-    lhv -.->|"no backupTarget<br/>NOT IMPLEMENTED"| gar
+    restore["Operator workstation"]
 
-    gar -.->|"restore runs off cluster,<br/>direct to a node, bypassing HAProxy"| restore["Operator workstation<br/>+ offline age key"]
+    kcdb -->|"WAL and daily base"| r2
+    aspdb -->|"WAL and daily base"| r2
+    fbdb -->|"WAL and daily base"| hap
+    aidb -->|"WAL and daily base"| hap
+    etcd -->|"every 6h, encrypted"| cron --> hap
+    hap -->|Tailscale| ga
+    hap -->|Tailscale| gb
+    hap -->|Tailscale| gc
 
-    classDef missing stroke-dasharray: 5 5,stroke:#d29922,color:#d29922
+    lhv -.->|"no backup target"| garage
+
+    ga -.->|"direct, no gateway"| restore
+    gb -.-> restore
+    gc -.-> restore
+
+    classDef store fill:#2ea04322,stroke:#2ea043,stroke-width:1px
+    classDef gw fill:#1f6feb22,stroke:#1f6feb,stroke-width:1px
+    classDef missing fill:#d2992222,stroke:#d29922,stroke-width:1px,stroke-dasharray: 5 5
+    class r2,ga,gb,gc store
+    class hap,cron gw
     class lhv missing
 ```
+
+**The Garage side of that picture, in words.** Garage is not a bucket rented from
+anyone: it is a three node S3 cluster I run on NixOS boxes, declared the same way the
+Kubernetes side is declared, and the three nodes are joined only by Tailscale. One node
+sits at home next to the cluster; the other two sit at two different physical locations.
+That split is the whole point. Longhorn replicas and a three member etcd survive a node
+dying, but they all die together if the room they are in does, so the copy that matters
+is the one somewhere else. R2 carries server side encryption, versioning and object lock
+and Garage carries none of the three, which is why the Postgres clusters that hold
+identity and application data go to R2 and the large, rebuildable datasets go to Garage.
+Inside the cluster nothing dials a `100.x` tailnet address directly: an in-cluster
+HAProxy at `garage-s3.garage-gw.svc:3900` health checks the three Tailscale egress
+proxies and load balances across them. A restore deliberately skips that gateway and
+talks to a node's tailnet address from the operator workstation, so recovery never
+depends on the cluster being alive.
 
 What that buys, stated honestly:
 
@@ -281,7 +342,7 @@ What that buys, stated honestly:
   into a throwaway cluster and reached healthy in about 2.5 minutes, 3488 MB, matching the
   source exactly at roughly 9.7M rows in the largest table. A backup you have never
   restored is a hypothesis.
-- **The dashed edges are the gaps, and they are drawn on purpose.** Longhorn has no
+- **The amber box is the gap, and it is drawn on purpose.** Longhorn has no
   `backupTarget`, so replicas protect against one node dying and nothing else. The final
   step of the etcd drill, decrypting a real stored object with the offline key, is still
   outstanding.
@@ -371,54 +432,15 @@ forever, are in [documentations/14-design-decisions.md](documentations/14-design
 
 ---
 
-## What is measured, not assumed
-
-Capacity claims in this repository come from a measurement rig, not from a datasheet.
-
-The AzuraCast station was swept from 0 to 1000 concurrent listeners in 8 steps, each with
-a 120 second settle and a 180 second Prometheus window:
-
-| Listeners | CPU | RAM | Egress |
-|---|---|---|---|
-| 0 (idle) | 0.130 cores | 656 MiB | ~0 |
-| 1000 | 0.210 cores | 668.3 MiB | 24 682 KiB/s (202 Mbps) |
-| **marginal cost per listener** | **0.086 millicores** | **12 KiB** | **24.7 KiB/s (0.202 Mbps)** |
-
-The workload is bandwidth bound and nothing else: 1000 listeners cost 0.09 of a CPU core.
-The ceiling is the NIC, roughly 4000 listeners at a sane 80% of 1 Gbps.
-
-Two things make that dataset trustworthy, and both were bugs caught before they produced
-confident wrong numbers:
-
-- The measured 24.7 KiB/s per listener sits about 3% above the 24 KiB/s theoretical cost
-  of a 192 kbps mount. Deciding that sanity anchor **before** running is what made a broken
-  run look broken instead of plausible.
-- Listener count is read from Icecast's own socket count, never from the application API,
-  which is a periodically rebuilt cache that reported 2 listeners while Icecast reported 1.
-  And the load generators run with requests only, because a CPU limit would throttle the
-  readers and drag measured egress below the real cost.
-
-A follow up sweep over the real internet through two off site proxies produced a verdict
-the design could not support, and the honest write up says so: one of the two remote sites
-had been dead for three steps, so its reading was, in the document's words, a corpse
-casting a vote. A single site attribution run showed the shared home uplink was not the
-constraint. The conclusion was rewritten to state the bound actually proven, at least
-16.6 Mbps or 80 concurrent listeners, with the true ceiling left explicitly unmeasured
-because both remote endpoints were weaker than the thing being measured.
-
-[documentations/13-azuracast-load-test.md](documentations/13-azuracast-load-test.md),
-[documentations/11-azuracast-public-relay.md](documentations/11-azuracast-public-relay.md)
-
----
-
 ## Known limitations
 
 Written down because a reviewer will find them anyway, and because most of them are
 tracked work rather than blind spots.
 
-**Single everything.** One site, one L2 segment, one router, one ISP, one operator, one
-age key. Garage is off cluster but it is not off site. There is no second region and no
-second pair of hands.
+**Single everything above the backups.** One site for the cluster itself, one L2 segment,
+one router, one ISP, one operator, one age key. The backups are the one layer that is
+genuinely off site, on two of the three Garage nodes; the compute is not. There is no
+second region and no second pair of hands.
 
 **No Longhorn backup target.** Three replicas protect against one node dying. They do not
 protect against a correlated failure, and an etcd restore returns PersistentVolume objects
