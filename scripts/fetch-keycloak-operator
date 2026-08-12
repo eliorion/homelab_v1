@@ -23,6 +23,10 @@ ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 UNIT="$ROOT/infrastructure/controllers/base/keycloak-operator"
 BASE="https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/${VERSION}/kubernetes"
 
+# Upstream names these `.yml`; there is no `.yaml` to fetch, that URL 404s.
+# They land here as `.yaml` to match every other manifest in the repo. Only the
+# extension changes — the content is byte-identical to upstream, so a bump stays
+# a reviewable diff. kustomization.yaml lists the `.yaml` names.
 FILES=(
   keycloakoidcclients.k8s.keycloak.org-v1.yml
   keycloakrealmimports.k8s.keycloak.org-v1.yml
@@ -41,11 +45,15 @@ done
 
 mkdir -p "$UNIT/upstream"
 for f in "${FILES[@]}"; do
-  mv "$TMP/$f" "$UNIT/upstream/$f"
+  mv "$TMP/$f" "$UNIT/upstream/${f%.yml}.yaml"
 done
+
+# An older checkout vendored these under their upstream `.yml` names. Leaving
+# both around would apply every CRD twice, so drop the stale copies.
+rm -f "$UNIT"/upstream/*.yml
 
 sed -i "s|^# keycloakOperatorVersion: .*|# keycloakOperatorVersion: ${VERSION}|" "$UNIT/kustomization.yaml"
 
 echo "vendored keycloak-operator ${VERSION}"
-grep -n 'image: quay.io/keycloak/keycloak-operator' "$UNIT/upstream/kubernetes.yml"
+grep -n 'image: quay.io/keycloak/keycloak-operator' "$UNIT/upstream/kubernetes.yaml"
 echo "NOW: bump spec.image in infrastructure/services/base/keycloak/app/keycloak.yaml to ${VERSION}"
