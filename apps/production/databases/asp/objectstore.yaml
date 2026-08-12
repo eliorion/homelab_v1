@@ -22,9 +22,8 @@ spec:
       encryption: AES256
       jobs: 2
   instanceSidecarConfiguration:
-    # Required for Cloudflare R2: boto3 >= 1.36 sends data-integrity checksums
-    # that R2 rejects (XAmzContentSHA256Mismatch). These restore compatibility
-    # for both backup and restore. See plugin-barman-cloud issue #411.
+    # Required for Cloudflare R2: without both, backup AND restore fail with
+    # XAmzContentSHA256Mismatch (plugin-barman-cloud #411).
     env:
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required

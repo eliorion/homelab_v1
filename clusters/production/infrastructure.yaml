@@ -75,7 +75,6 @@ metadata:
 spec:
   interval: 1m0s
   dependsOn:
-    # CNPG operator (keycloak DB) comes from infrastructure-controllers.
     - name: infrastructure-controllers
   retryInterval: 1m
   timeout: 5m

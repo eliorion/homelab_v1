@@ -96,12 +96,8 @@ metadata:
 spec:
   interval: 1m0s
   dependsOn:
-    # CNPG operator (keycloak DB) comes from infrastructure-controllers;
-    # arc-runner-set needs the ARC CRDs.
     - name: infrastructure-controllers
     - name: infra-arc-controller
-    # The Keycloak CR needs its CRD registered and the `identity` namespace to
-    # exist — both ship with the operator.
     - name: infra-keycloak-operator
   retryInterval: 1m
   timeout: 5m
@@ -123,7 +119,6 @@ metadata:
 spec:
   interval: 1h
   retryInterval: 1m
-  # First install pulls all Longhorn images on a cold node.
   timeout: 15m
   sourceRef:
     kind: GitRepository
@@ -145,7 +140,6 @@ metadata:
 spec:
   interval: 1h
   retryInterval: 1m
-  # First install pulls cilium agent/operator/hubble images on a cold node.
   timeout: 10m
   sourceRef:
     kind: GitRepository
@@ -168,7 +162,6 @@ spec:
   interval: 1h
   retryInterval: 1m
   timeout: 5m
-  # Needs the CiliumLoadBalancerIPPool / Gateway CRDs the chart installs.
   dependsOn:
     - name: infra-cilium
   sourceRef:
@@ -189,8 +182,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  # Staging overlay = the operator (../base/reflector) + the ONE central
-  # ghcr-pull-secret it mirrors into asp/fbref/lab. Needs sops decryption.
+  # Operator + the one central ghcr-pull-secret it mirrors.
   path: ./infrastructure/controllers/staging/reflector
   prune: true
   wait: true
@@ -212,7 +204,6 @@ metadata:
 spec:
   interval: 1h
   retryInterval: 1m
-  # First install pulls the KEDA operator/metrics-apiserver images.
   timeout: 10m
   sourceRef:
     kind: GitRepository
@@ -226,10 +217,7 @@ spec:
       name: keda-operator
       namespace: keda
 ---
-# The Keycloak operator: vendored release manifests (CRDs + RBAC + Deployment)
-# and the `identity` namespace it runs in. Separate from infrastructure-services
-# so the CRDs are registered and the operator is Ready BEFORE the Keycloak CR is
-# applied — a CR against an unregistered CRD is a reconcile error, not a wait.
+# Vendored Keycloak operator manifests (CRDs + RBAC + Deployment) + the `identity` namespace.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -252,12 +240,6 @@ spec:
       namespace: identity
 ---
 # The realm, applied by a keycloak-config-cli Job.
-#
-# force: true because a Job is immutable — a realm edit changes the generated
-# ConfigMap's hash, which changes the Job spec, and only a delete+recreate can
-# apply that. Same recipe as the db-migrations Flyway Job.
-# wait: true so a failed import surfaces as NotReady rather than as a realm that
-# quietly does not match git.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -266,28 +248,21 @@ metadata:
 spec:
   interval: 1h
   retryInterval: 1m
-  # > the Job's own availability wait for Keycloak to come up (300s).
+  # Must stay above the Job's KEYCLOAK_AVAILABILITYCHECK_TIMEOUT (300s) in
+  # infrastructure/services/base/keycloak/realm/job.yaml.
   timeout: 10m
   dependsOn:
-    # Keycloak itself, plus the operator-generated keycloak-initial-admin Secret
-    # the Job authenticates with.
     - name: infrastructure-services
   sourceRef:
     kind: GitRepository
     name: flux-system
   path: ./infrastructure/services/staging/keycloak/realm
   prune: true
-  force: true
+  force: true # Job is immutable — a realm edit must delete+recreate
   wait: true
-  # REQUIRED since that path gained its first sops Secret
-  # (cloudflare-access-client.enc.yaml). Without it Flux applies the manifest
-  # verbatim, so the Secret's values are the literal `ENC[AES256_GCM,...]`
-  # ciphertext — and nothing fails at apply time. The Job then substitutes that
-  # string into the realm's redirect URI and Keycloak rejects the client with
-  #   400 {"error":"invalid_input","error_description":"A redirect URI is not a valid URI"}
-  # which reads as a bad realm file rather than as a missing decryption block.
-  # Every other Kustomization carrying an .enc.yaml has this; this one had no
-  # secret to decrypt until now.
+  # REQUIRED: that path carries a sops Secret (cloudflare-access-client.enc.yaml).
+  # Remove this and Flux applies the ENC[AES256_GCM,...] ciphertext verbatim with
+  # no error at apply time. See clusters/README.md.
   decryption:
     provider: sops
     secretRef:

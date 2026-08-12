@@ -10,7 +10,6 @@ spec:
       chart: kube-prometheus-stack
       version: "66.2.2"
 
-      # version: "58.x"
 
       sourceRef:
         kind: HelmRepository
@@ -24,16 +23,14 @@ spec:
   driftDetection:
     mode: enabled
     ignore:
-      # Ignore "validated" annotation which is not inserted during install
+      # The operator adds this annotation post-admission; without the ignore, Flux fights it forever.
       - paths: ["/metadata/annotations/prometheus-operator-validated"]
         target:
           kind: PrometheusRule
   values:
     grafana:
-      # Credentials come from the SOPS-encrypted `grafana-admin` Secret in each
-      # overlay (grafana-admin.enc.yaml), never from this file. The overlay's
-      # Flux Kustomization MUST carry a `decryption` block or the Secret is
-      # applied as the literal ENC[AES256_GCM,...] string with no error.
+      # `grafana-admin` comes from each overlay. The overlay's Flux Kustomization
+      # MUST carry a `decryption` block or the ciphertext applies silently. See README.md.
       admin:
         existingSecret: grafana-admin
         userKey: admin-user
@@ -49,8 +46,7 @@ spec:
               - grafana-k3s.eliorion.fr
     alertmanager:
       alertmanagerSpec:
-        # Mounts secret `alertmanager-telegram` (ns monitoring) at
-        # /etc/alertmanager/secrets/alertmanager-telegram/token
+        # Mount path below is derived from this name; it must match `bot_token_file`.
         secrets:
           - alertmanager-telegram
       config:
@@ -82,9 +78,7 @@ spec:
                   {{ .Annotations.description }}
                   {{ end }}
     prometheus-node-exporter:
-      # node-exporter needs hostPID + host mounts to read node metrics -- that
-      # finding is by-design and left as-is. It does NOT need to escalate
-      # privileges, so drop it + caps (Radar audit privilegeEscalation danger).
+      # Do NOT harden further: hostPID + host mounts are required for node metrics.
       containerSecurityContext:
         allowPrivilegeEscalation: false
         readOnlyRootFilesystem: true

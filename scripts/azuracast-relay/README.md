@@ -8,6 +8,42 @@ listeners ──► VPS : Icecast relay ──tailnet──► azuracast-stream.
   (public)         (this directory)                    (cluster, never public)
 ```
 
+## How it is wired
+
+Nothing here is Flux-managed: this runs with `docker compose` on a machine
+outside the cluster.
+
+| File | What it is |
+|---|---|
+| `Dockerfile` | `alpine:3.22` + `apk add icecast gettext curl`. Copies `icecast.xml.template` to `/etc/icecast/`, `web/` to `/usr/share/icecast/web/`, `entrypoint.sh` to `/entrypoint.sh`. `EXPOSE 8000`, `USER icecast`. |
+| `entrypoint.sh` | Refuses to start without `MASTER_HOST`, `RELAY_PUBLIC_HOST`, `ADMIN_PASSWORD`, `SOURCE_PASSWORD`, `RELAY_PASSWORD`; defaults `MASTER_PORT=8000`, `MOUNT=/radio.mp3`, `MAX_CLIENTS=50`. Renders the template with `envsubst` into `/tmp/icecast.xml`, logs one summary line, `exec icecast -c /tmp/icecast.xml`. |
+| `icecast.xml.template` | The whole Icecast config, every variable substituted at start. |
+| `docker-compose.yml` | Service `relay`, `build: .`, `restart: unless-stopped`, publishes `8000:8000`, passes the `.env` values through, healthchecks `http://localhost:8000/status-json.xsl` every 30 s (5 s timeout, 3 retries), caps container logs at 5 × 20 MB. |
+| `.env.example` | Template for `.env`, which is never committed. |
+| `web/index.html` | The listener connection-test page, served at `/` through the `<alias>`. |
+| `collect-reports.sh` | Turns the test page's reports into CSV on stdout. |
+
+Icecast comes from Alpine's own package rather than one of the relay images on
+Docker Hub: those are either an untagged `latest` or frozen in 2023, and this
+host is publicly reachable. `gettext` is in the image only for `envsubst` —
+rendering at start is what keeps every password in the environment and out of
+any `icecast.xml` on disk or in a layer.
+
+What the template sets, and why those values:
+
+- `<clients>` and `<max-listeners>` both take `MAX_CLIENTS`; `<sources>` is 2
+  (the relay pull, plus headroom).
+- `burst-on-connect` 1 with `burst-size` 65535 sends a small backlog to each new
+  listener so players start instantly. It costs one burst per listener, not per
+  second — but it does inflate the first seconds of any measurement.
+- `<relay>` with `on-demand=1` pulls nothing while nobody is listening, so an
+  idle relay costs the home uplink nothing. The first listener waits a second or
+  so for the pull to establish.
+- Both logs go to the container's stdout, so `docker compose logs` is the whole
+  story — and the access log is where the listener reports land.
+- `<chroot>0</chroot>` because the process already runs as the unprivileged
+  `icecast` user inside a container.
+
 ## Why a relay and not a port forward
 
 The home uplink carries **one stream, 0.2 Mbps, no matter how many people

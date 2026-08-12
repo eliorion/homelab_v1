@@ -1,10 +1,4 @@
-# Central analysis-sandbox tier — the `lab` namespace + the single lab
-# HelmRelease (one pod per project in its `projects` list, lab-asp/lab-fbref/…),
-# each reading its project's read-only DB replica. Depends on the DB tier (the
-# CNPG `<db>-app` secrets to mirror + the permit annotation from
-# cluster-reflector-patch.yaml) and on reflector being installed (to fill the
-# chart-generated `reflects` stubs). Off by default (replicas: 0) — scale a lab
-# up from the release.yaml header commands when you want to work.
+# Central analysis-sandbox tier — the `lab` namespace + the single lab HelmRelease.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -13,10 +7,8 @@ metadata:
 spec:
   interval: 1m0s
   dependsOn:
-    # `databases` brings up BOTH CNPG clusters (apps/staging/databases lists
-    # asp/ + fbref/) with their -app secrets + the reflector permit annotation.
     - name: databases
-    - name: infra-reflector # the reflector controller fills the lab-ns stubs
+    - name: infra-reflector
   retryInterval: 1m
   timeout: 10m
   sourceRef:

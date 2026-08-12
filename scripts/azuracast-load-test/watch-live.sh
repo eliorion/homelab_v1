@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# Sample the real test as it happens: how many people are actually listening,
-# and what it costs the master.
+# Sample a live broadcast: how many people are listening, and what it costs the
+# master. Drives no load; writes a time series to $OUT and prints the peak row.
 #
 #   RELAY=https://radio.example.com ./watch-live.sh [minutes]
-#
-# Unlike run-sweep.sh this drives nothing — real listeners arrive when they
-# arrive. It records a time series so the peak, the shape of the arrival curve
-# and the cost per listener can be read afterwards.
 set -euo pipefail
 
 RELAY="${RELAY:?set RELAY — the public base URL of the relay, e.g. https://radio.example.com}"
@@ -33,9 +29,8 @@ END=$(( $(date +%s) + MINUTES * 60 ))
 echo "watching $RELAY for ${MINUTES}m, sampling every ${EVERY}s -> $OUT"
 
 while [ "$(date +%s)" -lt "$END" ]; do
-  # The relay is the only honest source for the audience size. The master sees
-  # exactly ONE listener no matter how many people are connected — the relay is
-  # that listener. Reading the master's count would report 1 all evening.
+  # Count from the relay, never the master: the master's only listener is the
+  # relay itself, so it reports 1 whatever the real audience is.
   LISTENERS=$(curl -fsS --max-time 5 "$RELAY/status-json.xsl" 2>/dev/null \
     | tr ',' '\n' | grep -m1 '"listeners"' | sed -E 's/[^0-9]*([0-9]+).*/\1/' || echo "")
 

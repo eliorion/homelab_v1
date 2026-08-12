@@ -3,8 +3,7 @@ kind: ScheduledBackup
 metadata:
   name: n8n-db-daily
 spec:
-  # 6-field CNPG cron. 03:10 — offset from the asp/fbref 03:00 backups so the
-  # three do not contend for the single Garage gateway.
+  # 6-field CNPG cron, not the 5-field Unix form. 03:10.
   schedule: "0 10 3 * * *"
   immediate: true
   backupOwnerReference: self

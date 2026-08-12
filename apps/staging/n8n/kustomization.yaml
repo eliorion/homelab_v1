@@ -3,8 +3,6 @@ kind: Kustomization
 
 namespace: n8n
 
-# n8n-secrets.enc.yaml does NOT ship in git — create it from the .example
-# (see its header) before the first push.
 resources:
   - ../../base/n8n
   - configmap.yaml

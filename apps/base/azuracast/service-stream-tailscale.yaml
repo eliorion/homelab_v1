@@ -1,21 +1,8 @@
 # The Icecast port on the tailnet, so an off-site relay can pull the stream.
 #
-#   http://azuracast-stream.<tailnet>.ts.net:8000/radio.mp3
-#
-# This is the ONLY way the stream leaves the cluster. The master is never
-# published to the internet: a relay elsewhere pulls one copy over the tailnet
-# and fans it out to the public, so the home uplink carries a single stream no
-# matter how large the audience gets. See documentations/11.
-#
-# A SEPARATE Service from `azuracast`, carrying only :8000. The main Service
-# also has :80 — the admin console — and an L3 tailnet forward would publish it
-# to every device on the tailnet. Nothing here needs that.
-#
-# `tailscale.com/expose` rather than a Tailscale Ingress, the opposite call from
-# ai-gateway and nao. Those are browser origins whose session cookies need TLS
-# and a port-less hostname. This is a byte stream pulled by another server:
-# WireGuard already encrypts the hop, Icecast relays speak plain HTTP, and the
-# L3 forward preserving :8000 is exactly what the relay's <relay> block expects.
+# Deliberately a SEPARATE Service from `azuracast`, carrying only :8000: the
+# main Service also has :80 (the admin console), and `tailscale.com/expose` is
+# an L3 forward that would publish every port to the whole tailnet.
 apiVersion: v1
 kind: Service
 metadata:

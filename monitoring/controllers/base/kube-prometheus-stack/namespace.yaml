@@ -3,9 +3,7 @@ kind: Namespace
 metadata:
   name: monitoring
   labels:
-    # Talos enforces the baseline Pod Security profile by default, which
-    # blocks node-exporter (hostNetwork/hostPID/hostPath/hostPort).
-    # No-op on k3s (PSA not enforced there).
+    # Required: Talos enforces the baseline PSA profile, which blocks node-exporter.
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
     pod-security.kubernetes.io/warn: privileged

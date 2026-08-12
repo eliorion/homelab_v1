@@ -1,6 +1,3 @@
-# Ordering: databases (CNPG cluster + secrets) → db-migrations (Flyway Job)
-# → apps. On a release, running pods keep the previous image tags while the
-# migration Job runs; new tags only apply once the Job completes.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -9,10 +6,7 @@ metadata:
 spec:
   interval: 1m0s
   dependsOn:
-    - name: infra-cnpg-plugin # CNPG operator + barman plugin must exist first
-    # Gate the WHOLE app chain (databases → db-migrations → apps, + lab) on the
-    # reflector tier: the central ghcr-pull-secret must be mirrored before any
-    # namespace pulls a private image. wait:true on infra-reflector blocks here.
+    - name: infra-cnpg-plugin
     - name: infra-reflector
   retryInterval: 1m
   timeout: 5m
@@ -21,7 +15,7 @@ spec:
     name: flux-system
   path: ./apps/staging/databases
   prune: true
-  wait: true # Ready when the CNPG Cluster reports Ready
+  wait: true
   decryption:
     provider: sops
     secretRef:
@@ -36,7 +30,7 @@ metadata:
 spec:
   interval: 1m0s
   dependsOn:
-    - name: databases # needs asp-db (and its asp-db-app secret) + ghcr-pull-secret
+    - name: databases
   retryInterval: 1m
   timeout: 5m # > backoffLimit(3) x migration runtime
   sourceRef:
@@ -45,7 +39,7 @@ spec:
   path: ./apps/staging/databases/db-migrations
   prune: true
   force: true # Job is immutable — image-tag bump must delete+recreate
-  wait: true # Ready only when the Job COMPLETES; failed Job = NotReady
+  wait: true # Ready only when the Job COMPLETES; failed Job = NotReady gates `apps`
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -55,7 +49,7 @@ metadata:
 spec:
   interval: 1m0s
   dependsOn:
-    - name: db-migrations # schema must be migrated before new app images roll out
+    - name: db-migrations
   retryInterval: 1m
   timeout: 5m
   sourceRef:

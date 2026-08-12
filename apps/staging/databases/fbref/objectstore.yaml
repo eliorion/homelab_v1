@@ -6,8 +6,7 @@ spec:
   retentionPolicy: "7d"
   configuration:
     destinationPath: "s3://cnpg-staging-fbref"
-    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes. Same
-    # single endpoint the etcd backup uses.
+    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes.
     endpointURL: "http://garage-s3.garage-gw.svc.cluster.local:3900"
     s3Credentials:
       accessKeyId:
@@ -19,26 +18,20 @@ spec:
     wal:
       compression: gzip
       # NO `encryption:` here. Garage does not support SSE-S3/AES256 (SSE-C
-      # only), unlike R2 -- setting AES256 would fail every WAL/base upload.
+      # only) -- setting AES256 would fail every WAL/base upload.
     data:
       compression: gzip
       jobs: 2
   instanceSidecarConfiguration:
-    # Defensive: same class of boto3 >= 1.36 data-integrity checksum rejection
-    # seen with R2 (plugin-barman-cloud #411). Harmless if Garage accepts them.
-    # Path-style verified: barman-cloud-backup-list against this bucket via the
-    # gateway returned cleanly (boto3 uses path-style for the custom endpoint).
     env:
-      # Garage's own region. Not a live bug HERE — this archive is non-empty, so
-      # the one call that rejects a mismatched region (HeadBucket, issued by
-      # `barman-cloud-check-wal-archive` for the FIRST wal only) no longer runs.
-      # It is a restore-time landmine: bootstrapping a fresh cluster off this
-      # bucket starts with an empty archive again, which is exactly how
-      # ai-gateway-db filled its disk. See documentations/12-garage-object-storage.md.
+      # Garage's own region -- must match it. A wrong region 400s the HeadBucket
+      # `barman-cloud-check-wal-archive` issues while the archive is EMPTY:
+      # invisible here, fatal when restoring into a fresh cluster.
       - name: AWS_REGION
         value: garage
       - name: AWS_DEFAULT_REGION
         value: garage
+      # boto3 >= 1.36 data-integrity checksum compat (plugin-barman-cloud #411).
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required
       - name: AWS_RESPONSE_CHECKSUM_VALIDATION

@@ -5,17 +5,15 @@ metadata:
   namespace: scraper
 spec:
   instances: 2
-  # PostgreSQL image, pinned to what the operator deployed (Renovate bumps it).
-  # NOTE: field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg
-  # is the operator image and must never be used here.
+  # Field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg is the
+  # OPERATOR image and must never be used here.
   imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
 
   postgresql:
     synchronous:
       method: any
       number: 1
-      # preferred: fall back to async when the replica is unavailable so writes
-      # never block (single-node homelab — no real HA to protect).
+      # `required` here would block writes whenever the replica is unavailable.
       dataDurability: preferred
     parameters:
       max_connections: "100"
@@ -27,11 +25,7 @@ spec:
     initdb:
       database: scraper
       owner: app
-      # Schema is owned by Flyway (scraper-db-migrations Job, gated ahead of
-      # apps), mirroring asp/fbref — no postInit bootstrap. A fresh cluster comes
-      # up empty and the Job applies V1+ as the `app` owner; an existing cluster
-      # is baselined at 0 and the idempotent V-files re-run as no-ops. The
-      # scraper migrations create no extra roles, so no managed.roles block.
+      # Schema is owned by Flyway — do not add postInit or managed.roles here.
 
   storage:
     size: 5Gi

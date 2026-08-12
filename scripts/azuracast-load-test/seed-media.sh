@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
-# Give the station something to broadcast, using the image's own ffmpeg.
+# Give station $STATION something to broadcast: generate tones, import them,
+# attach them to the default playlist, start the station, gate on it being live.
 #
-# Synthetic tones rather than real music: no licensing question, reproducible,
-# and the measurement is unaffected — Liquidsoap re-encodes to the mount's fixed
-# bitrate no matter what the source was.
-#
-# Idempotent. Safe to re-run; ffmpeg overwrites and the scan skips known files.
+#   ./seed-media.sh              # STATION=sysadmin by default. Idempotent.
 set -euo pipefail
 
 KUBECONFIG_PATH="${KUBECONFIG_PATH:-/workspaces/homelabv1/bootstraping/kubeconfig}"
@@ -36,8 +33,7 @@ k -n azuracast exec "$POD" -- azuracast_cli azuracast:sync:task check_media --fo
 sleep 10   # the scan dispatches per-file jobs to php-worker; let them drain
 
 echo "==> assigning everything to the default playlist"
-# The setup wizard already created playlist 1 ("default", enabled). There is no
-# CLI for playlist membership, so this writes the same rows the UI would.
+# Playlist 1 is the wizard's "default". No CLI exists for playlist membership.
 k -n azuracast exec "$POD" -- sh -c 'azuracast_db -e "
 INSERT INTO station_playlist_media (playlist_id, media_id, weight, last_played, is_queued, folder_id)
 SELECT 1, m.id, ROW_NUMBER() OVER (ORDER BY m.id), 0, 1, NULL
@@ -45,9 +41,8 @@ SELECT 1, m.id, ROW_NUMBER() OVER (ORDER BY m.id), 0, 1, NULL
  WHERE m.id NOT IN (SELECT media_id FROM station_playlist_media WHERE playlist_id = 1);"'
 
 echo "==> starting the station"
-# has_started is what the UI's Start Station button sets. Without it,
-# writeConfiguration() throws "Station has not started yet." and no supervisord
-# config is written, so azuracast:radio:restart fails with BAD_NAME: station_1.
+# has_started=1 is mandatory: without it no supervisord config is written and
+# azuracast:radio:restart fails with BAD_NAME: station_1.
 k -n azuracast exec "$POD" -- sh -c \
   'azuracast_db -e "UPDATE station SET has_started=1, needs_restart=1 WHERE id=1;"'
 k -n azuracast exec "$POD" -- azuracast_cli azuracast:radio:restart

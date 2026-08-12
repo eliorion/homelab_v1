@@ -1,22 +1,5 @@
-# Listeners that are actually somewhere else.
-#
-# The sweep in listener-sim.yaml proved what the SERVER costs, but every byte
-# stayed inside the building. These pods reach the stream THROUGH the tailnet
-# HTTP proxies at the two off-site nodes, so the audio path is:
-#
-#   Icecast ──uplink──► remote site ──downlink──► curl
-#
-# which means the home uplink carries N × 192 kbps exactly as it would for N
-# real remote listeners. That is the number this test exists to find: where the
-# uplink gives out, measured rather than calculated.
-#
-# TWO deployments, one per site, deliberately scaled together. If one site
-# degrades and the other does not, the limit is that site's connection, not the
-# uplink — a single generator could not tell those apart.
-#
-# Each simulated listener reports the throughput it actually achieved, once per
-# window. A listener that cannot sustain ~24 000 B/s is one a real player would
-# have dropped out on.
+# Listeners that reach the stream through the off-site tailnet proxies, so the
+# audio crosses the real home uplink. Two sites, ramped together. See README.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

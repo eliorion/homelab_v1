@@ -13,10 +13,6 @@ spec:
       labels:
         app: glpi-db
     spec:
-      #securityContext:
-      #  fsGroup: 999 # www-data group ID
-      #  runAsUser: 999 # www-data user ID
-      #  runAsGroup: 999 # www-data group ID
 
       containers:
         - name: glpi-db
@@ -29,8 +25,6 @@ spec:
           - secretRef:
               name: glpi-db-secret
 
-          #securityContext:
-          #  allowPrivilegeEscalation: false
 
           volumeMounts:
             - name: glpi-db-data

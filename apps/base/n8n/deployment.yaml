@@ -5,7 +5,7 @@ metadata:
   namespace: n8n
 spec:
   replicas: 1
-  # RWO Longhorn volume — the old pod must release it before the new one binds.
+  # RWO volume: RollingUpdate deadlocks — the old pod must release it first.
   strategy:
     type: Recreate
   selector:
@@ -17,8 +17,7 @@ spec:
         app: n8n
     spec:
       securityContext:
-        # The n8n image runs as the `node` user (1000). fsGroup makes the
-        # Longhorn PVC writable by it.
+        # Must match the image's `node` user (1000) or the PVC is unwritable.
         runAsUser: 1000
         runAsGroup: 1000
         runAsNonRoot: true
@@ -33,8 +32,7 @@ spec:
             - name: http
               containerPort: 5678
           env:
-            # Connection details come from the CNPG-generated n8n-db-app Secret
-            # (same secretKeyRef idiom the Flyway migration Jobs use).
+            # Postgres connection from the CNPG-generated n8n-db-app Secret.
             - name: DB_TYPE
               value: postgresdb
             - name: DB_POSTGRESDB_HOST
@@ -68,8 +66,7 @@ spec:
                 name: n8n-secrets
             - configMapRef:
                 name: n8n-config
-          # First boot runs the full TypeORM schema migration, so give it room
-          # before the liveness probe starts killing the pod.
+          # 30 x 10s: first boot runs the full TypeORM schema migration.
           startupProbe:
             httpGet:
               path: /healthz
@@ -95,9 +92,7 @@ spec:
               memory: 1536Mi
           securityContext:
             allowPrivilegeEscalation: false
-            # DEVIATION from the house default (etcd-backup et al. use true):
-            # n8n writes caches and task-runner scratch outside /home/node/.n8n,
-            # so a read-only root filesystem makes it crash on boot.
+            # Must stay false — true crashes n8n on boot (writes outside .n8n).
             readOnlyRootFilesystem: false
             capabilities:
               drop:

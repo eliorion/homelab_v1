@@ -1,9 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# CNPG clusters and their secrets/backups for the Talos cluster.
 # db-migrations/ is intentionally NOT listed — it is applied by its own
-# Flux Kustomization once the apps tier moves over.
+# Flux Kustomization, which dependsOn this one.
 resources:
   - asp/
   - fbref/

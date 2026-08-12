@@ -4,6 +4,7 @@ metadata:
   name: glpi-configmap
   namespace: glpi
 data:
+  # GLPI_DB_* must match ../database/: Service name/port + MARIADB_DATABASE/MARIADB_USER.
   TIMEZONE: "Europe/Paris"
   GLPI_DB_PORT: "3306"
   GLPI_DB_HOST: "glpi-db"

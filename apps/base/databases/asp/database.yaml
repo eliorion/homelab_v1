@@ -4,23 +4,19 @@ metadata:
   name: asp-db
 spec:
   instances: 2
-  # PostgreSQL image, pinned to what the operator deployed (Renovate bumps it).
-  # NOTE: field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg
-  # is the operator image and must never be used here.
+  # Field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg is the
+  # operator image and must never be used here.
   imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
 
   postgresql:
-    # Synchronous replication: primary waits for 1 replica ack per commit.
-    # Requires number < instances — keep in sync if instances changes.
+    # Synchronous replication. number must stay < instances.
     synchronous:
       method: any
       number: 1
-      # preferred: fall back to async when the replica is unavailable so
-      # writes never block (single-node homelab — no real HA to protect).
+      # preferred: falls back to async when the replica is unavailable.
       dataDurability: preferred
     parameters:
       max_connections: "200"
-      # shared_buffers: "256MB"
       effective_cache_size: "768MB"
       work_mem: "4MB"
       maintenance_work_mem: "64MB"
@@ -36,30 +32,14 @@ spec:
           - name: asp-db-init
             key: init.sql
 
-  # Flyway V6 (webapp_ro) and V8 (grafana_ro) CREATE ROLE while connected as
-  # `app`, which needs CREATEROLE — without it the migration image fails at V6
-  # and, once the chart runs it as a pre-upgrade hook, takes every asp upgrade
-  # down with it. This is why asp-db is stuck at V5 while db-migrations is at
-  # v0.6.0. fbref-db already carries the same grant (added after the identical
-  # failure on 2026-06-12, doc 07); asp-db never got it.
+  # createrole is required: Flyway V6/V8 run CREATE ROLE as `app`. Removing it
+  # breaks every migration run (see README).
   managed:
     roles:
       - name: app
         ensure: present
         login: true
         createrole: true
-
-  # Superuser secret
-  #  superuserSecret:
-  #    name: postgres-superuser-secret
-
-  # Enable monitoring
-  #  monitoring:
-  #    enablePodMonitor: true
-  # WAL storage (separate PVC for better I/O isolation)
-  #  walStorage:
-  #    size: 5Gi
-  #    storageClass: fast-ssd
 
   storage:
     size: 20Gi

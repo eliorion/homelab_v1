@@ -1,11 +1,6 @@
-# Permit kubernetes-reflector to mirror this cluster's generated Secrets into the
-# `lab` (analysis sandbox — apps/staging/lab/) and `database` (pgAdmin + nao —
-# infrastructure/services/staging/databases/dbtools/) namespaces. inheritedMetadata
-# is CNPG's only hook for annotating generated Secrets (the -app connection secret;
-# see cloudnative-pg #5883) — it stamps ALL cluster objects, so we ONLY permit
-# reflection here. Each consumer ns pulls EXACTLY the -app secret via an explicit
-# `reflects` stub; with no auto-mirror the
-# -ca / -server / -replication secrets are never copied out of this namespace.
+# Permit kubernetes-reflector to mirror the -app secret into the `lab` and
+# `database` namespaces.
+# inheritedMetadata stamps ALL cluster objects — put nothing here but the permit.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:

@@ -1,8 +1,5 @@
-# No pod-security labels: Talos enforces `baseline`, which the all-in-one image
-# satisfies. It runs supervisord as root (nginx, php-fpm, MariaDB, Redis,
-# Icecast, Liquidsoap in one container) — allowed under baseline, flagged by the
-# `restricted` warn/audit level. Do not add `enforce: restricted` here; the pod
-# will not start.
+# No pod-security labels on purpose. Do not add `enforce: restricted` here: the
+# all-in-one image runs supervisord as root and the pod will not start.
 apiVersion: v1
 kind: Namespace
 metadata:

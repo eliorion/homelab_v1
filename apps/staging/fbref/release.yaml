@@ -1,8 +1,5 @@
-# The fbref app — Helm chart owned by the asp repo (k8s/charts/fbref), synced via
-# the `fbref` GitRepository (clusters/staging/fbref-source.yaml). Image tag lives
-# in the chart's values.yaml (bumped by CI on release); this file carries only
-# environment overrides. Deploys into its OWN `fbref` namespace (separate from
-# asp) against its own CNPG cluster fbref-db.
+# Chart owned by the asp repo (k8s/charts/fbref) — values here are environment
+# overrides ONLY, never image tags (the chart's values.yaml owns those). README.md.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -18,101 +15,66 @@ spec:
         kind: GitRepository
         name: fbref
       interval: 12h
-      # Revision: upgrade on every commit to the chart path (how the CI
-      # tag-bump commit rolls out without touching this repo).
+      # Upgrade on every commit to the chart path — that is how the CI tag-bump
+      # commit rolls out without touching this repo.
       reconcileStrategy: Revision
   install:
-    # The fbref ns is created by the databases tier (runs first); createNamespace
-    # is harmless belt-and-suspenders if the app tier ever races ahead.
+    # Belt-and-braces: the fbref ns is normally created by the databases tier.
     createNamespace: true
     remediation:
       retries: 3
   upgrade:
     remediation:
       retries: 3
-      # Auto-rollback: a failed upgrade (pods never Ready / helm test fails)
-      # reverts to the last released revision instead of sticking half-deployed.
       strategy: rollback
-  # Run the chart's helm test hooks (psql probe of url_queue); a failure marks
-  # the release failed → rollback remediation.
   test:
     enable: true
   values:
     global:
-      # Pull the private GHCR image. The ghcr-pull-secret Secret is owned by the
-      # fbref databases overlay (fbref namespace).
+      # Private GHCR image; the Secret is mirrored into the ns by reflector.
       imagePullSecrets:
         - name: ghcr-pull-secret
-    # The in-chart scraper lanes + FlareSolverr are RETIRED (chart defaults
-    # scraper.enabled / flaresolverr.enabled: false): the central scraper service
-    # (apps/staging/scraper) now scrapes fbref through its OWN FlareSolverr,
-    # routed via the Tailscale egress proxy (→ rsp-asp residential IP) — see that
-    # HelmRelease's solver + engine.pools[tailscale] (sites: [fbref]). fbref-ingest
-    # drives the BFS (claim url_queue → POST /v1/scrape → write results + enqueue
-    # links) and sends ONLY url + kind; the scraper PLATFORM assigns the residential
-    # egress pool. No proxy config here — chart defaults (ingest.enabled: true) suffice.
     adminUi:
       service:
-        # Publish on the tailnet via the Tailscale operator — authed, off-LAN,
-        # never internet-exposed. Inert until the operator is installed
-        # (infrastructure/controllers/staging/tailscale-operator).
-        # Reach at https://fbref-admin-ui.<your-tailnet>.ts.net
+        # Publish the admin UI on the tailnet (Tailscale operator), never
+        # internet-exposed.
         annotations:
           tailscale.com/expose: "true"
           tailscale.com/hostname: fbref-admin-ui
     engine:
-      # transfermarkt joins fbref as a second source this ONE process drives
-      # (chart default is "fbref" alone — see k8s/charts/fbref values.yaml).
-      # Its own site_config/grammar row, antibot pin and egress floor are
-      # already live on the scraper platform, and a 200-request live verify
-      # through the pinned camoufox_replay lane showed zero antibot_escalated
-      # events (asp repo transfermarkt-onboarding study, Phase 0/1). This is
-      # the Phase 5 switch: comp_codes is seeded to ["GB1"] only and every
-      # crawl_* flag stays off except the confederation-index seed, so the
-      # very first crawl is deliberately small (one competition).
+      # One process drives both sources (chart default is "fbref" alone).
       sites: "fbref,transfermarkt"
-      # Small on purpose for a newly-onboarded source sharing the SAME 3
-      # residential pools leboncoin/autoscout24/fbref already draw from —
-      # widen once Phase 5's throughput/error-rate checks are clear.
+      # Small on purpose: transfermarkt shares the SAME 3 residential pools the
+      # other sites already draw from.
       maxInFlightOverrides:
         transfermarkt: 10
     mcp:
-      # THE ONE PUBLIC SURFACE IN THIS STACK. Reached at
-      # https://fbref-mcp.eliorion.fr/mcp through the Cloudflare tunnel (no
-      # Ingress object exists — see infrastructure/services/staging/cloudflare/
-      # README.md), so hosted AI providers can use it: claude.ai on the web and
-      # ChatGPT connectors call from the provider's cloud, where a port-forward
-      # is invisible.
+      # The one PUBLIC surface in this stack (Cloudflare tunnel →
+      # https://fbref-mcp.eliorion.fr/mcp, no Ingress object).
       auth:
-        # Without this the tunnel route would publish an unauthenticated reader
-        # of the whole fbref database. The server exits non-zero if the two URLs
-        # below are not both set, so a half-configured switch cannot ship.
+        # Without this the tunnel route publishes an unauthenticated reader of
+        # the whole fbref database. The server exits non-zero if the two URLs
+        # below are not both set.
         enabled: true
-        # Realm `mcp` on the self-hosted Keycloak. Compared to the token's `iss`
-        # by EXACT string — a trailing slash breaks every token.
+        # Compared to the token's `iss` by EXACT string — a trailing slash
+        # breaks every token.
         issuerUrl: https://staging-keycloak.eliorion.fr/realms/mcp
-        # This server's identity, and the `aud` every token must carry. It is
-        # what stops a token minted for another client in the realm being
-        # replayed here, which matters because Keycloak 26 has no RFC 8707:
-        # the audience is stamped by a mapper on the mcp:tools DEFAULT client
-        # scope (infrastructure/services/base/keycloak/realm/realm-mcp.yaml).
+        # Must match the `aud` stamped by the mapper on the mcp:tools DEFAULT
+        # client scope (infrastructure/services/base/keycloak/realm/realm-mcp.yaml).
         resourceUrl: https://fbref-mcp.eliorion.fr/mcp
         requiredScopes:
           - mcp:tools
       # DNS-rebinding protection. Both lists must be set together or the server
-      # refuses to start.
-      #
-      # The in-cluster entries are NOT optional: Host is matched exactly, and
-      # the chart's helm test hook POSTs to http://fbref-mcp:8080/mcp. Listing
-      # only the public hostname turns every helm test — and therefore every
-      # Flux upgrade — into an HTTP 421.
+      # refuses to start. The in-cluster entries are NOT optional: Host is
+      # matched exactly and the chart's helm test hook POSTs to
+      # http://fbref-mcp:8080/mcp — without them every upgrade fails on HTTP 421.
       allowedHosts:
         - fbref-mcp.eliorion.fr
         - fbref-mcp:8080
         - fbref-mcp.fbref.svc.cluster.local:8080
         - localhost:*
       # Browser origins for the hosted connectors. A MISSING Origin is always
-      # allowed, which is what keeps CLI clients working.
+      # allowed (that is what keeps CLI clients working).
       originAllowlist:
         - https://claude.ai
         - https://chatgpt.com

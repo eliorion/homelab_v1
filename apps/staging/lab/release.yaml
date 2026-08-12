@@ -1,16 +1,5 @@
-# Central analysis-sandbox — ONE HelmRelease, one lab pod per entry in the
-# `projects` list (chart k8s/charts/lab in the asp repo, via the `lab`
-# GitRepository). The chart derives each lab's DB coords from the CNPG
-# convention and generates its reflect-stub Secret. OFF by default (replicas: 0).
-#
-# Scale a lab up when you want it:
-#   kubectl -n lab scale deploy/lab-asp --replicas=1
-#   kubectl -n lab port-forward svc/lab-asp 8888:8888    # http://localhost:8888
-#   kubectl -n lab logs deploy/lab-asp | grep -m1 token  # random Jupyter token
-#   kubectl -n lab scale deploy/lab-asp --replicas=0
-#
-# ADD A PROJECT: append its name below + add the reflector permit annotation to
-# its CNPG cluster (apps/staging/databases/<project>/cluster-reflector-patch.yaml).
+# Central analysis-sandbox — one lab pod per entry in the `projects` list. See
+# README.md.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -36,24 +25,19 @@ spec:
       retries: 3
       strategy: rollback
   values:
-    # Always-on so the labs are reachable on the tailnet without scaling.
     replicas: 1
+    # ADD A PROJECT: append it here AND add the reflector permit annotation to its
+    # CNPG cluster (apps/staging/databases/<project>/cluster-reflector-patch.yaml).
     projects:
       - asp
       - fbref
-    # Publish each lab on the tailnet via the Tailscale operator — reach at
-    #   http://lab-asp.<tailnet>.ts.net:8888  /  http://lab-fbref.<tailnet>.ts.net:8888
+    # Publish each lab on the tailnet via the Tailscale operator.
     tailscale:
       expose: true
-    # No Jupyter token: the tailnet identity is the auth boundary (same model as
-    # the admin UIs). Anyone on the tailnet gets the lab's read-only DB access.
+    # No Jupyter token — the tailnet is the only auth boundary.
     auth:
       disableToken: true
-    # Pull the private image WITHOUT a public package: reflect the canonical
-    # reflector/ghcr-pull-secret into the lab ns (reflector fills the
-    # chart-generated stub, auto-added to the pods' imagePullSecrets). The source
-    # already permits reflection into `lab` (reflection-allowed-namespaces:
-    # asp,fbref,lab,scraper), so no per-namespace annotation is needed.
+    # Reflect the central pull secret into the lab ns; source is `namespace/name`.
     imagePullSecretReflect:
       enabled: true
       source: "reflector/ghcr-pull-secret" # pragma: allowlist secret

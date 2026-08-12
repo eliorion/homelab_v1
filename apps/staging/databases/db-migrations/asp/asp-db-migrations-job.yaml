@@ -1,15 +1,6 @@
 # Flyway migration Job for the Automarket (asp) database.
-# Flux force-recreates the Job and gates the `apps` Kustomization on its
-# completion.
-# The tag is bumped BY HAND. Renovate does not touch it — its CronJob still
-# targets the pre-rename repo and skips every run — and the `apps` gate cannot
-# help either: app image tags live in the asp repo's charts and reach the
-# cluster on their own GitRepository, never through this Kustomization. A stale
-# pin here is therefore invisible: the already-completed Job satisfies
-# `wait: true` in ~46ms while the schema sits behind the code. That is how this
-# pin sat on v0.1.0 for 47 days while releases reached v0.6.0.
-# The asp chart's own Flyway pre-upgrade hook (dbMigrate.enabled) supersedes
-# this Job once it is switched on.
+# The image tag is bumped BY HAND; a stale pin is invisible because the
+# already-completed Job still satisfies the Kustomization's `wait: true`.
 # NOTE: no ttlSecondsAfterFinished — Flux owns the Job lifecycle (force).
 # A TTL would delete the completed Job and make every later reconcile
 # re-create + re-run it for nothing.
@@ -27,10 +18,10 @@ spec:
     spec:
       restartPolicy: Never
       imagePullSecrets:
-        - name: ghcr-pull-secret # private GHCR image; secret managed in apps/staging/asp
+        - name: ghcr-pull-secret
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101 # flyway image files are world-readable; verified non-root migrate
+        runAsUser: 101
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -38,19 +29,13 @@ spec:
           image: ghcr.io/eliorion/asp-db-migrations:db-migrations-v0.6.0
           args: ["migrate"]
           env:
-            # CNPG app secret (<cluster>-app for cluster "staging"). jdbc-uri
-            # targets the cluster's bootstrap database — must be "automarket"
-            # (bootstrap.initdb.database). If it is not, use the literal URL
-            # fallback below instead.
+            # jdbc-uri must resolve to the bootstrap database "automarket"
+            # (bootstrap.initdb.database in apps/base/databases/asp/database.yaml)
             - name: FLYWAY_URL
               valueFrom:
                 secretKeyRef:
                   name: asp-db-app
                   key: jdbc-uri
-            # Fallback if jdbc-uri points at the wrong DB (staging-rw = CNPG
-            # read-write Service):
-            # - name: FLYWAY_URL
-            #   value: jdbc:postgresql://staging-rw.asp.svc:5432/automarket
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:
@@ -61,8 +46,6 @@ spec:
                 secretKeyRef:
                   name: asp-db-app
                   key: password
-            # Existing DBs (provisioned before Flyway) get baselined at 0, then
-            # the idempotent V-files re-run as no-ops and history is populated.
             - name: FLYWAY_BASELINE_ON_MIGRATE
               value: "true"
             - name: FLYWAY_BASELINE_VERSION

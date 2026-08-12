@@ -194,8 +194,7 @@
     }, 250);
 
     try {
-      // Cache-buster: a proxy or the browser serving this from cache would
-      // measure the cache, not the network.
+      // Cache-buster: without it a proxy or the browser could serve the measurement from cache.
       var res = await fetch(MOUNT + "?t=" + Date.now(), { signal: ctrl.signal, cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
       var reader = res.body.getReader();
@@ -225,8 +224,7 @@
     }
     clearInterval(timer);
 
-    // Rate over the steady state only — the burst Icecast sends on connect
-    // would otherwise inflate the first seconds into a meaningless number.
+    // Rate over the steady state only: the connect burst would inflate it.
     var span = warmAt ? (last - warmAt) / 1000 : (last - t0) / 1000;
     var used = warmAt ? bytes - warmBytes : bytes;
     var kbps = span > 0 ? (used * 8 / 1000) / span : 0;
@@ -249,9 +247,7 @@
     $("verdict").querySelector("b").textContent = v[0];
     $("verdict").querySelector("span").textContent = v[1];
 
-    // Report home with no backend: this 404s, and Icecast writes the query
-    // string to its access log, where collect-reports.sh reads it. Nothing
-    // identifying is sent — only the six numbers already on screen.
+    // Reports via a deliberate 404: Icecast logs the query string, collect-reports.sh parses these keys.
     var q = new URLSearchParams({
       kbps: kbps.toFixed(0), stalls: String(stalls),
       maxgap: (maxGap / 1000).toFixed(2), ttfb: first === null ? "" : (first / 1000).toFixed(2),

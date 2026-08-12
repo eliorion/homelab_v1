@@ -1,22 +1,11 @@
-# The n8n UI, published on the tailnet and NOWHERE ELSE.
-#
-# A Tailscale INGRESS rather than the `tailscale.com/expose` annotation the
-# asp/fbref/Longhorn admin UIs use — the same call ai-gateway and the keycloak
-# admin console make, for the same reason: `expose` is an L3 forward that
-# PRESERVES the Service port, so it would publish plain http on :5678. n8n is a
-# password-authenticated dashboard whose session cookie belongs on a secure
-# origin (with plain http you must also set N8N_SECURE_COOKIE=false, because
-# n8n otherwise refuses to set the cookie at all).
-#
-# MagicDNS issues the certificate, so there is no cert-manager Certificate and
-# no DNS record to keep in sync.
-#
-# The Service therefore carries NO tailscale annotations. Both mechanisms at
-# once would register two tailnet devices contending for the same hostname.
+# The n8n UI, published on the tailnet and nowhere else.
 #
 # PRECONDITION: HTTPS Certificates enabled in the Tailscale admin console
 # (DNS → HTTPS Certificates). Without it the proxy comes up with no certificate
 # and the UI is unreachable.
+#
+# The Service must carry NO tailscale.com/expose annotation: both mechanisms at
+# once would register two tailnet devices contending for the same hostname.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -32,7 +21,6 @@ spec:
       port:
         number: 5678
   tls:
-    # The device name. MagicDNS serves it at https://n8n.tail45b0ca.ts.net —
-    # no port. N8N_HOST and WEBHOOK_URL in the staging ConfigMap must match.
+    # Device name — N8N_HOST and WEBHOOK_URL in the staging ConfigMap must match.
     - hosts:
         - n8n

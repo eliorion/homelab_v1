@@ -1,16 +1,3 @@
-# WAL archiving and database-volume alerts for every CNPG cluster.
-#
-# Written after the 2026-08-10 outage (documentations/12-garage-object-storage.md):
-# ai-gateway-db never archived a single WAL segment from the day it was created,
-# pg_wal grew until the 10Gi volume filled, CNPG shut the primary down, and the
-# Bifrost gateway crash-looped for two days. Backup monitoring stayed green the
-# whole time -- the base backups really were succeeding. Nothing watched the
-# archive, and nothing watched the disk.
-#
-# `cnpg_pg_stat_archiver_*` is exported by PRIMARIES ONLY (the collector's
-# queries are primary-scoped), so none of these need a role filter; a replica
-# simply contributes no series. Series carry `namespace` and `pod`, which is
-# what the annotations use.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -23,9 +10,6 @@ spec:
   groups:
     - name: cnpg-wal-archiving.rules
       rules:
-        # A failing archive_command is not a backup problem, it is an
-        # availability problem: Postgres cannot recycle a segment it has not
-        # archived, so every failure is also disk filling up.
         - alert: CNPGWALArchivingFailing
           expr: |
             increase(cnpg_pg_stat_archiver_failed_count[15m]) > 0
@@ -35,21 +19,8 @@ spec:
           annotations:
             summary: "WAL archiving is failing on {{ $labels.namespace }}/{{ $labels.pod }}"
             description: "pg_stat_archiver.failed_count is climbing. Until this clears, pg_wal grows without bound and the volume will fill. Run: kubectl -n {{ $labels.namespace }} logs {{ $labels.pod }} -c plugin-barman-cloud | grep -i error. See documentations/12-garage-object-storage.md."
-        # Segments finished and waiting in pg_wal/archive_status, not yet
-        # shipped. This is the direct measure of what actually hurts: every
-        # `.ready` file is a segment Postgres may not recycle, so a sustained
-        # backlog IS the disk filling up. It covers both failure shapes at once
-        # -- a cluster that never archived at all (ai-gateway-db was sitting at
-        # 119 waiting) and archiving that worked and then stopped.
-        #
-        # NOT `seconds_since_last_archival`, which was the first attempt here
-        # and was wrong: a quiet database legitimately archives nothing for
-        # days. archive_timeout=300s forces a segment switch only when there is
-        # WAL to switch, so a time-since rule fires on asp-db -- 47h since its
-        # last archive, last archived WAL ...48, current ...49, nothing pending
-        # and nothing wrong -- while saying nothing about whether anything is
-        # actually stuck. A brief non-zero right after a segment switch is
-        # normal, hence `for: 15m`.
+        # NOT seconds_since_last_archival: a quiet database legitimately
+        # archives nothing for days. `for: 15m` rides out a segment switch.
         - alert: CNPGWALArchiveBacklog
           expr: |
             cnpg_collector_pg_wal_archive_status{value="ready"} > 0
@@ -61,10 +32,8 @@ spec:
             description: "Segments are finished but not shipped, so Postgres cannot recycle them and pg_wal only grows -- this ends with CNPG shutting the instance down on low disk and every client losing the -rw Service. Check the ObjectStore (region, endpoint, credentials) and the plugin-barman-cloud sidecar logs. See documentations/12-garage-object-storage.md."
     - name: cnpg-storage.rules
       rules:
-        # The second miss of the outage: the volume went from healthy to 9.94Gi
-        # of 10Gi with nothing said. CNPG stops the instance on its own low-disk
-        # check, so hitting 100% is a hard outage, not a degradation. Scoped to
-        # CNPG's PVC naming (`<cluster>-<n>`) to stay out of every other PVC.
+        # The regex is CNPG's PVC naming (`<cluster>-<n>`) -- every CNPG Cluster
+        # here is named `*-db`. Anything else gets no volume alerting.
         - alert: CNPGVolumeFillingUp
           expr: |
             kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".+-db-[0-9]+"}

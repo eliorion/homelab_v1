@@ -5,13 +5,9 @@ namespace: fbref
 
 resources:
   - ../../../base/databases/fbref
-  # grafana_ro role password (basic-auth) — consumed by the CNPG managed role.
+  # Passwords for the grafana_ro / mcp_ro CNPG managed roles.
   - fbref-grafana-ro.enc.yaml
-  # mcp_ro role password (basic-auth) — consumed by the CNPG managed role and
-  # read by the fbref-mcp Deployment as its DATABASE_URL credential.
   - fbref-mcp-ro.enc.yaml
-  # ghcr-pull-secret now comes from the central reflector source
-  # (infrastructure/controllers/staging/reflector) — mirrored into this ns.
   # CNPG -> Garage backup (bucket cnpg-staging-fbref, via the in-cluster gateway).
   - garage-backup-credentials.enc.yaml
   - objectstore.yaml
@@ -19,12 +15,11 @@ resources:
 
 patches:
   # Attach the Barman Cloud plugin -> Garage (WAL archiver + daily base backup).
-  # Connectivity verified before enabling (barman-cloud-backup-list, EXIT=0).
   - path: cluster-backup-patch.yaml
     target:
       kind: Cluster
       name: fbref-db
-  # PVCs on Longhorn (explicit — also the cluster default SC on Talos).
+  # PVCs on Longhorn + the staging disk size.
   - path: cluster-storage-patch.yaml
     target:
       kind: Cluster

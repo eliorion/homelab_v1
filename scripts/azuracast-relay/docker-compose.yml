@@ -1,16 +1,9 @@
-# Public relay. Runs on the VPS, not in the cluster.
-#
-#   docker compose up -d --build
-#
-# Reads .env (copy .env.example). The master is never exposed to the internet:
-# this pulls one copy over the tailnet and fans it out.
+# Public relay: runs on the VPS, reads .env (copy .env.example). See README.md.
 services:
   relay:
     build: .
     restart: unless-stopped
-    # Bind only the listener port. Icecast's admin console lives on the same
-    # port and is password-protected; if this host faces the internet directly,
-    # restrict /admin at the firewall as well — see README.
+    # Icecast's admin console shares this port — restrict /admin at the firewall too.
     ports:
       - "8000:8000"
     environment:
@@ -23,8 +16,7 @@ services:
       SOURCE_PASSWORD: ${SOURCE_PASSWORD}
       RELAY_PASSWORD: ${RELAY_PASSWORD}
     healthcheck:
-      # Icecast answers /status-json.xsl even with no source connected, so this
-      # checks the server rather than the presence of listeners.
+      # /status-json.xsl answers even with no source connected; the mount does not.
       test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8000/status-json.xsl"]
       interval: 30s
       timeout: 5s

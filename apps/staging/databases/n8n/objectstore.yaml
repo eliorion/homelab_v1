@@ -3,13 +3,10 @@ kind: ObjectStore
 metadata:
   name: garage-store
 spec:
-  # Longer than fbref's 7d: this bucket holds the ONLY copy of every n8n
-  # workflow and credential, and a bad workflow edit can go unnoticed for days.
   retentionPolicy: "30d"
   configuration:
     destinationPath: "s3://cnpg-staging-n8n"
-    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes. Same
-    # single endpoint the etcd backup uses.
+    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes.
     endpointURL: "http://garage-s3.garage-gw.svc.cluster.local:3900"
     s3Credentials:
       accessKeyId:
@@ -21,29 +18,22 @@ spec:
     wal:
       compression: gzip
       # NO `encryption:` here. Garage does not support SSE-S3/AES256 (SSE-C
-      # only), unlike R2 -- setting AES256 would fail every WAL/base upload.
+      # only) -- setting AES256 would fail every WAL/base upload.
     data:
       compression: gzip
       jobs: 2
   instanceSidecarConfiguration:
     env:
-      # THE REGION IS LOAD-BEARING. Garage runs with `s3_region = "garage"` and
-      # rejects a HeadBucket signed for any other region with a bare 400, while
-      # GET, PUT and ListObjectsV2 with the same wrong region succeed. Only
-      # `barman-cloud-check-wal-archive` "checking the first wal" calls it, and
-      # only while the archive is empty -- so a missing region is invisible on
-      # an established cluster and fatal on a new one. This store has never
-      # archived anything, so it is exactly the new-cluster case: enabling it
-      # without these two lines reproduces the 2026-08-10 ai-gateway outage
-      # (documentations/12-garage-object-storage.md) on the database that holds
-      # the only copy of every n8n workflow and credential.
+      # THE REGION IS LOAD-BEARING. Garage rejects a HeadBucket signed for any
+      # other region with a bare 400; only barman-cloud-check-wal-archive calls
+      # it, and only while the archive is empty -- which is this store's case.
       # Both names: boto3 reads AWS_REGION, the aws CLI honours AWS_DEFAULT_REGION.
       - name: AWS_REGION
         value: garage
       - name: AWS_DEFAULT_REGION
         value: garage
-      # Defensive: same class of boto3 >= 1.36 data-integrity checksum rejection
-      # seen with R2 (plugin-barman-cloud #411). Harmless if Garage accepts them.
+      # Defensive: boto3 >= 1.36 data-integrity checksum rejection seen with R2
+      # (plugin-barman-cloud #411).
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required
       - name: AWS_RESPONSE_CHECKSUM_VALIDATION

@@ -10,10 +10,6 @@ spec:
   groups:
     - name: n8n.rules
       rules:
-        # The one alert that has to be a push. Every OTHER failure in this stack
-        # surfaces as a failed execution inside n8n's own Executions view --
-        # which only works while n8n is up. If it is down, nothing tells you and
-        # every scheduled workflow silently stops firing.
         - alert: N8nDown
           expr: |
             up{job="n8n"} == 0
@@ -27,10 +23,7 @@ spec:
               is running, and n8n's own Executions view cannot report that.
               Run: kubectl -n n8n get pods && kubectl -n n8n logs deploy/n8n
               See documentations/10-n8n-automation.md.
-        # Catches the case the `up` alert cannot: the ServiceMonitor stops
-        # matching (Service relabelled, chart selector drift), so the target
-        # vanishes entirely instead of reporting 0. Absent until the first
-        # successful scrape, so it will not fire on a fresh deploy.
+        # Fires when the target disappears entirely -- `up` cannot report that.
         - alert: N8nMetricsMissing
           expr: |
             absent(up{job="n8n"}) == 1

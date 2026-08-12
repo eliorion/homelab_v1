@@ -1,22 +1,8 @@
 - op: add
   path: /spec/storage/storageClass
   value: longhorn
-# 10Gi filled and CNPG halted the primary with "Not enough disk space", which took the whole
-# fbref stack down with it: fbref-db-rw has a single endpoint (the primary), so fbref-engine
-# got "No route to host", CrashLooped, stopped submitting, and the scraper platform's fbref
-# queue drained to zero.
-#
-# Overlay-scoped rather than raised in base: this is staging's Longhorn sizing, and base is
-# shared with a cluster whose disks are not this size.
-#
-# The archiving failure this note used to defer HAS since been fixed: the `exit status 4` was
-# barman-cloud signing HeadBucket for `us-east-1` while Garage's region is `garage`, and the
-# ObjectStore here now sets it (see objectstore.yaml and
-# documentations/12-garage-object-storage.md). ContinuousArchiving is True and WAL recycles.
-#
-# 50Gi -> 100Gi is therefore ordinary growth, not relief: both instances reached 85% of 50Gi
-# on real data — fbref is the largest database in the cluster and the one that actually grows.
-# Longhorn thin-provisions, so the extra is provisioned, not consumed.
+# Staging sizing; base stays at 10Gi. A full volume halts the primary with CNPG's
+# "Not enough disk space" and takes the whole fbref stack down with it.
 - op: replace
   path: /spec/storage/size
   value: 100Gi

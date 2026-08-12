@@ -4,13 +4,9 @@ metadata:
   name: n8n-config
   namespace: n8n
 data:
-  # Reached over the tailnet at https://n8n.tail45b0ca.ts.net (no port) —
-  # the Tailscale Ingress terminates TLS with a MagicDNS certificate and
-  # forwards to the Service on 5678. Must match ingress-tailscale.yaml.
-  #
-  # Because the origin is HTTPS, N8N_SECURE_COOKIE stays at its secure default
-  # (true). If you ever fall back to the plain-HTTP `tailscale.com/expose`
-  # annotation you must set it to "false" or you can never finish signing in.
+  # Must match the tls host in ../../base/n8n/ingress-tailscale.yaml.
+  # HTTPS origin, so N8N_SECURE_COOKIE stays at its secure default; on plain
+  # HTTP it must be set to "false" or sign-in never completes.
   N8N_HOST: "n8n.tail45b0ca.ts.net"
   N8N_PORT: "5678"
   N8N_PROTOCOL: "https"
@@ -20,8 +16,8 @@ data:
   GENERIC_TIMEZONE: "Europe/Paris"
   TZ: "Europe/Paris"
 
-  # Prometheus endpoint on /metrics — scraped by the ServiceMonitor in
-  # monitoring/configs/staging/n8n-metrics.
+  # Exposes /metrics; the ServiceMonitor in monitoring/configs/staging/n8n-metrics
+  # scrapes it.
   N8N_METRICS: "true"
 
   N8N_DIAGNOSTICS_ENABLED: "false"

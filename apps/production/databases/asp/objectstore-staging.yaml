@@ -1,7 +1,5 @@
-# TEMPORARY — seed-from-staging only. Remove after the prod asp-db is seeded and
-# verified (see plan Step 6). Points at the STAGING R2 bucket so the prod cluster
-# can recover its initial data from staging's backup. Prod's own archiving still
-# goes through objectstore.yaml (r2-store -> s3://asp-cnpg-production).
+# TEMPORARY seed-from-staging — points at the STAGING bucket; remove after
+# seeding (plan Step 6). Prod archiving stays on objectstore.yaml (r2-store).
 apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore
 metadata:
@@ -26,9 +24,8 @@ spec:
       encryption: AES256
       jobs: 2
   instanceSidecarConfiguration:
-    # Required for Cloudflare R2: boto3 >= 1.36 sends data-integrity checksums
-    # that R2 rejects (XAmzContentSHA256Mismatch). These restore compatibility
-    # for both backup and restore. See plugin-barman-cloud issue #411.
+    # Required for Cloudflare R2: without both, backup AND restore fail with
+    # XAmzContentSHA256Mismatch (plugin-barman-cloud #411).
     env:
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required

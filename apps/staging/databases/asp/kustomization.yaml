@@ -5,31 +5,22 @@ namespace: asp
 
 resources:
   - ../../../base/databases/asp
-  # ghcr-pull-secret is no longer per-ns — the central reflector source
-  # (infrastructure/controllers/staging/reflector) mirrors it into this ns. The
-  # `databases` Kustomization dependsOn infra-reflector, so the mirrored secret
-  # exists before the db-migration Job pulls.
   - r2-backup-credentials.enc.yaml
   - objectstore.yaml
   - scheduledbackup.yaml
 
 patches:
-  # Attach the Barman Cloud Plugin for R2 backups. Archives to asp-db-r1
-  # since the 2026-06-11 volume-loss recovery (restoring FROM asp-db — see
-  # cluster-recovery-patch.yaml; old asp-db path prunable once confident).
+  # Attach the Barman Cloud Plugin for R2 backups.
   - path: cluster-backup-patch.yaml
     target:
       kind: Cluster
       name: asp-db
-  # NOTE 2026-06-12: R2 restore was impossible — WAL 2C0 (begin_wal of the
-  # only base backup) died with the asp-db-talos prefix prune; asp-db is a
-  # fresh initdb. Salvage attempt from the base backup tar tracked in doc 07.
   # PVCs on Longhorn (explicit — also the cluster default SC on Talos).
   - path: cluster-storage-patch.yaml
     target:
       kind: Cluster
       name: asp-db
-  # Permit kubernetes-reflector to mirror the -app secret into the `lab` ns.
+  # Permit kubernetes-reflector to mirror the -app secret out of this ns.
   - path: cluster-reflector-patch.yaml
     target:
       kind: Cluster

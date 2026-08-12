@@ -1,10 +1,7 @@
-# Recovery bootstrap (2026-06-11): the HA-expansion storm reformatted the
-# Longhorn volumes (doc 07 troubleshooting); asp-db is restored from its own
-# R2 barman archive (serverName asp-db, base backup asp-db-post-rename +
-# WAL replay). The recovered cluster archives to serverName asp-db-r1 —
-# never archive into the path you are restoring from (doc 06 precedent).
-# Remove this patch (and keep asp-db-r1 in cluster-backup-patch.yaml) once
-# the restore is complete; the old asp-db path can be pruned from R2 later.
+# INERT: not listed in kustomization.yaml patches. Re-attaching it only has an
+# effect on a cluster that does not exist yet — CNPG reads bootstrap once, at
+# first creation. A recovered cluster must archive under a different serverName
+# than the one it restores from (README).
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:

@@ -1,13 +1,4 @@
-<!-- AzuraCast player + now-playing, for a website hosted anywhere.
-     Drop this block into a page. Nothing else is required: the API already
-     sends Access-Control-Allow-Origin: *, so the fetch works cross-origin
-     with no proxy and no backend.
-
-     To repoint at a different audio path later, change STREAM_OVERRIDE below.
-     Everything else follows the API.
-
-     Styles are scoped under .azc and set their own colors, so the widget does
-     not inherit or leak into the host page's stylesheet. -->
+<!-- AzuraCast player + now-playing widget, self-contained. See README.md. -->
 
 <div class="azc" id="azc">
   <div class="azc-art" id="azc-art" aria-hidden="true"></div>
@@ -25,7 +16,7 @@
       <path id="azc-icon" fill="currentColor" d="M8 5v14l11-7z"></path>
     </svg>
   </button>
-  <!-- Announced to screen readers when the track changes, without moving focus. -->
+  <!-- Announced to screen readers when the track changes. -->
   <p class="azc-sr" id="azc-live" role="status" aria-live="polite"></p>
 </div>
 
@@ -84,8 +75,7 @@
 (function () {
   var BASE    = "https://mve-azuracast.eliorion.fr";
   var STATION = "sysadmin";
-  // Leave null to use whatever the API advertises as listen_url. Set a URL here
-  // if the audio ever moves off that host — this is the only line that changes.
+  // null = follow the listen_url the API advertises.
   var STREAM_OVERRIDE = null;
   var POLL_MS = 15000;
 
@@ -112,8 +102,7 @@
     var label = (song.title || "") + (song.artist ? " — " + song.artist : "");
     if (label && label !== lastTrack) { lastTrack = label; $("azc-live").textContent = label; }
 
-    // The API reports where the track is; the bar is advanced locally between
-    // polls so it moves smoothly instead of jumping every 15 seconds.
+    // Bar position, advanced locally between polls.
     elapsed  = (np.now_playing && np.now_playing.elapsed)  || 0;
     duration = (np.now_playing && np.now_playing.duration) || 0;
 
@@ -139,9 +128,7 @@
   $("azc-play").addEventListener("click", function () {
     if (playing) {
       audio.pause();
-      // A live stream has no meaningful position to resume from. Dropping the
-      // src releases the connection instead of leaving it buffering silently in
-      // the background, which costs the server a listener slot for nothing.
+      // Dropping src releases the connection: a paused <audio> keeps buffering and holds a listener slot.
       audio.removeAttribute("src");
       audio.load();
       playing = false;
@@ -155,8 +142,6 @@
       $("azc-icon").setAttribute("d", "M6 5h4v14H6zM14 5h4v14h-4z");
       $("azc-play").setAttribute("aria-label", "Pause");
     }).catch(function () {
-      // Autoplay policies reject play() without a gesture; this one has a
-      // gesture, so a rejection here means the stream itself refused.
       $("azc-title").textContent = "Playback blocked";
     });
   });
@@ -168,8 +153,7 @@
     $("azc-prog").style.width = duration > 0 ? Math.min(100, elapsed / duration * 100) + "%" : "0";
   }, 1000);
 
-  // Stop polling while the tab is hidden; a background tab does not need to ask
-  // every fifteen seconds, and this is somebody else's page.
+  // Stop polling while the tab is hidden.
   document.addEventListener("visibilitychange", function () {
     if (document.hidden) { clearInterval(timer); timer = null; }
     else if (!timer) { poll(); timer = setInterval(poll, POLL_MS); }
