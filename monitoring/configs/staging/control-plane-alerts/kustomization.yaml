@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Storage-layer alerts derived from APISERVER metrics only. Deliberately not
+# etcd metrics: this cluster had no etcd target at all, which is how a
+# leader-loss problem stayed silent. See the rule file for the incident replay.
+resources:
+  - prometheusrule.yaml

@@ -1,0 +1,123 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: control-plane-storage
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: control-plane-storage.rules
+      rules:
+        # ------------------------------------------------------------------
+        # WHY THESE EXIST, AND WHY THEY LOOK AT THE APISERVER INSTEAD OF etcd.
+        #
+        # On 2026-08-12 the apiserver logged `etcdserver: no leader` at 15:40,
+        # 15:43, 18:29 and 18:48. The blast radius was cluster-wide:
+        #
+        #   256   apiserver 504 terminations in 6h
+        #   193   500s on postgresql.cnpg.io/clusters (verb GET)
+        #    38   500s + 36 504s on leases
+        #   245   lease PUTs over 1s, out of 135,729
+        #
+        # and every controller-runtime operator lost its leader-election lease.
+        # A controller that loses its lease EXITS: plugin-barman-cloud carries
+        # 109 restarts, source-controller 11, cainjector 6. barman-cloud is the
+        # CNPG backup path, so the storage layer wobbling silently disables the
+        # database backups.
+        #
+        # NOTHING ALERTED. There is no etcd target on this cluster at all --
+        # etcd listens on 127.0.0.1 with client-cert auth, so kube-prometheus-
+        # stack's `kubeEtcd` scraped nothing and was turned off, and with it
+        # every shipped etcd rule. The whole diagnosis had to be rebuilt from
+        # apiserver logs.
+        #
+        # The real fix is to scrape etcd (talconfig `listen-metrics-urls`, then
+        # kubeEtcd re-enabled). These rules are deliberately NOT that. They read
+        # only apiserver metrics, which are always present, so the cluster keeps
+        # this coverage even if the etcd target is broken, misconfigured or
+        # turned off again -- which is exactly the state that produced a silent
+        # multi-week problem in the first place.
+        #
+        # EVERY THRESHOLD AND EVERY `for:` BELOW WAS REPLAYED AGAINST THE REAL
+        # INCIDENT before being chosen. That matters more than usual here: a
+        # `for:` longer than the event is a rule that never fires, and both
+        # events were under 20 minutes.
+        # ------------------------------------------------------------------
+        # Replay: true 15:40->15:57 (17 min) and 18:23->18:32 (9 min). Silent at
+        # every other point in the 6h window, so `for: 5m` fires on both events
+        # with margin and does not flap.
+        #
+        # WHY BREADTH RATHER THAN A RATE. One resource returning 500 is a
+        # misbehaving client or one sick controller. THREE UNRELATED resources
+        # returning 500 in the same 10 minutes is the layer underneath them --
+        # there is no other component all of them share. That is what makes this
+        # a storage-layer detector without a single etcd metric.
+        - alert: EtcdLeaderLossSuspected
+          expr: |
+            count(
+              count by (resource) (
+                increase(apiserver_request_total{code=~"50[03]"}[10m]) > 0
+              )
+            ) >= 3
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "apiserver returning 5xx across {{ $value }} unrelated resources — etcd likely has no leader"
+            description: >-
+              Three or more unrelated API resources are returning 500/503 at
+              once. The only component they share is etcd, so this reads as
+              leader loss or a stalled quorum rather than a bad client. Expect
+              controller-runtime operators to start exiting on lost leases
+              within ~10s of this holding. Check `kubectl -n kube-system logs
+              kube-apiserver-<node> | grep "no leader"`. On this cluster the
+              known trigger is I/O: etcd, Longhorn replica data, container
+              images and CI ephemeral writes all share the single /var
+              partition on every node, so a Longhorn write burst can stall
+              etcd's fsync hard enough to miss heartbeats.
+
+        # Replay: true 15:41->15:58 (17 min) and 18:50->19:03 (13 min).
+        # Narrower than the rule above and kept separate because it names the
+        # CONSEQUENCE rather than the cause -- a failing lease write is the
+        # exact mechanism by which a healthy operator kills itself.
+        - alert: KubeApiserverLeaseWritesFailing
+          expr: |
+            sum(increase(apiserver_request_total{resource="leases",verb="PUT",code=~"5.."}[15m])) > 5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $value | printf \"%.0f\" }} leader-election lease writes failed in 15m"
+            description: >-
+              Leader-election lease renewals are failing at the apiserver.
+              controller-runtime gives up after renewDeadline (10s by default)
+              and the process EXITS, so this predicts operator restarts rather
+              than merely describing them. Everything on this cluster runs a
+              single replica, so there is no standby to take over — the pod
+              simply disappears and comes back.
+
+        # NOT replayed: the restarts this targets happened on 2026-08-07, and
+        # Prometheus only holds 6h of history since its TSDB moved to a PVC. The
+        # query is correct but unproven against a real event, which is recorded
+        # here rather than left for someone to assume otherwise.
+        #
+        # > 2 in 2h, not > 0: these operators legitimately restart on config
+        # changes and chart upgrades. A repeat within one window is the signal.
+        - alert: ControllerLeaderElectionRestarts
+          expr: |
+            increase(
+              kube_pod_container_status_restarts_total{namespace=~"cnpg-system|flux-system|cert-manager|longhorn-system|keda"}[2h]
+            ) > 2
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} restarted {{ $value | printf \"%.0f\" }}x in 2h"
+            description: >-
+              An operator is restarting repeatedly. If EtcdLeaderLossSuspected
+              or KubeApiserverLeaseWritesFailing is also firing, this is a
+              symptom of those and not an independent fault — fix the storage
+              layer, not this pod. If it is firing alone, read the pod's own
+              logs; a CrashLoop here is its own bug.
