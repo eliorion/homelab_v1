@@ -29,6 +29,74 @@ spec:
         target:
           kind: PrometheusRule
   values:
+    defaultRules:
+      disabled:
+        # Replaced, not dropped -- see hpa-maxedout-rule.yaml in this same
+        # directory, which re-adds it with one extra guard. The two must move
+        # together; disabling without the replacement removes real coverage of
+        # keda-hpa-engine-worker.
+        #
+        # The shipped rule is `current == max`, with no test for whether the
+        # HPA can scale at all. All three FlareSolverr HPAs are
+        # minReplicas: 1 / maxReplicas: 1 by deliberate chart design --
+        # FlareSolverr keeps its sessions in per-pod memory, so a second
+        # replica is a correctness bug, not extra capacity. current == max is
+        # therefore their permanent, intended, healthy state, and the alert
+        # fired on all three continuously while saying nothing about load.
+        #
+        # It was actively misleading, not merely noisy: three HPAs "maxed out"
+        # reads as a capacity signal, and the one autoscaler that CAN scale
+        # (keda-hpa-engine-worker, max 6) has been flat at 1 for a week
+        # because the fleet is idle. The board said saturated; the cluster was
+        # asleep.
+        KubeHpaMaxedOut: true
+    # ---------------------------------------------------------------------
+    # Control-plane scrape jobs that cannot exist on this cluster.
+    #
+    # Talos runs kube-controller-manager and kube-scheduler bound to
+    # 127.0.0.1, and Cilium runs kubeProxyReplacement: true with
+    # cluster.proxy.disabled: true -- there is no kube-proxy DaemonSet at
+    # all. The chart still creates a Service + ServiceMonitor for each, so
+    # each one scrapes nothing forever and holds KubeProxyDown,
+    # KubeControllerManagerDown and KubeSchedulerDown permanently firing at
+    # severity: critical, plus two TargetDown warnings.
+    #
+    # Three of the cluster's six firing criticals were these. They are not
+    # detections, they are artifacts of the chart assuming kubeadm. A
+    # permanently-firing critical is worse than no alert: it trains the
+    # operator to ignore the Telegram channel, which is where the real
+    # EtcdBackupStale and CNPG alerts land.
+    #
+    # Turning the job off does NOT reduce coverage -- there was never any
+    # data behind it. Real control-plane health is covered by the API
+    # server's own metrics, node-exporter and the Kubelet jobs.
+    kubeProxy:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    # etcd is a deliberate, documented blind spot, NOT an oversight.
+    #
+    # Talos binds etcd's metrics listener to localhost by default. Making it
+    # scrapeable means setting etcd.extraArgs.listen-metrics-urls in
+    # bootstraping/talconfig.yaml and rolling all three control-plane nodes,
+    # which publishes unauthenticated plaintext etcd metrics onto a subnet
+    # that also carries the LB-IPAM pool and the Tailscale gateway.
+    #
+    # Until that trade is made deliberately in its own change window, all 15
+    # rules in the chart's etcd group are structurally inert: each thresholds
+    # on a series that is never ingested, and none carries an absent() guard,
+    # so they cannot fire even when etcd is genuinely broken. Leaving them
+    # loaded advertises etcd coverage that does not exist. Disabling the job
+    # removes the whole group (the chart guards it on kubeEtcd.enabled) and
+    # makes the gap honest and greppable.
+    #
+    # etcd is not unmonitored in practice: the 6-hourly talos-backup CronJob
+    # plus the EtcdBackupStale alert cover the failure this cluster actually
+    # cares about, which is losing recoverable control-plane state.
+    kubeEtcd:
+      enabled: false
     grafana:
       # Credentials come from the SOPS-encrypted `grafana-admin` Secret in each
       # overlay (grafana-admin.enc.yaml), never from this file. The overlay's
@@ -47,6 +115,66 @@ spec:
           - secretName: grafana-tls-secret
             hosts:
               - grafana-k3s.eliorion.fr
+      # /var/lib/grafana was an emptyDir, so every pod restart destroyed
+      # grafana.db: all UI-created dashboards, users, API keys, annotations
+      # and unified-alerting rules. Only sidecar-provisioned dashboards
+      # survived, because they are re-mounted from ConfigMaps on each start.
+      #
+      # That is why no alert rule may be authored in the Grafana UI today,
+      # and it is a prerequisite for ever alerting on SQL-datasource
+      # conditions (asp auto-pause, StallBreaker trips, the blocked: rate)
+      # instead of shipping each one through the app's release train.
+      #
+      # ORDERING NOTE, load-bearing on the NEXT rotation: admin.existingSecret
+      # is only consumed at Grafana's FIRST init against an empty database.
+      # With the emptyDir that was every restart, so a password change took
+      # effect immediately. Once this PVC exists it no longer does -- editing
+      # the Secret alone will silently not apply. To rotate from here on:
+      # change the Secret, then `kubectl -n monitoring exec` grafana-cli
+      # admin reset-admin-password, or delete the PVC to force a re-init.
+      persistence:
+        enabled: true
+        type: pvc
+        # Same 2-replica class as the TSDB above, for the same reason and one
+        # more: grafana.db is a few MB of dashboards and users, so a third
+        # copy on the cluster's scarcest disk buys almost nothing.
+        storageClassName: longhorn-monitoring
+        accessModes: ["ReadWriteOnce"]
+        size: 10Gi
+      # Longhorn RWO cannot be attached to two pods at once, so the default
+      # RollingUpdate deadlocks: the new pod waits for a volume the old pod
+      # still holds, and the HelmRelease fails on timeout. Recreate takes the
+      # old pod down first. The brief outage is acceptable -- Grafana is a
+      # read-only view, and nothing alerts through it.
+      deploymentStrategy:
+        type: Recreate
+    prometheus:
+      prometheusSpec:
+        # The TSDB was an emptyDir, so every chart upgrade, node drain or pod
+        # reschedule discarded the full retention window. That is not only a
+        # loss of history -- it is why alert activeAt timestamps across this
+        # cluster cannot be trusted as onset times, and why "firing for N
+        # days" has repeatedly meant "the series was recreated N days ago".
+        #
+        # 30Gi against retention: 10d. Measured: the emptyDir was holding
+        # 8.7 GiB, and disabling the four dead control-plane jobs above only
+        # reduces the series count, so 30Gi is roughly 3x headroom.
+        #
+        # longhorn-monitoring, NOT the default longhorn class, and that is
+        # load-bearing rather than a preference. Longhorn schedules against
+        # PROVISIONED size with over-provisioning pinned at 100, and node 1
+        # has 17.9 GiB of schedulable headroom left (376 of 393.9 GiB used).
+        # A 30Gi volume on the 3-replica default cannot place its node-1
+        # replica -- and Longhorn does not fail loudly, it brings the volume up
+        # DEGRADED. See storageclass.yaml for the measurements.
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: longhorn-monitoring
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 30Gi
     alertmanager:
       alertmanagerSpec:
         # Mounts secret `alertmanager-telegram` (ns monitoring) at
@@ -81,6 +209,33 @@ spec:
                   {{ .Annotations.summary }}
                   {{ .Annotations.description }}
                   {{ end }}
+    kube-state-metrics:
+      # This pod declared NO requests and NO limits, so it ran BestEffort --
+      # the first QoS class the kubelet evicts under node memory pressure --
+      # on a cluster where node 1 sits at 193% memory-limit overcommit.
+      #
+      # It is the wrong component to leave in that tier. Nearly every alert in
+      # this cluster is derived from kube-state-metrics, and when it restarts
+      # every derived alert is recreated with a fresh activeAt. That is the
+      # measured reason alert onset times here are untrustworthy: the pod went
+      # 18 -> 37 restarts between 29 July and 7 August, and every alert stuck
+      # at 2026-08-07T07:09 is one it feeds.
+      #
+      # HONEST SCOPE: this is not a proven fix for those restarts. The last
+      # termination was "Error" exit 2 with no panic in the logs, which is not
+      # an OOMKill signature, and the pod has been stable for five days -- so
+      # the cause is still open. What is certain is that BestEffort is
+      # indefensible here regardless of what caused them.
+      #
+      # Requests only, deliberately no memory limit: kube-state-metrics memory
+      # scales with the number of objects in the cluster, so a fixed ceiling
+      # turns cluster growth into an OOMKill loop in the one component that
+      # would be needed to see it. Measured usage at the time of writing is
+      # 27Mi / 3m, so 128Mi is ~5x headroom for growth.
+      resources:
+        requests:
+          cpu: 20m
+          memory: 128Mi
     prometheus-node-exporter:
       # node-exporter needs hostPID + host mounts to read node metrics -- that
       # finding is by-design and left as-is. It does NOT need to escalate
