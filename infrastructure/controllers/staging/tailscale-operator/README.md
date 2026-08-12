@@ -1,158 +1,283 @@
-# Tailscale operator — admin UI access + cluster egress
+# tailscale-operator
 
-Two jobs, both private to the tailnet (gated by tailnet identity, reachable
-off-LAN, **never internet-exposed** — no Cloudflare hostname, no public ingress):
+The Tailscale Kubernetes operator, installed by Flux into the `tailscale`
+namespace. It does three jobs. **Ingress**: it publishes selected in-cluster
+Services as tailnet devices, so admin UIs are reachable off-LAN without ever
+being on the internet. **Egress**: it runs proxy pods that are tailnet members
+and fronts them with plain in-cluster Services, so a workload that is not on the
+tailnet can dial a tailnet device by a local name. **API server proxy**: it
+serves the Kubernetes API on the tailnet, so `kubectl` works when the API VIP
+`192.168.1.100:6443` is unreachable. Everything it publishes is gated by tailnet
+identity — no Cloudflare hostname, no public ingress, no LAN LoadBalancer.
 
-1. **Ingress** — publish the **asp** + **fbref** admin UIs and the **Longhorn**
-   storage UI onto the tailnet as devices `asp-admin-ui` / `fbref-admin-ui` /
-   `longhorn`.
-2. **Egress** — let cluster workloads reach a tailnet device (the residential
-   proxy `rsp-asp`) through a local Service `tailscale-proxy-00`.
-
-## Why Tailscale (not a LoadBalancer / ingress)
-
-The admin UIs front a **no-auth control surface** (asp orchestrator has no auth;
-fbref BFF queries the DB directly; Longhorn's UI has no auth either and can
-delete volumes). A LAN LoadBalancer (`192.168.1.50:<port>`) would let anyone on
-the home network drive them; a public ingress is worse. Tailscale authenticates
-by tailnet identity and never touches the internet.
-
-## Files here
+## How it is wired
 
 | File | Role |
 |---|---|
-| `namespace.yaml` | the `tailscale` ns — **labelled `pod-security…=privileged`** (Talos PSA, see Troubleshooting) |
-| `repository.yaml` / `release.yaml` | HelmRepository + HelmRelease (`tailscale-operator`, pinned, Renovate-bumped) |
-| `operator-oauth.enc.yaml` | SOPS-encrypted OAuth **client** creds |
-| `egress-proxies.yaml` | `tailscale-proxy-00` egress Service → `rsp-asp` (`100.100.98.5:8888`) |
+| `kustomization.yaml` | resource list; `operator-oauth.enc.yaml` is decrypted by the `infrastructure-controllers` Flux Kustomization (`decryption.provider: sops`) |
+| `namespace.yaml` | the `tailscale` namespace, labelled `pod-security.kubernetes.io/{enforce,warn,audit}: privileged` |
+| `repository.yaml` | `HelmRepository` `tailscale` in `flux-system` → `https://pkgs.tailscale.com/helmcharts`, interval 24h |
+| `release.yaml` | `HelmRelease` `tailscale-operator` in `flux-system`, `targetNamespace: tailscale`, chart pinned to `1.98.4`, `values.oauth: {}` and `values.apiServerProxyConfig` |
+| `operator-oauth.enc.yaml` | SOPS-encrypted Secret holding the OAuth **client** credentials (`client_id`, `client_secret`) |
+| `egress-proxies.yaml` | five `ExternalName` Services, one per tailnet exit the cluster needs to reach |
 
-The `tailscale.com/expose` annotations on the admin-ui Services live in
-`apps/staging/{asp,fbref}/release.yaml`. They require the chart template
-`adminUi.service.annotations` (in the asp repo `k8s/charts/{asp,fbref}` — shipped
-on `main`); the deployed HelmRelease must be on a chart revision that has it.
+### Overlays
 
-The **Longhorn** UI is exposed the same way, but its annotations live in the
-Longhorn HelmRelease itself — `infrastructure/controllers/base/longhorn/release.yaml`
-(`values.service.ui.annotations`) — which the upstream chart renders onto the
-`longhorn-frontend` Service. No app-repo chart change needed.
+There is no `base/` and no production copy: the component exists only in the
+staging overlay and is wired in `../kustomization.yaml`. The production overlay
+(`infrastructure/controllers/production/kustomization.yaml`) lists `cnpg/` only.
+The operator itself is namespace-agnostic — it watches the whole cluster, so the
+Services and Ingresses it publishes live in the namespaces of the workloads they
+belong to, not here.
 
-## One-time setup (manual — Flux can't do these for you)
+### What the operator publishes (annotations live in other components)
 
-### 1. ACL tags  (admin console → Access Controls)
+Two mechanisms, chosen per workload. `tailscale.com/expose` is an L3 forward
+that preserves the Service port — plain HTTP on that port, not 443. A Tailscale
+`Ingress` (`ingressClassName: tailscale`) terminates HTTPS on 443 with a MagicDNS
+certificate.
 
-The operator authenticates as a tagged device **and** tags every proxy it creates
-`tag:k8s`. Define both; the operator must own `tag:k8s`:
-```jsonc
-"tagOwners": {
-  "tag:k8s-operator": ["autogroup:admin"],
-  "tag:k8s":          ["tag:k8s-operator"]
-}
-```
-Your own user/devices must be allowed to reach `tag:k8s` (default allow-all does).
+`tailscale.com/expose` + `tailscale.com/hostname`:
 
-### 2. OAuth **client** — NOT an auth key
+| Device | Declared in | Service port |
+|---|---|---|
+| `asp-admin-ui` | `apps/staging/asp/release.yaml` (`adminUi.service.annotations`) | 8080 |
+| `fbref-admin-ui` | `apps/staging/fbref/release.yaml` (`adminUi.service.annotations`) | 8080 |
+| `scraper-admin-ui` | `apps/staging/scraper/release.yaml` (`adminUi.service.annotations`) | |
+| `longhorn` | `infrastructure/controllers/base/longhorn/release.yaml` (`values.service.ui.annotations`) | 80 |
+| `radar` | `infrastructure/services/base/radar/release.yaml` (`service.annotations`) | 9280 |
+| `azuracast-stream` | `apps/base/azuracast/service-stream-tailscale.yaml` | 8000 |
 
-Settings → **OAuth clients** → Generate. Do **not** use an *Auth key*: the
-operator runs an OAuth2 client-credentials exchange; an auth key yields
-`401 API token invalid` and the pod CrashLoops.
-- Scopes: **Devices Core = write** AND **Auth Keys = write**.
-- Tag: `tag:k8s-operator`.
-- Copy the client **id** (`k…`) + **secret** (`tskey-client-…`).
+The `adminUi.service.annotations` values need that template to exist in the
+chart (asp repo `k8s/charts/{asp,fbref}`, shipped on `main`); the deployed
+HelmRelease must be on a chart revision that has it.
 
-### 3. SOPS secret
-```bash
-cd infrastructure/controllers/staging/tailscale-operator
-sops operator-oauth.enc.yaml        # set the two keys, save = re-encrypt
-#   client_id:     k123Cdef
-#   client_secret: tskey-client-k123Cdef-xxxx
-```
-Keys MUST be `client_id` / `client_secret` (the chart reads those).
+Tailscale `Ingress` (HTTPS on 443, no port in the URL):
 
-### 4. Commit → Flux reconciles
-The dir is wired in `../kustomization.yaml`.
-`kubectl kustomize infrastructure/controllers/staging` must build, then commit+push.
+| Device | Declared in |
+|---|---|
+| `keycloak-admin` | `infrastructure/services/base/keycloak/app/ingress-tailscale.yaml` |
+| `ai-gateway` | `infrastructure/services/base/ai-gateway/ingress-tailscale.yaml` |
+| `pgadmin` | `infrastructure/services/staging/databases/dbtools/pgadmin-ingress-tailscale.yaml` |
+| `nao` | `infrastructure/services/staging/databases/dbtools/nao-ingress-tailscale.yaml` |
+| `n8n` | `apps/base/n8n/ingress-tailscale.yaml` |
 
-## Reaching the admin UIs
+### Egress Services (`egress-proxies.yaml`)
 
-After Flux reconciles and the Services are annotated, the operator registers one
-device per Service. Reach each on **its own Service port over plain HTTP** — the
-`expose` annotation is L3, it forwards the Service port; it is **not** HTTPS/443.
-The admin UIs listen on `8080`, the Longhorn UI (`longhorn-frontend`) on `80`:
-```
-http://asp-admin-ui.tail45b0ca.ts.net:8080
-http://fbref-admin-ui.tail45b0ca.ts.net:8080
-http://longhorn.tail45b0ca.ts.net          # Service port 80
-```
-Four services deliberately do **not** use `expose`, and take a Tailscale
-**Ingress** (`ingressClassName: tailscale` + MagicDNS HTTPS) instead — HTTPS on
-443, no port in the URL:
-```
-https://keycloak-admin.tail45b0ca.ts.net   # admin console (ns identity)
-https://ai-gateway.tail45b0ca.ts.net       # dashboard + LLM API (ns ai-gateway)
-https://pgadmin.tail45b0ca.ts.net          # SQL client (ns database)
-https://nao.tail45b0ca.ts.net              # analytics agent (ns database)
-```
-All four are password-authenticated consoles, and `ai-gateway` additionally
-carries API credentials in request headers. That path needs **HTTPS
-Certificates** enabled in the Tailscale admin console (DNS → HTTPS
-Certificates).
+Each entry is an `ExternalName` Service annotated with `tailscale.com/tailnet-ip`.
+The operator creates a proxy pod (`ts-<service-name>-…`, the only tailnet member
+in the path) and overwrites `externalName` with that proxy's DNS name. The TCP
+port is preserved end to end, and any namespace can consume the local name.
 
-`nao` is the one entry whose address is load-bearing beyond reachability: its
-`BETTER_AUTH_URL`
-(`infrastructure/services/staging/databases/dbtools/nao-env-patch.yaml`) must match the
-browser URL byte for byte — `https://`, no port — or every login redirect
-fails. That is also why a leftover `nao` device from the old `expose` setup
-matters: MagicDNS suffixes the newcomer (`nao-1`) and the mismatch loops the
-login.
+| Service | Tailnet IP | Port | Consumer |
+|---|---|---|---|
+| `tailscale-proxy-00` | `100.100.98.5` | 8888 (HTTP proxy) | scraper pool `tailscale` — `apps/staging/scraper/release.yaml`, `engine.pools[].url` |
+| `tailscale-proxy-scrape-c` | `100.92.142.13` | 8888 (HTTP proxy) | scraper pool `c`, same file |
+| `garage-node-a` | `100.122.58.119` | 3900 (Garage S3 API) | HAProxy gateway, `infrastructure/services/staging/garage-gateway` |
+| `garage-node-b` | `100.122.210.124` | 3900 | same gateway; host currently offline |
+| `garage-node-c` | `100.92.142.13` | 3900 | same gateway |
 
-## Egress — reach `rsp-asp` from inside the cluster  (`egress-proxies.yaml`)
+The scraper path:
 
 ```
 workload  →  tailscale-proxy-00.tailscale.svc.cluster.local:8888   (plain ClusterIP svc)
                →  operator egress proxy pod  ts-tailscale-proxy-00  (the only tailnet member)
                     →  rsp-asp.tail45b0ca.ts.net  ==  100.100.98.5:8888   (residential exit)
 ```
-Nothing in the workload pod is on the tailnet — the egress proxy bridges it. The
-asp scraper consumes it via `apps/staging/asp/release.yaml` →
-`scraper.proxies[].url = http://tailscale-proxy-00.tailscale.svc.cluster.local:8888`.
 
-Add more exits: copy the block in `egress-proxies.yaml` (`-01`, `-02`, set the
-target IP/FQDN) + add one scraper proxy lane per exit.
+The Garage path is not consumed directly: the in-cluster HAProxy gateway
+load-balances and health-checks across `garage-node-{a,b,c}` and exposes one
+endpoint, `garage-s3.garage-gw.svc.cluster.local:3900`, to etcd-backup and the
+CNPG barman sidecars. See
+[../../../../documentations/12-garage-object-storage.md](../../../../documentations/12-garage-object-storage.md)
+and [../../../../documentations/09-etcd-backup-dr.md](../../../../documentations/09-etcd-backup-dr.md).
 
-Verify the path end-to-end:
+## Why it is like this
+
+### Tailscale rather than a LoadBalancer or a public ingress
+
+The admin UIs front a no-auth control surface: the asp orchestrator has no auth,
+the fbref BFF queries the database directly, and Longhorn's UI has none either
+and can delete volumes. A LAN LoadBalancer (`192.168.1.50:<port>`) would let
+anyone on the home network drive them; a public ingress is worse. Tailscale
+authenticates by tailnet identity and never touches the internet. The cost is
+stated in
+[../../../../documentations/14-design-decisions.md](../../../../documentations/14-design-decisions.md):
+this is a single, unbacked authentication plane in front of surfaces with no
+authorization behind them, there is no second factor, and none of the ACL
+configuration can be expressed in Flux.
+
+### Two publication mechanisms
+
+A password-authenticated console whose session cookie belongs on a secure origin
+gets the `Ingress` (HTTPS, MagicDNS certificate). A byte stream or a plain UI
+where the Service port must be preserved gets the `tailscale.com/expose`
+annotation. `ai-gateway` additionally carries API credentials in request headers,
+which is why it is on the HTTPS path. `nao` is the one case where the address is
+load-bearing beyond reachability: its `BETTER_AUTH_URL`
+(`infrastructure/services/staging/databases/dbtools/nao-env-patch.yaml`) must match
+the browser URL byte for byte — `https://`, no port — or every login redirect
+fails.
+
+### OAuth client, and `oauth: {}`
+
+The operator runs an OAuth2 client-credentials exchange, so it needs an OAuth
+**client**, not an auth key. The credentials are pre-created as the SOPS
+`operator-oauth` Secret in the `tailscale` namespace; leaving `values.oauth`
+empty makes the chart skip templating its own Secret and consume ours instead.
+`release.yaml` is plaintext GitOps, so credentials can never live in it.
+
+### Privileged PodSecurity on the namespace
+
+Talos enforces `baseline` PodSecurity cluster-wide. Tailscale proxy pods need
+`NET_ADMIN` for kernel networking, which `baseline` forbids, so admission refuses
+to create them and the operator's StatefulSets sit at `0/1` with zero pods.
+Labelling the namespace `privileged` is what makes the proxies creatable.
+
+### API server proxy in auth mode
+
+`apiServerProxyConfig.mode: "true"` selects auth mode: the in-process proxy
+impersonates the caller's tailnet identity and Kubernetes RBAC (driven by an ACL
+grant) decides access, so no client certificate ever ships to a laptop.
+`allowImpersonation: "true"` creates the ClusterRole the proxy needs to do that.
+The proxy is the operator's own tailnet device, `tailscale-operator`
+(`operatorConfig.hostname`). The Talos API is not covered by this: `talosctl`
+(apid `:50000`) would need the `.200` subnet route or the Talos
+`siderolabs/tailscale` extension, neither of which is reachable without LAN or
+Talos access.
+
+### Egress Services as a central pool
+
+Keeping all exits here means the consumers point at stable local names instead of
+raw `100.x` tailnet addresses, and a new exit is one block copied in
+`egress-proxies.yaml` plus one lane on the consumer side. For Garage the same
+argument is made one level up: the Talos nodes are not tailnet members, only the
+operator's proxy pods are, and the HAProxy gateway turns three tailnet devices
+into one ClusterIP with health checking so no consumer has to know three
+addresses. A restore deliberately does not retrace that path and goes direct to a
+node's tailnet IP, because the gateway is in-cluster only.
+
+`garage-node-b` is declared while its host is offline so the gateway picks it up
+the moment it joins the tailnet; HAProxy keeps it marked DOWN until then.
+
+### `tailscale-proxy-scrape-c` — the provider half of scraper pool `c`
+
+The scraper HelmRelease has referenced this name since the pool `c` entry landed,
+but only the consumer side existed: `engine-pool-c` and `solver-c` rendered and
+sat at 0 replicas while the name itself was NXDOMAIN, so the pool could never
+have served anything. This Service is the provider half. It targets the same host
+as `garage-node-c` (`100.92.142.13`) — that Service proves the host is on the
+tailnet, but it targets Garage's S3 API on 3900, whereas pool `c` needs an HTTP
+proxy listening on 8888, which is unverified.
+
+Declaring it does not start traffic. The platform routes proxy-less requests only
+to pools flagged `residential`, and pool `c` is deliberately not flagged. That
+switch now lives in the scraper's `pools` table (admin UI → Egress pools →
+Routing), because the backend adopts chart pools `ON CONFLICT DO NOTHING` and the
+table wins once the row exists.
+
+## Traps
+
+- The `tailscale` namespace must stay `pod-security.kubernetes.io/enforce:
+  privileged`. Under Talos' cluster-wide `baseline`, the proxy StatefulSets show
+  `0/1` with no pod at all and the event reads `… violates PodSecurity "baseline"`.
+- `values.oauth` must stay `{}`. Filling it makes the chart template its own
+  Secret and ignore `operator-oauth`; it also puts credentials in a plaintext,
+  committed file.
+- The Secret keys must be named exactly `client_id` and `client_secret` — the
+  chart reads those names.
+- Use an OAuth **client**, never an *auth key*. An auth key yields
+  `oauth2: cannot fetch token: 401 … API token invalid` and the pod CrashLoops.
+- `apiServerProxyConfig.mode` is the **string** `"true"`, and it means auth mode
+  (impersonation), not merely "enabled".
+- `externalName: placeholder` in `egress-proxies.yaml` is intentional. The
+  operator overwrites it with the egress proxy's Service DNS name; setting a real
+  value there is what breaks.
+- `tailscale-proxy-scrape-c` and `garage-node-c` share the tailnet IP
+  `100.92.142.13` but expect different services on different ports (8888 HTTP
+  proxy vs 3900 Garage S3). One working does not imply the other works.
+- Pool `c`'s `residential` flag is the routing key and now lives in the scraper
+  `pools` table, not in the chart values — the backend adopts chart pools
+  `ON CONFLICT DO NOTHING`, so the table wins once the row exists. Mislabelling a
+  datacenter exit as residential puts every site's traffic on an IP anti-bot
+  vendors already distrust.
+- Never put both `tailscale.com/expose` and a Tailscale `Ingress` on the same
+  workload: that registers two tailnet devices contending for one hostname and
+  the loser is silently suffixed. The same happens with a leftover device — a
+  stale `nao` from the old `expose` setup makes MagicDNS hand the newcomer `nao-1`,
+  and the mismatch loops the login.
+- ACL tags are a precondition Flux cannot create: `tag:k8s-operator` and
+  `tag:k8s`, with the operator owning `tag:k8s`. Without them a proxy pod
+  registers and then logs
+  `requested tags [tag:k8s] are invalid or not permitted`.
+- Every HTTPS path (Tailscale `Ingress`, API server proxy) needs **HTTPS
+  Certificates** enabled by hand in the admin console (DNS → HTTPS Certificates).
+- The chart version in `release.yaml` is pinned and bumped by Renovate.
+- The Talos API is not on the tailnet. This operator covers Kubernetes only.
+
+## Operating it
+
+### One-time setup (manual — Flux cannot do these)
+
+**1. ACL tags** (admin console → Access Controls). The operator authenticates as
+a tagged device and tags every proxy it creates `tag:k8s`:
+
+```jsonc
+"tagOwners": {
+  "tag:k8s-operator": ["autogroup:admin"],
+  "tag:k8s":          ["tag:k8s-operator"]
+}
+```
+
+Your own user/devices must be allowed to reach `tag:k8s` (the default allow-all
+policy does).
+
+**2. OAuth client.** Settings → OAuth clients → Generate. Scopes: Devices Core =
+write **and** Auth Keys = write. Tag: `tag:k8s-operator`. Copy the client **id**
+(`k…`) and **secret** (`tskey-client-…`).
+
+**3. SOPS secret.**
+
 ```bash
-kubectl -n tailscale get pods                       # ts-tailscale-proxy-00-… must be 1/1
-kubectl -n asp run nettest --rm -it --image=curlimages/curl --restart=Never -- \
-  -x http://tailscale-proxy-00.tailscale.svc.cluster.local:8888 https://api.ipify.org
-#   → prints rsp-asp's residential IP (not the cluster/home IP)
+cd infrastructure/controllers/staging/tailscale-operator
+sops operator-oauth.enc.yaml        # set the two keys, save = re-encrypt
+#   client_id:     k123Cdef
+#   client_secret: tskey-client-k123Cdef-xxxx
 ```
 
-## API server proxy — kubectl off-LAN  (`release.yaml` values)
+**4. Commit.** The directory is wired in `../kustomization.yaml`;
+`kubectl kustomize infrastructure/controllers/staging` must build, then commit and
+push and let Flux reconcile.
 
-Reach the k8s API over the tailnet when you're off the home LAN (the VIP
-`192.168.1.100:6443` is unreachable). The operator runs an **in-process API
-server proxy** in **auth mode**: it impersonates the caller's tailnet identity,
-so k8s RBAC (driven by an ACL grant) decides access — no client cert ships to
-the client. The proxy is the operator's own tailnet device, `tailscale-operator`.
+### Reaching the published devices
 
-> **Talos API is NOT covered.** This is k8s only. `talosctl` (apid `:50000`)
-> needs the `.200` subnet route or the Talos `siderolabs/tailscale` extension —
-> neither is doable without LAN / Talos reach.
+`expose` devices answer plain HTTP on their own Service port:
 
-GitOps part (done, in `release.yaml`):
-```yaml
-values:
-  apiServerProxyConfig:
-    mode: "true"            # auth mode (impersonate tailnet identity)
-    allowImpersonation: "true"  # creates the ClusterRole the proxy needs
+```
+http://asp-admin-ui.tail45b0ca.ts.net:8080
+http://fbref-admin-ui.tail45b0ca.ts.net:8080
+http://longhorn.tail45b0ca.ts.net          # Service port 80
 ```
 
-Manual one-time steps (Flux can't do these):
+`Ingress` devices answer HTTPS on 443, no port in the URL:
 
-1. **Tailnet HTTPS certs** — admin console → DNS → enable **HTTPS Certificates**
-   (MagicDNS). The proxy serves a `ts.net` cert for its hostname.
-2. **ACL grant** — map your user → impersonate `system:masters` (built-in
-   cluster-admin, no extra RBAC). The proxy device is tagged `tag:k8s-operator`:
+```
+https://keycloak-admin.tail45b0ca.ts.net   # admin console (ns identity)
+https://ai-gateway.tail45b0ca.ts.net       # dashboard + LLM API (ns ai-gateway)
+https://pgadmin.tail45b0ca.ts.net          # SQL client (ns database)
+https://nao.tail45b0ca.ts.net              # analytics agent (ns database)
+```
+
+### kubectl over the tailnet
+
+Precondition: the operator is healthy (`kubectl -n tailscale get pods`) and the
+OAuth client plus the `tag:k8s` / `tag:k8s-operator` ACL are in place — the API
+server proxy reuses them. Then, once:
+
+1. Enable HTTPS Certificates (admin console → DNS).
+2. Add an ACL grant mapping your user to an impersonated group. `system:masters`
+   is the built-in cluster-admin and needs no extra RBAC:
+
    ```jsonc
    "grants": [
      {
@@ -166,36 +291,59 @@ Manual one-time steps (Flux can't do these):
      }
    ]
    ```
-   Narrower than admin: bind your own ClusterRole and impersonate a custom group
-   instead of `system:masters`.
-3. **Generate kubeconfig** (on your laptop, after Flux reconciles on `main`):
+
+   For something narrower, bind your own ClusterRole and impersonate a custom
+   group instead of `system:masters`.
+3. Generate the kubeconfig on the client:
+
    ```bash
    tailscale configure kubeconfig tailscale-operator   # exact name: Machines page
    kubectl get nodes
    ```
 
-Precondition: the operator must be healthy (`kubectl -n tailscale get pods`); the
-OAuth client + `tag:k8s`/`tag:k8s-operator` ACL from §1–§3 above must already be
-in place — the API server proxy reuses them.
+### Verifying an egress path
 
-## Troubleshooting (failures we actually hit)
+```bash
+kubectl -n tailscale get pods                       # ts-tailscale-proxy-00-… must be 1/1
+kubectl -n asp run nettest --rm -it --image=curlimages/curl --restart=Never -- \
+  -x http://tailscale-proxy-00.tailscale.svc.cluster.local:8888 https://api.ipify.org
+#   → prints rsp-asp's residential IP (not the cluster/home IP)
+```
+
+Before flagging pool `c` residential, confirm its exit is a distinct,
+non-datacenter address:
+
+```bash
+kubectl -n scraper run ipcheck --rm -it --restart=Never \
+  --image=curlimages/curl:8.11.1 -- curl -s \
+  -x http://tailscale-proxy-scrape-c.tailscale.svc.cluster.local:8888 \
+  https://ifconfig.me
+```
+
+The direct egress is `37.65.67.42` and `tailscale-proxy-00` exits on an IPv6 in
+`2001:861::/32`, so a third distinct address is what success looks like.
+
+Garage backend health is visible on `/stats`, port `8404` of a `garage-gateway`
+pod, which shows which of `garage-node-{a,b,c}` are up.
+
+### Troubleshooting (failures actually hit)
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| operator CrashLoops, log `oauth2: cannot fetch token: 401 … API token invalid` | an **auth key** was used, not an OAuth client | create an OAuth **client** (§2); set `client_id`/`client_secret` |
-| operator Running but **no proxy pods**; `ts-…` StatefulSets show `0/1` with **zero pods** (pod NotFound) | **Talos PSA** enforces `baseline`; tailscale proxies need `NET_ADMIN` → admission refuses to create the pod | `namespace.yaml` labels the ns `pod-security…=privileged` (applied) |
+| operator CrashLoops, log `oauth2: cannot fetch token: 401 … API token invalid` | an auth key was used, not an OAuth client | create an OAuth client; set `client_id`/`client_secret` |
+| operator Running but no proxy pods; `ts-…` StatefulSets show `0/1` with zero pods (pod NotFound) | Talos PSA enforces `baseline`; proxies need `NET_ADMIN` so admission refuses the pod | `namespace.yaml` labels the namespace `privileged` (applied) |
 | StatefulSet event `… violates PodSecurity "baseline"` | same as above | same |
-| proxy pod registers then log `requested tags [tag:k8s] are invalid or not permitted` | `tag:k8s` not defined / not owned by the operator in ACL | add the ACL tags (§1) |
-| Service annotated but operator never makes a proxy | deployed chart predates `adminUi.service.annotations` | put the chart with that template on `main` (done) + let the HelmRelease upgrade |
-| device shows in Machines but unreachable | your device not permitted to reach `tag:k8s` | ACL grant `your-user → tag:k8s` |
+| proxy pod registers, then logs `requested tags [tag:k8s] are invalid or not permitted` | `tag:k8s` not defined or not owned by the operator in the ACL | add the ACL tags |
+| Service annotated but the operator never makes a proxy | deployed chart predates `adminUi.service.annotations` | ship the chart with that template and let the HelmRelease upgrade |
+| device shows in Machines but is unreachable | your device is not permitted to reach `tag:k8s` | ACL grant `your-user → tag:k8s` |
 
-Inspect: `kubectl -n tailscale logs deploy/operator --tail=50`,
-`kubectl -n tailscale describe statefulset <ts-…>`,
+Inspect with `kubectl -n tailscale logs deploy/operator --tail=50`,
+`kubectl -n tailscale describe statefulset <ts-…>`, and
 `kubectl -n tailscale get pods,statefulset`.
 
-## Notes
+### Notes
 
-- admin-ui chart NetworkPolicy is egress-only → operator-proxy ingress already
-  allowed; no scraper NetworkPolicy selects the scraper pods, so cluster→`tailscale`
-  ns egress is unrestricted (the egress path works without policy changes).
-- Chart version is pinned in `release.yaml`; Renovate bumps it.
+- The admin-ui chart NetworkPolicy is egress-only, so operator-proxy ingress is
+  already allowed; no NetworkPolicy selects the scraper pods, so cluster →
+  `tailscale` namespace egress is unrestricted and the egress path works without
+  policy changes.

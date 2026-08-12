@@ -45,6 +45,28 @@ box — the repo name is historical; see `documentations/06`–`08`.)
   `filesystem-trim` RecurringJob (`default` group) reclaims freed blocks so a
   volume's `actualSize` tracks real filesystem usage.
 
+## Documentation convention (applies to every change)
+
+- **Every subcomponent directory owns a `README.md`**, and that file carries the
+  explanation: what the component is, how it is wired, why it is wired that way,
+  what was rejected, and what breaks if you change it. For a component with
+  `base/` + overlays the README lives in `base/<component>/`; an overlay-only
+  component keeps it in its own directory.
+- **Manifests carry almost no comments.** A comment survives in a manifest only
+  if it is a *trap marker* — a constraint whose violation breaks something
+  concrete: a workaround pin, an inverted flag, a value that must match another
+  file, a "do not set this", a field the operator silently ignores. One short
+  line naming what a non-obvious block does is allowed on top of that. Anything
+  longer, and anything explaining *why*, goes to the README.
+- **Rationale: context is expensive.** A manifest should be the smallest thing
+  that still answers "can I change this line safely". The README answers "why is
+  it like this". Prose in YAML is re-read by every agent and every reviewer that
+  opens the file, whether or not they needed it.
+- When you touch a directory that still carries prose comments, move them to its
+  README as part of the change rather than leaving two sources of truth.
+- The same rule applies to `scripts/` and any code: file-level and inline
+  comments only where a reader would otherwise break something.
+
 ## CI stack (summary — full detail in documentations/04-ci-runners-cache.md)
 
 - Two ARC runner scale sets run `Eliorion/asp` workflows, one job per ephemeral

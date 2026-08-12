@@ -1,8 +1,4 @@
 # kubernetes-reflector — mirrors annotated Secrets/ConfigMaps across namespaces.
-# Used to copy each project's CNPG `<db>-app` connection Secret into the central
-# `lab` namespace so the per-project lab pods can authenticate to their DB
-# (the lab lives in its own ns, the DB + its generated Secret live in the
-# project ns). See apps/staging/lab/.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -14,7 +10,6 @@ spec:
   chart:
     spec:
       chart: reflector
-      # Renovate keeps this pinned version current after the first install.
       version: "10.0.49"
       sourceRef:
         kind: HelmRepository
@@ -24,9 +19,7 @@ spec:
   install:
     createNamespace: true
   values:
-    # Chart already drops ALL caps + runs non-root; only allowPrivilegeEscalation
-    # was unset (Radar audit privilegeEscalation danger). Full block so the
-    # override doesn't drop the chart's existing hardening.
+    # Whole-value override — trimming a field drops the chart's own hardening.
     securityContext:
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true

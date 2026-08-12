@@ -8,7 +8,6 @@ spec:
   interval: 30m
   chart:
     spec:
-      # Renovate keeps this pinned version current.
       chart: longhorn
       version: "1.12.0"
       sourceRef:
@@ -17,45 +16,23 @@ spec:
         namespace: flux-system
       interval: 12h
   install:
-    # Namespace ships from namespace.yaml (carries the privileged PSA labels
-    # Talos needs), so Helm must NOT create a bare one.
+    # Helm must NOT create it: namespace.yaml carries the privileged PSA labels.
     createNamespace: false
   values:
     defaultSettings:
       # Must match the Talos kubelet extraMounts bind destination.
       defaultDataPath: /var/lib/longhorn
-      # 3-node cluster: one replica per node, any single node can die or leave.
       defaultReplicaCount: 3
-      # Longhorn's default is 30%, which on these disks reserved 299GB of 997GB
-      # on two nodes and left 26GB schedulable — not enough to grow fbref-db,
-      # even though real usage is only ~537GB of 997GB. 15% is the standard
-      # value for a disk Longhorn owns outright, which these are: Talos mounts
-      # /var/lib/longhorn as a dedicated data partition, so nothing else on the
-      # host competes for the space the reserve is meant to protect.
-      #
-      # storageOverProvisioningPercentage stays at its 100% default DELIBERATELY.
-      # Raising that is the other way to make room and it is the wrong one here:
-      # it lets Longhorn schedule more than the disk physically holds, and a
-      # volume growing into space that does not exist is exactly how ai-gateway
-      # and fbref both went down (documentations/12-garage-object-storage.md).
-      # Freeing real reserve keeps the "never oversubscribe" guarantee intact.
-      #
-      # NOTE this setting only applies to disks Longhorn adds AFTER it lands.
-      # Existing node disks keep the storageReserved they were created with and
-      # must be patched on the Node CRs — commands in
-      # documentations/07-talos-ha-expansion.md ("Growing a volume").
+      # Do NOT raise storageOverProvisioningPercentage instead; 100% stays.
+      # Applies only to disks Longhorn adds AFTER this lands — existing node
+      # disks keep their storageReserved and must be patched on the Node CRs
+      # (documentations/07-talos-ha-expansion.md, "Growing a volume").
       storageReservedPercentageForDefaultDisk: 15
     persistence:
       defaultClassReplicaCount: 3
     service:
       ui:
-        # Publish the Longhorn UI on the tailnet via the Tailscale operator —
-        # authed by tailnet identity, reachable off-LAN, never internet-exposed
-        # (same pattern as the asp/fbref admin UIs). Inert until the operator is
-        # installed (infrastructure/controllers/staging/tailscale-operator); no
-        # extra ACL work — the operator already owns tag:k8s. The expose
-        # annotation is L3 and forwards the Service port (longhorn-frontend :80),
-        # so reach it at http://longhorn.<your-tailnet>.ts.net (plain HTTP, not 443).
+        # UI on the tailnet: L3 expose, http://longhorn.<tailnet>.ts.net (:80, not 443).
         annotations:
           tailscale.com/expose: "true"
           tailscale.com/hostname: longhorn

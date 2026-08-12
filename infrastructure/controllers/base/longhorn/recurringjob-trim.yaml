@@ -1,14 +1,11 @@
-# Auto-trim: reclaim blocks freed inside the filesystem (WAL recycling, bloat,
-# deleted files) that Longhorn otherwise keeps counted in actualSize. Assigned to
-# the `default` group, which Longhorn applies to every volume that has no explicit
-# recurring-job labels -- i.e. all of them here.
+# Auto-trim; the `default` group covers every volume without recurring-job labels.
 apiVersion: longhorn.io/v1beta2
 kind: RecurringJob
 metadata:
   name: trim
   namespace: longhorn-system
 spec:
-  cron: "0 4 * * *" # daily 04:00, after the 03:00 CNPG backups
+  cron: "0 4 * * *" # must stay after the 03:00 CNPG backups
   task: filesystem-trim
   groups:
     - default

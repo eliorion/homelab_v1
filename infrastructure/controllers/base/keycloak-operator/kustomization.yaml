@@ -1,21 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# The Keycloak project publishes NO Helm chart for the operator, so the release
-# manifests are VENDORED under upstream/ rather than pulled at reconcile time.
-# A remote kustomize base would make every Flux reconcile depend on GitHub being
-# reachable and would let a re-tag change what the cluster runs; vendoring keeps
-# the operator reviewable in a PR like everything else here.
-#
-# Bump with `scripts/fetch-keycloak-operator <version>` — it re-downloads all
-# five files and is the ONLY supported way to change them. See README.md.
+# Vendored release manifests. Bump ONLY with `scripts/fetch-keycloak-operator
+# <version>`, which also rewrites the version line below. See README.md.
 # renovate: datasource=github-releases depName=keycloak/keycloak-k8s-resources
 # keycloakOperatorVersion: 26.7.0
 
-# Upstream publishes these as `.yml` (there is no `.yaml` to fetch — that URL
-# 404s). They are stored here as `.yaml` to match every other manifest in the
-# repo; the fetch script does the rename on download, so a bump keeps them
-# consistent and the file CONTENT stays byte-identical to upstream.
+# Upstream publishes these as `.yml`; they are vendored as `.yaml`. Both
+# extensions present would apply every CRD twice.
 resources:
   - namespace.yaml
   - upstream/keycloakoidcclients.k8s.keycloak.org-v1.yaml
@@ -24,10 +16,10 @@ resources:
   - upstream/keycloaksamlclients.k8s.keycloak.org-v1.yaml
   - upstream/kubernetes.yaml
 
-# Upstream ships these for namespace `keycloak`. `identity` is this cluster's
-# name for it, and the ClusterRoleBinding subject must follow the ServiceAccount
-# or the operator starts with no permissions and silently reconciles nothing —
-# hence setRoleBindingSubjects, copied from upstream's own kustomization.
+# Retargets upstream's `keycloak` namespace to `identity`.
+# setRoleBindingSubjects is load-bearing: without it the ClusterRoleBinding keeps
+# pointing at system:serviceaccount:keycloak:keycloak-operator and the operator
+# runs with no permissions while looking healthy.
 namespace: identity
 transformers:
   - |-

@@ -9,8 +9,6 @@ spec:
   chart:
     spec:
       chart: tailscale-operator
-      # Latest stable, verified against https://pkgs.tailscale.com/helmcharts.
-      # Renovate keeps it current after the first install.
       version: "1.98.4"
       sourceRef:
         kind: HelmRepository
@@ -19,20 +17,12 @@ spec:
       interval: 12h
   install:
     createNamespace: true
-  # OAuth creds come from the pre-created `operator-oauth` Secret (SOPS) in the
-  # tailscale namespace. Leaving oauth.* empty makes the chart skip templating
-  # its own Secret and use ours instead. NEVER put creds here — this file is
-  # plaintext GitOps.
   values:
+    # Must stay empty: the chart then uses the pre-created `operator-oauth` SOPS
+    # Secret instead of templating its own. NEVER put creds here (plaintext GitOps).
     oauth: {}
-    # API server proxy — expose the k8s API on the tailnet so kubectl works
-    # off-LAN without the VIP (192.168.1.100:6443). In-process proxy runs in the
-    # operator pod; its tailnet device is `tailscale-operator` (operatorConfig.
-    # hostname). mode "true" = AUTH mode: the proxy impersonates the caller's
-    # tailnet identity, so k8s RBAC (via an ACL grant) decides access — no client
-    # cert. allowImpersonation creates the ClusterRole the proxy needs to do that.
-    # Activation needs a manual ACL grant + client `tailscale configure
-    # kubeconfig` — see README "API server proxy". Talos API is NOT covered here.
+    # Serves the k8s API on the tailnet. mode "true" = AUTH mode (impersonate the
+    # caller's tailnet identity); needs a manual ACL grant — see README.md.
     apiServerProxyConfig:
       mode: "true"
       allowImpersonation: "true"

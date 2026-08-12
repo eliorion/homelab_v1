@@ -24,7 +24,6 @@ spec:
       limits:
         cpu: "500m"
         memory: "512Mi"
-    # Enable prometheus monitoring
     monitoring:
       podMonitorEnabled: true
       grafanaDashboard:

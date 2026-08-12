@@ -1,5 +1,4 @@
-# L7 ingress via Cilium Gateway API. The Gateway gets its own LoadBalancer IP
-# from the pool (./pool.yaml). gateway-api CRDs ship via Talos extraManifests.
+# L7 ingress; the Gateway takes its own LoadBalancer IP from ./pool.yaml.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -15,8 +14,7 @@ spec:
         namespaces:
           from: All
 ---
-# nexus UI/API (8081). The docker connector ports (5000-5002) are L4/TCP and
-# stay on the nexus-lb LoadBalancer Service directly -- not routed here.
+# nexus UI/API only; the docker connector ports 5000-5002 stay L4 on the nexus-lb Service.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -27,7 +25,7 @@ spec:
     - name: cilium-gw
       namespace: kube-system
   hostnames:
-    - nexus.staging.lan # <<< set to your real hostname + point DNS at the Gateway IP
+    - nexus.staging.lan # placeholder -- set the real hostname and point LAN DNS at the Gateway IP
   rules:
     - backendRefs:
         - name: nexus-lb

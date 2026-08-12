@@ -8,7 +8,6 @@ spec:
   interval: 30m
   chart:
     spec:
-      # appVersion v0.12.0. Renovate keeps this pinned version current.
       chart: plugin-barman-cloud
       version: "0.6.0"
       sourceRef:

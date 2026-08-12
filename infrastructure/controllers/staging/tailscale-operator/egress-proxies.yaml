@@ -1,50 +1,20 @@
-# Tailscale operator EGRESS proxies — reach a tailnet device FROM the cluster via
-# a local Service. The operator runs a proxy pod (a tailnet member) and points
-# this ExternalName Service at it; cluster apps dial the local name and traffic
-# exits to the tailnet target. The TCP port is preserved end-to-end.
-#
-# Consume from ANY namespace:
-#   http://tailscale-proxy-00.tailscale.svc.cluster.local:8888
-#
-# Add more exits by copying the block, bumping the number + target IP. This is
-# the central proxy pool — asp/fbref lanes point PROXY_URL at these local svcs
-# instead of raw 100.x tailnet IPs.
+# Tailscale operator egress proxies — local Services that exit to a tailnet
+# device. See README.md.
 apiVersion: v1
 kind: Service
 metadata:
   name: tailscale-proxy-00
   namespace: tailscale
   annotations:
-    # Target the residential HTTP proxy node by its tailnet (100.x) IP.
     tailscale.com/tailnet-ip: "100.100.98.5"
 spec:
   type: ExternalName
   externalName: placeholder # operator overwrites with the egress proxy's svc DNS
 ---
-# tailscale-proxy-scrape-c — node C's exit, the scraper's THIRD egress IP.
-#
-# The apps/staging/scraper HelmRelease has referenced this name since the pool `c`
-# entry landed, but only the CONSUMER side existed: engine-pool-c and solver-c
-# rendered and sat at 0 replicas while the name itself was NXDOMAIN, so the pool
-# could never have served anything. This is the provider half.
-#
-# Same host as garage-node-c below (100.92.142.13) — that Service proves the host
-# is on the tailnet, but it targets Garage's S3 API on 3900. This one needs an HTTP
-# proxy listening on 8888; verify before routing traffic (see README).
-#
-# Adding this does NOT start traffic. The platform routes only to pools flagged
-# `residential`, and pool `c` is deliberately not flagged — that switch now lives in
-# the scraper's `pools` table (admin UI → Egress pools → Routing), because the
-# backend adopts chart pools ON CONFLICT DO NOTHING and the table wins once the row
-# exists. Flip it only after confirming the exit is a distinct, non-datacenter IP:
-#
-#   kubectl -n scraper run ipcheck --rm -it --restart=Never \
-#     --image=curlimages/curl:8.11.1 -- curl -s \
-#     -x http://tailscale-proxy-scrape-c.tailscale.svc.cluster.local:8888 \
-#     https://ifconfig.me
-#
-# (direct egresses 37.65.67.42 and tailscale-proxy-00 an IPv6 in 2001:861::/32, so
-# a third distinct address is what "it works" looks like.)
+# Node C's exit for scraper pool `c`. Same host as garage-node-c (100.92.142.13),
+# but expects an HTTP proxy on 8888, not Garage's S3 API on 3900 — verify before
+# routing traffic. Declaring it does not route traffic: the `residential` flag
+# lives in the scraper `pools` table. See README.md.
 apiVersion: v1
 kind: Service
 metadata:
@@ -56,10 +26,8 @@ spec:
   type: ExternalName
   externalName: placeholder # operator overwrites with the egress proxy's svc DNS
 ---
-# Garage S3 backup nodes. NOT consumed directly -- the in-cluster HAProxy gateway
-# (infrastructure/services/staging/garage-gateway) load-balances + health-checks
-# across these three egress Services and exposes one endpoint to etcd-backup and
-# the fbref barman sidecar. Dial (via the gateway): port 3900, the Garage S3 API.
+# Garage S3 backup nodes (port 3900). Not dialled directly — the garage-gateway
+# HAProxy load-balances across these three. See README.md.
 apiVersion: v1
 kind: Service
 metadata:
@@ -77,8 +45,7 @@ metadata:
   name: garage-node-b
   namespace: tailscale
   annotations:
-    # Currently offline -- created anyway so the gateway picks it up the moment
-    # it joins the tailnet. HAProxy keeps it marked DOWN until then.
+    # Host offline; declared so the gateway picks it up when it joins.
     tailscale.com/tailnet-ip: "100.122.210.124"
 spec:
   type: ExternalName
