@@ -10,17 +10,33 @@ spec:
   groups:
     - name: etcd-backup.rules
       rules:
+        # Scoped to jobs that STARTED in the last 24h. kube_job_status_failed
+        # stays at 1 for as long as the Job object exists, so the unbounded
+        # form latched: three failures (31 Jul x2, 6 Aug) held three criticals
+        # firing for twelve days while every run since had succeeded. A
+        # permanently-firing critical is worse than no alert -- it is what
+        # makes the Telegram channel unreadable, and the real signals land
+        # there too.
+        #
+        # Severity is warning, not critical, and that is the deliberate split:
+        # ONE failed run is not a paging event on a 6-hourly schedule that
+        # EtcdBackupStale already lets run 9h behind. It is worth seeing, so
+        # the operator can read the logs before ttlSecondsAfterFinished reaps
+        # the Job. Sustained failure is caught below, at critical, by the
+        # thing that actually means "there is no recent snapshot".
         - alert: EtcdBackupJobFailed
           expr: |
             max by (namespace, job_name) (
-              kube_job_status_failed{namespace="etcd-backup"}
-            ) > 0
+              kube_job_status_failed{namespace="etcd-backup"} > 0
+              and on (namespace, job_name)
+              (time() - kube_job_status_start_time{namespace="etcd-backup"} < 86400)
+            )
           for: 5m
           labels:
-            severity: critical
+            severity: warning
           annotations:
             summary: "etcd backup job {{ $labels.job_name }} failed"
-            description: "The etcd snapshot job {{ $labels.job_name }} failed. Run: kubectl -n etcd-backup logs job/{{ $labels.job_name }}"
+            description: "The etcd snapshot job {{ $labels.job_name }} failed. Run: kubectl -n etcd-backup logs job/{{ $labels.job_name }} -- the Job is reaped 48h after it finishes. If backups stay broken, EtcdBackupStale escalates to critical after 9h."
         # The important one: catches Garage being unreachable, credentials
         # expiring, and the CronJob being accidentally suspended -- all of
         # which are silent otherwise. 9h = one missed 6h cycle plus margin.
