@@ -4,38 +4,4 @@ kind: Kustomization
 namespace: asp
 
 resources:
-  - ../../base/asp
-  - orchestrator-secrets.enc.yaml
   - ghcr-pull-secret.enc.yaml
-
-images:
-  - name: asp-scraper
-    newName: ghcr.io/eliorion/asp-scraper
-    newTag: "scraper-v0.4.0"
-  - name: asp-orchestrator
-    newName: ghcr.io/eliorion/asp-orchestrator
-    newTag: "orchestrator-v0.2.0"
-
-patches:
-  # Pull the private GHCR images (ghcr.io/eliorion/asp-*).
-  - target:
-      kind: Deployment
-      name: orchestrator
-    patch: |-
-      - op: add
-        path: /spec/template/spec/imagePullSecrets
-        value: [{name: ghcr-pull-secret}]
-  - target:
-      kind: Deployment
-      name: content-scraper
-    patch: |-
-      - op: add
-        path: /spec/template/spec/imagePullSecrets
-        value: [{name: ghcr-pull-secret}]
-  - target:
-      kind: Deployment
-      name: url-crawler
-    patch: |-
-      - op: add
-        path: /spec/template/spec/imagePullSecrets
-        value: [{name: ghcr-pull-secret}]
