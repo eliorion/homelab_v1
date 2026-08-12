@@ -114,7 +114,10 @@ spec:
       persistence:
         enabled: true
         type: pvc
-        storageClassName: longhorn
+        # Same 2-replica class as the TSDB above, for the same reason and one
+        # more: grafana.db is a few MB of dashboards and users, so a third
+        # copy on the cluster's scarcest disk buys almost nothing.
+        storageClassName: longhorn-monitoring
         accessModes: ["ReadWriteOnce"]
         size: 10Gi
       # Longhorn RWO cannot be attached to two pods at once, so the default
@@ -134,16 +137,19 @@ spec:
         #
         # 30Gi against retention: 10d. Measured: the emptyDir was holding
         # 8.7 GiB, and disabling the four dead control-plane jobs above only
-        # reduces the series count, so 30Gi is roughly 3x headroom. Sized in
-        # Gi rather than by retentionSize deliberately -- Longhorn is
-        # provisioned at storageOverProvisioningPercentage 100, so this
-        # reserves 30Gi on all three nodes and must stay well clear of
-        # node 1, which is the small disk (463Gi vs 929Gi) and the one under
-        # a measured -11.7 GiB/day trend.
+        # reduces the series count, so 30Gi is roughly 3x headroom.
+        #
+        # longhorn-monitoring, NOT the default longhorn class, and that is
+        # load-bearing rather than a preference. Longhorn schedules against
+        # PROVISIONED size with over-provisioning pinned at 100, and node 1
+        # has 17.9 GiB of schedulable headroom left (376 of 393.9 GiB used).
+        # A 30Gi volume on the 3-replica default cannot place its node-1
+        # replica -- and Longhorn does not fail loudly, it brings the volume up
+        # DEGRADED. See storageclass.yaml for the measurements.
         storageSpec:
           volumeClaimTemplate:
             spec:
-              storageClassName: longhorn
+              storageClassName: longhorn-monitoring
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:

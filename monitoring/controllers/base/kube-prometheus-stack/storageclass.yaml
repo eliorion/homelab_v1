@@ -1,0 +1,37 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-monitoring
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  # TWO replicas, not the cluster default of three. This is the whole reason
+  # the class exists.
+  #
+  # Longhorn schedules against PROVISIONED size, and
+  # storageOverProvisioningPercentage is deliberately pinned at 100 after two
+  # past outages, so a node can be unable to accept a replica while its
+  # filesystem still looks half empty. Measured at the time of writing:
+  #
+  #   staging-controlplane-1   usable 393.9 GiB   scheduled 376.0   FREE  17.9
+  #   staging-controlplane-2   usable 789.6 GiB   scheduled 726.0   FREE  63.6
+  #   staging-controlplane-3   usable 789.6 GiB   scheduled 376.0   FREE 413.6
+  #
+  # Node 1 is the smallest disk in the cluster (463 GiB against 929 GiB on the
+  # other two) yet carries an equal one-in-three replica share of every volume.
+  # A 30Gi volume on the default 3-replica class therefore CANNOT place its
+  # node-1 replica -- and Longhorn does not fail that loudly, it brings the
+  # volume up DEGRADED, which until the ServiceMonitor lands nothing reports.
+  #
+  # At two replicas Longhorn simply skips the node with no room. The data this
+  # class carries -- Prometheus TSDB, grafana.db -- is telemetry about the
+  # cluster, reconstructible by definition and already bounded by a 10d
+  # retention. Spending the scarcest resource in the cluster on a third copy of
+  # it, at the cost of degrading it instead, is the wrong trade.
+  #
+  # Do NOT use this class for application or database data.
+  numberOfReplicas: "2"
+  staleReplicaTimeout: "30"
+  fsType: ext4

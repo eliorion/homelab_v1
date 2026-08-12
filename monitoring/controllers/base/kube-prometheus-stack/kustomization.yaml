@@ -3,4 +3,10 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - repository.yaml
+  # Ships in the SAME Kustomization as the HelmRelease on purpose. Prometheus
+  # and Grafana claim from it, and monitoring-controllers has no dependsOn, so
+  # a StorageClass living under infra-longhorn would be a cross-Kustomization
+  # ordering race: the PVC would sit Pending, the pod with it, and the
+  # HelmRelease would fail its timeout and roll back.
+  - storageclass.yaml
   - release.yaml
