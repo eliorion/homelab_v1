@@ -1,7 +1,4 @@
-# nao's project directory: nao_config.yaml plus everything `nao sync` writes
-# (schema metadata, table/column descriptions, rules). Users, sessions and chat
-# history are NOT here — those live in the `nao` database on dbtools-db.
-#
+# nao's project directory: nao_config.yaml plus everything `nao sync` writes.
 # RWO + Recreate: one writer only.
 apiVersion: v1
 kind: PersistentVolumeClaim

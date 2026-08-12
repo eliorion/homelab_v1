@@ -1,9 +1,4 @@
 # The Keycloak CR has no PDB field, so this is hand-written.
-#
-# Two instances without a budget is two instances that a single node drain can
-# take down together — the operator's StatefulSet rolls one at a time, but a
-# drain does not consult it. minAvailable: 1 is what makes "2 instances" mean
-# "stays up during maintenance" rather than "costs twice as much".
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -12,6 +7,6 @@ spec:
   minAvailable: 1
   selector:
     matchLabels:
-      # The label the operator puts on the pods it manages.
+      # The labels the operator puts on its pods — must match or this selects nothing.
       app: keycloak
       app.kubernetes.io/managed-by: keycloak-operator

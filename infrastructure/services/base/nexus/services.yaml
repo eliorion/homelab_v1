@@ -1,10 +1,5 @@
-# Exposes Nexus on the node's local IP via k3s ServiceLB (Klipper):
-# UI (8081) + the three docker connector ports, so `docker pull <node-ip>:5001/...`
-# works from the workstation for debugging.
-# Separate Service so the chart-managed ClusterIP (nexus.nexus.svc:8081 +
-# docker connector ports) stays untouched for in-cluster traffic.
-# Port 8081 (not 80/443) — those hostPorts are already claimed by the
-# Traefik ServiceLB pods on k3s.
+# Exposes the UI (8081) + the three docker connector ports outside the cluster,
+# alongside the chart-managed ClusterIP (see README.md).
 apiVersion: v1
 kind: Service
 metadata:
@@ -17,8 +12,7 @@ spec:
       port: 8081
       targetPort: http # named container port from the nexus3 chart
       protocol: TCP
-    # Numeric targetPorts: connector ports are fixed by each repo's
-    # `docker.httpPort` in the HelmRelease config.
+    # Numeric targetPorts: must match each repo's `docker.httpPort` in release.yaml.
     - name: docker-hub
       port: 5000
       targetPort: 5000
@@ -32,8 +26,7 @@ spec:
       targetPort: 5002
       protocol: TCP
   selector:
-    # Must match the pod labels the stevehipwell/nexus3 chart stamps
-    # (selectorLabels in _helpers.tpl; release name `nexus`).
+    # Must match the stevehipwell/nexus3 chart's selectorLabels (release `nexus`).
     app.kubernetes.io/name: nexus3
     app.kubernetes.io/instance: nexus
     app.kubernetes.io/component: repository

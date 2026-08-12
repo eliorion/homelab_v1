@@ -4,39 +4,18 @@ metadata:
   name: ai-gateway-db
   namespace: ai-gateway
 spec:
-  # TWO instances — one primary, one hot standby — same reasoning as
-  # keycloak-db/asp-db/fbref-db/scraper-db: the gateway now runs multiple
-  # replicas against this database, so a single instance would make that HA
-  # decorative — every pod fails together with the one database pod.
   instances: 2
-  # NO Flyway Job here, unlike asp-db / fbref-db / scraper-db. Those apps do not
-  # migrate themselves — their schema is hand-written SQL and Flyway is its
-  # source of truth. Bifrost is the inverse: it ships a numbered migration
-  # ladder (framework/configstore/migrations.go) and runs it against this
-  # database at startup. A Flyway Job would race the app's own migrator and
-  # force a hand-transcribed V-file for every Bifrost upgrade. Same reason
-  # keycloak-db has no migration Job.
+  # NO migration Job here: Bifrost runs its own migration ladder at startup and a
+  # Flyway Job would race it.
   bootstrap:
     initdb:
-      # Matches the Bifrost chart's own default user/db name
-      # (values-examples/external-postgres.yaml) — no reason to diverge.
+      # Must match the Bifrost chart's default user/db name
+      # (values-examples/external-postgres.yaml).
       database: bifrost
       owner: bifrost
-      # Bifrost's config store REQUIRES a UTF8 database. This is already CNPG's
-      # default; stated explicitly so a future default change cannot break the
-      # gateway quietly.
+      # Bifrost's config store REQUIRES UTF8; pinned, not left to CNPG's default.
       encoding: UTF8
   storage:
-    # Was 10Gi — "sized for an unused install", mirroring keycloak-db's note.
-    # What actually filled it was not data: WAL archiving to Garage never
-    # succeeded (region bug, see the ObjectStore in the staging overlay), so
-    # Postgres could not recycle a single segment and pg_wal grew until the
-    # volume hit 9.94Gi of 10Gi. CNPG then shut the primary down on its
-    # low-disk check, `ai-gateway-db-rw` lost its only endpoint, and the
-    # gateway pod crash-looped on "no route to host".
-    #
-    # 20Gi is the headroom that lets the primary start again WITH the archive
-    # broken — recovery needs Postgres up before it can drain anything, and
-    # every future archive outage gets the same grace instead of a hard stop.
-    # Full incident + runbook: documentations/12-garage-object-storage.md.
+    # Do not lower: headroom so the primary can still start with WAL archiving
+    # broken (see ../README.md).
     size: 20Gi

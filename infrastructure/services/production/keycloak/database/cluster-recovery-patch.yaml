@@ -1,8 +1,6 @@
 # TEMPORARY — seed-from-staging only. Remove after the prod keycloak-db is seeded
-# and verified (see plan Step 6). Replaces the initdb bootstrap with a recovery
-# bootstrap that pulls the latest base backup + WAL from the STAGING bucket.
-# CNPG honors a bootstrap stanza only at first cluster creation, so this MUST be
-# present before the prod cluster is created, and is inert once it exists.
+# and verified (plan Step 6). CNPG honors a bootstrap stanza ONLY at first cluster
+# creation, so this must be present before the prod cluster exists, and is inert after.
 - op: replace
   path: /spec/bootstrap
   value:

@@ -1,13 +1,82 @@
-# Cloudflare tunnel — public hostnames
+# cloudflare
 
-`cloudflared` runs from `../../base/cloudflare/` with a `TUNNEL_TOKEN`, which
-means the tunnel is **remotely managed**: its routes live in the Cloudflare Zero
-Trust dashboard, not in this repo. This file is the compensating control —
-everything configured there, written down here, so the dashboard can be rebuilt
-from git even though it is not driven by it.
+`cloudflared` is the cluster's only public entry point. A single Deployment in
+the `cloudflare` namespace dials outward to the Cloudflare edge with a
+`TUNNEL_TOKEN`, so no port is forwarded on the home router and no origin is
+directly addressable from the internet. Because the tunnel is token driven it is
+**remotely managed**: its routes live in the Cloudflare Zero Trust dashboard, not
+in this repo. This file is the compensating control — everything configured
+there, written down here, so the dashboard can be rebuilt from git even though it
+is not driven by it.
 
 **When you change a route in the dashboard, change this file in the same
 sitting.** There is no reconciliation loop that will notice the drift.
+
+Deeper context: [../../../../documentations/14-design-decisions.md](../../../../documentations/14-design-decisions.md)
+(the exposure decision and what was rejected),
+[../../../../documentations/02-keycloak.md](../../../../documentations/02-keycloak.md)
+(the identity layer behind these hostnames),
+[../../../../documentations/11-azuracast-public-relay.md](../../../../documentations/11-azuracast-public-relay.md)
+(the AzuraCast listener-capacity measurements referenced below).
+
+## How it is wired
+
+| File | What it does |
+|---|---|
+| `../../base/cloudflare/namespace.yaml` | the `cloudflare` namespace |
+| `../../base/cloudflare/deployment.yaml` | the `cloudflared` Deployment: one replica, image pinned, hardened `securityContext`, `TUNNEL_TOKEN` from a Secret, liveness on `/ready` |
+| `../../base/cloudflare/kustomization.yaml` | the base: namespace + deployment, `namespace: cloudflare` |
+| `kustomization.yaml` | the staging overlay: the base plus the tunnel token |
+| `tunnel-secret.enc.yaml` | SOPS-encrypted Secret `tunnel-credentials`, key `token` — the tunnel's identity and its route set |
+
+The container runs `cloudflared tunnel --no-autoupdate --loglevel info --metrics
+0.0.0.0:2000 run`. With `TUNNEL_TOKEN` set there is no `config.yaml` and no
+ingress block: the token names the tunnel, and the tunnel pulls its routes from
+the dashboard. Everything from "Public hostnames" down in this file is that
+remote configuration.
+
+### Overlays
+
+Two overlays exist and they are the same shape: this one and
+`../../production/cloudflare/`, each the base plus its own
+`tunnel-secret.enc.yaml` and nothing else. Only staging is live. Flux applies it
+from `../kustomization.yaml` (`infrastructure/services/staging/`), reconciled by
+the `infrastructure-services` Kustomization in
+`clusters/staging/infrastructure.yaml`.
+
+The production overlay is listed in
+`infrastructure/services/production/kustomization.yaml` — cloudflare is in fact
+its only uncommented entry — and `clusters/production/infrastructure.yaml`
+declares an `infrastructure-services` Kustomization pointing at
+`./infrastructure/services/production`. That entrypoint runs only on a
+production cluster, and none is deployed, so nothing reconciles it today. Treat
+it as scaffolding
+([../../../../documentations/01-architecture.md](../../../../documentations/01-architecture.md#a-note-on-production)),
+and do not assume a change here reaches it.
+
+## Why it is like this
+
+- **Token-driven, remotely managed.** `cloudflared` dials outward, so the origin
+  is never directly addressable. Rejected: a locally managed tunnel with a
+  `config.yaml` ingress block in git, and a port forward to a Cilium LB-IPAM
+  address. The cost is that route configuration is outside git with no
+  reconciliation loop; this README is the control, and it has a measured failure
+  rate of one (it claimed a hostname carried a web UI only, when the same route
+  was in fact serving a continuous audio stream — see section 4).
+- **One replica.** Elastic scaling of this Deployment is possible and was not
+  done; a single connector is enough for this traffic.
+- **The image tag is pinned** rather than `:latest`, which a Radar audit flagged
+  (`imageTagLatest`). Renovate bumps it. `--no-autoupdate` matches: the binary is
+  updated by changing the tag in git, not by the process replacing itself under a
+  `readOnlyRootFilesystem`.
+- **The `securityContext` is hardened** (`runAsNonRoot`, `runAsUser: 65532`,
+  `readOnlyRootFilesystem`, all capabilities dropped, `RuntimeDefault` seccomp) to
+  clear Radar-audit privilege-escalation findings. `cloudflared` needs no
+  privileges: it makes outbound connections only.
+- **Liveness is `/ready` on the metrics port.** `cloudflared` answers 200 there if
+  and only if it holds an active connection to the edge, so a connector that has
+  lost the edge is restarted rather than left running as a black hole.
+  `failureThreshold: 1` makes that immediate.
 
 ## Public hostnames
 
@@ -256,7 +325,67 @@ use `Include → Everyone` with the IdP as the only gate — the `apps` realm ha
 Leaving One-time PIN enabled would let anyone with any email address bypass
 Keycloak entirely; it is on by default when an application is created.
 
-### Verifying
+## WAF rule — the second layer
+
+Security → WAF → Custom rules. One rule, on the `eliorion.fr` zone:
+
+| Field | Value |
+|---|---|
+| Name | `block-keycloak-admin` |
+| Expression | `(http.host eq "staging-keycloak.eliorion.fr" and starts_with(http.request.uri.path, "/admin"))` |
+| Action | Block |
+
+Redundant with the path rules above by design: it fails independently of them,
+and it kills the request at the edge before the tunnel is consulted.
+
+## Traps
+
+In the manifests:
+
+- The image tag is pinned off `:latest` (Radar audit `imageTagLatest`); Renovate
+  bumps it. Do not float it back.
+- The liveness probe port `2000` must stay equal to the port in
+  `--metrics 0.0.0.0:2000`. Change one and the probe fails every period, with
+  `failureThreshold: 1` restarting the pod immediately.
+- The Deployment reads the Secret `tunnel-credentials`, key `token`. That
+  name/key pair is what `tunnel-secret.enc.yaml` must produce.
+- Never open or edit `tunnel-secret.enc.yaml` by hand: it is SOPS ciphertext, and
+  the token in it is a bearer credential that also carries the route set.
+
+In the dashboard (each explained in its section above):
+
+- A leftover `A` record for a published name bypasses the tunnel; the failure is
+  a TLS handshake error with no HTTP status (sections 2 and 4).
+- `staging-keycloak.eliorion.fr` must stay path-scoped to the four prefixes. A
+  catch-all publishes the Keycloak admin console (section 2).
+- No TLS Verify **On** plus Origin Server Name `keycloak-service` on all four
+  Keycloak entries, and never enable it while a catch-all still exists
+  (section 2).
+- Leave the HTTP Host Header empty everywhere: fbref-mcp answers 421 on a
+  rewritten host, AzuraCast builds wrong absolute URLs (sections 1 and 4).
+- `BETTER_AUTH_URL` must equal `https://nao.eliorion.fr` byte for byte, and every
+  origin serving nao must be in `BETTER_AUTH_TRUSTED_ORIGINS`, else 403
+  `INVALID_ORIGIN` (section 3).
+- Untick One-time PIN on the nao Access application; it is on by default and
+  bypasses Keycloak entirely.
+- The Access redirect URI ships as a placeholder (`team-domain` key); unset, every
+  login ends on *"Invalid parameter: redirect_uri"*.
+- Accounts in the `apps` realm need an email address, or the Access policy refuses
+  a successful login.
+
+## Operating it
+
+```bash
+kubectl -n cloudflare get pods -l infrastructure=cloudflared
+kubectl -n cloudflare logs -l infrastructure=cloudflared     # origin/TLS errors land here
+flux get kustomizations                                      # infrastructure-services
+kubectl kustomize infrastructure/services/staging/cloudflare # render check before commit
+```
+
+A pod restart loop means `/ready` is not answering, i.e. the connector has no
+edge connection — token, egress, or the tunnel being deleted dashboard-side.
+
+### Verifying the nao login
 
 ```bash
 # From OFF the tailnet. Unauthenticated: Access intercepts before the tunnel.
@@ -280,20 +409,7 @@ curl -sI https://nao.tail45b0ca.ts.net/ | head -1     # 200, no Access redirect
 kubectl -n database logs -l app=nao | grep -i "invalid origin"
 ```
 
-## WAF rule — the second layer
-
-Security → WAF → Custom rules. One rule, on the `eliorion.fr` zone:
-
-| Field | Value |
-|---|---|
-| Name | `block-keycloak-admin` |
-| Expression | `(http.host eq "staging-keycloak.eliorion.fr" and starts_with(http.request.uri.path, "/admin"))` |
-| Action | Block |
-
-Redundant with the path rules above by design: it fails independently of them,
-and it kills the request at the edge before the tunnel is consulted.
-
-## Verifying, from OFF the tailnet
+### Verifying the OAuth surface, from OFF the tailnet
 
 Test each layer separately — a single combined check passes while one layer is
 broken.
@@ -348,3 +464,5 @@ curl -sS https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-conf
 - **No Access service tokens.** Nothing machine-to-machine goes through Access.
 - **No WAF rule for `nao.eliorion.fr`.** Access blocks the whole host before the
   tunnel; there is no admin path to carve out the way Keycloak's `/admin` is.
+- **No rotation procedure for the tunnel token.** It is a bearer credential with
+  none written down anywhere.

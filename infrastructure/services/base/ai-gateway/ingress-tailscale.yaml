@@ -1,29 +1,12 @@
-# The gateway, published on the tailnet and NOWHERE ELSE.
-#
-# A Tailscale INGRESS rather than the `tailscale.com/expose` annotation the
-# admin UIs use — the same call keycloak's admin console makes, for the same
-# two reasons plus one of its own:
-#   · expose is an L3 forward that PRESERVES the Service port, so it publishes
-#     plain http on :8080. This surface is a password-authenticated dashboard,
-#     so its session cookies belong on a secure origin.
-#   · the SAME port also serves the inference API, and every call to it carries
-#     a virtual key in a header. https://…/anthropic and https://…/v1 with no
-#     port is also just a normal base URL for an SDK, which is why every client
-#     base URL in the README is portless: TLS terminates here on 443.
-#   · MagicDNS issues the certificate, so there is no cert-manager Certificate
-#     and no DNS record to keep in sync.
-#
-# NOT the Bifrost chart's own `ingress.enabled`: that template hardcodes
-# `secretName` into every tls entry and routes via `rules`/`host`, while a
-# Tailscale Ingress must omit secretName (the operator owns the cert) and uses
-# defaultBackend. `ingress.enabled` stays false in release.yaml.
-#
-# The Service therefore carries NO tailscale annotations. Both mechanisms at
-# once would register two tailnet devices contending for the same hostname.
+# The gateway on the tailnet (HTTPS 443, MagicDNS cert), and nowhere else.
 #
 # PRECONDITION: HTTPS Certificates enabled in the Tailscale admin console
 # (DNS → HTTPS Certificates). Without it the proxy comes up with no certificate
 # and the gateway is unreachable.
+#
+# The Service must carry NO tailscale annotations, and the chart's own
+# `ingress.enabled` stays false — either one would be a second tailnet device
+# contending for this hostname. Rationale: README.md.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -37,8 +20,7 @@ spec:
       port:
         number: 8080
   tls:
-    # The device name. MagicDNS serves it at https://ai-gateway.<tailnet>.ts.net
-    # — no port. Keep it `ai-gateway`: consumers and the helper script derive
-    # their base URL from this exact string.
+    # The tailnet device name — KEEP `ai-gateway`: every consumer's base URL
+    # (https://ai-gateway.<tailnet>.ts.net) is derived from this exact string.
     - hosts:
         - ai-gateway

@@ -1,31 +1,13 @@
-# Ensures the Nexus "Compact blob store" task exists.
-#
-# WHY THIS ISN'T IN THE HELM CHART'S config.tasks:
-# Nexus 3.92 runs on JDK 25 (every 3.92.2 image tag — plain, -alpine, -ubi — does;
-# there is no -java17 variant). The chart provisions tasks AND cleanup policies
-# through the deprecated Groovy scripting API, whose bundled compiler cannot read
-# JDK 25 class files ("Unsupported class file major version 69", HTTP 500). So
-# config.tasks / config.cleanup silently fail to apply on this JVM, and pinning a
-# different image tag can't fix it (all 3.92.2 tags are JDK 25; downgrading Nexus
-# is unsafe — DB migrations are one-way). See documentations/04.
-#
-# WHAT IT DOES:
-# blobstore.compact physically frees blobs that cleanup policies (and Docker
-# pushes) only SOFT-delete. Without it the default blob store grows unbounded —
-# it filled the PVC to 99% with ~270GB of dead direct-path Docker-upload blobs
-# ("deletedReason=Docker upload cleaned up"). The compact TASK itself is plain
-# Java and runs fine on JDK 25; only its *provisioning* had to route around Groovy.
-# This CronJob creates the task via ExtDirect (the UI's API, JDK-independent) if
-# it is missing, giving GitOps ownership that survives a PVC wipe. The task then
-# self-schedules its own nightly run (cron below) via the Nexus scheduler.
+# Ensures the Nexus "Compact blob store" task exists (see README.md).
+# Do NOT move this into the chart's config.tasks: the chart provisions tasks via
+# the Groovy API, which returns HTTP 500 on the JDK 25 image. ExtDirect works.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: nexus-ensure-compact-task
   namespace: nexus
 spec:
-  # Daily 02:00 UTC — an hour before the compact task's own 03:00 run, so a task
-  # lost to a PVC wipe is recreated in time for that night's compaction.
+  # Must stay ahead of the compact task's own 03:00 run (cronExpression below).
   schedule: "0 2 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
@@ -48,7 +30,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: ensure
-              # Same image the chart uses for its own config Job (curl + jq + sh).
+              # curl + jq + sh
               image: docker.io/alpine/k8s:1.31.2
               imagePullPolicy: IfNotPresent
               securityContext:

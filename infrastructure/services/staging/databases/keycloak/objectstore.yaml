@@ -5,12 +5,8 @@ metadata:
 spec:
   retentionPolicy: "7d"
   configuration:
-    # Keycloak's OWN bucket, not asp's, so the token in r2-backup-credentials
-    # can be scoped to Object Read & Write on this bucket alone. Sharing asp's
-    # bucket would mean a credential in the `identity` namespace that can also
-    # rewrite the asp archive — which is the archive you would be restoring
-    # from on the day you needed both. fbref keeps its own bucket for the same
-    # reason (it just points at Garage rather than R2).
+    # Keycloak's OWN bucket, not asp's — r2-backup-credentials is scoped to this
+    # bucket alone and cannot write anywhere else.
     destinationPath: "s3://keycloak-cnpg-staging"
     endpointURL: "https://07e577de68147de704bb467debe46e21.r2.cloudflarestorage.com"
     s3Credentials:
@@ -28,9 +24,8 @@ spec:
       encryption: AES256
       jobs: 2
   instanceSidecarConfiguration:
-    # Required for Cloudflare R2: boto3 >= 1.36 sends data-integrity checksums
-    # that R2 rejects (XAmzContentSHA256Mismatch). These restore compatibility
-    # for both backup and restore. See plugin-barman-cloud issue #411.
+    # Required for R2: boto3 >= 1.36 checksums are rejected with
+    # XAmzContentSHA256Mismatch (plugin-barman-cloud #411).
     env:
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required

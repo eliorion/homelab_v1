@@ -22,29 +22,21 @@ spec:
     githubConfigUrl: https://github.com/Eliorion/asp
     # Reuses the same PAT secret as the default pool (both in arc-runners).
     githubConfigSecret: arc-github-pat
-    # `runs-on: self-hosted-arc-xl` (CI_RUNNER_XL var) targets this scale set —
-    # the heavy k3d e2e leg. Distinct name from the default pool (must be unique).
+    # `runs-on: self-hosted-arc-xl` (CI_RUNNER_XL var) targets this scale set.
+    # Must stay distinct from the default pool's name.
     runnerScaleSetName: self-hosted-arc-xl
-    # Bigger, fewer runners for the full in-dind k3d stack. Two warm; the
-    # podAntiAffinity below spreads them one-per-node across the 3-node cluster
-    # so concurrent e2e runs never share a node.
     minRunners: 2
     maxRunners: 4
-    # containerMode: dind reproduced manually (same as the default pool) so
-    # dockerd gets --insecure-registry for the HTTP-only Nexus connectors.
+    # Manual dind template, NOT containerMode: dind — that one accepts no extra
+    # dockerd flags, so it cannot pass --insecure-registry (see README).
     template:
       metadata:
         labels:
-          # Self-owned label the podAntiAffinity selector matches (spreads XL
-          # pods across nodes without depending on the chart's auto-labels).
+          # Must match the podAntiAffinity labelSelector below.
           runner-tier: xl
       spec:
-        # One XL pod per node: the full k3d stack wants a node mostly to itself
-        # on this 50Gi/3-node cluster. Hard rule, so schedulable concurrency is
-        # capped at the node count (3) regardless of maxRunners. With
-        # maxRunners: 4 the 4th runner is therefore always Pending until it is
-        # either lowered to 3 or the cluster gains a node — queued, self-healing,
-        # the deliberate safe failure mode.
+        # Hard one-XL-pod-per-node: schedulable concurrency is capped at the
+        # node count (3), not at maxRunners — the 4th stays Pending by design.
         affinity:
           podAntiAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
@@ -53,8 +45,7 @@ spec:
                     runner-tier: xl
                 topologyKey: kubernetes.io/hostname
         initContainers:
-          # Copies runner externals where the dind container expects them
-          # (the chart's containerMode:dind injected this automatically).
+          # Copies runner externals where the dind container expects them.
           - name: init-dind-externals
             image: ghcr.io/actions/actions-runner:latest
             command:
@@ -62,15 +53,8 @@ spec:
             volumeMounts:
               - name: dind-externals
                 mountPath: /home/runner/tmpDir
-          # Native sidecar (restartPolicy: Always on an initContainer). k3d +
-          # all the e2e images run INSIDE this container, so it carries the
-          # memory budget: 4Gi guaranteed request (k3d steady state stays under
-          # it, eviction-protected), burst to 10Gi for the e2e peak. No CPU limit
-          # — CPU is compressible, so an uncapped sidecar keeps the parallel
-          # docker builds fast (matches the default pool). Note: all 3 nodes are
-          # control planes with no kubelet system-reserved, so if etcd shows
-          # latency under heavy e2e, reserve CPU at the kubelet level rather than
-          # capping the build here.
+          # Native sidecar (restartPolicy: Always on an initContainer). k3d and
+          # the e2e images run inside it, so it carries the memory budget.
           - name: dind
             image: docker:dind
             args:
@@ -109,8 +93,6 @@ spec:
               - name: dind-externals
                 mountPath: /home/runner/externals
         containers:
-          # The runner only orchestrates (the build/k3d work is in dind), so it
-          # stays small — the 4Gi budget lives on the dind sidecar above.
           - name: runner
             image: ghcr.io/actions/actions-runner:latest
             command: ["/home/runner/run.sh"]

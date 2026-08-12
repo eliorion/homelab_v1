@@ -1,21 +1,13 @@
-# One policy per Postgres MCP Pro instance, and the ONE-CLUSTER EGRESS RULE IS
-# THE ISOLATION. pgAdmin and nao are allowed all three databases; each of these
-# is allowed exactly the one it is named after, so `postgres-mcp-fbref` cannot
-# open a socket to asp-db even with a correct DSN. That is the difference
-# between "configured for fbref" and "can only reach fbref".
+# One policy per Postgres MCP Pro instance. THE ONE-CLUSTER EGRESS RULE IS THE
+# ISOLATION — each pod may reach only the database it is named after. Do not
+# widen it to all three the way pgAdmin and nao are.
 #
-# INGRESS is declared too, which nothing else in this namespace does. It is
-# earned here: the SSE endpoint has no authentication and `execute_sql` reads
-# the whole database, so without a rule any pod in the cluster could query it.
-# `name: ai-gateway` is the label on the ai-gateway namespace, the same selector
-# nao-networkpolicy.yaml already uses in the other direction.
+# INGRESS is declared too, which nothing else in this namespace does: the SSE
+# endpoint has no authentication of its own. `name: ai-gateway` is the label on
+# the ai-gateway namespace.
 #
-# Two limits worth knowing:
-#   · Same caveat as pgadmin-networkpolicy.yaml — `-rw` and `-ro` select the
-#     SAME pods, so this cannot express "replica only". The replica endpoint in
-#     the DSN is the write boundary, not this file.
-#   · `kubectl port-forward` originates from the kubelet, not from a pod, so it
-#     is not covered by the ingress rule. Debugging still works.
+# `-rw` and `-ro` select the SAME pods, so this cannot express "replica only" —
+# the replica host in the DSN is the write boundary, not this file.
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

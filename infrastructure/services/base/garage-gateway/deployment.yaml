@@ -6,8 +6,6 @@ metadata:
   labels:
     app: garage-gateway
 spec:
-  # Two replicas, spread across nodes: "at least 2 HAProxy". kube-proxy/Cilium
-  # load-balances the ClusterIP across both.
   replicas: 2
   selector:
     matchLabels:
@@ -47,11 +45,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-          # HAProxy binds the frontend even when every backend is down, so a TCP
-          # connect proves the proxy is alive. Backend health is a separate
-          # concern (see /stats on :8404) -- gating readiness on it would give no
-          # load-balancing benefit (both replicas share the same backends) and
-          # would wedge Flux health checks while the tailnet route is missing.
+          # TCP connect only: do NOT gate these on backend health. See README.md.
           livenessProbe:
             tcpSocket:
               port: 3900

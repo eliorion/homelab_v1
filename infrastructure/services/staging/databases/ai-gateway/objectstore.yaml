@@ -6,12 +6,10 @@ metadata:
 spec:
   retentionPolicy: "7d"
   configuration:
-    # ai-gateway's OWN bucket + OWN key (ai-gateway-garage-backup-credentials,
-    # not fbref's garage-backup-credentials) — same bucket-scoped-credential
-    # reasoning fbref-db/keycloak-db/asp-db already apply.
+    # ai-gateway's OWN bucket + OWN key — do not point at fbref's bucket or reuse
+    # its garage-backup-credentials.
     destinationPath: "s3://cnpg-staging-ai-gateway"
-    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes. Same
-    # single endpoint fbref-db and the etcd backup use.
+    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes.
     endpointURL: "http://garage-s3.garage-gw.svc.cluster.local:3900"
     s3Credentials:
       accessKeyId:
@@ -22,35 +20,22 @@ spec:
         key: ACCESS_KEY_SECRET
     wal:
       compression: gzip
-      # NO `encryption:` here, same as fbref-db — Garage does not support
-      # SSE-S3/AES256 (SSE-C only); setting AES256 would fail every upload.
+      # NO `encryption:` here — Garage has no SSE-S3/AES256 (SSE-C only) and
+      # AES256 would fail every upload.
     data:
       compression: gzip
       jobs: 2
   instanceSidecarConfiguration:
     env:
-      # THE REGION IS LOAD-BEARING, and its absence is what broke this cluster.
-      # Garage is configured with `s3_region = "garage"` and rejects a HeadBucket
-      # signed for any other region with a bare `400 Bad Request` — while GET,
-      # PUT and ListObjectsV2 with the same wrong region succeed. barman-cloud
-      # sets no region, so boto3 signed as `us-east-1`, and the ONE call that
-      # cares is `barman-cloud-check-wal-archive` "checking the first wal":
-      #
-      #   ERROR: Barman cloud WAL archive check exception:
-      #   An error occurred (400) when calling the HeadBucket operation: Bad Request
-      #
-      # That check gates the FIRST WAL only, so the failure is silent and total:
-      # base backups kept uploading, `wals/` stayed empty for three days, and
-      # Postgres — unable to archive — recycled nothing until the volume filled.
-      # No other Garage consumer hit it: etcd-backup already sets AWS_REGION, and
-      # fbref-db's archive is non-empty so the check no longer runs there.
-      # Both names: boto3 reads AWS_REGION, the aws CLI honours AWS_DEFAULT_REGION.
+      # LOAD-BEARING: Garage's region is `garage` and only HeadBucket enforces it,
+      # so a wrong/absent region kills WAL archiving silently. Keep BOTH names —
+      # boto3 reads AWS_REGION, the aws CLI honours AWS_DEFAULT_REGION.
       - name: AWS_REGION
         value: garage
       - name: AWS_DEFAULT_REGION
         value: garage
-      # Same boto3 >= 1.36 data-integrity checksum workaround as fbref-db/R2
-      # clusters (plugin-barman-cloud #411). Harmless if Garage accepts them.
+      # Same boto3 >= 1.36 data-integrity checksum workaround fbref-db and the R2
+      # clusters carry (plugin-barman-cloud #411) — harmless if Garage accepts them.
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required
       - name: AWS_RESPONSE_CHECKSUM_VALIDATION

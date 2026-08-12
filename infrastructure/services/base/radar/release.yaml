@@ -9,7 +9,6 @@ spec:
   interval: 30m
   chart:
     spec:
-      # Renovate keeps this pinned version current.
       chart: radar
       version: "1.8.6"
       sourceRef:
@@ -25,20 +24,14 @@ spec:
     service:
       type: ClusterIP
       port: 9280
-      # Publish the Radar UI (and /mcp) on the tailnet via the Tailscale
-      # operator -- authed by tailnet identity, off-LAN, never internet-exposed
-      # (same pattern as the Longhorn / asp / fbref admin UIs). Reach it at
-      # http://radar.<your-tailnet>.ts.net (plain HTTP, not 443).
+      # Publishes the UI and /mcp on the tailnet; L3 forward, keeps port 9280.
       annotations:
         tailscale.com/expose: "true"
         tailscale.com/hostname: radar
     mcp:
       enabled: true
-    # Mostly read-only: helm/podExec/secrets stay off (no mutate, no exec).
-    # portForward is on because Radar reaches Cilium Hubble Relay by
-    # port-forwarding to the relay pod (kube-system/hubble-relay:4245) -- it's
-    # the traffic/flows view's transport. Grants create pods/portforward
-    # cluster-wide; access is gated by the tailnet.
+    # Read-only, except portForward: Radar port-forwards to
+    # kube-system/hubble-relay:4245 -- false leaves the traffic view empty.
     rbac:
       create: true
       helm: false

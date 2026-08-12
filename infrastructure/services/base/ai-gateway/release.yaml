@@ -1,8 +1,4 @@
-# The AI gateway. Bifrost is the CURRENT implementation, not the contract:
-# everything a client touches — the Service name `ai-gateway`, the tailnet
-# hostname `ai-gateway`, the `/anthropic` + `/v1` paths, and the model aliases
-# `ai/opus` | `ai/sonnet` | `ai/fast` — is chosen so a swap to LiteLLM changes
-# THIS FILE and nothing in any consumer. See README.md for the contract.
+# The AI gateway (Bifrost). Client contract and rationale: README.md.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -14,7 +10,6 @@ spec:
   interval: 1m
   chart:
     spec:
-      # Renovate keeps this pinned version current.
       chart: bifrost
       version: "2.1.34"
       sourceRef:
@@ -23,62 +18,30 @@ spec:
         namespace: flux-system
       interval: 12h
   values:
-    # Both overrides are load-bearing: they make the Service, the selector
-    # labels and the ServiceMonitor read `ai-gateway`, never `bifrost`, so the
-    # in-cluster DNS name survives a backend swap.
+    # BOTH are load-bearing: they keep the Service, the selector labels and the
+    # ServiceMonitor named `ai-gateway`, never `bifrost`.
     nameOverride: ai-gateway
     fullnameOverride: ai-gateway
 
-    # ONE replica, and it is not a capacity decision.
-    #
-    # State does live in CNPG (storage.mode: postgres below) rather than on a
-    # per-pod volume — but that only makes the STORE shared, not the view of
-    # it. Bifrost loads virtual keys, providers and routing rules into memory
-    # at startup and a dashboard write does not invalidate the sibling's copy,
-    # so two pods answer the same request differently until both restart. Live,
-    # with one key created after boot:
-    #
-    #   10.244.1.211  ->  401 virtual_key_not_found
-    #   10.244.2.239  ->  200                          # same key, same second
-    #
-    # The Service round-robins, so half of a client's calls 401 and half of the
-    # dashboard's own page loads deny what the other half shows — which is
-    # exactly as confusing to debug as it sounds. Same lesson the scraper's
-    # FlareSolverr carries: state that cannot be shared must not be split.
-    #
-    # Nothing is lost. Inference is stateless, HA for the DATA is the CNPG
-    # cluster's job (`instances: 2` there is unrelated), and a homelab gateway
-    # has no load a second pod would relieve. The rollout still surges (default
-    # maxSurge 25% rounds up to 1, maxUnavailable 25% rounds down to 0), so an
-    # upgrade has no gap — during that overlap the split briefly exists again,
-    # which is the one moment not to be editing the dashboard.
+    # KEEP AT 1. Bifrost caches virtual keys, providers and routing rules in
+    # memory at startup, so a second pod serves a stale config view (same key:
+    # 401 virtual_key_not_found on one pod, 200 on the other).
     replicaCount: 1
 
     image:
       repository: docker.io/maximhq/bifrost
       # renovate: datasource=docker depName=docker.io/maximhq/bifrost
-      # The chart REQUIRES an explicit tag (values.schema.json: "required —
-      # validated at template render time"), so this is the real version knob.
-      #
-      # DELIBERATELY AHEAD OF THE CHART'S appVersion, which still reads 1.5.12:
-      # upstream does not bump chart metadata per app release — chart 2.1.34 and
-      # image v1.6.9 were published the same day. Pinning the appVersion here
-      # would run a months-old gateway. Renovate tracks the image, not appVersion.
+      # Required by the chart's values.schema.json, and DELIBERATELY ahead of
+      # the chart's appVersion (1.5.12) — do not "fix" it back to appVersion.
       tag: "v1.6.9"
 
     service:
       type: ClusterIP
       port: 8080
-      # NO `tailscale.com/expose` annotation here. The tailnet is published by
-      # ingress-tailscale.yaml instead, which serves HTTPS on 443 with no port
-      # in the URL; `expose` would forward at L3 on :8080 over plain http.
-      # Running both would register two tailnet devices contending for the same
-      # `ai-gateway` hostname.
+      # NO `tailscale.com/expose` annotation here: ingress-tailscale.yaml
+      # publishes the tailnet device, and both would contend for the hostname.
 
-    # The CHART's ingress stays off — it hardcodes `secretName` and routes via
-    # rules/host, neither of which suits a Tailscale Ingress. The tailnet
-    # Ingress is its own object (ingress-tailscale.yaml); there is still no
-    # public/LAN ingress of any kind.
+    # The chart's own ingress stays off; the tailnet Ingress is its own object.
     ingress:
       enabled: false
 
@@ -88,12 +51,9 @@ spec:
         enabled: true
       logsStore:
         enabled: true
-        # objectStorage stays disabled: no bucket wired for log offload yet,
-        # so request/response audit rows stay in ai-gateway-db itself.
 
-    # ai-gateway-db (infrastructure/services/base/ai-gateway/database/), NOT
-    # the chart's own bundled subchart — postgresql.enabled stays false so the
-    # chart never renders its own Postgres StatefulSet.
+    # External CNPG cluster ai-gateway-db (../databases/ai-gateway/); keep
+    # `enabled: false` so the chart never renders its own Postgres.
     postgresql:
       enabled: false
       external:
@@ -102,17 +62,12 @@ spec:
         port: 5432
         user: bifrost
         database: bifrost
-        # In-cluster ClusterIP traffic only; no other CNPG consumer in this
-        # repo sets sslMode either.
         sslMode: disable
-        # CNPG generates this Secret from the Cluster's bootstrap.initdb —
-        # no password is ever written to git.
+        # Generated by CNPG from the Cluster's bootstrap.initdb.
         existingSecret: ai-gateway-db-app
         passwordKey: password
 
-    # One Secret feeds every credential the gateway resolves by `env.NAME`.
-    # Provider keys and the virtual key never land in the rendered config.json
-    # ConfigMap this way — only the env var NAMES do.
+    # Every credential the gateway resolves by `env.NAME` comes from here.
     envFrom:
       - secretRef:
           name: ai-gateway-providers
@@ -125,14 +80,7 @@ spec:
         cpu: "2"
         memory: 2Gi
 
-    # PodSecurity `restricted` compliance. The chart already sets runAsNonRoot,
-    # runAsUser 1000 and drops ALL capabilities; these are the only two the
-    # admission warning named as missing. Helm merges maps, so naming just these
-    # keeps every chart default around them.
-    #
-    # The namespace only WARNS today, so the pods schedule either way — but a
-    # warning is the version of this that gets ignored until the day the label
-    # flips to `enforce` and the Deployment stops admitting.
+    # The two settings PodSecurity `restricted` reported missing from the chart.
     podSecurityContext:
       seccompProfile:
         type: RuntimeDefault
@@ -148,23 +96,15 @@ spec:
       logStyle: json
       envLabel: staging
 
-      # THE DATABASE WINS. `split` is Bifrost's default: config.json seeds a
-      # section on first boot and is otherwise left alone, so edits made in the
-      # dashboard survive every restart. Combined with declaring NO providers,
-      # virtual keys or routing rules below, nothing in Git can overwrite the UI.
-      #
-      # The previous value, "config.json", did the opposite: it re-applied the
-      # file's sections at EVERY startup — even when the stored config_hash
-      # matched, because UI edits deliberately do not update that hash. Every
-      # pod restart silently reverted the dashboard.
+      # KEEP "split" — the database wins. "config.json" re-applies this file at
+      # every startup and silently reverts dashboard edits.
       sourceOfTruth: "split"
 
       encryptionKeySecret:
         name: ai-gateway-providers
         key: BIFROST_ENCRYPTION_KEY
 
-      # Dashboard/admin login. This gates the UI and the management API, NOT
-      # inference — inference is gated by the virtual key below.
+      # Dashboard / management-API login. Does NOT gate inference.
       authConfig:
         isEnabled: true
         existingSecret: ai-gateway-admin
@@ -172,34 +112,23 @@ spec:
         passwordKey: password
 
       client:
-        # Require a credential on every inference call. A virtual key alone
-        # satisfies it, which is what lets Claude Code authenticate with a
-        # single header. Leaving this false would make the gateway an open
-        # relay to paid provider keys for anyone on the tailnet.
+        # false here = open relay to the paid provider keys for the tailnet.
         enforceAuthOnInference: true
-        # CORS for the dashboard only. The gateway is unreachable off-tailnet,
-        # so the origin list is not the security boundary here.
+        # CORS for the dashboard only.
         allowedOrigins:
           - "*"
 
       plugins:
-        # VIRTUAL KEYS LIVE HERE. The chart defaults this to false, and with it
-        # off the whole governance surface — virtual keys, budgets, rate limits,
-        # routing rules — has no API routes registered. The dashboard's requests
-        # then fall through to the SPA catch-all, so a GET returns 200 with HTML
-        # the UI cannot parse ("Failed to load virtual keys: An unexpected error
-        # occurred") and a POST returns a bare 405.
-        #
-        # This is infrastructure, not configuration: the plugin has to be on
-        # before the dashboard can own anything inside it.
+        # MUST STAY true (the chart defaults it false): virtual keys, budgets,
+        # rate limits and routing rules have no API routes without it, and the
+        # dashboard then fails with "Failed to load virtual keys: An unexpected
+        # error occurred" / a bare 405.
         governance:
           enabled: true
           version: 1
           config:
-            # Inference must present a VIRTUAL key, not merely some credential.
-            # enforceAuthOnInference above only demands *a* credential; without
-            # this the admin password would also buy provider calls, which would
-            # make the per-project keys pointless as a spend boundary.
+            # Requires a VIRTUAL key, not just any credential — without it the
+            # admin password also buys provider calls.
             is_vk_mandatory: true
             required_headers: []
             is_enterprise: false

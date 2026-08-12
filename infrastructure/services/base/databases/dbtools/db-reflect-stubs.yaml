@@ -1,18 +1,8 @@
 # Empty stubs that kubernetes-reflector fills from each project's CNPG -app
-# Secret. The source clusters permit reflection into this namespace via
-# inheritedMetadata (apps/staging/databases/<project>/cluster-reflector-patch.yaml);
-# nothing is auto-mirrored — a secret arrives here only because a stub below
-# names it, which is what keeps the -ca / -server / -replication secrets in
-# their own namespace.
-#
-# This is the `app` OWNER credential, exactly as the lab pods use it. It is safe
-# to hand to a read-only tool ONLY because every consumer here points at the
-# cluster's `-ro` REPLICA service, which is in recovery and physically cannot
-# execute a write. The egress NetworkPolicies allow 5432 to the DB pods, and the
-# rw/ro Services select the SAME pods — so the replica endpoint, not the network,
-# is the write boundary. Anyone with tailnet access to pgAdmin can re-point a
-# connection at <cluster>-rw; treat tailnet membership as write access, and swap
-# to per-database read-only roles if that ever stops being acceptable.
+# Secret. This is the `app` OWNER credential — the write boundary is the `-ro`
+# host every consumer uses, not the network. See README.md "Why this is
+# read-only". The source clusters must also permit reflection, in
+# apps/staging/databases/<project>/cluster-reflector-patch.yaml.
 apiVersion: v1
 kind: Secret
 metadata:
