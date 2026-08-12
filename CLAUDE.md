@@ -7,43 +7,31 @@ entirely by **Flux GitOps** — never `kubectl apply` resources by hand; change
 the YAML, commit, push, let Flux reconcile. (Migrated from a single-node k3s
 box — the repo name is historical; see `documentations/06`–`08`.)
 
+## Where the documentation lives
+
+**Read the local `README.md` before editing a directory.** Every component owns
+one, and it carries what the manifests no longer say: how the component is
+wired, why, and what breaks if you change it. Start at the tier README
+(`infrastructure/controllers/`, `infrastructure/services/`, `apps/`,
+`monitoring/`, `clusters/`, `scripts/`, `bootstraping/`) and follow it down.
+
+`documentations/` holds the numbered narrative guides — migrations, incidents,
+drills — that span more than one component:
+`00` bootstrap, `01` architecture, `02` Keycloak, `03` database backups,
+`04` CI runners and cache, `05` alerting, `06`/`07` Talos + Longhorn migration
+and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
+`11`/`13` AzuraCast capacity, `12` Garage object storage,
+`14` design decisions.
+
 ## Repo layout
 
 - `bootstraping/` — Talos layer: `talconfig.yaml` (talhelper) renders the 3
   node configs to `clusterconfig/`; secrets in `talsecret.sops.yaml`
-- `clusters/staging/` — Flux entrypoints (Kustomizations pointing at the dirs below)
-- `infrastructure/controllers/` — operators: cilium (CNI), cert-manager, cnpg,
-  ARC controller, longhorn, tailscale-operator
-- `infrastructure/services/` — workloads: nexus, arc-runner-set, cloudflare,
-  renovate, etcd-backup, garage-gateway
-- `apps/`, `monitoring/` — application and monitoring tiers
-- `documentations/` — numbered guides; `03-backups.md` (CNPG → R2/Garage),
-  `04-ci-runners-cache.md` (CI stack), `05-alerting.md` (Telegram alerts),
-  `06`/`07` (Talos + Longhorn migration & HA),
-  `08-cilium-cni-ingress-migration.md` (Cilium CNI),
-  `09-etcd-backup-dr.md` (etcd backup + disaster recovery),
-  `10-n8n-automation.md` (n8n automation host),
-  `11`/`13` (AzuraCast listener capacity + remote-listener testing)
-- Each tier uses `base/` + `staging/` (+ `production/`) kustomize overlays
-
-## Conventions
-
-- Secrets: SOPS-encrypted (`*.enc.yaml`, age key, see `.sops.yaml`). Never
-  commit plaintext secrets.
-- Chart versions are pinned; Renovate bumps them. The two ARC charts
-  (`gha-runner-scale-set-controller` and `gha-runner-scale-set`) must stay
-  on the same version.
-- Node config is **talhelper**-managed: edit `bootstraping/talconfig.yaml`,
-  render (`SOPS_AGE_KEY_FILE=clusters/staging/age.agekey talhelper genconfig`),
-  `talosctl apply-config`. Never regenerate `talsecret` (new PKI = dead cluster).
-- CNI is **Cilium** `1.19.4`, kube-proxy-free (KubePrism `localhost:7445`),
-  Flux-managed HelmRelease. Bare-metal LoadBalancer via Cilium **LB-IPAM**
-  (pool `192.168.1.110-130`) + L2 announce; Gateway API for L7 ingress (doc 08).
-- Storage is **Longhorn** (storage class `longhorn`, 3 replicas, one per node;
-  doc 07). StatefulSet `volumeClaimTemplates` stay immutable — resizing means
-  deleting the StatefulSet + PVC (see doc 04 troubleshooting). A daily
-  `filesystem-trim` RecurringJob (`default` group) reclaims freed blocks so a
-  volume's `actualSize` tracks real filesystem usage.
+- `clusters/staging/` — Flux entrypoints pointing at the tiers below
+- `infrastructure/controllers/` — operators; `infrastructure/services/` —
+  platform workloads; `apps/`, `monitoring/` — application and monitoring tiers
+- Each tier uses `base/` + `staging/` (+ `production/`) kustomize overlays.
+  No production cluster is deployed; the production tree is scaffolding.
 
 ## Documentation convention (applies to every change)
 
@@ -51,7 +39,7 @@ box — the repo name is historical; see `documentations/06`–`08`.)
   explanation: what the component is, how it is wired, why it is wired that way,
   what was rejected, and what breaks if you change it. For a component with
   `base/` + overlays the README lives in `base/<component>/`; an overlay-only
-  component keeps it in its own directory.
+  component keeps it in its own directory, and it covers the overlays too.
 - **Manifests carry almost no comments.** A comment survives in a manifest only
   if it is a *trap marker* — a constraint whose violation breaks something
   concrete: a workaround pin, an inverted flag, a value that must match another
@@ -65,38 +53,42 @@ box — the repo name is historical; see `documentations/06`–`08`.)
 - When you touch a directory that still carries prose comments, move them to its
   README as part of the change rather than leaving two sources of truth.
 - The same rule applies to `scripts/` and any code: file-level and inline
-  comments only where a reader would otherwise break something.
+  comments only where a reader would otherwise break something. Two scripts
+  print their own header via `sed` (`etcd-restore-drill`, `sops-updatekeys`), so
+  there the header *is* the `--help` output — check `scripts/README.md` first.
 
-## CI stack (summary — full detail in documentations/04-ci-runners-cache.md)
+### Three exceptions, all load-bearing
 
-- Two ARC runner scale sets run `Eliorion/asp` workflows, one job per ephemeral
-  pod: `self-hosted-arc` (default, `minRunners: 5` / `maxRunners: 25`) and
-  `self-hosted-arc-xl` (k3d e2e, `minRunners: 2` / `maxRunners: 4`, hard
-  one-pod-per-node antiAffinity). Neither scales to zero: the warm minimum is
-  always resident.
-- Runner pods use a **manual dind template** (not `containerMode: dind`)
-  so dockerd gets `--insecure-registry` for the HTTP-only Nexus connectors.
-- Nexus repos: `pypi-proxy` (8081), `docker-hub` proxy (5000), `ghcr`
-  proxy (5001), `docker-cache` hosted (5002). Connector `httpPort`s must be
-  unique or the config Job 400s and the port never opens.
-- In-cluster registry host: `nexus.nexus.svc.cluster.local:500x`.
+- **`configMapGenerator` inputs are content, not annotation.** Editing a comment
+  in `infrastructure/services/staging/garage-gateway/haproxy.cfg` or in
+  `infrastructure/services/base/keycloak/realm/realm-{mcp,master,apps}.yaml`
+  changes the generated ConfigMap's hash, which rolls HAProxy and re-runs the
+  realm import Job. Leave their comments alone.
+- **SOPS files are never edited by hand** for comment cleanup (`*.enc.yaml`,
+  `talsecret.sops.yaml`). Their `.example` templates are fair game.
+- **Vendored upstream manifests** (anything under an `upstream/` directory) keep
+  the vendor's comments verbatim; describe them in the README instead.
 
-## Backups & DR (full detail in documentations/03 + 09)
+## Conventions
 
-- **CNPG Postgres** → S3 via the barman-cloud plugin: `keycloak-db`/`asp-db` to
-  **Cloudflare R2**, `fbref-db` to **Garage**. Daily base backup + continuous WAL
-  (PITR, 7d retention). The Garage ObjectStore omits SSE (Garage has no SSE-S3).
-- **etcd** → Garage every 6h: `talos-backup` CronJob (ns `etcd-backup`),
-  age-encrypted, using the `kubernetesTalosAPIAccess` `os:etcd:backup` role.
-  Restore = `talosctl bootstrap --recover-from` (doc 09). Prometheus staleness alert.
-- **Garage** is off-cluster on **Tailscale**, reached through the in-cluster
-  **HAProxy gateway** `garage-s3.garage-gw.svc:3900` → operator egress → 3 nodes.
-  Restore runs off-cluster, direct to a node's tailnet IP (gateway is in-cluster
-  only). talos-backup is pinned to beta.3 with two workarounds — both age vars set,
-  and `USE_PATH_STYLE: "false"` (inverted check) — flagged in the configmap.
-- **The etcd-backup age private key is offline** — lose it and snapshots are
-  unrecoverable. CNPG restore drilled 2026-07-26 (doc 03); the etcd full-restore
-  drill is the operator's to run (doc 09).
+- Secrets: SOPS-encrypted (`*.enc.yaml`, age key, see `.sops.yaml`). Never
+  commit plaintext secrets. No `.enc.yaml` lives under a `base/` path.
+- Chart versions are pinned and Renovate bumps them. Container image tags under
+  `apps/` are **not** — `renovate.json` scopes the kubernetes manager to
+  `/apps/.+/db-migrations/.+\.yaml$/`, so every other image pin is manual. The
+  two ARC charts (`gha-runner-scale-set-controller` and `gha-runner-scale-set`)
+  must stay on the same version.
+- Node config is **talhelper**-managed: edit `bootstraping/talconfig.yaml`,
+  render (`SOPS_AGE_KEY_FILE=clusters/staging/age.agekey talhelper genconfig`),
+  `talosctl apply-config`. Never regenerate `talsecret` (new PKI = dead cluster).
+- CNI is **Cilium** `1.19.4`, kube-proxy-free, with LB-IPAM (`192.168.1.110-130`)
+  + L2 announce and Gateway API — `infrastructure/controllers/base/cilium/README.md`.
+- Storage is **Longhorn**, 3 replicas, storage class `longhorn` —
+  `infrastructure/controllers/base/longhorn/README.md`.
+- CI is two ARC scale sets plus a Nexus proxy cache —
+  `infrastructure/services/staging/arc-runner-set/README.md`.
+- Backups are CNPG → R2 or Garage and etcd → Garage, age-encrypted with an
+  **offline** key — `infrastructure/services/base/etcd-backup/README.md`.
 
 ## Verify changes
 
