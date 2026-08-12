@@ -56,7 +56,8 @@ spec:
           # Copies runner externals where the dind container expects them
           # (the chart's containerMode:dind injected this automatically).
           - name: init-dind-externals
-            image: ghcr.io/actions/actions-runner:latest
+            # renovate: datasource=docker depName=ghcr.io/actions/actions-runner
+            image: ghcr.io/actions/actions-runner:2.336.0
             command:
               ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
             volumeMounts:
@@ -112,7 +113,8 @@ spec:
           # The runner only orchestrates (the build/k3d work is in dind), so it
           # stays small — the 4Gi budget lives on the dind sidecar above.
           - name: runner
-            image: ghcr.io/actions/actions-runner:latest
+            # renovate: datasource=docker depName=ghcr.io/actions/actions-runner
+            image: ghcr.io/actions/actions-runner:2.336.0
             command: ["/home/runner/run.sh"]
             env:
               - name: DOCKER_HOST
