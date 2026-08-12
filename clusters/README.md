@@ -63,6 +63,11 @@ resources inside it:
   depends on it rather than racing it.
 - **`infra-cnpg-plugin` gates `infrastructure-controllers`** so the CNPG operator and
   the plugin are Ready before any `Cluster` object is applied.
+- **`infrastructure-services` depends on `infrastructure-controllers`** because the
+  services tier ships CNPG `Cluster` objects of its own —
+  `infrastructure/services/staging/databases` lists `keycloak/` (Keycloak's database),
+  `ai-gateway/` and `dbtools/` — and the CNPG operator that reconciles them is in
+  `infrastructure/controllers/staging`.
 - **`infra-arc-controller` is separate** because `arc-runner-set` inside
   `infrastructure-services` is a HelmRelease of `AutoscalingRunnerSet` CRs — applying
   them against unregistered CRDs is a reconcile error, not a wait.
@@ -92,9 +97,12 @@ The release ordering is databases → migrations → applications:
 - `databases` brings up the CNPG clusters and their secrets. `apps/staging/databases`
   currently lists `asp/`, `fbref/`, `n8n/` and `scraper/`. `wait: true` means Ready
   only once the CNPG `Cluster` objects report Ready.
-- `db-migrations` runs the Flyway Jobs (`asp/`, `fbref/`, `scraper/`). `wait: true`
-  makes the Kustomization Ready only when the Jobs **complete**; a failed Job is
-  NotReady, which is what stops `apps` from rolling out.
+- `db-migrations` runs the Flyway Jobs (`asp/`, `fbref/`, `scraper/`). It depends on
+  `databases` because each Job reads its connection details from the CNPG-generated
+  `<name>-db-app` Secret and pulls its image with `ghcr-pull-secret` — neither exists
+  until `databases` is Ready. `wait: true` makes the Kustomization Ready only when the
+  Jobs **complete**; a failed Job is NotReady, which is what stops `apps` from rolling
+  out.
 - `apps` applies `apps/staging`, whose `kustomization.yaml` lists `asp/`,
   `audiobookshelf/`, `azuracast/`, `fbref/`, `glpi/`, `linkding/`, `n8n/`, `scraper/`.
 
@@ -116,9 +124,9 @@ fills the chart-generated `reflects` stubs in the `lab` namespace).
 
 `apps/staging/lab` is `namespace.yaml` + `release.yaml`: the `lab` namespace and one
 HelmRelease that renders one pod per project in its `projects` list, each reading its
-project's read-only database replica. The labs are off by default (`replicas: 0`);
-scale one up when you want to work — the commands are in the header of
-`apps/staging/lab/release.yaml`.
+project's read-only database replica. The labs are always on (`replicas: 1`), so a lab is
+reachable on the tailnet without scaling it up first; the scale and port-forward commands
+are in [`../apps/staging/lab/README.md`](../apps/staging/lab/README.md).
 
 ### `staging/monitoring.yaml` — 2 Kustomizations
 
@@ -158,7 +166,8 @@ directory. That is not tidiness: the consuming HelmReleases
 an `ignore:` block and unrelated application-code commits in the source repo start
 triggering Helm upgrades. Keep it narrow and the upgrade fires exactly on chart and
 image-tag commits, which is what makes the release path zero-touch: CI bumps the tag in
-the chart's `values.yaml`, the artifact revision changes, the HelmRelease upgrades.
+the chart's `values.yaml` — `images.fbref.tag` on every fbref release — the artifact
+revision changes, the HelmRelease upgrades.
 
 One-time manual setup for `asp-deploy-key` — the `flux-system` Kustomization has no
 sops decryption, so this Secret is created out of band, same as the `flux-system` and
@@ -255,10 +264,9 @@ when a human bumps a chart version; application and service tiers run at `1m0s`.
 - **`gotk-components.yaml` and `gotk-sync.yaml` are generated.** Hand edits are lost on
   the next `flux bootstrap`.
 
-- **`staging/age.agekey`, `staging/kubeconfig` and `staging/.envrc` are gitignored**
-  (`*.agekey`, `*.envrc` in `.gitignore`) and are not part of the reconciled tree. They
-  are local operator material; do not commit them and do not reference them from a
-  manifest.
+- **`staging/age.agekey` and `staging/.envrc` are gitignored** (`*.agekey`, `*.envrc` in
+  `.gitignore`) and are not part of the reconciled tree. They are local operator material;
+  do not commit them and do not reference them from a manifest.
 
 ## Operating it
 
@@ -302,11 +310,13 @@ reviewed second environment.
 
 ## Notes on this README
 
-Prose that used to live as comments inside the manifests was moved here. Three claims
+Prose that used to live as comments inside the manifests was moved here. Four claims
 in it were stale and are corrected above rather than copied forward:
 
 - `lab.yaml` said `databases` covers "asp/ + fbref/". That path now also lists `n8n/`
   and `scraper/`.
+- `lab.yaml` said the labs are "off by default (replicas: 0)".
+  `apps/staging/lab/release.yaml` sets `replicas: 1`.
 - `infrastructure.yaml` said the reflector overlay mirrors `ghcr-pull-secret` into
   "asp/fbref/lab". The Secret's reflector annotations list `asp,fbref,lab,scraper`.
 - `monitoring.yaml` carried a commented-out `dependsOn: - name: infra-configs` on both

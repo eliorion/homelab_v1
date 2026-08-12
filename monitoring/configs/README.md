@@ -243,8 +243,8 @@ outage, written up in
 `pg_wal` grew until the 10Gi volume was 9.94Gi full, CNPG shut the primary down,
 the `-rw` Service lost its only endpoint, and the Bifrost gateway crash-looped
 for two days. Backup monitoring stayed green throughout — the base backups
-really were succeeding. Nothing watched the archive, and nothing watched the
-disk.
+really were succeeding — so the archiving failure ran three days unseen. Nothing
+watched the archive, and nothing watched the disk.
 
 ### How it is wired
 

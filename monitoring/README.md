@@ -16,9 +16,11 @@ This file documents the tier itself — which directory Flux points at, which
 kustomization aggregates what, and the rules that apply across both halves. The
 components have their own READMEs:
 [`controllers/base/kube-prometheus-stack/README.md`](controllers/base/kube-prometheus-stack/README.md)
-(the stack, its values, Alertmanager and Grafana) and
+(the stack, its values, Alertmanager and Grafana),
 [`configs/README.md`](configs/README.md) (the alerting directories and both
-Telegram paths).
+Telegram paths), and one each for the two directories that file leaves out:
+[`configs/staging/fbref-grafana/README.md`](configs/staging/fbref-grafana/README.md)
+and [`configs/staging/n8n-metrics/README.md`](configs/staging/n8n-metrics/README.md).
 
 Background reading:
 [`../documentations/01-architecture.md`](../documentations/01-architecture.md),
@@ -38,8 +40,7 @@ Kustomization in `clusters/<env>/monitoring.yaml` names its path.
 
 All three share `interval: 1m0s`, `retryInterval: 1m`, `timeout: 5m`,
 `prune: true` and a `decryption` block pointing at the `sops-age` Secret. None of
-them has a `dependsOn` — the block exists in both cluster files but is commented
-out. There is no `monitoring-configs` in production.
+them has a `dependsOn`. There is no `monitoring-configs` in production.
 
 Those three paths are the only entry points. No component in this tier has a
 Flux Kustomization of its own, so a directory that is not listed in the overlay
@@ -78,10 +79,13 @@ so its components hard-code their staging values.
 | `fbref-grafana/` | The SOPS-encrypted Grafana datasource for `fbref-db` plus two dashboard ConfigMaps (`fbref-grafana-dashboard`, `fbref-grafana-dashboard-audit`), picked up by the Grafana sidecar through the label `grafana_dashboard: "1"`. |
 | `etcd-backup-alerts/` | `PrometheusRule` `etcd-backup` — job failure and snapshot staleness. |
 | `cnpg-alerts/` | `PodMonitor` `cnpg-instances` (every CNPG pod in the cluster) and `PrometheusRule` `cnpg-alerts` (WAL archiving + volume usage). |
-| `n8n-metrics/` | `ServiceMonitor` `n8n` (namespace `n8n`, port `http`, `/metrics`, `interval: 60s`) and a `PrometheusRule` with `N8nDown` and `N8nMetricsMissing`. |
+| `n8n-metrics/` | `ServiceMonitor` `n8n` (created in `monitoring`, selecting namespace `n8n`, port `http`, `/metrics`, `interval: 60s`) and a `PrometheusRule` with `N8nDown` and `N8nMetricsMissing`. |
 
 The four alerting directories are documented in
-[`configs/README.md`](configs/README.md).
+[`configs/README.md`](configs/README.md); `fbref-grafana/` and `n8n-metrics/`
+have a README each,
+[`configs/staging/fbref-grafana/README.md`](configs/staging/fbref-grafana/README.md)
+and [`configs/staging/n8n-metrics/README.md`](configs/staging/n8n-metrics/README.md).
 
 ## Why it is like this
 
@@ -150,8 +154,9 @@ flux reconcile kustomization monitoring-configs -n flux-system
 flux get helmreleases -n monitoring
 ```
 
-Check what Prometheus actually accepted — an object missing the `release` label
-is simply absent from this list:
+List what the tier applied. `kubectl get` shows every object whether or not
+Prometheus selected it, so this confirms the apply, not the scrape — an object
+missing the `release` label is in this list and still ignored:
 
 ```sh
 kubectl -n monitoring get prometheusrule,podmonitor,servicemonitor
@@ -162,7 +167,7 @@ kubectl -n monitoring get pods
 
 | Tier | `base/` | `staging/` | `production/` |
 |---|---|---|---|
-| `controllers/` | yes (`kube-prometheus-stack/`, no tier kustomization) | yes, reconciled | yes, reconciled, one patch |
+| `controllers/` | yes (`kube-prometheus-stack/`, no tier kustomization) | yes, reconciled | yes, one patch, declared but not deployed |
 | `configs/` | no | yes, reconciled | no |
 
 Encrypted files live only in the overlays, never in `base/`. The `.enc.yaml`

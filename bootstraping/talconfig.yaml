@@ -1,8 +1,5 @@
 ---
-# talhelper config for the staging Talos cluster.
-# Single source of truth -> renders bootstraping/clusterconfig/*.yaml.
-# Secrets come from talsecret.sops.yaml (extracted from the live cluster's
-# existing PKI via `talhelper gensecret -f` -- DO NOT regenerate).
+# DO NOT regenerate talsecret.sops.yaml -- a new PKI is a dead cluster.
 clusterName: Homelab_staging
 talosVersion: v1.13.4
 kubernetesVersion: v1.36.1
@@ -20,9 +17,7 @@ clusterPodNets:
 clusterSvcNets:
   - 10.96.0.0/12
 
-# Phase B: Talos installs NO CNI -- Cilium 1.19.4 is managed by Flux
-# (infrastructure/controllers/base/cilium). kube-proxy disabled below; Cilium
-# does kube-proxy replacement via KubePrism (localhost:7445).
+# Talos installs no CNI; Cilium comes from Flux.
 cniConfig:
   name: none
 
@@ -90,7 +85,7 @@ nodes:
           - network: 100.64.0.0/10
             gateway: 192.168.1.200
 
-# Shared machine-level settings that talhelper has no first-class field for.
+# Shared machine-level settings talhelper has no first-class field for.
 patches:
   - |-
     machine:
@@ -118,10 +113,7 @@ patches:
         hostDNS:
           enabled: true
           forwardKubeDNSToHost: true
-        # Lets pods in the etcd-backup namespace call the Talos API with
-        # short-lived, auto-rotated certs instead of a static talosconfig
-        # secret. os:etcd:backup grants exactly one method --
-        # /machine.MachineService/EtcdSnapshot. See documentations/09.
+        # Removing this block breaks the etcd-backup CronJob.
         kubernetesTalosAPIAccess:
           enabled: true
           allowedRoles:
@@ -130,9 +122,8 @@ patches:
             - etcd-backup
       nodeLabels:
         node.kubernetes.io/exclude-from-external-load-balancers: ""
-  # NOTE: PodSecurity admissionControl + auditPolicy are emitted by talhelper
-  # defaults (identical to the live cluster) -- do NOT re-add them here or the
-  # exemptions list gets a duplicate kube-system entry.
+  # PodSecurity admissionControl + auditPolicy come from talhelper defaults --
+  # re-adding them here duplicates the kube-system exemption.
   - |-
     cluster:
       # Cilium replaces kube-proxy -- do not deploy it.
@@ -147,8 +138,6 @@ patches:
       extraManifests:
         - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml
         - https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-        # Gateway API CRDs (Cilium 1.19 requires v1.4.1 standard channel) -- no
-        # secrets, safe to fetch by URL. TLSRoute (experimental) included so the
-        # Cilium operator does not log missing-CRD errors.
+        # Cilium 1.19 requires the gateway-api v1.4.1 standard channel.
         - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
         - https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.4.1/config/crd/experimental/gateway.networking.k8s.io_tlsroutes.yaml

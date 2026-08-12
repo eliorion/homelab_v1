@@ -80,6 +80,12 @@ repository.
 created by the databases tier, which runs first in the `databases` → `db-migrations` → `apps`
 chain. `createNamespace` is harmless belt-and-braces in case the app tier ever races ahead.
 
+**Failure handling.** `upgrade.remediation` `retries: 3` / `strategy: rollback` means a failed
+upgrade — pods never Ready, or a failing helm test — reverts to the last released revision
+instead of sticking half-deployed. `test.enable: true` runs the chart's own test hooks (a psql
+probe of `url_queue`, and a POST to `http://fbref-mcp:8080/mcp`) after every install and
+upgrade; a failure marks the release failed, which is what feeds that rollback remediation.
+
 **Scraping moved out of this chart.** The in-chart scraper lanes and FlareSolverr are retired
 (chart defaults `scraper.enabled: false` and `flaresolverr.enabled: false`). The central scraper
 service (`apps/staging/scraper`) now scrapes fbref through its own FlareSolverr, routed via the
@@ -98,8 +104,8 @@ phase 5 switch. The first crawl is deliberately small: `comp_codes` is seeded to
 and every `crawl_*` flag stays off except the confederation-index seed.
 
 **`maxInFlightOverrides.transfermarkt: 10` is small on purpose.** A newly onboarded source shares
-the same three residential pools that leboncoin, autoscout24 and fbref already draw from. Widen
-it once phase 5's throughput and error-rate checks are clear.
+the same two residential pools every other site on the scraper platform draws from. Widen it
+once phase 5's throughput and error-rate checks are clear.
 
 **The MCP server is the one public surface, so it is authenticated.** It is reached at
 `https://fbref-mcp.eliorion.fr/mcp` through the Cloudflare tunnel — there is no Ingress object —
@@ -142,7 +148,7 @@ CLI clients working while still fencing browser origins to the two hosted connec
 - **`engine.sites` is one process driving both sources.** Adding a site here without its
   `site_config`/grammar row and antibot pin on the scraper platform starts crawling a source the
   platform cannot pace.
-- **Do not raise `maxInFlightOverrides.transfermarkt` casually.** The three residential pools are
+- **Do not raise `maxInFlightOverrides.transfermarkt` casually.** The two residential pools are
   shared with every other site; extra in-flight work for one source comes out of the others.
 - **`reconcileStrategy: Revision` plus the GitRepository `ignore` block are a pair.** Widen the
   `ignore` allowlist beyond `/k8s/charts/fbref/` and every unrelated commit to the `asp`

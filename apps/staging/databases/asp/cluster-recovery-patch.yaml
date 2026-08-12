@@ -1,7 +1,9 @@
 # INERT: not listed in kustomization.yaml patches. Re-attaching it only has an
 # effect on a cluster that does not exist yet — CNPG reads bootstrap once, at
-# first creation. A recovered cluster must archive under a different serverName
-# than the one it restores from (README).
+# first creation. As written it restores from serverName asp-db, which is also
+# what cluster-backup-patch.yaml archives to -- re-attaching it unchanged would
+# archive into the prefix it restores from. Give the recovered cluster its own
+# serverName first (README).
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:

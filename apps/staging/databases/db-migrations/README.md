@@ -10,8 +10,11 @@ schema. The Jobs are applied by their own Flux Kustomization, which sits between
 that need it, and a failed migration stops the apps tier from rolling. This
 README covers the `db-migrations` component and the aggregating
 `apps/<env>/databases/kustomization.yaml`; each Postgres cluster has its own
-README next to it ([`asp`](./asp/README.md), [`fbref`](./fbref/README.md),
-[`n8n`](./n8n/README.md), [`scraper`](./scraper/README.md)).
+README under `apps/base/databases/<project>/`
+([`asp`](../../../base/databases/asp/README.md),
+[`fbref`](../../../base/databases/fbref/README.md),
+[`n8n`](../../../base/databases/n8n/README.md),
+[`scraper`](../../../base/databases/scraper/README.md)).
 
 ## How it is wired
 
@@ -20,7 +23,7 @@ overlay, `apps/staging/databases/db-migrations/`.
 
 | File | What it declares |
 |---|---|
-| `apps/staging/databases/kustomization.yaml` | the databases tier: `asp/`, `fbref/`, `n8n/`, `scraper/`. `db-migrations/` is deliberately absent |
+| `apps/staging/databases/kustomization.yaml` | the databases tier — the CNPG clusters and their secrets/backups: `asp/`, `fbref/`, `n8n/`, `scraper/`. `db-migrations/` is deliberately absent |
 | `db-migrations/kustomization.yaml` | lists `asp/`, `fbref/`, `scraper/` |
 | `db-migrations/asp/kustomization.yaml` | `namespace: asp`, resource `asp-db-migrations-job.yaml` |
 | `db-migrations/asp/asp-db-migrations-job.yaml` | Job `asp-db-migrate`, image `ghcr.io/eliorion/asp-db-migrations:db-migrations-v0.6.0`, pod label `app.kubernetes.io/name: db-migrations` |
@@ -29,7 +32,8 @@ overlay, `apps/staging/databases/db-migrations/`.
 | `db-migrations/scraper/kustomization.yaml` | `namespace: scraper`, resource `scraper-db-migrations-job.yaml` |
 | `db-migrations/scraper/scraper-db-migrations-job.yaml` | Job `scraper-db-migrate`, image `ghcr.io/eliorion/scraper-db-migrations:scraper-db-migrations-v0.5.0`, pod label `app.kubernetes.io/name: scraper-db-migrations` |
 
-The three Jobs are identical apart from namespace, image and Secret name:
+The three Jobs are identical apart from namespace, Job name, pod label, image
+and Secret name:
 
 - `args: ["migrate"]`, `backoffLimit: 3`, `restartPolicy: Never`, no
   `ttlSecondsAfterFinished`.
@@ -48,7 +52,7 @@ The three Jobs are identical apart from namespace, image and Secret name:
   `FLYWAY_CONNECT_RETRIES: "10"`.
 - Requests `50m` CPU / `128Mi` memory, limits `500m` CPU / `512Mi` memory.
 
-Flux, in [`clusters/staging/apps.yaml`](../../../clusters/staging/apps.yaml),
+Flux, in [`clusters/staging/apps.yaml`](../../../../clusters/staging/apps.yaml),
 declares the chain:
 
 1. `databases` — `path: ./apps/staging/databases`, `dependsOn`
@@ -121,7 +125,7 @@ is how the asp pin sat on `v0.1.0` for 47 days while releases reached `v0.6.0`.
 
 **No Job for n8n.** n8n runs its own TypeORM migrations on boot, so `n8n-db` has
 no entry in `db-migrations/` — see
-[`../../../documentations/10-n8n-automation.md`](../../../documentations/10-n8n-automation.md).
+[`../../../../documentations/10-n8n-automation.md`](../../../../documentations/10-n8n-automation.md).
 
 **`db-migrations/` is not in the databases kustomization.** It has its own Flux
 Kustomization with different settings (`force: true`, no SOPS decryption) and a
@@ -131,7 +135,7 @@ apply the Jobs in the same pass as the clusters and destroy the ordering.
 The tier survived the k3s → Talos move unchanged: doc 06 records that on
 2026-06-10 `db-migrations` and `apps` reused the `./apps/staging` paths and
 Flyway ran clean against the recovered `asp-db`
-([`../../../documentations/06-k3s-retirement.md`](../../../documentations/06-k3s-retirement.md)).
+([`../../../../documentations/06-k3s-retirement.md`](../../../../documentations/06-k3s-retirement.md)).
 
 ## Traps
 
@@ -156,7 +160,8 @@ Flyway ran clean against the recovered `asp-db`
   not be decrypted.
 - The migrations create roles, so the `app` role of `asp-db` and `fbref-db` must
   keep `createrole: true` in its `managed.roles` block — see
-  [`asp/README.md`](./asp/README.md) and [`fbref/README.md`](./fbref/README.md).
+  [`asp/README.md`](../../../base/databases/asp/README.md) and
+  [`fbref/README.md`](../../../base/databases/fbref/README.md).
 - `ghcr-pull-secret` is not defined here. The whole app chain is gated on
   `infra-reflector` precisely so the mirrored Secret exists before these Jobs
   pull their private images.
@@ -190,5 +195,5 @@ declares a single `apps` Kustomization on `./apps/production`, so the
 `databases` → `db-migrations` → `apps` chain exists on the staging cluster only.
 
 See also
-[`../../../documentations/01-architecture.md`](../../../documentations/01-architecture.md)
+[`../../../../documentations/01-architecture.md`](../../../../documentations/01-architecture.md)
 for the full Flux dependency graph.

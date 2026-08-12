@@ -2,11 +2,12 @@
 
 `scraper` is the cluster's central scraping platform: a backend, an admin UI, request-driven
 engine pools and one FlareSolverr per pool, all in their own `scraper` namespace against their
-own CNPG cluster `scraper-db`. It is API-only — `asp` and `fbref` consume it by POSTing to
-`/v1/scrape` from their ingest pods and reading the results back, and the API is the only
-contract between a project and this service. The platform itself stores no scraped data. As with
-the other app wrappers, this directory holds a single `HelmRelease` pointing at a chart in the
-private `asp` repository (`k8s/charts/scraper`); the values here are environment overrides only.
+own CNPG cluster `scraper-db`. It is API-only — a client's ingest pods POST to `/v1/scrape` and
+read the results back, and the API is the only contract between a project and this service.
+`fbref` is its only client today; `asp` ships with `ingest.enabled: false`. The platform itself
+stores no scraped data. As with the other app wrappers, this directory holds a single
+`HelmRelease` pointing at a chart in the private `asp` repository (`k8s/charts/scraper`); the
+values here are environment overrides only.
 
 ## How it is wired
 
@@ -80,6 +81,11 @@ GitRepository (`reconcileStrategy: Revision`) instead of on a version bump.
 **`timeout: 10m`.** The engine pools gate readiness on a Camoufox warm-up (`initialDelay 90s`)
 and add `minReadySeconds 30`; a shorter Helm timeout would turn every slow warm-up into a failed
 upgrade and a rollback.
+
+**Failure handling.** `test.enable: true` runs the chart's own test hooks — a curl of the
+backend's `/v1/health` and of the admin UI — after every install and upgrade, and
+`ignoreFailures: false` makes a failing hook fail the release, which is what feeds the
+`strategy: rollback` remediation.
 
 **Request-driven warm pools are the only topology.** Pods run with `ROLE=server` and are the
 target of `POST /v1/scrape`; the static per-(tenant, site) lanes were removed from the chart

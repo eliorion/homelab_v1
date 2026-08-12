@@ -32,9 +32,12 @@ hostname — a direct port-forwarded address, or a relay. Everything else follow
 ## Things that will bite otherwise
 
 - **Serve the page over HTTPS.** A browser refuses to load `http://` audio into
-  an `https://` page, and the failure is silent in the worst way: the widget
-  renders, the button works, no sound ever arrives. Both URLs above are HTTPS,
-  so this only matters if you repoint at a plain-HTTP host.
+  an `https://` page: the widget renders, the button works, no sound ever
+  arrives, and the only thing on screen is the title flipping to
+  `Playback blocked`. The widget sets that whenever `play()` rejects — the click
+  is a user gesture, so autoplay policy is never the cause and a rejection there
+  means the stream itself refused. Both URLs above are HTTPS, so this only
+  matters if you repoint at a plain-HTTP host.
 - **Pausing drops the connection**, deliberately. A paused `<audio>` that keeps
   its `src` goes on buffering in the background and holds a listener slot for
   nobody. At 0.202 Mbps each (doc 13), idle tabs are not free.

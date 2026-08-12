@@ -2,10 +2,10 @@
 
 ## What it is
 
-The only directory under `monitoring/configs/` that contains no Prometheus
-object at all. It ships two Grafana dashboards and the read-only Postgres
-datasource they query, as a Secret and two ConfigMaps in namespace
-`monitoring`, loaded by the `kube-prometheus-stack` Grafana sidecars.
+A Grafana-only directory: it contains no Prometheus object at all. It ships two
+Grafana dashboards and the read-only Postgres datasource they query, as a Secret
+and two ConfigMaps in namespace `monitoring`, loaded by the
+`kube-prometheus-stack` Grafana sidecars.
 
 Every panel here is SQL against the `fbref-db` CloudNativePG cluster
 ([`../../../../apps/base/databases/fbref/README.md`](../../../../apps/base/databases/fbref/README.md)).

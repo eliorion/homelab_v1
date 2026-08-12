@@ -14,9 +14,10 @@ to the off-cluster Garage object store with point-in-time recovery.
 Base (`apps/base/databases/fbref/`):
 
 - `namespace.yaml` — the `fbref` Namespace.
-- `database.yaml` — the CNPG `Cluster` `fbref-db`: 2 instances, pinned
-  `imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie`, synchronous
-  replication (`method: any`, `number: 1`, `dataDurability: preferred`), tuned
+- `database.yaml` — the CNPG `Cluster` `fbref-db`: 2 instances,
+  `imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie` pinned to
+  what the operator deployed, synchronous replication (`method: any`,
+  `number: 1`, `dataDurability: preferred`), tuned
   `postgresql.parameters`, `bootstrap.initdb` for database `fbref` owned by
   `app`, three `managed.roles` (`grafana_ro`, `mcp_ro`, `app`) and `storage.size:
   10Gi`.
@@ -50,8 +51,9 @@ Staging overlay (`apps/staging/databases/fbref/`):
 - `cluster-backup-patch.yaml` — attaches the `barman-cloud.cloudnative-pg.io`
   plugin to the Cluster as the WAL archiver, `barmanObjectName: garage-store`,
   `serverName: fbref-db`.
-- `cluster-storage-patch.yaml` — JSON 6902 patch: `storageClass: longhorn` and
-  `storage.size` replaced with `100Gi`.
+- `cluster-storage-patch.yaml` — JSON 6902 patch: `storageClass: longhorn`
+  (explicit, though Longhorn is also the cluster default storage class on
+  Talos) and `storage.size` replaced with `100Gi`.
 - `cluster-reflector-patch.yaml` — `inheritedMetadata` annotations that permit
   kubernetes-reflector to mirror this cluster's Secrets into the `lab` and
   `database` namespaces.
@@ -59,11 +61,11 @@ Staging overlay (`apps/staging/databases/fbref/`):
 Flux: the `databases` Kustomization in
 [`clusters/staging/apps.yaml`](../../../../clusters/staging/apps.yaml) applies
 `./apps/staging/databases` (which lists `fbref/`) with `wait: true` and SOPS
-decryption. It depends on `infra-cnpg-plugin` (the operator and the barman
-plugin, which own the `ObjectStore` CRD) and on `infra-reflector` (the central
-`ghcr-pull-secret` source in
-`infrastructure/controllers/staging/reflector`, mirrored into this namespace).
-The schema is then applied by the separate `db-migrations` Kustomization
+decryption. It depends on `infra-cnpg-plugin` (the barman-cloud plugin, which
+owns the `ObjectStore` CRD) and on `infra-reflector` (the central
+`ghcr-pull-secret` source in `infrastructure/controllers/staging/reflector`,
+mirrored into this namespace). The schema is then applied by the separate
+`db-migrations` Kustomization
 (`apps/staging/databases/db-migrations/fbref/`), which gates the `apps`
 Kustomization on the Flyway Job completing.
 
@@ -182,9 +184,9 @@ central reflector source.
   not this size.
 - The etcd Garage key has **no** fbref access. The backup key must be a
   dedicated Garage key scoped to the fbref bucket.
-- `garage-backup-credentials.enc.yaml.exemple` names the bucket
-  `homelab-staging-fbref` in its example commands, but the bucket the
-  ObjectStore actually reads and writes is `cnpg-staging-fbref`.
+- The header comments still sitting in `garage-backup-credentials.enc.yaml`
+  name the bucket `homelab-staging-fbref`, but the bucket the ObjectStore
+  actually reads and writes is `cnpg-staging-fbref`.
 - `*.enc.yaml` files are SOPS ciphertext; edit them only through `sops`.
 
 ## Operating it
@@ -196,8 +198,9 @@ kubectl kustomize apps/staging/databases/fbref
 flux get kustomizations
 ```
 
-Recreate the Garage backup credential from the template (bucket and key names
-per `documentations/12-garage-object-storage.md`):
+Recreate the Garage backup credential from the template. The `garage` commands
+run on a Garage node — the admin API is not exposed through the in-cluster
+gateway:
 
 ```bash
 garage bucket create cnpg-staging-fbref

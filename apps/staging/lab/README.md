@@ -15,8 +15,8 @@ Flux Kustomization `lab` (`clusters/staging/lab.yaml`, namespace `flux-system`) 
 `retryInterval: 1m`, `timeout: 10m`, `prune: true`, `wait: true`, and a health check on the
 `lab` HelmRelease in `flux-system`. It `dependsOn` two things:
 
-- `databases` — brings up both CNPG clusters (`apps/staging/databases` lists `asp/` and
-  `fbref/`) with their `<db>-app` Secrets and the reflection permit annotation.
+- `databases` — brings up the CNPG clusters, among them the two lab reads (`asp/` and
+  `fbref/`), with their `<db>-app` Secrets and the reflection permit annotation.
 - `infra-reflector` — the reflector controller that fills the chart-generated stub Secrets in
   the `lab` namespace.
 
@@ -111,8 +111,10 @@ leaves the project namespace — see
   hand-written copy would fight it.
 - **Keep the pods baseline-compliant.** There is no PodSecurity label on the `lab` namespace, so
   the cluster default applies (`enforce: baseline`, `warn`/`audit: restricted`, only `kube-system`
-  exempt — `bootstraping/talconfig.yaml`). A lab pod that needed privileged mode or a host
-  namespace would be rejected at admission, and would need a PSA label added here.
+  exempt — a talhelper default rendered into the node configs, see
+  [`../../../bootstraping/README.md`](../../../bootstraping/README.md)). A lab pod that needed
+  privileged mode or a host namespace would be rejected at admission, and would need a PSA
+  label added here.
 - **The chart is in another repository.** `k8s/charts/lab` lives in `eliorion/asp`, and
   `reconcileStrategy: Revision` means a new commit to that path rolls the labs. The
   GitRepository `ignore` block is what keeps unrelated `asp` commits from doing so.

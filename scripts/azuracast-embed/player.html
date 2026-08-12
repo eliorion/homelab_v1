@@ -16,7 +16,7 @@
       <path id="azc-icon" fill="currentColor" d="M8 5v14l11-7z"></path>
     </svg>
   </button>
-  <!-- Announced to screen readers when the track changes. -->
+  <!-- Announced to screen readers when the track changes, without moving focus. -->
   <p class="azc-sr" id="azc-live" role="status" aria-live="polite"></p>
 </div>
 
@@ -102,7 +102,8 @@
     var label = (song.title || "") + (song.artist ? " — " + song.artist : "");
     if (label && label !== lastTrack) { lastTrack = label; $("azc-live").textContent = label; }
 
-    // Bar position, advanced locally between polls.
+    // Bar position, advanced locally between polls so it moves smoothly
+    // instead of jumping every 15 seconds.
     elapsed  = (np.now_playing && np.now_playing.elapsed)  || 0;
     duration = (np.now_playing && np.now_playing.duration) || 0;
 

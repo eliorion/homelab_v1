@@ -44,7 +44,7 @@ spec:
     engine:
       # One process drives both sources (chart default is "fbref" alone).
       sites: "fbref,transfermarkt"
-      # Small on purpose: transfermarkt shares the SAME 3 residential pools the
+      # Small on purpose: transfermarkt shares the SAME residential pools the
       # other sites already draw from.
       maxInFlightOverrides:
         transfermarkt: 10

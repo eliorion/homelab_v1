@@ -14,9 +14,12 @@ carried over from the k3s cluster and never migrated; see
 The Flux `apps` Kustomization (`clusters/staging/apps.yaml`, `path:
 ./apps/staging`, `prune: true`, `dependsOn: db-migrations`, SOPS decryption)
 builds `apps/staging/kustomization.yaml`, which lists `linkding/` explicitly.
-That overlay renders nothing today, so Flux applies no linkding object. The
-production cluster is wired the same way through `clusters/production/apps.yaml`
-(`path: ./apps/production`).
+That overlay renders nothing today, so Flux applies no linkding object.
+`clusters/production/apps.yaml` points a single `apps` Kustomization at
+`./apps/production` (`dependsOn: infra-cnpg-plugin`, no `databases` /
+`db-migrations` split), but that cluster does not exist and `apps/production/`
+has no `kustomization.yaml` of its own — see
+[`clusters/production/README.md`](../../../clusters/production/README.md).
 
 Base (`apps/base/linkding/kustomization.yaml` → `namespace.yaml`,
 `deployment.yaml`, `storage.yaml`, `service.yaml`):
@@ -40,11 +43,13 @@ Base (`apps/base/linkding/kustomization.yaml` → `namespace.yaml`,
 
 ## Why it is like this
 
-**Nothing is deployed.** Both overlays hold `resources: []` with the real list
-commented out. Doc 06 records the state after the k3s → Talos migration: the
-`audiobookshelf`/`glpi`/`linkding`/`keycloak` overlays "render no workloads yet
-(scaffolding) — same as on k3s, nothing migrated". The base is kept intact so
-that enabling linkding is an uncomment, not a rewrite.
+**Nothing is deployed.** Both overlays hold `resources: []`;
+`apps/production/linkding/kustomization.yaml` still carries the real list in
+comments, the staging one no longer does. Doc 06 records the state after the
+k3s → Talos migration: the `audiobookshelf`/`glpi`/`linkding`/`keycloak`
+overlays "render no workloads yet (scaffolding) — same as on k3s, nothing
+migrated". The base is kept intact, so enabling linkding means restoring the
+resource list, not rewriting the manifests.
 
 **Why uid/gid 33.** The linkding image runs as `www-data`; `fsGroup: 33` is
 what makes the Longhorn volume writable for it, and `runAsUser` /
@@ -64,10 +69,12 @@ and
 ## Traps
 
 - **The Secret name is inconsistent.** `envFrom` reads a Secret called
-  `linkding-adm-user`, while the volume of that same name mounts
-  `secretName: linkding-secret` — and `linkding-secret.enc.yaml` is the file
-  the overlays ship. Re-enabling linkding means reconciling the two names
-  first, or the pod will never start (a missing `envFrom` Secret blocks it).
+  `linkding-adm-user`, which is exactly what `linkding-secret.enc.yaml`
+  decrypts to in both overlays — that reference resolves. The volume of the
+  same name is built from `secretName: linkding-secret`, and no file in this
+  repository creates a Secret by that name. Nothing mounts that volume today,
+  but re-enabling linkding means reconciling the two names — or dropping the
+  volume — first.
 - **`ingressClassName: traefik` names a controller this cluster does not
   run.** Re-enabling `ingress.yaml` as written produces an Ingress nobody
   reconciles; it has to become a Gateway API `HTTPRoute`, or name whatever
@@ -110,11 +117,14 @@ resources:
 ### Overlays
 
 - `apps/staging/linkding/` — `namespace: linkding`, `resources: []`. Present
-  but unreferenced: `linkding-secret.enc.yaml` (SOPS-encrypted Secret) and
+  but unreferenced: `linkding-secret.enc.yaml` (SOPS-encrypted Secret whose
+  object name is `linkding-adm-user`, not `linkding-secret`) and
   `ingress.yaml` (`Ingress` `linkding`, `ingressClassName: traefik`, host
   `linkding.eliorion.fr`, path `/` `Prefix` → Service `linkding` port `9090`;
   the Ingress carries no namespace of its own and relies on the overlay's
   `namespace:`).
-- `apps/production/linkding/` — the same three files with the same contents
-  and the same empty resource list. There is no staging/production divergence
-  in this component: both point at the same `linkding.eliorion.fr` host.
+- `apps/production/linkding/` — the same three files with the same empty
+  resource list; `ingress.yaml` and `linkding-secret.enc.yaml` are identical to
+  staging's, and the two `kustomization.yaml` files differ only in the comments
+  they carry. There is no staging/production divergence in this component: both
+  point at the same `linkding.eliorion.fr` host.

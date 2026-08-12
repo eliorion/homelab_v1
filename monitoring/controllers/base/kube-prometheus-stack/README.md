@@ -61,9 +61,9 @@ Kustomization (`path: ./monitoring/controllers/<env>`, `interval: 1m0s`,
 `retryInterval: 1m`, `timeout: 5m`, `prune: true`) with a `decryption` block
 pointing at the `sops-age` Secret. Staging additionally declares
 `monitoring-configs` (`path: ./monitoring/configs/staging`), also with
-decryption. Neither has a `dependsOn`: the block exists in both files but is
-commented out, so both reconcile straight off the root Kustomization with no
-ordering relative to each other or to the infrastructure tiers.
+decryption. Neither has a `dependsOn`, so both reconcile straight off the root
+Kustomization with no ordering relative to each other or to the infrastructure
+tiers.
 
 ### Overlays
 
@@ -181,8 +181,10 @@ kubectl -n monitoring get pods
 kubectl -n monitoring logs alertmanager-kube-prometheus-stack-alertmanager-0
 ```
 
-Check what Prometheus actually loaded — a rule or monitor missing the `release`
-label will simply be absent here:
+List the applied objects, then check what Prometheus actually loaded. The
+`kubectl get` list shows a rule or monitor whether or not the `release` label
+got it selected; the Prometheus UI behind the port-forward (Status → Rules,
+Status → Targets) is where a missing label shows up as an absence:
 
 ```sh
 kubectl -n monitoring get prometheusrule,podmonitor,servicemonitor

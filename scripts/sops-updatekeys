@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Rewrap SOPS-encrypted files onto the recipients currently declared in
-# .sops.yaml, so a recipient change (added key, rotated key) is applied to every
-# committed secret instead of only to the next file someone happens to edit.
+# .sops.yaml, so a recipient change reaches every committed secret and not just
+# the next file someone happens to edit.
 #
 #   scripts/sops-updatekeys                  # rewrap every encrypted file
 #   scripts/sops-updatekeys --check          # report stale files, change nothing
@@ -10,11 +10,9 @@
 #
 # Via mise:  mise run sops-updatekeys -- --check
 #
-# Recipients are read from .sops.yaml (first matching creation_rule wins, same
-# as SOPS itself), never hardcoded here. The private key needed to rewrap a file
-# is chosen by deriving each candidate key's public half with `age-keygen -y`
-# and matching it against that file's target recipient, so adding a third
-# environment needs no change to this script.
+# Needs sops, age-keygen and git on PATH; reads age private keys from
+# $SOPS_AGE_KEY_FILE and clusters/*/age.agekey. --check exits 1 when stale.
+# Full explanation: scripts/README.md
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -31,6 +29,8 @@ while [ $# -gt 0 ]; do
       ONE_FILE="$1"
       ;;
     -h | --help)
+      # Prints lines 2-15 of this file: keep the header block exactly that long,
+      # or --help starts printing code / silently cuts the tail off.
       sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
@@ -114,10 +114,9 @@ while IFS= read -r f; do
     continue
   fi
 
-  # `sops updatekeys` has to DECRYPT the file before it can re-encrypt it, so
-  # the key we need is one of the recipients the file carries TODAY, not the one
-  # it is being moved to. Fall back to the target's key for the case where the
-  # file already lists it alongside a recipient being removed.
+  # `sops updatekeys` DECRYPTS before re-encrypting, so the key must match a
+  # recipient the file carries TODAY, not the one it is being moved to. The
+  # fallback covers a file that already lists both, one being removed.
   key=""
   while IFS= read -r r; do
     key=$(keyfile_for "$r")

@@ -16,8 +16,11 @@ The Flux `apps` Kustomization (`clusters/staging/apps.yaml`, `path:
 ./apps/staging`, `prune: true`, `dependsOn: db-migrations`, SOPS decryption)
 builds `apps/staging/kustomization.yaml`, which lists `audiobookshelf/`
 explicitly. That overlay renders nothing today, so Flux applies no
-audiobookshelf object. The production cluster is wired the same way through
-`clusters/production/apps.yaml` (`path: ./apps/production`).
+audiobookshelf object. `clusters/production/apps.yaml` points a single `apps`
+Kustomization at `./apps/production` (`dependsOn: infra-cnpg-plugin`, no
+`databases` / `db-migrations` split), but that cluster does not exist and
+`apps/production/` has no `kustomization.yaml` of its own — see
+[`clusters/production/README.md`](../../../clusters/production/README.md).
 
 Base (`apps/base/audiobookshelf/kustomization.yaml` → `namespace.yaml`,
 `deployment.yaml`, `storage.yaml`, `service.yaml`, `configmap.yaml`):
@@ -44,11 +47,11 @@ Base (`apps/base/audiobookshelf/kustomization.yaml` → `namespace.yaml`,
 
 ## Why it is like this
 
-**Nothing is deployed.** Both overlays hold `resources: []` with the base
-reference commented out. Doc 06 records the state after the k3s → Talos
-migration: the `audiobookshelf`/`glpi`/`linkding`/`keycloak` overlays "render
-no workloads yet (scaffolding) — same as on k3s, nothing migrated". The base
-is kept intact so that enabling it is an uncomment, not a rewrite.
+**Nothing is deployed.** Both overlays hold `resources: []` and nothing else.
+Doc 06 records the state after the k3s → Talos migration: the
+`audiobookshelf`/`glpi`/`linkding`/`keycloak` overlays "render no workloads yet
+(scaffolding) — same as on k3s, nothing migrated". The base is kept intact, so
+enabling it means restoring the resource list, not rewriting the manifests.
 
 **Three PVCs instead of one.** Configuration, generated metadata and the media
 library have different sizes and different rebuild costs: `/config` is small

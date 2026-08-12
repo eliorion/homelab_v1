@@ -4,8 +4,8 @@ The application tier: the workloads this cluster exists to run, as opposed to th
 platform services under `infrastructure/`. It follows the same `base/` plus overlay pattern as
 every other tier — `base/` holds what does not change between environments, `staging/` holds the
 differences plus everything encrypted — but only `staging/` is reconciled today. Several
-components have no `base/` at all, because they are a single `HelmRelease` wrapping a chart that
-lives in another repository.
+components have no `base/` at all, because they are little more than a `HelmRelease` wrapping a
+chart that lives in another repository.
 
 ## How it is wired
 
@@ -50,7 +50,8 @@ component has a base overlay and in its own directory otherwise:
 | fbref | [`staging/fbref/README.md`](staging/fbref/README.md) — staging-only |
 | scraper | [`staging/scraper/README.md`](staging/scraper/README.md) — staging-only |
 | lab | [`staging/lab/README.md`](staging/lab/README.md) — staging-only, own Flux Kustomization |
-| databases | [`base/databases/README.md`](base/databases/README.md) — own Flux Kustomizations |
+| databases | one README per cluster under `base/databases/<project>/` |
+| db-migrations | [`staging/databases/db-migrations/README.md`](staging/databases/db-migrations/README.md) — staging-only, own Flux Kustomization |
 | azuracast | [`base/azuracast/README.md`](base/azuracast/README.md) |
 | n8n | [`base/n8n/README.md`](base/n8n/README.md) |
 | audiobookshelf, glpi, linkding | see each component's own directory |
@@ -67,11 +68,12 @@ Job runs while the old pods are still serving, and `wait: true` on both upstream
 means a failed migration stops the app rollout instead of shipping code against an unmigrated
 database.
 
-**Some components have no `base/`.** A component that exists in exactly one environment and is a
-single `HelmRelease` gains nothing from a base plus a one-line overlay. `asp`, `fbref`, `scraper`
-and `lab` are all in that position, so their whole definition is the staging directory. Because
-encrypted files never live in `base/`, anything that carries a SOPS secret ends up in an overlay
-regardless.
+**Some components have no `base/`.** A component that exists in exactly one environment and is
+little more than a single `HelmRelease` gains nothing from a base plus a one-line overlay.
+`asp`, `fbref`, `scraper` and `lab` are all in that position — `lab` adds a `Namespace` object,
+the other three are the release alone — so their whole definition is the staging directory.
+Because encrypted files never live in `base/`, anything that carries a SOPS secret ends up in an
+overlay regardless.
 
 **`production/` is scaffolding.** It has directories for `asp`, `audiobookshelf`, `databases`,
 `glpi` and `linkding` but no tier-level `kustomization.yaml`, and no production cluster is

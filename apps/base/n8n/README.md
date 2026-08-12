@@ -5,8 +5,12 @@ glue between services live in its UI instead of costing a new image, a new
 manifest and a new alert rule each. It runs as a single replica in the `n8n`
 namespace, stores its state in the CloudNativePG cluster `n8n-db`, and is
 published on the tailnet only, at `https://n8n.tail45b0ca.ts.net`. The price of
-running a platform rather than a job: **workflows live in Postgres, not git**,
-so the `n8n-db` backup is the only copy of them. Full background in
+running a platform rather than a job: **workflows live in Postgres, not git** —
+`documentations/n8n-workflows/` holds hand-exported import templates, not the
+live state — and the `n8n-db` Garage backup that would be the other copy is
+written but still commented out of
+[`apps/staging/databases/n8n/kustomization.yaml`](../../staging/databases/n8n/kustomization.yaml).
+Full background in
 [`documentations/10-n8n-automation.md`](../../../documentations/10-n8n-automation.md).
 
 ## How it is wired
@@ -22,7 +26,9 @@ Base (`apps/base/n8n/`), listed by `kustomization.yaml` in this order:
   `# renovate:` line above it), container port `5678` named `http`. Postgres
   connection details come from the CNPG-generated `n8n-db-app` Secret
   (`host`, `port`, `dbname`, `username`, `password`) with `DB_TYPE:
-  postgresdb`; `envFrom` pulls the `n8n-secrets` Secret and the `n8n-config`
+  postgresdb` — the same `secretKeyRef` idiom the Flyway migration Jobs in
+  `apps/staging/databases/db-migrations/` use; `envFrom` pulls the
+  `n8n-secrets` Secret and the `n8n-config`
   ConfigMap, both from the staging overlay. Startup, readiness and liveness
   probes all hit `/healthz` on the `http` port. Requests `200m` CPU / `512Mi`
   memory, limit `1536Mi` memory. Pod security context: `runAsUser` /
@@ -114,11 +120,13 @@ from datacenter IP ranges.
 
 ## Traps
 
-- **`N8N_ENCRYPTION_KEY` must never be rotated.** It encrypts every credential
-  n8n stores in `n8n-db`. Rotate it — or reinstall and let n8n generate a fresh
-  one — and every credential in every workflow becomes permanently unreadable.
-  A database restore without this exact key is worthless. Disaster recovery
-  needs *both* halves: the CNPG backup and this key.
+- **`N8N_ENCRYPTION_KEY` must never be rotated** — the most important secret in
+  this repo after `talsecret`. It encrypts every credential n8n stores in
+  `n8n-db` (the LinkedIn token, every future API key). Rotate it — or reinstall
+  and let n8n generate a fresh one — and every credential in every workflow
+  becomes permanently unreadable. A database restore without this exact key is
+  worthless. Disaster recovery needs *both* halves: the CNPG backup — which is
+  currently commented out, so that half does not exist yet — and this key.
 - `strategy.type: Recreate` must stay. `RollingUpdate` deadlocks on the RWO
   volume.
 - `fsGroup: 1000` must match the image's `node` user, or the PVC is unwritable.
@@ -166,7 +174,9 @@ sops -e -i n8n-secrets.enc.yaml
 ```
 
 Until that file exists the `apps` Kustomization fails its build and stalls —
-nothing is pruned, no outage.
+nothing is pruned, no outage, the same deliberate behaviour as the reflector's
+`ghcr-pull-secret.enc.yaml`
+([`infrastructure/controllers/staging/reflector/README.md`](../../../infrastructure/controllers/staging/reflector/README.md)).
 
 Confirm egress still leaves through the home ISP before trusting a workflow
 that talks to a picky third party:
@@ -177,7 +187,8 @@ kubectl run ipcheck -n n8n --rm -it --restart=Never \
 ```
 
 Reach the UI at `https://n8n.tail45b0ca.ts.net`; the owner account is created
-on first visit. Restore procedure for `n8n-db` is the asp/fbref one in
+on first visit. Once the Garage backup is uncommented, the restore procedure for
+`n8n-db` is the asp/fbref one in
 [`documentations/03-backups.md`](../../../documentations/03-backups.md).
 
 ### Overlays

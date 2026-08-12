@@ -30,7 +30,8 @@ Staging overlay (`apps/staging/databases/n8n/`):
   storage patch, and carries the backup resources and the backup patch
   commented out.
 - `cluster-storage-patch.yaml` — JSON 6902 patch adding
-  `storageClass: longhorn` to `spec.storage`.
+  `storageClass: longhorn` to `spec.storage` (explicit — Longhorn is also the
+  cluster default storage class).
 - `cluster-backup-patch.yaml` — attaches the `barman-cloud.cloudnative-pg.io`
   plugin to the Cluster as the WAL archiver, `barmanObjectName: garage-store`,
   `serverName: n8n-db`. **Not applied**: its `patches:` entry is commented out.
@@ -51,8 +52,8 @@ Staging overlay (`apps/staging/databases/n8n/`):
 Flux: the `databases` Kustomization in
 [`clusters/staging/apps.yaml`](../../../../clusters/staging/apps.yaml) applies
 `./apps/staging/databases` (which lists `n8n/`) with `wait: true` and SOPS
-decryption, after `infra-cnpg-plugin` (the CNPG operator and the barman plugin,
-which owns the `ObjectStore` CRD) and `infra-reflector`. There is **no**
+decryption, after `infra-cnpg-plugin` (the barman-cloud plugin, which owns the
+`ObjectStore` CRD) and `infra-reflector`. There is **no**
 `db-migrations` entry for this cluster. The n8n application itself is a separate
 tier (`apps/base/n8n/` + `apps/staging/n8n/`, applied by the `apps`
 Kustomization) and is documented in
@@ -78,9 +79,12 @@ off-cluster Garage store, reached through the in-cluster HAProxy gateway and
 Tailscale egress — the same single endpoint the etcd backup uses. Retention is
 longer than fbref's `7d` because this bucket holds the only copy of every n8n
 workflow and credential and a bad workflow edit can go unnoticed for days. The
-daily base backup is at 03:10 rather than the 03:00 used by asp, fbref,
-keycloak and ai-gateway so the runs do not contend for the single Garage
-gateway. Garage has no SSE-S3, so the ObjectStore omits `encryption:` entirely.
+daily base backup is at 03:10 rather than the 03:00 every other CNPG cluster
+uses, so it does not contend with `fbref-db` and `ai-gateway-db` — the other two
+that go through the single Garage gateway — for that one endpoint (`asp-db` and
+`keycloak-db` also run at 03:00, but to R2). Garage has no SSE-S3, so the
+ObjectStore omits `encryption:` entirely, unlike the R2-backed stores, which set
+`encryption: AES256` on both `wal` and `data`.
 See
 [`documentations/03-backups.md`](../../../../documentations/03-backups.md) and
 [`documentations/12-garage-object-storage.md`](../../../../documentations/12-garage-object-storage.md).
@@ -184,6 +188,6 @@ n8n-specific side is in
 
 Only a `staging` overlay exists (`apps/staging/databases/n8n/`); there is no
 production overlay for n8n. Base on its own gives the Namespace and a Cluster
-with the default storage class and `5Gi`, no backups and no secrets. Staging
-adds `storageClass: longhorn` and, once uncommented, the barman-cloud plugin
-with the Garage `ObjectStore`, `ScheduledBackup` and credential Secret.
+with the default storage class (Longhorn) and `5Gi`, no backups and no secrets.
+Staging adds `storageClass: longhorn` and, once uncommented, the barman-cloud
+plugin with the Garage `ObjectStore`, `ScheduledBackup` and credential Secret.

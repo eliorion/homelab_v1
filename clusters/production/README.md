@@ -9,8 +9,13 @@ been reconciled by a running Flux. It is scaffolding: a smaller, older copy of
 since. The repository front page says the same thing under
 [Known limitations](../../README.md).
 
-Read this before assuming any of it works. It renders, it is syntactically valid, and it
-has never been applied to a live API server.
+Read this before assuming any of it works. It is syntactically valid and it has never been
+applied to a live API server. It is not a kustomize root: this directory has no
+`kustomization.yaml`, so `kubectl kustomize clusters/production` errors with `unable to
+find one of 'kustomization.yaml', 'kustomization.yml' or 'Kustomization'` — the same as
+`clusters/staging`, because Flux's kustomize-controller generates one at reconcile time.
+What can be render-checked is the overlays it points at, and three of the four do render;
+`apps/production` does not (see Traps).
 
 ## How it is wired, file by file
 
@@ -100,8 +105,9 @@ Compared with `../staging/`, production is missing:
 The consequence is worth stating plainly: a cluster bootstrapped from this path would come
 up with **no CNI and no storage class**. Cilium and Longhorn are wired only in
 `../staging/infrastructure.yaml`. What this entrypoint installs is cert-manager, the
-barman-cloud plugin, the CNPG operator, cloudflared, kube-prometheus-stack and a handful
-of Secrets — nothing that makes the cluster schedulable in the first place.
+barman-cloud plugin, the CNPG operator, cloudflared, kube-prometheus-stack, the `asp-db`
+CNPG cluster with its two `ObjectStore`s and its `ScheduledBackup`, and a handful of
+Secrets — nothing that makes the cluster schedulable in the first place.
 
 Several of the production overlays are also deliberately inert:
 `apps/production/glpi`, `apps/production/linkding` and `apps/production/audiobookshelf`
@@ -120,8 +126,9 @@ out.
   Flux applies the literal `ENC[AES256_GCM,...]` string as the Secret value: the apply
   succeeds, no controller errors, and the consumer simply misbehaves (for
   `grafana-admin.enc.yaml`, Grafana rejects the admin login with nothing in any log). This
-  has already happened once in staging. The inline note in `monitoring.yaml` is there for
-  that reason.
+  has already happened twice in staging — `monitoring-controllers` and
+  `infra-keycloak-realm`, both written up in [`../README.md`](../README.md). The inline
+  note in `monitoring.yaml` is there for that reason.
 - **The `sops-age` Secret is per cluster and hand-made.** It lives in namespace
   `flux-system`, is never committed, and must hold the *production* age key. Per the root
   `.sops.yaml`, everything matching `(^|/)production/.*\.enc\.ya?ml$` is encrypted to

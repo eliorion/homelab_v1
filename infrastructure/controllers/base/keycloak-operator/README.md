@@ -142,8 +142,8 @@ It then rewrites `# keycloakOperatorVersion:` and prints the resolved
 `quay.io/keycloak/keycloak-operator` image line for review.
 
 Its last line prints `NOW: bump spec.image in
-infrastructure/services/base/keycloak/app/keycloak.yaml`, and its header comment
-says the same. Ignore both: that advice is stale and contradicts the trap above.
+infrastructure/services/base/keycloak/app/keycloak.yaml`. Ignore it: that advice
+is stale and contradicts the trap above.
 This repository deliberately leaves `spec.image` unset so the operator runs the
 server it shipped with, and the `Keycloak` CR carries a comment saying so. The
 README and the CR comment govern; the script's closing echo does not.

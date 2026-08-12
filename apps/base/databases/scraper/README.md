@@ -38,7 +38,7 @@ Staging overlay (`apps/staging/databases/scraper/`):
 Flux: the `databases` Kustomization in
 [`clusters/staging/apps.yaml`](../../../../clusters/staging/apps.yaml) applies
 `./apps/staging/databases` (which lists `scraper/`) with `wait: true` and SOPS
-decryption. It depends on `infra-cnpg-plugin` (the CNPG operator) and on
+decryption. It depends on `infra-cnpg-plugin` (the barman-cloud plugin) and on
 `infra-reflector`, the central `ghcr-pull-secret` source in
 `infrastructure/controllers/staging/reflector` — no `ghcr-pull-secret` is
 defined in this component; it is mirrored into the `scraper` namespace from
@@ -66,7 +66,7 @@ when the replica is unavailable so they never block. There is no real HA here
 worth protecting a write path for.
 
 **No `postInit` bootstrap.** The schema is owned by Flyway (the
-`scraper-db-migrations` Job, gated ahead of the apps tier), mirroring asp and
+`scraper-db-migrate` Job, gated ahead of the apps tier), mirroring asp and
 fbref. A fresh cluster comes up empty and the Job applies V1 onward as the `app`
 owner; an existing cluster is baselined at 0 and the idempotent V-files re-run
 as no-ops.
@@ -76,7 +76,8 @@ extra roles, so there is nothing for CNPG to manage and no role-password Secret
 in the overlay.
 
 **Pinned `imageName`.** The Postgres image is pinned to what the operator
-deployed; Renovate bumps it.
+deployed, and it is bumped by hand: `renovate.json` scopes the kubernetes manager
+to `/apps/.+/db-migrations/.+\.yaml$/`, so Renovate never reads this file.
 
 **No backups.** This cluster holds queues, config and health only, all
 rebuildable from the seed migrations, so it has no `ObjectStore`, no

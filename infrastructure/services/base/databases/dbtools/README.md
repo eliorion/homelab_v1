@@ -443,7 +443,9 @@ basic-auth Secret has no `uri` key and its `-app` uri would point at the
 - **`imageName`, not `image`, on the CNPG Cluster**, and
   `ghcr.io/cloudnative-pg/cloudnative-pg` is the *operator* image — it must never
   be set there. The value is `ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie`,
-  pinned to what the operator deployed; Renovate bumps it.
+  pinned to what the operator deployed and bumped by hand — `renovate.json`
+  scopes the kubernetes manager to `/apps/.+/db-migrations/.+\.yaml$/`, so
+  Renovate never reads this file.
 - **`dbtools-db` has no backup.** Losing it costs a re-login and a re-import of
   `servers.json`, not data — but nothing will restore it.
 - **`databaseReclaimPolicy: retain` on the `pgadmin` Database CR.** Deleting the

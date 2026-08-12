@@ -1,32 +1,23 @@
 #!/bin/bash
-# Read-only etcd restore drill (doc 09, Tier 0 + Tier 1).
-#
-# Fetches the newest talos-backup snapshot from Garage, decrypts it with your
-# OFFLINE age private key, restores it into a throwaway etcd, and reads the real
-# control-plane state back out. The live cluster is never contacted for the
-# restore. This proves the backup is a restorable copy of the whole control
-# plane, not just a well-formed file.
-#
-# It does NOT touch the destructive Tier 2 (talosctl reset / bootstrap
-# --recover-from) -- that stays manual and deliberate, by design.
-#
-# Security: the snapshot contains every Kubernetes Secret in plaintext. This
-# script works in a 0700 mktemp dir and shreds every plaintext file on exit
-# (even on Ctrl-C / error). A --offline-key FILE is used in place, never copied;
-# a pasted key is fed to age over stdin, so it never touches disk, argv, or the
-# environment. Garage read creds come from the SOPS secret and live only in this
-# process's env.
+# Read-only etcd restore drill (doc 09, Tier 0 + Tier 1): fetch the newest
+# talos-backup snapshot from Garage, decrypt it with the OFFLINE age private
+# key, restore it into a throwaway etcd and read control-plane state back out.
+# Nothing is restored into the live cluster; the destructive Tier 2 (talosctl
+# reset / bootstrap --recover-from) stays manual and deliberate, by design.
 #
 # Usage:
 #   scripts/etcd-restore-drill [--offline-key PATH] [--keep]
 #     --offline-key PATH  the offline etcd-backup age private key FILE. If omitted,
-#                         you are prompted to PASTE the key (hidden input; it is
-#                         fed to age over stdin and never written to disk).
-#     --keep              do NOT shred the workdir afterwards (leaves plaintext
-#                         secrets on disk -- for inspection only)
+#                         you are prompted to PASTE the key (hidden input).
+#     --keep              do NOT shred the workdir afterwards -- it holds every
+#                         Kubernetes Secret in PLAINTEXT. Inspection only.
 #
 #   Or via mise:  mise run etcd-drill -- --offline-key ~/etcd-backup-age.key
 #                 mise run etcd-drill            # then paste the key when prompted
+#
+# Env overrides: SECRET_FILE, BUCKET, S3_PREFIX, GW_PORT, ETCD_CLIENT_PORT,
+# ETCD_PEER_PORT, SOPS_AGE_KEY_FILE (default clusters/staging/age.agekey).
+# Full explanation: scripts/README.md
 
 set -euo pipefail
 
@@ -44,8 +35,8 @@ die() { echo "error: $*" >&2; exit 1; }
 
 usage() { sed -n '2,30{/^#/!q;s/^# \{0,1\}//p}' "$0"; }
 
-# Decrypt SRC -> DST with whichever key source was chosen: a --offline-key FILE,
-# or the pasted key piped to age over stdin (-i -), never hitting disk.
+# Decrypt $1 -> $2 with the --offline-key FILE, or the pasted key over stdin.
+# Keep the stdin path: writing a pasted key to a temp file defeats the point.
 age_decrypt() {
   if [ -n "$OFFLINE_KEY" ]; then
     age -d -i "$OFFLINE_KEY" -o "$2" "$1"
@@ -148,8 +139,7 @@ log "newest: $OBJ"
 aws --endpoint-url "$ENDPOINT" s3 cp "s3://$BUCKET/$S3_PREFIX/$OBJ" "$WORK/$OBJ" >/dev/null
 
 # --- decrypt (offline key) then decompress ------------------------------------
-# talos-backup with compression names objects *.snap.zst.age (decrypt, then
-# decompress); without, *.snap.age (decrypt only).
+# ENABLE_COMPRESSION on -> *.snap.zst.age; off -> *.snap.age.
 log "decrypting with offline key + decompressing"
 case "$OBJ" in
   *.zst.age)

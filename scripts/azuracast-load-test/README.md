@@ -46,11 +46,16 @@ it is leftover — delete it.
 | `watch-live.sh` | Samples a real broadcast through the public relay → `live.csv` (not committed). |
 | `results.csv` | The 2026-08-09 in-cluster run, 0 → 1000 listeners. |
 | `remote-results.csv` | The 2026-08-10 two-site remote run. |
-| `remote-results-site-c.csv` | The follow-up attribution run, site C alone (`SITES=c OUT=remote-results-site-c.csv`). |
+| `remote-results-site-c.csv` | The follow-up attribution run, site C alone (`SITES=c STEPS="60 100" OUT=remote-results-site-c.csv` — its two rows are per-site 60 and 100, not the default ramp). |
 
 Every script takes the cluster through
 `sudo env KUBECONFIG=$KUBECONFIG_PATH kubectl …`, with `KUBECONFIG_PATH`
 defaulting to `/workspaces/homelabv1/bootstraping/kubeconfig`.
+
+Both generator manifests run the container unprivileged — `runAsNonRoot`,
+`runAsUser: 100`, `readOnlyRootFilesystem`, all capabilities dropped,
+`RuntimeDefault` seccomp. Nothing here needs privilege, and that satisfies the
+`restricted` PSA level Talos audits against, so the apply is silent.
 
 ## In-cluster sweep
 
@@ -72,10 +77,17 @@ sudo env KUBECONFIG=../../bootstraping/kubeconfig kubectl apply -f namespace.yam
 `monitoring` to `localhost:9090` for the duration and kills it on exit. Defaults:
 `STEPS="0 1 10 20 50 100 500 1000"`, `SETTLE=120`, `WINDOW=180`, `PER_POD=250`,
 output `results.csv` (or `$1`). Eight steps at 120 s settling plus a 180 s rate
-window is about **40 minutes**; the older six-step form took ~35.
+window is about **40 minutes**.
 
 The window has to be at least as long as the `rate()` range in `collect.sh`'s
 queries (3 m) or the numbers are averaged over data that predates the step.
+
+A bare `curl -sS -o /dev/null --no-buffer` is a listener, not a downloader:
+Icecast paces the socket at the mount bitrate, so a client that reads
+continuously holds the mount open and consumes at the stream's own pace. The
+`sleep 0.05` between connections is a stagger — without it a hundred of them
+arrive in one burst and the step measures connection setup rather than steady
+state.
 
 Above `PER_POD` listeners the load shards across replicas: a thousand `curl`
 processes in one container is ~1–3 GB of RSS and starts measuring the
@@ -149,10 +161,16 @@ Icecast Service in
 `tailscale-proxy-scrape-c` (site c, node C). Both exist for the scraper's egress
 pools; the load test borrows them as real internet endpoints somewhere else.
 
+Borrowing them is the point: the bytes cross the real uplink with no VPS, no
+port forward and nothing published to the public internet — both ends of the
+path are on the tailnet. Keep any change to this rig inside that constraint.
+
 **Two deployments, one per site, deliberately ramped together.** If one site
 degrades and the other does not, the limit is that site's own connection, not the
-uplink — a single generator could not tell those apart. `SITE` arrives via
-`envFrom` on a per-site ConfigMap and is what the log-scraping helpers select on.
+uplink — a single generator could not tell those apart. The pods carry a
+`site: b` / `site: c` label and that is what the log-scraping helpers select on
+(`-l app=listener-sim-remote,site=…`); the `SITE` value, which arrives via
+`envFrom` on a per-site ConfigMap, only labels the container's startup line.
 
 ```bash
 sudo env KUBECONFIG=../../bootstraping/kubeconfig kubectl apply -f namespace.yaml -f listener-sim-remote.yaml
@@ -161,8 +179,10 @@ sudo env KUBECONFIG=../../bootstraping/kubeconfig kubectl apply -f namespace.yam
 
 Defaults: `STEPS="1 5 15 30 60 100 150 250"` (**per site** — total is
 `per_site × participating sites`), `SITES="b c"`, `SETTLE=150`, `FLOOR=23000`,
-output `remote-results.csv` (`$OUT`). The script scales both generators to 0 on
-exit.
+output `remote-results.csv` (`$OUT`). The script scales both generators to 0
+after the loop, ceiling break included — but the only `trap` kills the
+port-forward, so a Ctrl-C or a failure mid-sweep leaves both of them connected.
+Scale them down by hand if the run does not reach its own last line.
 
 Each simulated listener re-opens the stream every `WINDOW` (120 s in the
 manifest) and prints the throughput it actually achieved via `curl -w`. The
@@ -200,6 +220,10 @@ Drives nothing; samples every `EVERY` seconds (default 10) for `MINUTES`
 (default 60) into `$OUT` (default `live.csv` next to the script), then prints the
 peak row. Columns:
 `iso_time, relay_listeners, master_cpu_cores, master_mem_MiB, master_tx_KiB_s`.
+
+It writes the whole time series rather than that one row because the peak is the
+least of what a real broadcast shows: the shape of the arrival curve and the cost
+per listener can only be read across rows.
 
 The listener count comes from the **relay's** `status-json.xsl`, not the master's:
 with a relay in front, the master has exactly one listener — the relay — however

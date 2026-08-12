@@ -39,8 +39,9 @@ What the template sets, and why those values:
 - `<relay>` with `on-demand=1` pulls nothing while nobody is listening, so an
   idle relay costs the home uplink nothing. The first listener waits a second or
   so for the pull to establish.
-- Both logs go to the container's stdout, so `docker compose logs` is the whole
-  story — and the access log is where the listener reports land.
+- The access log goes to the container's stdout and the error log to stderr, so
+  `docker compose logs` is the whole story — and the access log is where the
+  listener reports land.
 - `<chroot>0</chroot>` because the process already runs as the unprivileged
   `icecast` user inside a container.
 
@@ -128,7 +129,9 @@ RELAY=https://radio.example.com ../azuracast-load-test/watch-live.sh 90
 `collect-reports.sh` reads the results out of Icecast's access log. The test page
 reports by requesting `/report?kbps=…`, which 404s — deliberately, so there is no
 endpoint to write, secure or keep running. Only the six numbers shown on screen
-are sent, and the collector truncates IPs to two octets.
+are sent, and the collector truncates IPs to two octets — enough to tell testers
+apart and to spot one network behaving differently, not enough to identify
+anyone.
 
 **Read the audience size from the relay, never from AzuraCast.** The master sees
 exactly one listener — the relay — however many people are connected.
