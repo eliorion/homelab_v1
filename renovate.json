@@ -3,6 +3,16 @@
   "kubernetes": {
     "managerFilePatterns": ["/apps/.+/db-migrations/.+\\.yaml$/"]
   },
+  "customManagers": [
+    {
+      "description": "Images pinned inline under infrastructure/ -- CronJob pod specs and the ARC dind pod templates embedded in HelmRelease spec.values. Neither is reachable by a built-in manager: the `kubernetes` manager above is scoped to the db-migrations Jobs, the `flux` manager only reads chart versions, and `helm-values` only reads values.yaml FILES, not values inlined in a HelmRelease CR. Without this block every `# renovate:` comment under infrastructure/ is inert -- which is how the talos-backup pin in etcd-backup/cronjob.yaml has been carrying an annotation nobody was reading. Keyed on the annotation, so a file is scanned only where the comment is present and adding one is opt-in.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^infrastructure/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+image: \\S+:(?<currentValue>[^\\s\"']+)"
+      ]
+    }
+  ],
   "packageRules": [
     {
       "description": "db-migrations images tag as <component>-vX.Y.Z (release-please); teach Renovate that non-semver scheme so it can bump them",
@@ -11,6 +21,11 @@
         "ghcr.io/eliorion/fbref-db-migrations"
       ],
       "versioning": "regex:^.*-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    },
+    {
+      "description": "The two ARC runner images must move together with the chart pair, and a bad runner pin breaks CI invisibly -- a scale set idling at zero has no pod to crash, so the failure surfaces only when someone opens a PR. Group them into one reviewable bump.",
+      "matchPackageNames": ["ghcr.io/actions/actions-runner"],
+      "groupName": "actions-runner"
     }
   ]
 }
