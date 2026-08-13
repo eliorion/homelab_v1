@@ -773,6 +773,48 @@ wait inside the Job.
 
 **Reference.** `clusters/staging/infrastructure.yaml`
 
+### Every HelmRelease sets `upgrade.remediation.retries`, because the default is a silent latch
+
+**Why.** `retries` defaults to `0`, and `0` does not mean "retry with the normal reconcile
+loop". It means helm-controller marks the release `Stalled=True reason=RetriesExceeded`
+after **one** failed upgrade and never attempts it again. The release keeps reporting on its
+`interval`, so `flux get helmreleases` shows a row and the Kustomization above it stays
+Ready — the only signal is `Ready=False` on that one object.
+
+That is not hypothetical. Nexus latched on a single failed upgrade on 2026-07-27 and sat
+`Ready=False` for **sixteen days** with nothing retrying. The same latch caught
+`kube-prometheus-stack` on 2026-08-11, minutes after a values change, and needed a manual
+`reconcile.fluxcd.io/forceAt` to move. At the time of the sweep **fourteen of nineteen**
+releases were unguarded, including `cilium`, `longhorn` and `cnpg` — the CNI, the storage
+layer and every database.
+
+There is a second reason beyond the retry. With `retries: 0`, `remediateLastFailure`
+defaults to `false`, so a failed upgrade is not remediated **at all**: the release is left
+exactly as the failed upgrade left it, which for a partially-applied chart means half the
+new version is live and nothing will finish or undo it. Setting `retries: 3` turns that into
+rollback-then-retry, so even the case where a rollback is unwelcome is an improvement on the
+case where nothing happens.
+
+**Rejected.** Per-release tuning of the retry count. The number is not the interesting part —
+the difference that matters is between "never retries" and "retries", and a uniform value is
+one less thing to get wrong. Also rejected: leaving the CRD-bearing controllers
+(`cilium`, `longhorn`, `cnpg`, `cert-manager`, `keda`) unguarded on the grounds that rolling
+a CNI or a storage layer back is risky. It is, but see the paragraph above: the status quo
+for those releases was not "stay safely on the old version", it was "stay half-upgraded
+forever".
+
+**Cost.** A deterministically-failing upgrade now churns four times instead of once before
+stalling, and each cycle rolls the workload. On `cilium` that is CNI pod churn; on `longhorn`
+it is manager churn while volumes are attached. The end state is the same `Stalled` as
+before — the retries buy self-healing for transient failures (registry blip, a rollout that
+crosses `timeout`, a webhook not yet up) at the price of noisier failure for permanent ones.
+Helm does not roll CRDs back, so a rollback leaves the newer CRDs in place with the older
+controller; that is tolerable because chart CRD changes are additive in practice, but it is
+the reason a rollback is not a true return to the previous state.
+
+**Reference.** `infrastructure/services/base/nexus/release.yaml` carries the original
+diagnosis inline; every other release points here.
+
 ### SOPS with age, encrypting only the values
 
 **Why.** With `encrypted_regex` scoped to the data blocks, manifest structure stays

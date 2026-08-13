@@ -1,0 +1,29 @@
+# Source for the asp app Helm chart (k8s/charts/asp in the asp repo).
+#
+# One-time manual setup — the flux-system Kustomization has no sops decryption,
+# so the read-only deploy key is created out-of-band (same pattern as the
+# flux-system secret itself):
+#
+#   flux create secret git asp-deploy-key \
+#     --url=ssh://git@github.com/eliorion/asp
+#
+# then add the printed public key as a READ-ONLY deploy key on the asp GitHub
+# repo (Settings → Deploy keys).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: asp
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: ssh://git@github.com/eliorion/asp
+  ref:
+    branch: main
+  secretRef:
+    name: asp-deploy-key
+  # Only the chart path produces a new artifact revision, so the HelmRelease's
+  # reconcileStrategy: Revision fires exactly on bump-chart commits (CI tag
+  # bumps in values.yaml) and chart/template changes — not on app-code churn.
+  ignore: |
+    /*
+    !/k8s/charts/asp/
