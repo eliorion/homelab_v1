@@ -112,6 +112,40 @@ here and `gha-runner-scale-set-controller` in
 `infrastructure/controllers/base/arc/release.yaml` are all `0.14.2`. Renovate
 bumps them separately and nothing enforces the rule but a comment and a human.
 
+### The runner emptyDirs carry a `sizeLimit`, and it is a runaway guard
+
+Every runner pod mounts three `emptyDir` volumes — `work` (`/home/runner/_work`,
+where checkouts and every image dind builds land), `dind-sock` and
+`dind-externals`. They were unbounded, which on this cluster is a control-plane
+risk rather than a CI one: there is exactly **one data partition per node**, so
+`/var` holds etcd's WAL, Longhorn replica data, the container image store *and*
+these volumes. A runner that fills the disk does not just fail its own job — it
+stalls etcd's fsync on that node. That failure mode is not theoretical here; see
+`infrastructure/controllers/base/longhorn/README.md`.
+
+The exposure was the shape of it: the standard set scales to `maxRunners: 25`
+with no per-pod bound at all, against 417 GiB of allocatable ephemeral storage
+on node 1 (nodes 2 and 3 have 836 GiB).
+
+| Volume | standard | xl | Why |
+|---|---|---|---|
+| `work` | 25Gi | 80Gi | xl runs the k3d e2e — a whole cluster plus ~10 built images inside dind |
+| `dind-externals` | 2Gi | 2Gi | Runner externals, measured at well under 1 GiB |
+| `dind-sock` | 1Gi | 1Gi | A socket directory; the bound is nominal |
+
+**These numbers are deliberately generous, and that is the point.** The measured
+idle floor is 587 MiB per runner, all of it in `work`. There is no measurement
+of an e2e *peak* — it needs a real CI run to observe, and Prometheus holds only
+about 19h of history — so a tight quota would be a guess that fails builds. A
+loose cap is not a guess: it cannot reject legitimate work, and it still turns a
+runaway (a leaked docker layer cache, a build loop) from "the node fills and
+etcd stalls" into "one pod is evicted". Tighten them once an e2e run has been
+measured with `kubectl get --raw /api/v1/nodes/<node>/proxy/stats/summary`.
+
+Deliberately **not** set: `ephemeral-storage` requests and limits. Requests only
+affect scheduling, and scheduling is not the binding constraint on a 3-node
+cluster with this few pods — node fill is, and `sizeLimit` is what bounds that.
+
 ## Traps
 
 - **The two ARC chart versions must match.** `gha-runner-scale-set` `0.14.2` in

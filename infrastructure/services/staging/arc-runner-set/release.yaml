@@ -104,10 +104,15 @@ spec:
                 mountPath: /home/runner/_work
               - name: dind-sock
                 mountPath: /var/run
+        # sizeLimit is a RUNAWAY GUARD, not a quota. An unbounded emptyDir on a
+        # dind runner can fill /var, which is also etcd's disk. See README.md.
         volumes:
           - name: work
-            emptyDir: {}
+            emptyDir:
+              sizeLimit: 25Gi
           - name: dind-sock
-            emptyDir: {}
+            emptyDir:
+              sizeLimit: 1Gi
           - name: dind-externals
-            emptyDir: {}
+            emptyDir:
+              sizeLimit: 2Gi
