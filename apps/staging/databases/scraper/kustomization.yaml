@@ -5,6 +5,7 @@ namespace: scraper
 
 resources:
   - ../../../base/databases/scraper
+  - serving-metrics-configmap.yaml
 
 patches:
   # PVCs on Longhorn.
@@ -14,6 +15,11 @@ patches:
       name: scraper-db
   # Permit reflection of the -app secret into the `database` ns.
   - path: cluster-reflector-patch.yaml
+    target:
+      kind: Cluster
+      name: scraper-db
+  # Export the per-site serving pause flags as CNPG metrics.
+  - path: cluster-metrics-patch.yaml
     target:
       kind: Cluster
       name: scraper-db

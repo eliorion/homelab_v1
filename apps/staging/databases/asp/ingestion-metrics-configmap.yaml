@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: asp-ingestion-metrics
+data:
+  queries: |
+    asp_ingestion:
+      # `id = 1` is the row the engine and the admin BFF both read. Other rows
+      # in worker_control are inert -- do not aggregate over the table.
+      query: |
+        SELECT
+          (SELECT pg_catalog.count(*) FROM public.worker_control
+             WHERE id OPERATOR(pg_catalog.=) 1 AND paused) AS scraping_paused,
+          (SELECT pg_catalog.count(*) FROM public.worker_control
+             WHERE id OPERATOR(pg_catalog.=) 1 AND crawler_paused) AS searching_paused,
+          COALESCE(
+            EXTRACT(EPOCH FROM (pg_catalog.now() OPERATOR(pg_catalog.-)
+              (SELECT pg_catalog.max(scraped_at) FROM public.listings))),
+            -1) AS seconds_since_last_listing
+      primary: true
+      target_databases:
+        - automarket
+      metrics:
+        - scraping_paused:
+            usage: "GAUGE"
+            description: "1 when the asp engine has stopped submitting URLs (worker_control.paused)"
+        - searching_paused:
+            usage: "GAUGE"
+            description: "1 when the asp engine has stopped submitting searches (worker_control.crawler_paused)"
+        - seconds_since_last_listing:
+            usage: "GAUGE"
+            description: "Age of the newest listings row, or -1 when the table is empty"

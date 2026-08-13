@@ -1,0 +1,68 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ingestion-alerts
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: ingestion.pause
+      rules:
+        # Both pause flags below are ONE-WAY: auto-pause is automatic, resume is
+        # manual. Nothing in either codebase ever clears them.
+        - alert: AspIngestionPaused
+          expr: max(cnpg_asp_ingestion_scraping_paused) > 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "asp has stopped submitting URLs"
+            description: >-
+              worker_control.paused is set, so the asp engine submits no new
+              URLs. Resume is manual. Check the platform side too --
+              ScraperSiteServingPaused covers the other switch, and clearing
+              only this one leaves the queue stalled.
+
+        - alert: AspSearchingPaused
+          expr: max(cnpg_asp_ingestion_searching_paused) > 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "asp has stopped submitting searches"
+            description: >-
+              worker_control.crawler_paused is set, so no new ads are
+              discovered. Existing queued URLs still drain, so listings keep
+              being written and the staleness alert stays silent.
+
+        # The end-to-end check. Independent of both flags on purpose: it also
+        # catches a stall neither pause explains.
+        - alert: AspNoNewListings
+          expr: max(cnpg_asp_ingestion_seconds_since_last_listing) > 21600
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No listing written in over 6h"
+            description: >-
+              Newest listings row is
+              {{ $value | humanizeDuration }} old. This fires whether or not a
+              pause flag explains it.
+
+        # Keyed on pending>0 so a deliberately parked site (e2e-live-check) does
+        # not alert. A paused site with a backlog is the real failure.
+        - alert: ScraperSiteServingPaused
+          expr: >-
+            max by (site, role) (cnpg_scraper_serving_paused) > 0
+            and on (site) max by (site) (cnpg_scraper_serving_pending) > 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Platform not serving {{ $labels.site }} ({{ $labels.role }}) with work queued"
+            description: >-
+              domain_control.paused is set for {{ $labels.site }}/{{ $labels.role }}
+              while requests are still pending. Those lanes are excluded from
+              leasing AND from every KEDA scale trigger, so the fleet will not
+              scale to drain them and the anti-bot ladder cannot escalate --
+              no fetches means no blocks means no re-probe.

@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scraper-serving-metrics
+data:
+  queries: |
+    scraper_serving:
+      # One row per (site, role). `paused` here is the PLATFORM-side switch and
+      # is independent of any tenant's own pause flag -- both must be clear for
+      # work to flow. `pending` is what makes a pause alertable: a paused site
+      # with no backlog is a deliberate off-switch, not an outage.
+      query: |
+        SELECT sc.site AS site
+          , dc.role AS role
+          , (CASE WHEN dc.paused THEN 1 ELSE 0 END) AS paused
+          , COALESCE(p.pending, 0) AS pending
+        FROM public.domain_control dc
+        JOIN public.site_config sc ON sc.id OPERATOR(pg_catalog.=) dc.site_config_id
+        LEFT JOIN (
+          SELECT l.site_config_id AS scid
+            , pg_catalog.count(*) AS pending
+          FROM public.scrape_requests r
+          JOIN public.lanes l ON l.id OPERATOR(pg_catalog.=) r.lane_id
+          WHERE r.status OPERATOR(pg_catalog.=) 'pending'
+          GROUP BY l.site_config_id
+        ) p ON p.scid OPERATOR(pg_catalog.=) sc.id
+      primary: true
+      target_databases:
+        - scraper
+      metrics:
+        - site:
+            usage: "LABEL"
+            description: "Site the lane serves"
+        - role:
+            usage: "LABEL"
+            description: "server, scraper or crawler"
+        - paused:
+            usage: "GAUGE"
+            description: "1 when the platform has stopped serving this site+role (domain_control.paused)"
+        - pending:
+            usage: "GAUGE"
+            description: "scrape_requests still pending on this site's lanes"

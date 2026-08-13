@@ -1,0 +1,13 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: asp-db
+spec:
+  monitoring:
+    # A strategic merge on a CRD list REPLACES it -- cnpg-default-monitoring
+    # must be restated here or every default CNPG metric disappears.
+    customQueriesConfigMap:
+      - name: cnpg-default-monitoring
+        key: queries
+      - name: asp-ingestion-metrics
+        key: queries
