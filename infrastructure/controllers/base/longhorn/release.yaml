@@ -34,6 +34,9 @@ spec:
       # disks keep their storageReserved and must be patched on the Node CRs
       # (documentations/07-talos-ha-expansion.md, "Growing a volume").
       storageReservedPercentageForDefaultDisk: 15
+      # Was 5 (chart default). /var is ALSO etcd's disk, so a rebuild storm here
+      # stalls the control plane — see README.md, "One partition per node".
+      concurrentReplicaRebuildPerNodeLimit: 1
     persistence:
       defaultClassReplicaCount: 3
     service:
