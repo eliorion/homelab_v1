@@ -125,16 +125,57 @@ the age **private** key is stored outside the cluster entirely. Full 3-2-1
 
 ## Retention
 
-`talos-backup` does not prune. Set a lifecycle expiry on the bucket from the
-Garage host — 30 days, which at 4 snapshots/day is ~120 objects:
+`talos-backup` does not prune, and until 2026-08-12 nothing else did either — the
+bucket had grown unbounded since the day it was created. Measured by listing
+`s3://homelab-staging-etcd-backup/staging`:
 
-```bash
-aws --endpoint-url http://<garage-host>:3900 s3api put-bucket-lifecycle-configuration \
-  --bucket homelab-staging-etcd-backup --lifecycle-configuration file://lifecycle.json
-```
+| | |
+|---|---|
+| Objects | 65, spanning 16.2 days |
+| Total stored | 9.45 GiB |
+| Per object | 148.8 MiB (64 of the 65 byte-identical) |
+| Growth | 4 runs/day → 602 MiB/day → **17.6 GiB/month**, forever |
 
-If the installed Garage version does not support lifecycle rules, add a small
-prune CronJob rather than letting the bucket grow unbounded.
+Pruning is done by the **`etcd-backup-prune` CronJob**
+(`infrastructure/services/base/etcd-backup/prune-cronjob.yaml`), daily at 04:30,
+keeping **30 days ≈ 120 objects ≈ 17.6 GiB** steady state.
+
+This deliberately takes what the previous version of this section called the
+fallback. A bucket lifecycle rule applied with
+`aws s3api put-bucket-lifecycle-configuration` lives in no repository — a
+retention policy nobody can review in a diff is how a bucket silently stops
+keeping what everyone assumed it kept. The CronJob is in git and its retention
+is a value in a diff.
+
+Because the job deletes backups, it is guarded four ways, and each guard was
+exercised against a 65-object fixture before it shipped:
+
+| Guard | Value | What it prevents |
+|---|---|---|
+| `set -e` | — | A failed listing aborting into a delete loop with no input |
+| `MIN_KEEP` | 28 objects (7 days) | Any age-based logic — or a skewed clock — dropping below a week of history |
+| `MAX_DELETE` | 24 per run | A wrong `RETENTION_DAYS` emptying the bucket in one pass instead of eroding visibly |
+| `DRY_RUN` | `false` (live) | — logs the full plan and deletes nothing when `true` |
+
+The floor is the important one. Simulated with `RETENTION_DAYS=0`, i.e. every
+object expired, the job converges to exactly 28 objects over two runs and then
+deletes nothing on every subsequent run. It cannot empty the bucket.
+
+It was also safe to ship live rather than in dry-run: the oldest object was 16.2
+days old against a 30-day retention, so the first ~14 days of runs are
+arithmetically incapable of deleting anything. They log the plan and exit.
+
+### Known defect: compression is not happening
+
+The stored objects are named `.snap.age`, **not** `.snap.zst.age`, and each is
+exactly the size of the raw snapshot. `ENABLE_COMPRESSION: "true"` is set in
+`etcd-backup-config` and is having no effect on the pinned
+`v0.1.0-beta.3` — a third quirk of that pin, alongside the two already recorded
+(both age vars set, `USE_PATH_STYLE` inverted).
+
+Fixing it would divide every number above by the zstd ratio on an etcd snapshot.
+It is not bundled with the retention work because it changes the object **name**,
+and therefore the restore commands below.
 
 ## Offsite prerequisites — a restore is impossible without these
 

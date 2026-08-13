@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - talos-serviceaccount.yaml
   - cronjob.yaml
+  - prune-cronjob.yaml
