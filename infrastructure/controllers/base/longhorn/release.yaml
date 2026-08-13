@@ -18,6 +18,12 @@ spec:
   install:
     # Helm must NOT create it: namespace.yaml carries the privileged PSA labels.
     createNamespace: false
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
   values:
     defaultSettings:
       # Must match the Talos kubelet extraMounts bind destination.

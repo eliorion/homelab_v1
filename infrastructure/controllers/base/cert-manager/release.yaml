@@ -17,6 +17,12 @@ spec:
       interval: 12h
   install:
     createNamespace: true
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
   values:
     crds:
       enabled: true

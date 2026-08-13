@@ -18,6 +18,12 @@ spec:
         name: arc
         namespace: flux-system
       interval: 12h
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
   values:
     githubConfigUrl: https://github.com/Eliorion/asp
     githubConfigSecret: arc-github-pat

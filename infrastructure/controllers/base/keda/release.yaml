@@ -19,7 +19,12 @@ spec:
     createNamespace: true
     # Helm owns the chart's crds/ dir.
     crds: Create
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
   upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
     # Must stay CreateReplace or the CRDs go stale on a chart bump.
     crds: CreateReplace
   values:

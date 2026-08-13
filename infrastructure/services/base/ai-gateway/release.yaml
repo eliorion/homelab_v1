@@ -17,6 +17,12 @@ spec:
         name: bifrost
         namespace: flux-system
       interval: 12h
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
   values:
     # BOTH are load-bearing: they keep the Service, the selector labels and the
     # ServiceMonitor named `ai-gateway`, never `bifrost`.

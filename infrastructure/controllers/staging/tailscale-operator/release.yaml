@@ -17,6 +17,10 @@ spec:
       interval: 12h
   install:
     createNamespace: true
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
   values:
     # Must stay empty: the chart then uses the pre-created `operator-oauth` SOPS
     # Secret instead of templating its own. NEVER put creds here (plaintext GitOps).

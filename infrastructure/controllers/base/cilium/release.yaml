@@ -17,6 +17,12 @@ spec:
       interval: 12h
   install:
     createNamespace: false # kube-system already exists
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
   values:
     ipam:
       mode: kubernetes # reuse the per-node podCIDR Talos allocates (10.244.0.0/16)

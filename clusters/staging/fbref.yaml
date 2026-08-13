@@ -1,0 +1,54 @@
+# fbref deploys independently of asp — its own Flux Kustomizations (own ns,
+# own CNPG cluster, own reconcile/health). Mirrors the asp databases→apps shape
+# (clusters/staging/apps.yaml) but scoped to the fbref paths. No db-migrations
+# tier: fbref has no Flyway (schema bootstraps via the CNPG init ConfigMap).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: fbref-databases
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  dependsOn:
+    - name: infra-cnpg-plugin # CNPG operator + barman plugin must exist first
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/staging/databases/fbref
+  prune: true
+  wait: true # Ready when the CNPG fbref-db Cluster reports Ready
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: fbref-app
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  dependsOn:
+    - name: fbref-databases # needs fbref-db + its app/pull secrets first
+  retryInterval: 1m
+  timeout: 10m # > the HelmRelease timeout (chart helm-test + rollback)
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/staging/fbref
+  prune: true
+  wait: true
+  # Surface the fbref app health here: NotReady when the fbref HelmRelease fails
+  # (e.g. an upgrade auto-rolled-back), independent of asp.
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: fbref
+      namespace: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
