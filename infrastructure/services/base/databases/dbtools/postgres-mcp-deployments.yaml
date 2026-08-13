@@ -1,32 +1,9 @@
-# Postgres MCP Pro (crystaldba/postgres-mcp) — ONE INSTANCE PER DATABASE.
+# Postgres MCP Pro (crystaldba/postgres-mcp) — ONE INSTANCE PER DATABASE, which
+# is the isolation and not a convenience. See README.md "Postgres MCP Pro".
 #
-# An MCP server the ai-gateway hands to LLM clients: schema exploration,
-# read-only SQL, EXPLAIN and database-health checks. Unlike pgAdmin and nao,
-# which each hold all three DSNs, these are pinned one-to-one:
-#
-#   postgres-mcp-fbref   → fbref-db-ro.fbref     / fbref
-#   postgres-mcp-asp     → asp-db-ro.asp         / automarket
-#   postgres-mcp-scraper → scraper-db-ro.scraper / scraper
-#
-# THAT SPLIT IS THE POINT. The server binds one connection pool at startup and
-# exposes no tool to switch database, so the fbref instance cannot read asp even
-# if asked to. Three layers hold it: one DSN per pod, a per-instance egress
-# NetworkPolicy (postgres-mcp-networkpolicies.yaml) that permits only that one
-# CNPG cluster, and per-virtual-key scoping in the ai-gateway dashboard.
-#
-# WHICH PROJECT A POD SERVES IS READABLE IN FOUR PLACES, and they must agree:
-# the object name, the `project` label (`kubectl -n database get pods
-# -l project=fbref`), the PROJECT env var (visible in `kubectl describe pod`,
-# where the DSN's password makes plain `env` output awkward to read), and the
-# Bifrost client name `postgres_<project>`, which puts the project into every
-# tool name the model sees.
-#
-# READ-ONLY, same trust model as pgAdmin and nao (see the header of
-# db-reflect-stubs.yaml and README "Why this is read-only"): these authenticate
-# as the cluster's `app` OWNER role, and what makes that safe is the HOST — the
-# `-ro` service selects replicas only, which are in recovery and reject any
-# write with SQLSTATE 25006. `--access-mode=restricted` wraps every statement in
-# a read-only transaction on top of that, but the replica is the real boundary.
+# WHICH PROJECT A POD SERVES IS DECLARED IN FOUR PLACES AND THEY MUST AGREE: the
+# object name, the `project` label, the PROJECT env var, and the Bifrost client
+# name `postgres_<project>` in the ai-gateway dashboard.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -39,8 +16,8 @@ metadata:
 spec:
   replicas: 1
   selector:
-    # `app` ONLY. A Deployment selector is immutable, so adding `project` here
-    # would buy nothing and lock in a rename.
+    # `app` ONLY — a Deployment selector is immutable, so adding `project` here
+    # would lock in a rename.
     matchLabels:
       app: postgres-mcp-fbref
   template:
@@ -50,41 +27,28 @@ spec:
         component: dbtools
         project: fbref
     spec:
-      # postgres-mcp never calls the Kubernetes API. A mounted ServiceAccount
-      # token would be the one credential in this pod that is NOT scoped to a
-      # single database, which is the whole property these instances exist to
-      # hold.
+      # No Kubernetes API access is needed, and the token would be the one
+      # credential in this pod NOT scoped to a single database.
       automountServiceAccountToken: false
-      # Drops the docker-link env vars kubelet injects for every Service in the
-      # namespace. They are noise in `kubectl describe pod` — which is exactly
-      # where PROJECT is meant to be read — and they enumerate the namespace to
-      # anything that gets code execution here.
+      # Drops the docker-link env vars kubelet injects for every Service.
       enableServiceLinks: false
-      # Pod-level as well as container-level, so a future container added to
-      # this pod cannot silently run as root.
+      # Pod-level as well as container-level, so a container added later cannot
+      # silently run as root.
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
-        # The /tmp emptyDir is the only writable path; fsGroup makes its
-        # ownership explicit instead of relying on emptyDir's default mode.
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: postgres-mcp
-          # Pinned to the latest GitHub RELEASE. `main` has carried a
-          # streamable-http transport since 2026-01-22 but no release ships it,
-          # which is why the transport below is sse.
+          # Latest GitHub RELEASE. No release ships streamable-http yet, which
+          # is why the transport below is sse.
           image: crystaldba/postgres-mcp:0.3.0
           imagePullPolicy: IfNotPresent
-          # ENTRYPOINT is ["/app/docker-entrypoint.sh", "postgres-mcp"] with an
-          # empty CMD, so `args` land as flags on postgres-mcp itself.
-          #
-          # --sse-host=0.0.0.0 is MANDATORY: the default is localhost, and a pod
-          # bound there accepts nothing. The entrypoint appends it when it sees
-          # --transport=sse; passing it explicitly is idempotent and survives an
-          # entrypoint change.
+          # --sse-host=0.0.0.0 is MANDATORY: the default is localhost and a pod
+          # bound there accepts nothing.
           args:
             - --access-mode=restricted
             - --transport=sse
@@ -94,12 +58,10 @@ spec:
             - name: http
               containerPort: 8000
           env:
-            # Not read by postgres-mcp. It is here so `kubectl describe pod`
-            # answers "which database is this one?" without decoding a DSN.
+            # Not read by postgres-mcp — a marker for `kubectl describe pod`.
             - name: PROJECT
               value: fbref
-            # The image ships no USER (it runs as root by default), so the pod
-            # forces uid 1000 below; python then needs a writable HOME.
+            # Required: the rootfs is read-only and python needs a writable HOME.
             - name: HOME
               value: /tmp
             - name: DB_USER
@@ -112,10 +74,8 @@ spec:
                 secretKeyRef:
                   name: fbref-db-app
                   key: password
-            # $(VAR) is Kubernetes env expansion over the two vars above — the
-            # CNPG basic-auth Secret has no `uri` key, and its `-app` uri would
-            # point at the PRIMARY. CNPG passwords are alphanumeric, so no
-            # URL-encoding step is needed here.
+            # Built by hand, not taken from the Secret: the CNPG `-app` uri would
+            # point at the PRIMARY. $(VAR) is Kubernetes env expansion.
             - name: DATABASE_URI
               value: postgresql://$(DB_USER):$(DB_PASSWORD)@fbref-db-ro.fbref.svc.cluster.local:5432/fbref
           securityContext:
@@ -130,14 +90,8 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
-          # TCP, not HTTP: there is no health path, and GET /sse opens a stream
-          # that would hang an HTTP probe forever.
-          #
-          # The probe is a genuine DB gate, not a formality: postgres-mcp does
-          # not bind its port until the connection pool is up, so a pod that
-          # cannot reach the replica never listens and never goes Ready.
-          # Liveness is deliberately slack (5 min of failures) so a DB restart
-          # sheds traffic instead of triggering a restart loop.
+          # TCP, not HTTP: GET /sse opens a stream that would hang an HTTP probe
+          # forever. Liveness is deliberately slack (5 min) — see README.md.
           readinessProbe:
             tcpSocket:
               port: http
@@ -183,24 +137,17 @@ spec:
         component: dbtools
         project: asp
     spec:
-      # postgres-mcp never calls the Kubernetes API. A mounted ServiceAccount
-      # token would be the one credential in this pod that is NOT scoped to a
-      # single database, which is the whole property these instances exist to
-      # hold.
+      # No Kubernetes API access is needed, and the token would be the one
+      # credential in this pod NOT scoped to a single database.
       automountServiceAccountToken: false
-      # Drops the docker-link env vars kubelet injects for every Service in the
-      # namespace. They are noise in `kubectl describe pod` — which is exactly
-      # where PROJECT is meant to be read — and they enumerate the namespace to
-      # anything that gets code execution here.
+      # Drops the docker-link env vars kubelet injects for every Service.
       enableServiceLinks: false
-      # Pod-level as well as container-level, so a future container added to
-      # this pod cannot silently run as root.
+      # Pod-level as well as container-level, so a container added later cannot
+      # silently run as root.
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
-        # The /tmp emptyDir is the only writable path; fsGroup makes its
-        # ownership explicit instead of relying on emptyDir's default mode.
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
@@ -291,24 +238,17 @@ spec:
         component: dbtools
         project: scraper
     spec:
-      # postgres-mcp never calls the Kubernetes API. A mounted ServiceAccount
-      # token would be the one credential in this pod that is NOT scoped to a
-      # single database, which is the whole property these instances exist to
-      # hold.
+      # No Kubernetes API access is needed, and the token would be the one
+      # credential in this pod NOT scoped to a single database.
       automountServiceAccountToken: false
-      # Drops the docker-link env vars kubelet injects for every Service in the
-      # namespace. They are noise in `kubectl describe pod` — which is exactly
-      # where PROJECT is meant to be read — and they enumerate the namespace to
-      # anything that gets code execution here.
+      # Drops the docker-link env vars kubelet injects for every Service.
       enableServiceLinks: false
-      # Pod-level as well as container-level, so a future container added to
-      # this pod cannot silently run as root.
+      # Pod-level as well as container-level, so a container added later cannot
+      # silently run as root.
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
-        # The /tmp emptyDir is the only writable path; fsGroup makes its
-        # ownership explicit instead of relying on emptyDir's default mode.
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault

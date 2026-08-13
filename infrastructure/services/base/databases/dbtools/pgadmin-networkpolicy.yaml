@@ -1,5 +1,4 @@
-# pgAdmin talks to exactly four Postgres clusters and DNS. No 443: it is a SQL
-# client, and the version check is disabled.
+# pgAdmin talks to exactly four Postgres clusters and DNS.
 #
 # NOTE the rw/ro Services select the SAME pods, so this policy cannot express
 # "replica only" — the read-only guarantee comes from the host in servers.json

@@ -5,17 +5,15 @@ metadata:
   namespace: n8n
 spec:
   instances: 2
-  # PostgreSQL image, pinned to what the operator deployed (Renovate bumps it).
-  # NOTE: field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg
-  # is the operator image and must never be used here.
+  # Field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg is the
+  # operator image and must never be used here.
   imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
 
   postgresql:
     synchronous:
       method: any
       number: 1
-      # preferred: fall back to async when the replica is unavailable so writes
-      # never block (single-node homelab — no real HA to protect).
+      # `required` here would block writes whenever the replica is unavailable.
       dataDurability: preferred
     parameters:
       max_connections: "100"
@@ -27,9 +25,8 @@ spec:
     initdb:
       database: n8n
       owner: app
-      # No Flyway and no db-migrations entry for this cluster: n8n runs its own
-      # TypeORM migrations on every boot. A fresh cluster comes up empty and the
-      # first n8n pod creates the whole schema (watch the startup logs).
+      # No postInit and no db-migrations entry: n8n owns its own schema (TypeORM
+      # migrations on every boot). See README.md.
 
   storage:
     size: 5Gi

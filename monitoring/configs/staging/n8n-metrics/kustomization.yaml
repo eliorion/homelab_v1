@@ -1,10 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Metrics + a deliberately narrow alert set. Per-workflow failures are NOT
-# alerted on: they surface as failed executions inside n8n's own Executions
-# view. The PrometheusRule here covers only the gap that cannot -- n8n itself
-# being down or unscraped, which silences everything else.
 resources:
   - servicemonitor.yaml
   - prometheusrule.yaml

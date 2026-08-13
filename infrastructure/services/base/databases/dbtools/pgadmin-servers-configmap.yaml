@@ -1,18 +1,13 @@
 # The three servers pgAdmin pre-registers on first login (PGADMIN_SERVER_JSON_FILE).
 #
-# Every host is the CNPG `-ro` REPLICA service: a replica is in recovery and
-# rejects writes at the server, so a mistyped UPDATE fails with SQLSTATE 25006
-# rather than mutating a project database.
+# Every host MUST stay the CNPG `-ro` REPLICA service — that is the whole write
+# boundary (README.md "Why this is read-only").
 #
-# PassFile is resolved RELATIVE TO the pgAdmin storage directory of the logged-in
-# user (/var/lib/pgadmin/storage/<email with @ -> _>/), which is why the leading
-# "/" here is not a filesystem root. The init container writes that file from the
-# reflected CNPG secrets on every start — so no password is stored in pgAdmin's
-# config database, and a CNPG credential rotation is picked up by a pod restart.
+# PassFile is resolved RELATIVE TO the logged-in user's pgAdmin storage directory
+# (/var/lib/pgadmin/storage/<email with @ -> _>/), so the leading "/" is not a
+# filesystem root.
 #
-# The import runs ONCE per user (pgAdmin records it in its config DB). Editing
-# this ConfigMap will not re-import; delete the server in the UI first, or the
-# rows in the pgadmin database's `server` table.
+# The import runs ONCE per user; editing this ConfigMap will not re-import.
 apiVersion: v1
 kind: ConfigMap
 metadata:

@@ -6,8 +6,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    # RWO Longhorn volumes and an embedded MariaDB: the old pod must release the
-    # volumes before the new one attaches. RollingUpdate deadlocks here.
+    # RWO Longhorn volumes: RollingUpdate deadlocks. Do not change.
     type: Recreate
   selector:
     matchLabels:
@@ -18,28 +17,20 @@ spec:
         app: azuracast
     spec:
       securityContext:
-        # The app runs as azuracast (uid/gid 1000) even though supervisord is
-        # root, and a fresh PVC mounts root:root 755 — so the migration step
-        # cannot write /var/azuracast/backups/pre_migration_db.sql, the schema
-        # migration aborts, and `azuracast:setup` then dies querying a column the
-        # migration never added. Upstream never hits this: Docker named volumes
-        # inherit the image's ownership, and 03_persist_dir.sh only chowns
-        # /var/azuracast/storage/*, never the backups or stations mount roots.
+        # Must match the image's azuracast user (uid/gid 1000): a fresh PVC
+        # mounts root:root 755 and the schema migration aborts without this.
         fsGroup: 1000
-        # Skip the recursive chown when the volume root already matches — the
-        # media volume is the one that gets big.
+        # Skip the recursive chown when the volume root already matches.
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: azuracast
-          # Pinned; Renovate bumps it. Do NOT pin below 0.23.6 — CVE-2026-42606
-          # (CVSS 8.1) lets any client poison X-Forwarded-Host to redirect
-          # password-reset links to an attacker host, taking over admin accounts
-          # and wiping 2FA. That matters here specifically because this instance
-          # is reachable from the internet through the tunnel.
+          # Pinned; Renovate bumps it. Do NOT pin below 0.23.6 —
+          # CVE-2026-42606, admin account takeover via X-Forwarded-Host, and
+          # this instance is reachable from the internet through the tunnel.
           image: ghcr.io/azuracast/azuracast:0.23.8
-          # No securityContext: the all-in-one image starts supervisord as root
-          # and drops privileges per-process itself. runAsNonRoot or a capability
-          # drop stops it booting.
+          # Do NOT add a container securityContext: supervisord starts as root
+          # and drops privileges per-process itself. runAsNonRoot or a
+          # capability drop stops it booting.
           ports:
             - name: http
               containerPort: 80
@@ -48,26 +39,18 @@ spec:
           env:
             - name: APPLICATION_ENV
               value: production
-            # Required, not optional. MYSQL_USER/PASSWORD/DATABASE are baked into
-            # the image; the root-password choice is not, and without one of the
-            # four MARIADB_*ROOT_PASSWORD options the first-boot init aborts with
-            # "Database is uninitialized and password option is not specified".
-            # MariaDB then starts on a datadir with no `mysql` schema and dies on
-            # "Table 'mysql.db' doesn't exist", taking nginx, php-fpm, Icecast and
-            # Liquidsoap with it — supervisord gates them all behind it.
-            # Random is right here: nothing needs the root account, since the app
-            # connects as `azuracast` over the container's own socket.
+            # Required, not optional: without one of the four
+            # MARIADB_*ROOT_PASSWORD options the first-boot init aborts, and
+            # every process supervisord gates behind MariaDB stays down.
             - name: MYSQL_RANDOM_ROOT_PASSWORD
               value: "yes"
-          # MariaDB, Redis, PHP-FPM, Icecast and Liquidsoap share this one
-          # container, so the request is for the whole stack, not a web app.
+          # Covers the whole supervisord stack, not just a web app.
           resources:
             requests:
               cpu: 500m
               memory: 1Gi
-          # First boot initialises MariaDB and runs migrations — minutes, not
-          # seconds. The startup probe carries that window (10 min) so the
-          # liveness probe can stay tight afterwards.
+          # 10 min, do not lower: first boot initialises MariaDB and runs the
+          # schema migrations, and a tighter window kills the pod mid-migration.
           startupProbe:
             httpGet:
               path: /

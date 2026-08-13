@@ -3,6 +3,5 @@ kind: Namespace
 metadata:
   name: ai-gateway
   labels:
-    # Selectable by NetworkPolicies in consumer namespaces (agent pods egress
-    # to the gateway by namespace label, never by pod IP).
+    # Consumer NetworkPolicies select this namespace by this label.
     name: ai-gateway

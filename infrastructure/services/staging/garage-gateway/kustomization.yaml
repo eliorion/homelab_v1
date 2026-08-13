@@ -3,9 +3,8 @@ kind: Kustomization
 namespace: garage-gw
 resources:
   - ../../base/garage-gateway
-# Generated (hashed) so a haproxy.cfg change rolls the Deployment automatically.
-# The 3 Garage node IPs are environment-specific, hence the config lives here in
-# the staging overlay rather than in base.
+# Hashed, so a haproxy.cfg change rolls the Deployment. The name must match the
+# Deployment's volume reference. See ../../base/garage-gateway/README.md.
 configMapGenerator:
   - name: garage-haproxy-config
     files:

@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       infrastructure: cloudflared
-  replicas: 1 # You could also consider elastic scaling for this deployment
+  replicas: 1
   template:
     metadata:
       labels:
@@ -26,14 +26,12 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           env:
-            # Defines an environment variable for the tunnel token.
             - name: TUNNEL_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: tunnel-credentials
                   key: token
           command:
-            # Configures tunnel run parameters
             - cloudflared
             - tunnel
             - --no-autoupdate
@@ -44,8 +42,7 @@ spec:
             - run
           livenessProbe:
             httpGet:
-              # Cloudflared has a /ready endpoint which returns 200 if and only if
-              # it has an active connection to the edge.
+              # /ready is 200 only while connected to the edge; port = --metrics port.
               path: /ready
               port: 2000
             failureThreshold: 1

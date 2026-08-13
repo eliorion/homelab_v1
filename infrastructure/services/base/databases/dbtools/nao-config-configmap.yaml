@@ -1,14 +1,6 @@
-# SEED copy of nao_config.yaml. The init container installs it into the project
-# PVC only when the file is ABSENT, so `nao init` / edits made inside the pod
-# survive restarts and this ConfigMap is a starting point, not the live config.
-# To re-seed from git: delete the file in the pod and restart —
-#   kubectl -n database exec deploy/nao -- rm /app/project/nao_config.yaml
-#   kubectl -n database rollout restart deploy/nao
-#
-# No secret appears here: `{{ env('...') }}` is nao's own interpolation, resolved
-# in the pod against the env vars the Deployment injects from the reflected CNPG
-# secrets. Every host is the `-ro` REPLICA service — the agent reads, and the
-# server rejects a write even if it tries one.
+# SEED copy of nao_config.yaml, NOT the live config: the init container installs
+# it with `cp -n`, so it only lands in an empty project directory and the pod's
+# own edits win afterwards. See README.md "Changing nao's config".
 apiVersion: v1
 kind: ConfigMap
 metadata:

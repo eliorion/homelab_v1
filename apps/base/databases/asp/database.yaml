@@ -4,23 +4,19 @@ metadata:
   name: asp-db
 spec:
   instances: 2
-  # PostgreSQL image, pinned to what the operator deployed (Renovate bumps it).
-  # NOTE: field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg
-  # is the operator image and must never be used here.
+  # Field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg is the
+  # operator image and must never be used here.
   imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
 
   postgresql:
-    # Synchronous replication: primary waits for 1 replica ack per commit.
-    # Requires number < instances — keep in sync if instances changes.
+    # Synchronous replication. number must stay < instances.
     synchronous:
       method: any
       number: 1
-      # preferred: fall back to async when the replica is unavailable so
-      # writes never block (single-node homelab — no real HA to protect).
+      # preferred: falls back to async when the replica is unavailable.
       dataDurability: preferred
     parameters:
       max_connections: "200"
-      # shared_buffers: "256MB"
       effective_cache_size: "768MB"
       work_mem: "4MB"
       maintenance_work_mem: "64MB"
@@ -36,50 +32,18 @@ spec:
           - name: asp-db-init
             key: init.sql
 
-  # Flyway V6 (webapp_ro) and V8 (grafana_ro) CREATE ROLE while connected as
-  # `app`, which needs CREATEROLE — without it the migration image fails at V6
-  # and, once the chart runs it as a pre-upgrade hook, takes every asp upgrade
-  # down with it. fbref-db carries the same grant, added after the identical
-  # failure on 2026-06-12 (doc 07).
-  #
-  # RESOLVED — the grant below is what fixed it. The previous version of this
-  # comment said "asp-db is stuck at V5 while db-migrations is at v0.6.0",
-  # which has not been true for some time and was actively misleading: it was
-  # read as an open incident and used to justify work that had already landed.
-  # Measured on staging 2026-08-12:
-  #
-  #   flyway_schema_history  max(version) = 9, all success
-  #   app                    login=true  createrole=true
-  #   webapp_ro / grafana_ro exist, NOLOGIN, grafana_ro holds 7 table grants
-  #
-  # Both read-only roles are deliberately NOLOGIN here and appear under
-  # managedRolesStatus.byStatus["not-managed"]. That is the correct state, not
-  # a gap: Flyway creates the role and its grants (the privilege boundary), and
-  # CNPG is what would attach a credential. Nothing has needed one yet.
-  #
-  # To give grafana_ro a login, add it to the roles list below WITH a
-  # passwordSecret — but do it in the STAGING OVERLAY as a patch, never here.
-  # This base is consumed by apps/production/databases/asp as well, which
-  # clusters/production/apps.yaml reconciles, so a role in this file pointing
-  # at a Secret that exists only in staging fails reconciliation in production.
+  # createrole is required: Flyway V6/V8 run CREATE ROLE as `app`. Removing it
+  # breaks every migration run.
+  # Do NOT add a login role here to give webapp_ro/grafana_ro a password: this
+  # base is consumed by apps/production/databases/asp too, so a role pointing at
+  # a staging-only Secret fails production reconciliation. Patch the staging
+  # overlay instead (see README).
   managed:
     roles:
       - name: app
         ensure: present
         login: true
         createrole: true
-
-  # Superuser secret
-  #  superuserSecret:
-  #    name: postgres-superuser-secret
-
-  # Enable monitoring
-  #  monitoring:
-  #    enablePodMonitor: true
-  # WAL storage (separate PVC for better I/O isolation)
-  #  walStorage:
-  #    size: 5Gi
-  #    storageClass: fast-ssd
 
   storage:
     size: 20Gi

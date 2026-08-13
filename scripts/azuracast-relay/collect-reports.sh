@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Pull the listener-side test results out of Icecast's access log.
+# Pull the listener-side test results out of Icecast's access log, as CSV.
 #
-#   ./collect-reports.sh [> reports.csv]
+#   ./collect-reports.sh [> reports.csv]      # run on the VPS, in this directory
 #
-# The test page reports by requesting /report?kbps=…, which 404s. That is the
-# point: no backend, no database, no endpoint to secure — Icecast logs the query
-# string and this reads it back out. Run on the VPS.
+# The test page reports by requesting /report?kbps=…, which 404s deliberately —
+# the query-string keys below must match web/index.html. See README.md.
 set -euo pipefail
 
 echo "time,ip_prefix,kbps,stalls,maxgap_s,ttfb_s,mb,verdict"
@@ -20,8 +19,7 @@ docker compose logs --no-color --no-log-prefix relay 2>/dev/null \
 
       get() { printf '%s' "$q" | tr '&' '\n' | grep -m1 "^$1=" | cut -d= -f2- || true; }
 
-      # Only the first two octets. Enough to tell testers apart and to spot one
-      # network behaving differently; not enough to identify anyone.
+      # Truncate to the first two octets.
       prefix=$(printf '%s' "$ip" | cut -d. -f1,2).x.x
 
       printf '%s,%s,%s,%s,%s,%s,%s,%s\n' \

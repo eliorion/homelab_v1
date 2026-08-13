@@ -1,19 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: identity
-# Applied by its OWN Flux Kustomization (`infra-keycloak-realm`), never by the
-# parent — see the note in ../kustomization.yaml. The realm import is a Job, so
-# it needs force: true to be recreated when the realm changes, and wait: true so
-# a failed import surfaces as NotReady. Applying it from the parent would extend
-# both to the Keycloak CR and the database.
-#
-# Nested here rather than as a sibling directory, matching
-# apps/staging/databases/db-migrations, which sits inside the `databases`
-# Kustomization's tree for exactly this reason.
+# Applied by its OWN Flux Kustomization (`infra-keycloak-realm`, force: true +
+# wait: true), never by the parent — see ../kustomization.yaml.
 resources:
   - ../../../base/keycloak/realm/
-  # The `apps` realm's Cloudflare Access client credential + the Zero Trust team
-  # domain, both read by the import Job as $(env:...). Environment-specific and
-  # secret, so it is here rather than in base/ — and the Job is in this same
-  # Kustomization, so the Secret is guaranteed to exist before it runs.
+  # The Cloudflare Access client secret + Zero Trust team domain, read by the
+  # import Job as $(env:...). Same Kustomization as the Job, so it exists first.
   - cloudflare-access-client.enc.yaml

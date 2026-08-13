@@ -15,10 +15,8 @@ spec:
     spec:
       affinity:
         podAntiAffinity:
-          # Required, not preferred. On the same node as AzuraCast the stream
-          # never touches a NIC — it crosses a veth pair, so the network figures
-          # come out too low — and the generator's CPU competes with the thing
-          # being measured. Both errors flatter the result.
+          # Must stay required: on the AzuraCast node the stream crosses a veth
+          # instead of a NIC and the generator's CPU competes with the subject.
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
@@ -28,8 +26,6 @@ spec:
       containers:
         - name: listener
           image: curlimages/curl:8.19.0
-          # Nothing here needs privilege; satisfies the `restricted` PSA level
-          # that Talos audits against, so the apply is silent.
           securityContext:
             runAsNonRoot: true
             runAsUser: 100
@@ -44,11 +40,8 @@ spec:
               value: "1"
             - name: STREAM_URL
               value: http://azuracast.azuracast.svc.cluster.local:8000/radio.mp3
-          # One curl per simulated listener, each holding the mount open and
-          # consuming at the stream's own pace. Icecast paces the socket at the
-          # mount bitrate, so a client that reads continuously IS a listener.
-          # The 0.05s stagger keeps 100 connections from arriving in one burst,
-          # which would measure connection setup rather than steady state.
+          # One curl per simulated listener, staggered so they do not all arrive
+          # in one burst.
           command:
             - sh
             - -c
@@ -63,9 +56,8 @@ spec:
               done
               echo "all $LISTENERS connected"
               wait
-          # Requests only. A CPU limit would throttle the readers, Icecast's send
-          # buffer would back up, and the measured byte rate would fall below the
-          # real cost of serving them.
+          # Requests only: a CPU limit throttles the readers and under-reports
+          # egress. Do not add limits.
           resources:
             requests:
               cpu: 200m

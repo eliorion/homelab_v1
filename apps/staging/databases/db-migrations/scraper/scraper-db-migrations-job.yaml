@@ -1,12 +1,6 @@
 # Flyway migration Job for the scraper coordination database.
-# Mirrors the asp/fbref Flyway tier: Flux force-recreates the immutable Job and
-# gates the `apps` Kustomization on its completion.
-# The tag is bumped BY HAND. Renovate does not touch it — its CronJob still
-# targets the pre-rename repo and skips every run — and the `apps` gate cannot
-# help either: app image tags live in the asp repo's charts and reach the
-# cluster on their own GitRepository, never through this Kustomization. A stale
-# pin here is therefore invisible: the already-completed Job satisfies
-# `wait: true` in ~46ms while the schema sits behind the code.
+# The image tag is bumped BY HAND; a stale pin is invisible because the
+# already-completed Job still satisfies the Kustomization's `wait: true`.
 # No ttlSecondsAfterFinished — Flux owns the Job lifecycle (force);
 # a TTL would delete the completed Job and re-run it on every reconcile.
 apiVersion: batch/v1
@@ -23,10 +17,10 @@ spec:
     spec:
       restartPolicy: Never
       imagePullSecrets:
-        - name: ghcr-pull-secret # reflected into this ns by the central reflector source
+        - name: ghcr-pull-secret
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101 # flyway image files are world-readable; verified non-root migrate
+        runAsUser: 101
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -34,8 +28,8 @@ spec:
           image: ghcr.io/eliorion/scraper-db-migrations:scraper-db-migrations-v0.5.0
           args: ["migrate"]
           env:
-            # CNPG app secret for cluster "scraper-db" → scraper-db-app. jdbc-uri
-            # targets the cluster's bootstrap database (scraper).
+            # jdbc-uri must resolve to the bootstrap database "scraper"
+            # (bootstrap.initdb.database in apps/base/databases/scraper/database.yaml)
             - name: FLYWAY_URL
               valueFrom:
                 secretKeyRef:
@@ -51,8 +45,6 @@ spec:
                 secretKeyRef:
                   name: scraper-db-app
                   key: password
-            # Existing DBs (provisioned before Flyway) get baselined at 0, then
-            # the idempotent V-files re-run as no-ops and history is populated.
             - name: FLYWAY_BASELINE_ON_MIGRATE
               value: "true"
             - name: FLYWAY_BASELINE_VERSION

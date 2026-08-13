@@ -3,9 +3,8 @@
 #
 #   ./collect.sh <N>            # N = intended listener count, for the label only
 #
-# Assumes Prometheus is reachable at $PROM (port-forward it first — see README).
-# Everything is read over a 3-minute rate window, so let the step settle before
-# calling this.
+# Needs Prometheus reachable at $PROM (port-forward it first — see README) and
+# reads over a 3-minute rate window, so let the step settle first.
 set -euo pipefail
 
 N="${1:?usage: collect.sh <listener-count>}"
@@ -26,14 +25,8 @@ MEM=$(q 'sum(container_memory_working_set_bytes{namespace="azuracast",container=
 TX=$(q  'sum(rate(container_network_transmit_bytes_total{namespace="azuracast"}[3m]))')
 RX=$(q  'sum(rate(container_network_receive_bytes_total{namespace="azuracast"}[3m]))')
 
-# Ground truth for how many listeners actually connected. Never trust the
-# intended number: a shortfall means clients died or a cap refused them, and a
-# row measured against the wrong denominator is worse than no row.
-#
-# Asks Icecast, not AzuraCast. /api/nowplaying is a periodically-rebuilt cache
-# and it disagrees — with one client connected it reported 2 while Icecast
-# reported 1, because the AzuraCast figure lags and carries peak alongside
-# current. status-json.xsl is the socket count, live.
+# Ground truth listener count. Ask Icecast, never /api/nowplaying: that is a
+# rebuilt cache carrying peak alongside current and it reports a higher number.
 POD="$(k -n azuracast get pod -l app=azuracast -o jsonpath='{.items[0].metadata.name}')"
 ACTUAL=$(k -n azuracast exec "$POD" -- sh -c \
   "curl -s http://localhost:8000/status-json.xsl | tr ',' '\n' | grep -m1 '\"listeners\"'" \

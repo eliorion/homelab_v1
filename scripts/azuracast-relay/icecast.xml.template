@@ -11,8 +11,7 @@
         <client-timeout>30</client-timeout>
         <header-timeout>15</header-timeout>
         <source-timeout>10</source-timeout>
-        <!-- Sends a small backlog on connect so players start instantly instead
-             of buffering. Costs one burst per listener, not per second. -->
+        <!-- Backlog sent on connect so players start without buffering. -->
         <burst-on-connect>1</burst-on-connect>
         <burst-size>65535</burst-size>
     </limits>
@@ -28,12 +27,7 @@
         <port>8000</port>
     </listen-socket>
 
-    <!-- Pulls one copy from the master over the tailnet.
-
-         on-demand=1: nothing is pulled while nobody is listening, so an idle
-         relay costs the home uplink nothing at all. The first listener waits
-         for the pull to establish — a second or so — which is the right trade
-         for a test that spends most of its life idle. -->
+    <!-- Pulls one copy from the master; on-demand=1 = nothing pulled while nobody listens. -->
     <relay>
         <server>${MASTER_HOST}</server>
         <port>${MASTER_PORT}</port>
@@ -45,8 +39,7 @@
     <mount type="normal">
         <mount-name>${MOUNT}</mount-name>
         <max-listeners>${MAX_CLIENTS}</max-listeners>
-        <!-- Never advertise to the public YP directories. This host is for a
-             measured test with people you invited, not for discovery. -->
+        <!-- 0 = never advertised to the public YP directories. -->
         <public>0</public>
     </mount>
 
@@ -59,8 +52,7 @@
     </paths>
 
     <logging>
-        <!-- Both logs to the container's stdout, so `docker compose logs` is the
-             whole story and the access log is where listener reports land. -->
+        <!-- Access log must stay on stdout: collect-reports.sh reads it from docker compose logs. -->
         <accesslog>/dev/stdout</accesslog>
         <errorlog>/dev/stderr</errorlog>
         <loglevel>3</loglevel>

@@ -1,12 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# The `identity` Namespace is NOT declared here. The keycloak-operator unit
-# (infrastructure/controllers/base/keycloak-operator) creates it, because the
-# operator is namespace-scoped and runs in it. Two Flux Kustomizations owning
-# the same Namespace object would fight over it.
-# `realm/` is NOT here. It carries a Job, which is immutable, so it needs its
-# own Flux Kustomization with force: true (`infra-keycloak-realm`) — the same
-# recipe the db-migrations Flyway Job uses. Folding it in here would make a
-# realm edit fail to apply forever, silently.
+# Do NOT add the `identity` Namespace here: it is owned by
+# infrastructure/controllers/base/keycloak-operator.
+# Do NOT add `realm/` here: it carries an immutable Job and has its own Flux
+# Kustomization with force: true (`infra-keycloak-realm`). A second owner without
+# force would make realm edits fail to apply forever, silently.
 resources:
   - app/

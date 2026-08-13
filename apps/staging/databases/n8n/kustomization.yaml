@@ -5,43 +5,23 @@ namespace: n8n
 
 resources:
   - ../../../base/databases/n8n
-  # ---------------------------------------------------------------------------
-  # BACKUPS ARE STILL OFF, BUT THE BLOCKER IS GONE. n8n stores every workflow and
-  # every credential in this database, so this is the first follow-up, not an
-  # optional extra.  See documentations/10-n8n-automation.md.
-  #
-  # DONE: the Garage key is minted and garage-backup-credentials.enc.yaml holds
-  # the real credential, SOPS-encrypted (the .exemple beside it is the pristine
-  # reference copy and stays untouched).
-  #
-  # REMAINING: uncomment the three resources below AND the cluster-backup-patch
-  # entry under `patches:`. Confirm the bucket exists on the Garage host first:
-  #
-  #   garage bucket create cnpg-staging-n8n
-  #   garage bucket allow --read --write cnpg-staging-n8n --key n8n-cnpg-staging
-  #
-  # Then verify within 15 minutes of the cluster going Ready that
-  # <serverName>/wals/ is non-empty — the objects on the far side are the only
-  # check that cannot lie. objectstore.yaml already sets AWS_REGION=garage, which
-  # is the setting whose absence cost ai-gateway two days (documentations/12).
-  #
-  # Order matters: uncommenting before a working key is in makes the barman WAL
-  # archiver fail, which degrades the CNPG cluster. `databases` reconciles with
-  # wait:true and gates db-migrations -> apps, so that stalls the whole app tier,
-  # not just n8n.
-  # ---------------------------------------------------------------------------
+  # Backups are OFF. Uncomment these three AND the cluster-backup-patch entry
+  # under `patches:` together, and only with a working Garage key in place: with
+  # placeholder credentials the barman WAL archiver fails and degrades the
+  # cluster, and `databases` reconciles with wait:true gating db-migrations ->
+  # apps, so that stalls the whole app tier. See README.md.
   # - garage-backup-credentials.enc.yaml
   # - objectstore.yaml
   # - scheduledbackup.yaml
 
 patches:
-  # Attach the Barman Cloud plugin -> Garage (WAL archiver + daily base backup).
-  # Uncomment together with the three resources above.
+  # Attach the Barman Cloud plugin -> Garage. Uncomment together with the three
+  # resources above.
   # - path: cluster-backup-patch.yaml
   #   target:
   #     kind: Cluster
   #     name: n8n-db
-  # PVCs on Longhorn (explicit — also the cluster default SC on Talos).
+  # PVCs on Longhorn.
   - path: cluster-storage-patch.yaml
     target:
       kind: Cluster

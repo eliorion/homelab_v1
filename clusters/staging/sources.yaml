@@ -1,15 +1,5 @@
-# GitRepository sources for the app Helm charts — both live in the asp repo
-# and reuse the same read-only asp-deploy-key Secret.
-#
-# One-time manual setup — the flux-system Kustomization has no sops decryption,
-# so the read-only deploy key is created out-of-band (same pattern as the
-# flux-system secret itself):
-#
-#   flux create secret git asp-deploy-key \
-#     --url=ssh://git@github.com/eliorion/asp
-#
-# then add the printed public key as a READ-ONLY deploy key on the asp GitHub
-# repo (Settings → Deploy keys).
+# The asp-deploy-key Secret is NOT in git — the flux-system Kustomization has no
+# sops decryption, so it is created out-of-band. Recipe in clusters/README.md.
 
 # Source for the asp app Helm chart (k8s/charts/asp in the asp repo).
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -24,17 +14,13 @@ spec:
     branch: main
   secretRef:
     name: asp-deploy-key
-  # Only the chart path produces a new artifact revision, so the HelmRelease's
-  # reconcileStrategy: Revision fires exactly on bump-chart commits (CI tag
-  # bumps in values.yaml) and chart/template changes — not on app-code churn.
+  # Keep scoped to the chart path: the HelmRelease uses reconcileStrategy: Revision,
+  # so widening this makes unrelated asp commits trigger Helm upgrades.
   ignore: |
     /*
     !/k8s/charts/asp/
 ---
 # Source for the fbref app Helm chart (k8s/charts/fbref in the asp repo).
-# CI bumps images.fbref.tag on every fbref release, and the fbref HelmRelease
-# (reconcileStrategy: Revision) upgrades on every commit touching this path —
-# zero manual steps per release.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
@@ -47,8 +33,8 @@ spec:
     branch: main
   secretRef:
     name: asp-deploy-key
-  # Only the fbref chart path matters — ignore everything else so unrelated asp
-  # commits don't churn the artifact (Revision strategy would re-reconcile).
+  # Keep scoped to the chart path: reconcileStrategy: Revision re-reconciles on
+  # every new artifact revision.
   ignore: |
     /*
     !/k8s/
@@ -57,9 +43,7 @@ spec:
     /k8s/charts/*
     !/k8s/charts/fbref/
 ---
-# Source for the lab Helm chart (k8s/charts/lab in the asp repo) — the central
-# in-cluster analysis sandbox. Reuses the same read-only asp-deploy-key Secret;
-# scoped to the chart path so unrelated asp commits don't churn the artifact.
+# Source for the lab Helm chart (k8s/charts/lab in the asp repo).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
@@ -80,11 +64,7 @@ spec:
     /k8s/charts/*
     !/k8s/charts/lab/
 ---
-# Source for the central scraper service Helm chart (k8s/charts/scraper in the
-# asp repo) — the API-only scraping platform (engine lanes + backend + admin-ui
-# + FlareSolverr) that asp/fbref consume via their ingest deployments. Reuses
-# the same read-only asp-deploy-key Secret; scoped to the chart path so unrelated
-# asp commits don't churn the artifact (Revision strategy would re-reconcile).
+# Source for the scraper service Helm chart (k8s/charts/scraper in the asp repo).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:

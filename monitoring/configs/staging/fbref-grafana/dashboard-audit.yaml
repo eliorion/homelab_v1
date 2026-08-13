@@ -7,18 +7,7 @@ metadata:
     # Picked up by the kube-prometheus-stack grafana dashboards sidecar.
     grafana_dashboard: "1"
 data:
-  # Reads the `audit` schema (asp repo, fbref migration V24), written by the
-  # fbref-audit CronJob. Separate ConfigMap from fbref-overview because it
-  # answers a different question: overview is "what is in the database", this is
-  # "how much of fbref.com is that, and is any of it wrong".
-  #
-  # Every panel reads a VIEW, never a raw count over player_stats (49.5M rows) —
-  # the expensive anti-joins are computed once per audit run and cached in
-  # audit.finding. A dashboard that refreshes every 5m must not scan the EAV.
-  #
-  # Status is rendered as TEXT plus color (value mappings), never colour alone:
-  # 'fail'/'warn'/'unknown' are words on the panel, so the dashboard is readable
-  # in greyscale and to a colourblind reader.
+  # Panels read the audit.* VIEWS, never a raw scan of player_stats (49.5M rows).
   fbref-audit.json: |
     {
       "uid": "fbref-audit",

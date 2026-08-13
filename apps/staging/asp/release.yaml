@@ -1,24 +1,18 @@
-# The asp app (orchestrator, scraper/crawler lanes, analyzer, frontend).
-# Chart lives in the asp repo (k8s/charts/asp) — values.yaml there carries the
-# canonical image tags, bumped by the asp repo's CI on each release. Values
-# here are environment overrides ONLY, never image tags.
+# Chart lives in the asp repo (k8s/charts/asp) — values here are environment
+# overrides ONLY, never image tags (the chart's values.yaml owns those). README.md.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: asp
 spec:
-  # Dev phase: fast feedback. New chart revisions deploy event-driven (the
-  # GitRepository polls at 1m); this interval also paces drift checks/retries.
   interval: 1m
-  # Helm op ceiling — must exceed the content lanes' Camoufox warm-up gated
-  # readiness (initialDelay 90s) + minReadySeconds 30, or every slow warm-up
-  # looks like a failed upgrade and rolls back.
+  # Must exceed the content lanes' Camoufox warm-up gated readiness
+  # (initialDelay 90s + minReadySeconds 30), or a slow warm-up rolls back.
   timeout: 10m
   chart:
     spec:
       chart: k8s/charts/asp
-      # Chart.yaml version is static 0.1.0 — upgrade on every new git revision
-      # of the (chart-path-scoped) GitRepository instead.
+      # Chart.yaml version is static 0.1.0 — upgrade on git revision instead.
       reconcileStrategy: Revision
       sourceRef:
         kind: GitRepository
@@ -30,45 +24,32 @@ spec:
       retries: 3
   upgrade:
     remediation:
-      # A failed upgrade (pods never Ready within timeout, or a failed helm
-      # test) rolls back to the last good release instead of leaving the app
-      # wedged. retries is REQUIRED: helm-controller performs no remediation
-      # at the default retries: 0 — strategy alone is a no-op.
+      # retries is REQUIRED: helm-controller performs no remediation at the
+      # default retries: 0 — strategy alone is a no-op.
       retries: 3
       strategy: rollback
       remediateLastFailure: true
   rollback:
     cleanupOnFail: true
   test:
-    # Run the chart's helm test hooks (curl /health + /healthz) after every
-    # install/upgrade; a failing hook fails the release → rollback remediation.
     enable: true
     ignoreFailures: false
   driftDetection:
-    # Revert manual kubectl drift back to the chart-rendered state.
     mode: enabled
   values:
     global:
-      # Pull the private GHCR images (ghcr.io/eliorion/asp-*).
-      # The ghcr-pull-secret Secret itself is owned by the databases tier.
+      # Private GHCR images; the Secret is mirrored into the ns by reflector.
       imagePullSecrets:
         - name: ghcr-pull-secret
-    # The in-chart scraper lanes are RETIRED (chart default scraper.enabled:
-    # false). asp scraping is fully STOPPED for now: the scraper platform's static
-    # asp lanes are gone (that HelmRelease's engine.tenants: []), so there is no
-    # producer left, and asp is NOT yet a request-driven client of the new engine.
-    # fbref is the sole first client. asp-ingest (the results bridge) is therefore
-    # turned off — flip back to true (+ re-add asp to the scraper engine, or give
-    # asp its own request driver) when asp rejoins the platform.
+    # Off: no scraper producer feeds asp today — flipping this alone is not
+    # enough, asp must rejoin the scraper platform first (README.md).
     ingest:
       enabled: false
     adminUi:
       enabled: true
       service:
-        # Publish the admin UI on the tailnet via the Tailscale operator —
-        # authed + reachable off-LAN, never internet-exposed. Inert until the
-        # operator is installed (infrastructure/controllers/staging/tailscale-operator).
-        # Reach at https://asp-admin-ui.<your-tailnet>.ts.net
+        # Publish the admin UI on the tailnet (Tailscale operator), never
+        # internet-exposed.
         annotations:
           tailscale.com/expose: "true"
           tailscale.com/hostname: asp-admin-ui

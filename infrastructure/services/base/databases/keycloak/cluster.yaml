@@ -3,17 +3,10 @@ kind: Cluster
 metadata:
   name: keycloak-db
 spec:
-  # TWO instances — one primary, one hot standby — matching asp-db, fbref-db and
-  # scraper-db. Keycloak keeps every durable thing (realms, clients, users,
-  # sessions) here, so a single instance would make the two Keycloak replicas
-  # decorative: they would fail together with the one database pod.
   instances: 2
   bootstrap:
     initdb:
       database: keycloak
       owner: keycloak
   storage:
-    # 2Gi was sized for an unused install. A realm with client registrations,
-    # sessions and an event log outgrows it quietly, and Postgres out of disk
-    # is a much worse day than an oversized PVC.
     size: 10Gi

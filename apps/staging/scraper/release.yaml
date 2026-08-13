@@ -1,10 +1,5 @@
-# The central scraper service — Helm chart owned by the asp repo
-# (k8s/charts/scraper), synced via the `scraper` GitRepository
-# (clusters/staging/sources.yaml). Image tags live in the chart's values.yaml
-# (CI bumps them per release); this file carries environment overrides ONLY.
-# Deploys into its OWN `scraper` namespace against its own CNPG cluster
-# scraper-db. asp + fbref consume results from its API (their ingest pods) — the
-# API is the only project↔scraper contract; this service stores NO scraped data.
+# Chart owned by the asp repo (k8s/charts/scraper) — values here are environment
+# overrides ONLY, never image tags (the chart's values.yaml owns those). README.md.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -13,19 +8,18 @@ metadata:
 spec:
   targetNamespace: scraper
   interval: 1m
-  # Helm op ceiling — must exceed the engine scraper lanes' Camoufox warm-up
-  # gated readiness (initialDelay 90s) + minReadySeconds 30, or a slow warm-up
-  # looks like a failed upgrade and rolls back.
+  # Must exceed the engine pools' Camoufox warm-up gated readiness
+  # (initialDelay 90s + minReadySeconds 30), or a slow warm-up rolls back.
   timeout: 10m
   chart:
     spec:
       chart: k8s/charts/scraper
-      # Chart.yaml version is a human changelog signal only — upgrade on every
-      # new git revision of the (chart-path-scoped) GitRepository instead.
+      # Chart.yaml version is a changelog signal only — upgrade on git revision.
       reconcileStrategy: Revision
       sourceRef:
         kind: GitRepository
         name: scraper
+        # Required: kustomization.yaml puts this release in ns `scraper`.
         namespace: flux-system
       interval: 1m
   install:
@@ -34,81 +28,40 @@ spec:
       retries: 3
   upgrade:
     remediation:
-      # A failed upgrade (pods never Ready within timeout, or a failed helm test)
-      # rolls back to the last good release. retries is REQUIRED: helm-controller
-      # performs no remediation at the default retries: 0.
+      # retries is REQUIRED: helm-controller performs no remediation at the
+      # default retries: 0 — strategy alone is a no-op.
       retries: 3
       strategy: rollback
       remediateLastFailure: true
   rollback:
     cleanupOnFail: true
   test:
-    # Run the chart's helm test hooks (curl backend /v1/health + admin-ui) after
-    # every install/upgrade; a failing hook fails the release → rollback.
     enable: true
     ignoreFailures: false
   driftDetection:
     mode: enabled
   values:
     global:
-      # Pull the private GHCR images (ghcr.io/eliorion/scraper-*). The
-      # ghcr-pull-secret is mirrored into this ns by the central reflector source.
+      # Private GHCR images; the Secret is mirrored into the ns by reflector.
       imagePullSecrets:
         - name: ghcr-pull-secret
-    # FlareSolverr ON: Cloudflare-protected pages are fetched through it (Camoufox
-    # cannot clear a managed challenge server-side). The chart generates ONE SOLVER
-    # PER POOL — sessions live in per-pod memory and a session's cf_clearance is
-    # bound to one egress IP, so a shared instance cannot serve several proxies.
-    # There is no `replicas` knob: each solver is KEDA-scaled 0<->1 alongside its
-    # pool. The pool's PROXY_URL is forwarded INTO the solve, so FlareSolverr's
-    # Chrome egresses via the proxy — hence solver.proxyEgressPorts below.
+    # ONE solver per pool: a session's cf_clearance is bound to one egress IP, so
+    # a shared instance cannot serve several proxies. No `replicas` knob — each
+    # solver is KEDA-scaled 0<->1 alongside its pool.
     solver:
       enabled: true
       proxyEgressPorts: [8888] # let FlareSolverr reach the Tailscale egress proxy
     engine:
-      # Request-driven warm pools (ROLE=server) — the target of POST /v1/scrape, and
-      # the ONLY engine topology (the static per-(tenant,site) lanes are gone from the
-      # chart entirely). One pool per egress IP; a pod leases lanes bound to its proxy,
-      # warms the anti-bot session behind that IP, and serves the lane's requests. KEDA
-      # scales each pool AND its solver 0<->1 on that proxy's pending count — capped at
-      # one pod because one pool = one proxy = one IP = one fingerprint. Scale
-      # throughput by adding POOLS, never replicas.
+      # Request-driven warm pools (ROLE=server), one per egress IP, KEDA-scaled
+      # 0<->1 and capped at one pod: one pool = one proxy = one IP = one
+      # fingerprint. Scale throughput by adding POOLS, never replicas.
       #
-      # No site is named here, by design: a site exists when the DB says so (a `lanes`
-      # row created by POST /v1/scrape, configured by its `site_config`), so onboarding
-      # one is an API call rather than a values edit.
-      #
-      # `residential: true` is the ROUTING KEY. The backend assigns a proxy-less
-      # request to the LEAST-PENDING residential pool (else 'direct'), so the two
-      # pools below split the load onto two distinct public IPs — one lane each
-      # (lanes are UNIQUE per tenant+site+proxy), each with its own AdaptivePacer
-      # budget and its own fingerprint. Routing is by pool CAPABILITY, never by
-      # site/project name: the platform owns the trade-off, a client cannot pick a
-      # lane. Add another residential exit here = +1 lane = ~linear throughput,
-      # with no client or code change.
-      #   direct    — the cluster's OWN egress. This cluster is home-hosted, so
-      #               that is a residential IP (verified distinct from the exit
-      #               below), NOT a datacenter one — hence residential: true.
-      #   tailscale — the residential exit (rsp-asp). flaresolverr forwards
-      #               PROXY_URL into the solve → that hop uses
-      #               solver.proxyEgressPorts. REQUIRES the tailscale-proxy-00
-      #               egress pod Ready (kubectl -n tailscale get pods).
-      #   c         — node C's exit. DELIBERATELY NOT residential yet: the flag is
-      #               the routing key, so until it is set this pool receives zero
-      #               traffic and we are only proving that its Deployment, solver
-      #               and ScaledObjects render and the pod can reach the proxy.
-      #               Tag it only once the exit is confirmed to be a DISTINCT,
-      #               non-datacenter IP:
-      #                 kubectl -n scraper run ipcheck --rm -it --restart=Never \
-      #                   --image=curlimages/curl:8.11.1 -- curl -s \
-      #                   -x http://tailscale-proxy-scrape-c.tailscale.svc.cluster.local:8888 \
-      #                   https://ifconfig.me
-      #               and compare against tailscale-proxy-00 and the direct egress.
-      #               Mislabelling a datacenter exit residential puts EVERY site's
-      #               traffic on an IP anti-bot vendors already distrust.
-      #               Once scraper-backend carries the `pools` table, the flag is an
-      #               admin-UI toggle and needs no commit here — but the entry below
-      #               is still what renders the pod.
+      # `residential: true` is the ROUTING KEY — a proxy-less request goes to the
+      # LEAST-PENDING residential pool (else 'direct'). Pool `c` is deliberately
+      # NOT tagged: tag it only once its exit is confirmed to be a DISTINCT,
+      # non-datacenter IP (README.md), because mislabelling a datacenter exit
+      # residential puts EVERY site's traffic on an IP anti-bot vendors distrust.
+      # The `tailscale` pool REQUIRES the tailscale-proxy-00 egress pod Ready.
       pools:
         - name: direct
           residential: true
@@ -120,17 +73,14 @@ spec:
       # Extra egress port for any pool that dials the Tailscale proxy directly
       # from the engine pod (the Cloudflare hop goes via solver.proxyEgressPorts).
       proxyEgressPorts: [8888]
-    # NOTE: no `keda:` block. KEDA is a HARD REQUIREMENT of the chart now — there is no
-    # enable flag and no fixed-replica mode, so every pool and solver is HPA-owned and an
-    # idle namespace is backend-only. The operator comes from infra-keda
-    # (infrastructure/controllers/base/keda); without it this release fails to apply its
-    # ScaledObjects rather than silently running everything unscaled.
+    # NOTE: no `keda:` block. KEDA is a HARD REQUIREMENT of the chart — no enable
+    # flag, no fixed-replica mode. The operator comes from infra-keda
+    # (infrastructure/controllers/base/keda); without it this release fails to
+    # apply its ScaledObjects rather than running everything unscaled.
     adminUi:
       service:
-        # Publish the admin UI on the tailnet via the Tailscale operator —
-        # authed + reachable off-LAN, never internet-exposed. Inert until the
-        # operator is installed (infrastructure/controllers/staging/tailscale-operator).
-        # Reach at https://scraper-admin-ui.<your-tailnet>.ts.net
+        # Publish the admin UI on the tailnet (Tailscale operator), never
+        # internet-exposed.
         annotations:
           tailscale.com/expose: "true"
           tailscale.com/hostname: scraper-admin-ui

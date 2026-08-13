@@ -8,7 +8,6 @@ spec:
   interval: 30m
   chart:
     spec:
-      # Renovate keeps this pinned version current.
       chart: cilium
       version: "1.19.4"
       sourceRef:
@@ -18,13 +17,8 @@ spec:
       interval: 12h
   install:
     createNamespace: false # kube-system already exists
-  # NOT the default. `retries` defaults to 0, and 0 does not mean "retry on the
-  # next reconcile" -- it means helm-controller marks this release Stalled after
-  # ONE failed upgrade and never attempts it again, while the Kustomization above
-  # it stays Ready. It also leaves the failed upgrade UNREMEDIATED, so a chart
-  # that half-applied stays half-applied. Nexus sat Ready=False for 16 days on
-  # exactly this. See documentations/14-design-decisions.md, "Every HelmRelease
-  # sets upgrade.remediation.retries".
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
   upgrade:
     remediation:
       retries: 3
@@ -32,8 +26,7 @@ spec:
   values:
     ipam:
       mode: kubernetes # reuse the per-node podCIDR Talos allocates (10.244.0.0/16)
-    # kube-proxy replacement -- Talos sets cluster.proxy.disabled, KubePrism
-    # (machine.features.kubePrism, port 7445) is the local apiserver LB.
+    # 7445 must match machine.features.kubePrism.port in bootstraping/talconfig.yaml.
     kubeProxyReplacement: true
     k8sServiceHost: localhost
     k8sServicePort: 7445
@@ -48,19 +41,16 @@ spec:
       autoMount:
         enabled: false
       hostRoot: /sys/fs/cgroup
-    # DO NOT enable bpf.masquerade -- machine.features.hostDNS.forwardKubeDNSToHost
-    # is true and bpf.masquerade breaks CoreDNS (Sidero docs).
+    # DO NOT enable: breaks CoreDNS while machine.features.hostDNS.forwardKubeDNSToHost is true (Sidero docs).
     bpf:
       masquerade: false
-    # All 3 nodes share one L2 segment; tunnel is the safe default for the
-    # migration (switch to native routing once stable).
+    # A migration-era safe default, not a topology requirement. See README.md.
     routingMode: tunnel
     tunnelProtocol: vxlan
-    # Gateway API ingress (CRDs ship via Talos extraManifests, gateway-api v1.4.1).
+    # Needs the gateway-api v1.4.1 CRDs from extraManifests in bootstraping/talconfig.yaml.
     gatewayAPI:
       enabled: true
-    # Bare-metal LoadBalancer (replaces k3s ServiceLB). The IP pool + L2 policy
-    # are CRs in ./config (CiliumLoadBalancerIPPool + CiliumL2AnnouncementPolicy).
+    # Bare-metal LoadBalancer; the IP pool and L2 policy are CRs in ./config.
     l2announcements:
       enabled: true
     externalIPs:
@@ -70,19 +60,17 @@ spec:
       tls:
         auto:
           enabled: true
-          # cronJob (not the helm default) -- generates certs in-cluster so Flux
-          # reconciles don't rotate them and no key material lands in git.
+          # Not the helm default; the default rotates the Hubble certs on every Flux reconcile.
           method: cronJob
       relay:
         enabled: true
       ui:
         enabled: true
-    # Operational hardening.
     operator:
-      replicas: 2 # survive a node loss (3 control planes)
+      replicas: 2
       rollOutPods: true
     rollOutCiliumPods: true
-    # l2announcements is lease-heavy -- give the agent more apiserver headroom.
+    # apiserver headroom for the l2announcements leases.
     k8sClientRateLimit:
       qps: 25
       burst: 50

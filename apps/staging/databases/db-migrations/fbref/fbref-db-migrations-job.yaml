@@ -1,7 +1,4 @@
-# Flyway migration Job for the fbref database (mirror of ../asp for the asp DB).
-# Run by the `db-migrations` Flux Kustomization (clusters/staging/apps.yaml:
-# force+wait), which gates `apps` on its completion — Renovate bumps the image
-# tag and Flux force-recreates the Job.
+# Flyway migration Job for the fbref database.
 # NOTE: no ttlSecondsAfterFinished — Flux owns the Job lifecycle (force).
 # A TTL would delete the completed Job and make every later reconcile
 # re-create + re-run it for nothing.
@@ -19,10 +16,10 @@ spec:
     spec:
       restartPolicy: Never
       imagePullSecrets:
-        - name: ghcr-pull-secret # private GHCR image; secret managed in apps/staging/databases/fbref
+        - name: ghcr-pull-secret
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101 # flyway image files are world-readable; verified non-root migrate
+        runAsUser: 101
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -30,8 +27,8 @@ spec:
           image: ghcr.io/eliorion/fbref-db-migrations:fbref-db-migrations-v0.3.0
           args: ["migrate"]
           env:
-            # CNPG app secret (<cluster>-app for cluster "fbref-db"). jdbc-uri
-            # targets the cluster's bootstrap database (fbref).
+            # jdbc-uri must resolve to the bootstrap database "fbref"
+            # (bootstrap.initdb.database in apps/base/databases/fbref/database.yaml)
             - name: FLYWAY_URL
               valueFrom:
                 secretKeyRef:
@@ -47,9 +44,6 @@ spec:
                 secretKeyRef:
                   name: fbref-db-app
                   key: password
-            # The existing DB (provisioned by the retired postInit bootstrap)
-            # gets baselined at 0, then the idempotent V-files re-run as no-ops
-            # and history is populated.
             - name: FLYWAY_BASELINE_ON_MIGRATE
               value: "true"
             - name: FLYWAY_BASELINE_VERSION

@@ -11,7 +11,6 @@ spec:
     spec:
       # Must stay in lockstep with the gha-runner-scale-set-controller chart
       # version in infrastructure/controllers/base/arc/release.yaml.
-      # Renovate keeps this pinned version current.
       chart: gha-runner-scale-set
       version: "0.14.2"
       sourceRef:
@@ -19,13 +18,8 @@ spec:
         name: arc
         namespace: flux-system
       interval: 12h
-  # NOT the default. `retries` defaults to 0, and 0 does not mean "retry on the
-  # next reconcile" -- it means helm-controller marks this release Stalled after
-  # ONE failed upgrade and never attempts it again, while the Kustomization above
-  # it stays Ready. It also leaves the failed upgrade UNREMEDIATED, so a chart
-  # that half-applied stays half-applied. Nexus sat Ready=False for 16 days on
-  # exactly this. See documentations/14-design-decisions.md, "Every HelmRelease
-  # sets upgrade.remediation.retries".
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
   upgrade:
     remediation:
       retries: 3
@@ -35,19 +29,14 @@ spec:
     githubConfigSecret: arc-github-pat
     # `runs-on: self-hosted-arc` in workflow files targets this scale set.
     runnerScaleSetName: self-hosted-arc
-    # 5 warm runners kept for fast PR feedback, so this pool never scales to
-    # zero — that is ~15Gi permanently reserved on the 50Gi/3-node cluster,
-    # shared with the self-hosted-arc-xl pool (release-xl.yaml).
     minRunners: 5
     maxRunners: 25
-    # containerMode: dind removed — the auto-injected dind sidecar accepts no
-    # extra dockerd flags, so the template below reproduces it manually and
-    # adds --insecure-registry for the HTTP-only Nexus docker connectors.
+    # Manual dind template, NOT containerMode: dind — that one accepts no extra
+    # dockerd flags, so it cannot pass --insecure-registry (see README).
     template:
       spec:
         initContainers:
-          # Copies runner externals where the dind container expects them
-          # (the chart's containerMode:dind injected this automatically).
+          # Copies runner externals where the dind container expects them.
           - name: init-dind-externals
             # renovate: datasource=docker depName=ghcr.io/actions/actions-runner
             image: ghcr.io/actions/actions-runner:2.336.0
@@ -82,10 +71,7 @@ spec:
               initialDelaySeconds: 0
               failureThreshold: 24
               periodSeconds: 2
-            # Memory bound so a runaway build can't consume a whole node and
-            # OOM-evict a co-located self-hosted-arc-xl e2e pod (6Gi is generous
-            # for single-service image builds). Deliberately NO cpu limit — CPU
-            # is compressible and these builds are short, so keep PR feedback fast.
+            # Memory bound, deliberately NO cpu limit (see README).
             resources:
               requests:
                 memory: 1Gi

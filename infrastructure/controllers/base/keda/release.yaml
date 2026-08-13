@@ -9,9 +9,6 @@ spec:
   chart:
     spec:
       chart: keda
-      # Renovate bumps this. KEDA scale-to-zero for the scraper's request-driven
-      # engine pools (ScaledObjects live in the asp `scraper` chart, gated by
-      # keda.enabled). Operator + CRDs (ScaledObject/TriggerAuthentication) only.
       version: "2.17.2"
       sourceRef:
         kind: HelmRepository
@@ -20,19 +17,15 @@ spec:
       interval: 12h
   install:
     createNamespace: true
-    # KEDA ships CRDs in a crds/ dir; let Helm own them on install.
+    # Helm owns the chart's crds/ dir.
     crds: Create
-  # NOT the default. `retries` defaults to 0, and 0 does not mean "retry on the
-  # next reconcile" -- it means helm-controller marks this release Stalled after
-  # ONE failed upgrade and never attempts it again, while the Kustomization above
-  # it stays Ready. It also leaves the failed upgrade UNREMEDIATED, so a chart
-  # that half-applied stays half-applied. Nexus sat Ready=False for 16 days on
-  # exactly this. See documentations/14-design-decisions.md, "Every HelmRelease
-  # sets upgrade.remediation.retries".
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
   upgrade:
     remediation:
       retries: 3
       strategy: rollback
+    # Must stay CreateReplace or the CRDs go stale on a chart bump.
     crds: CreateReplace
   values:
     resources:

@@ -1,6 +1,6 @@
 # nao reaches the three project databases, its own metadata cluster, DNS, and
-# the in-cluster LLM gateway. No 443 rule: every LLM call goes through
-# ai-gateway, so the agent has no path to a provider (or anywhere else) directly.
+# the in-cluster LLM gateway. No 443 rule, on purpose — the agent has no path to
+# the internet or to any LLM provider.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

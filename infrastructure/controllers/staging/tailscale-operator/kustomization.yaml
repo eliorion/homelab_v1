@@ -4,10 +4,7 @@ resources:
   - namespace.yaml
   - repository.yaml
   - release.yaml
-  # The encrypted OAuth Secret you create from operator-oauth.enc.yaml.example
-  # (see README.md). Decrypted by the infrastructure-controllers Flux
-  # Kustomization (it has decryption.provider: sops).
+  # Decrypted by the infrastructure-controllers Flux Kustomization
+  # (it has decryption.provider: sops).
   - operator-oauth.enc.yaml
-  # Egress proxies — local Services that forward to tailnet exit nodes
-  # (tailscale-proxy-00 → 100.100.98.5:8888). The scraper consumes these.
   - egress-proxies.yaml

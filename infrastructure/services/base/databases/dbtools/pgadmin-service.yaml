@@ -1,7 +1,6 @@
-# ClusterIP only, and NO tailscale annotations — the staging overlay publishes
-# pgAdmin with a Tailscale Ingress (https, 443) instead, so this base object
-# stays reachable by port-forward alone:
-#   kubectl -n database port-forward svc/pgadmin 5050:80
+# ClusterIP only. Add NO tailscale annotations here: the staging overlay
+# publishes pgAdmin with a Tailscale Ingress, and both mechanisms at once
+# contend for one hostname (README.md "Tailnet exposure").
 apiVersion: v1
 kind: Service
 metadata:

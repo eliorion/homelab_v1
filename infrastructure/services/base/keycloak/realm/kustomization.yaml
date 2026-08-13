@@ -3,18 +3,12 @@ kind: Kustomization
 resources:
   - job.yaml
 
-# The hash suffix is load-bearing: it changes the ConfigMap name whenever the
-# realm changes, which changes the Job spec, which is what makes Flux (with
-# force: true) delete and recreate the Job and re-run the import. Disabling it
-# would leave realm edits sitting in git, applied to nothing.
+# Do NOT disable the name hash suffix: it changes the ConfigMap name when a realm
+# file changes, which changes the Job spec, which is what makes Flux (force: true)
+# recreate the Job and re-run the import. Without it realm edits apply to nothing.
 configMapGenerator:
   - name: keycloak-realm
     files:
       - realm-mcp.yaml
-      # master carries one attribute, and only to keep the admin console
-      # same-origin on the tailnet. See the file.
       - realm-master.yaml
-      # The login behind Cloudflare Access for tunnel-published UIs (nao).
-      # Its client secret and callback host come from the sops Secret in
-      # ../../../staging/keycloak/realm/, via $(env:...) in the Job.
       - realm-apps.yaml

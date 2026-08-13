@@ -1,9 +1,4 @@
-# pgAdmin 4 — SQL client for the asp / fbref / scraper databases.
-#
-# Its own state (users, saved servers, preferences) goes to the `pgadmin`
-# database on dbtools-db, NOT to the /var/lib/pgadmin volume: with the config DB
-# external the volume holds only sessions and the pgpass file, so it can be an
-# emptyDir and a rescheduled pod costs one re-login, nothing more.
+# pgAdmin 4 — SQL client for the asp / fbref / scraper databases. See README.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,9 +29,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         # Build the pgpass the servers.json PassFile entries point at, from the
-        # reflected CNPG credentials. Written at every start, so a CNPG password
-        # rotation needs only a pod restart — and no project password is ever
-        # persisted in pgAdmin's config database.
+        # reflected CNPG credentials.
         - name: pgpass
           image: busybox:1.37.0
           command:
@@ -110,19 +103,15 @@ spec:
                 secretKeyRef:
                   name: pgadmin-admin
                   key: password
-            # Bind above 1024: the container runs as uid 5050 with every
-            # capability dropped, so it cannot take the image's default port 80.
+            # Must stay above 1024: uid 5050 with every capability dropped cannot
+            # take the image's default port 80.
             - name: PGADMIN_LISTEN_PORT
               value: "5050"
-            # No mail container in this pod; without this the entrypoint waits on
-            # a Postfix that will never come up.
+            # Without this the entrypoint waits on a Postfix that never comes up.
             - name: PGADMIN_DISABLE_POSTFIX
               value: "true"
             - name: PGADMIN_CONFIG_UPGRADE_CHECK_ENABLED
               value: "False"
-            # Saved passwords are the only thing the master password protects, and
-            # this deployment stores none (the servers use a pgpass file), so the
-            # prompt would cost a second secret to gain nothing.
             - name: PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED
               value: "False"
             - name: PGADMIN_SERVER_JSON_FILE
@@ -138,15 +127,13 @@ spec:
                   name: dbtools-db-app
                   key: password
             # PGADMIN_CONFIG_* values are evaluated as PYTHON literals, hence the
-            # inner quotes. $(VAR) is Kubernetes' own env expansion (the two vars
-            # above are declared first, which is what makes it resolve).
+            # inner quotes. $(VAR) is Kubernetes env expansion and resolves only
+            # because the two vars above are declared first.
             - name: PGADMIN_CONFIG_CONFIG_DATABASE_URI
               value: "'postgresql://$(PGADMIN_DB_USER):$(PGADMIN_DB_PASSWORD)@dbtools-db-rw.database.svc.cluster.local:5432/pgadmin'"
           securityContext:
             allowPrivilegeEscalation: false
-            # The image writes its runtime config, logs and sessions under
-            # /var/lib/pgadmin AND regenerates files under /pgadmin4 at boot, so a
-            # read-only root filesystem does not survive startup here.
+            # Must stay false: the image regenerates files under /pgadmin4 at boot.
             readOnlyRootFilesystem: false
             capabilities:
               drop:

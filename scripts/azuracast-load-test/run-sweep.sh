@@ -3,9 +3,9 @@
 #
 #   ./run-sweep.sh [out.csv]
 #
-# Takes roughly 35 minutes: six steps, each 2 min settling plus a 3 min rate
-# window. The window has to be at least as long as the rate() range in the
-# queries or the numbers are averaged over data that predates the step.
+# Roughly 40 min for the eight default steps, each SETTLE plus WINDOW.
+# WINDOW must stay >= the rate() range in collect.sh's queries (3m) or the
+# numbers are averaged over data that predates the step.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -24,9 +24,7 @@ PF=$!
 trap 'kill $PF 2>/dev/null || true' EXIT
 sleep 5
 
-# Resumable: the run is ~35 min of mostly waiting, and losing it to an
-# interrupted shell means starting over. Steps already in the CSV are skipped,
-# so re-running picks up where it stopped.
+# Resumable: steps already in the CSV are skipped.
 [ -f "$OUT" ] || echo "intended,actual_listeners,cpu_cores,mem_MiB,tx_KiB_s,rx_KiB_s" > "$OUT"
 
 for N in $STEPS; do
@@ -38,10 +36,7 @@ for N in $STEPS; do
   if [ "$N" -eq 0 ]; then
     k -n azuracast-loadtest scale deploy/listener-sim --replicas=0
   else
-    # Shard across pods above PER_POD. A thousand curl processes in one
-    # container is ~1-3 GB of RSS and starts measuring the generator's own
-    # scheduling limits rather than what AzuraCast costs to serve. Anti-affinity
-    # only excludes the AzuraCast node, so replicas co-schedule on the other two.
+    # Shard across pods above PER_POD, or the generator becomes the bottleneck.
     REPLICAS=$(( (N + PER_POD - 1) / PER_POD ))
     PER=$(( (N + REPLICAS - 1) / REPLICAS ))
     if [ $(( REPLICAS * PER )) -ne "$N" ]; then

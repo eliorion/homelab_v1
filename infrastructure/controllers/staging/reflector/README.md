@@ -1,45 +1,154 @@
-# Central GHCR pull secret (kubernetes-reflector)
+# reflector
 
-One SOPS-encrypted `ghcr-pull-secret` lives here, in the `reflector` namespace,
-and **kubernetes-reflector mirrors it into every consuming namespace** (asp,
-fbref, lab, scraper, and any future project). Replaces the per-namespace copies
-that used to live under `apps/staging/databases/{asp,fbref}/`.
+[kubernetes-reflector](https://github.com/emberstack/kubernetes-reflector) (Emberstack
+chart `reflector`) is a controller that copies annotated Secrets and ConfigMaps from one
+namespace into others. The cluster uses it for two things. First, one SOPS-encrypted
+`ghcr-pull-secret` lives in the `reflector` namespace and is mirrored into every namespace
+that pulls a private GHCR image (`asp`, `fbref`, `lab`, `scraper`, and any future project) —
+this replaced the per-namespace copies that used to live under
+`apps/staging/databases/{asp,fbref}/`. Second, each project's CNPG-generated `<db>-app`
+connection Secret is mirrored out of its project namespace into the namespaces that need to
+authenticate to that database (the `lab` analysis sandbox in its own namespace, and
+`database` for the dbtools pods), because the DB and its generated Secret live in the
+project namespace while the consumer does not.
 
-## Why reflector runs first
+## How it is wired
 
-`databases` (and therefore `db-migrations` → `apps`, plus `lab`) now
-`dependsOn: infra-reflector` (`clusters/staging/apps.yaml`). With `wait: true` on
-infra-reflector, **no application reconciles until the reflector operator is
-Ready and this secret is applied** — so the reflected `ghcr-pull-secret` exists
-before anything tries to pull a private image. This makes reflector critical-path
-for all private pulls (running pods keep their cached image if it ever blips).
+Flux Kustomization `infra-reflector` (`clusters/staging/infrastructure.yaml`) reconciles
+`infrastructure/controllers/staging/reflector` with `prune: true`, `wait: true`,
+`decryption.provider: sops`, and a health check on the `reflector` Deployment in the
+`reflector` namespace.
 
-## One-time setup (you — needs the staging age key)
+`base/reflector/`:
 
-This dir ships only `ghcr-pull-secret.enc.yaml.example`. Until you create the real
-`ghcr-pull-secret.enc.yaml`, the `infra-reflector` Kustomization fails its build →
-stays NotReady → `databases` (and the rest) safely **stall** (nothing pruned, no
-outage). Create it:
+- `kustomization.yaml` — lists the three base resources.
+- `namespace.yaml` — the `reflector` namespace.
+- `repository.yaml` — `HelmRepository` `emberstack` in `flux-system`,
+  `https://emberstack.github.io/helm-charts`, 24h interval.
+- `release.yaml` — `HelmRelease` `reflector` in `flux-system`, `targetNamespace: reflector`,
+  chart `reflector` version `10.0.49`, `install.createNamespace: true`, plus a
+  `securityContext` values override.
+
+`staging/reflector/`:
+
+- `kustomization.yaml` — `../../base/reflector` plus `ghcr-pull-secret.enc.yaml`.
+- `ghcr-pull-secret.enc.yaml` — the one central GHCR pull secret, SOPS-encrypted and
+  committed (commit `8b80d9c`, "fix: add the gh-pull-secret").
+- `ghcr-pull-secret.enc.yaml.example` — the plaintext template it was created from, kept as
+  the starting point for a new cluster (see "One-time setup").
+
+### Overlays
+
+There is no production overlay. `base/reflector/` carries the operator itself and is
+environment-neutral; the staging overlay adds the single cluster-specific resource, the
+encrypted `ghcr-pull-secret`. A production overlay would be the same base plus its own
+encrypted secret.
+
+### Consumers (outside this directory)
+
+- Pull secret, auto-mirror: the annotations on `ghcr-pull-secret` list the destination
+  namespaces, so consuming namespaces need no annotation of their own. Workloads simply
+  reference `imagePullSecrets: [{name: ghcr-pull-secret}]` (for example
+  `apps/staging/scraper/release.yaml`), or, for the lab chart, set
+  `imagePullSecretReflect.source: "reflector/ghcr-pull-secret"` and let the chart generate
+  the stub (`apps/staging/lab/release.yaml`).
+- DB credentials, explicit stubs: each CNPG cluster permits reflection through
+  `apps/staging/databases/<project>/cluster-reflector-patch.yaml` (`reflection-allowed` /
+  `reflection-allowed-namespaces` via CNPG `inheritedMetadata`). The permit list is not the
+  same everywhere: `asp` and `fbref` allow `"lab,database"`, while `scraper` allows
+  `"database"` only — its patch records that `lab` is deliberately absent, because the lab
+  chart's `projects` list is `asp` + `fbref` only and "a permit with no consumer is a permit
+  nobody audits". On the consumer side each namespace declares an empty Secret carrying
+  `reflector.v1.k8s.emberstack.com/reflects: "<ns>/<db>-app"`. Those stubs come from two
+  places: `infrastructure/services/base/databases/dbtools/db-reflect-stubs.yaml` declares the
+  three `database`-namespace ones (`asp-db-app`, `fbref-db-app`, `scraper-db-app`), and the
+  `lab` namespace's is generated by the lab chart, which derives each lab's DB coordinates
+  from the CNPG naming convention (`apps/staging/lab/release.yaml`; `clusters/staging/lab.yaml`
+  records that reflector fills those chart-generated stubs). There is no auto-mirror on that
+  side, so only the `-app` Secret leaves the project namespace — the `-ca` / `-server` /
+  `-replication` Secrets never do.
+
+## Why it is like this
+
+**Reflector runs before every application tier.** `databases` (and therefore
+`db-migrations` → `apps`, plus `lab`) `dependsOn: infra-reflector`
+(`clusters/staging/apps.yaml`, `clusters/staging/lab.yaml`). With `wait: true` on
+`infra-reflector`, no application reconciles until the reflector operator is Ready and this
+secret is applied, so the reflected `ghcr-pull-secret` exists before anything tries to pull
+a private image. That makes reflector critical-path for all private pulls; running pods keep
+their cached image if it ever blips. The dependency is also recorded in
+[`../../../../documentations/01-architecture.md`](../../../../documentations/01-architecture.md).
+
+**One secret instead of one per namespace.** Adding a project is a single edit to two
+annotation lists in one already-encrypted file, instead of creating and maintaining another
+encrypted per-namespace copy.
+
+**The `securityContext` override is a full block.** The chart already drops all capabilities
+and runs non-root; only `allowPrivilegeEscalation` was unset (flagged by the Radar audit as a
+privilege-escalation danger). The override repeats every field the chart already sets so that
+replacing the value does not drop the chart's existing hardening.
+
+**The chart version is pinned.** `10.0.49` is a pin like every other chart in this repo;
+Renovate raises the bump.
+
+## Traps
+
+- **Both `*-namespaces` annotation lists must be updated together.** A new consumer namespace
+  has to be appended to `reflection-allowed-namespaces` *and* `reflection-auto-namespaces` on
+  `ghcr-pull-secret`, then the file re-encrypted. With only `reflection-allowed-namespaces`
+  the copy is permitted but never made.
+- **This directory only decrypts because `infra-reflector` sets `decryption.provider: sops`**
+  with `secretRef: sops-age` (`clusters/staging/infrastructure.yaml`). Reconciling this path
+  from a Kustomization without that block leaves the ciphertext unusable.
+- **`securityContext` in `release.yaml` is a whole-value override.** Trimming it to just
+  `allowPrivilegeEscalation: false` silently removes the chart's `capabilities.drop`,
+  `runAsNonRoot`, `readOnlyRootFilesystem` and `seccompProfile` settings.
+- **A missing `ghcr-pull-secret.enc.yaml` stalls, it does not break.** The file is committed
+  here, so this only bites a fresh cluster that has not created it yet, or a deletion of it:
+  without it the `infra-reflector` Kustomization fails its build and stays NotReady, so
+  `databases` and everything behind it stall — nothing is pruned, no outage. Same deliberate
+  behaviour as the n8n secret
+  ([`../../../../documentations/10-n8n-automation.md`](../../../../documentations/10-n8n-automation.md)).
+- **The two `-app` Secret paths are not symmetric.** The pull secret auto-mirrors from the
+  source annotations; the CNPG `-app` Secrets do not, and need an explicit `reflects` stub in
+  the destination namespace *and* the permit annotation on the source cluster. Adding only one
+  of the two produces an empty Secret or a silent no-op.
+
+## Operating it
+
+### One-time setup (needs the staging age key)
+
+Done already in this cluster — `ghcr-pull-secret.enc.yaml` is committed alongside its
+`.example` template. Kept as the record of how it was made, and as the procedure for a new
+cluster, where only the template exists:
 
 ```bash
 cd infrastructure/controllers/staging/reflector
 cp ghcr-pull-secret.enc.yaml.example ghcr-pull-secret.enc.yaml
-#   put the REAL dockerconfigjson in .dockerconfigjson (same creds the per-project
-#   secrets had — see the .example header for the kubectl one-liner)
-sops --encrypt --in-place ghcr-pull-secret.enc.yaml   # staging recipient, by path
+#   put the REAL dockerconfigjson in .dockerconfigjson — same creds the per-project
+#   secrets had; build the value with:
+#     kubectl create secret docker-registry ghcr-pull-secret \
+#       --docker-server=ghcr.io --docker-username=<user> --docker-password=<PAT> \
+#       --dry-run=client -o jsonpath='{.data.\.dockerconfigjson}'
+sops --encrypt --in-place ghcr-pull-secret.enc.yaml   # staging age recipient, by path
 git add ghcr-pull-secret.enc.yaml && git commit && <merge>
 ```
 
-On merge: reflector mirrors `ghcr-pull-secret` into asp/fbref/lab/scraper, the
-per-project copies are pruned (same name → consumers unaffected), apps roll.
+On merge, reflector mirrors `ghcr-pull-secret` into `asp`/`fbref`/`lab`/`scraper`, the
+per-project copies are pruned (same name, so consumers are unaffected), and the apps roll.
+That is what happened here: nothing under `apps/staging/databases/{asp,fbref}/` carries a
+pull secret any more.
 
-## Add a project
+### Add a project
 
 Append its namespace to **both** `reflection-allowed-namespaces` and
-`reflection-auto-namespaces` in the secret (then re-encrypt with `sops`). One
-secret, one edit — no new file to encrypt or maintain.
+`reflection-auto-namespaces` in the secret, then re-encrypt with `sops`. One secret, one
+edit — no new file to encrypt or maintain. For a lab or dbtools consumer of a database, also
+add the permit annotation to that project's CNPG cluster
+(`apps/staging/databases/<project>/cluster-reflector-patch.yaml`) and the matching `reflects`
+stub in the consumer namespace.
 
-## Verify
+### Verify
 
 ```bash
 flux get kustomizations | grep -E 'infra-reflector|databases'   # reflector Ready BEFORE databases

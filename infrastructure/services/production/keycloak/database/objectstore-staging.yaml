@@ -1,7 +1,6 @@
 # TEMPORARY — seed-from-staging only. Remove after the prod keycloak-db is seeded
-# and verified (see plan Step 6). Points at the STAGING R2 bucket so the prod
-# cluster can recover its initial data from staging's backup. Prod's own archiving
-# still goes through objectstore.yaml (r2-store -> s3://asp-cnpg-production).
+# and verified (plan Step 6). Points at the STAGING bucket; prod's own archiving
+# stays on objectstore.yaml (r2-store -> s3://asp-cnpg-production).
 apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore
 metadata:

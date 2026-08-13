@@ -1,16 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: identity
-# realm/ is intentionally NOT listed — it is applied by its own Flux
-# Kustomization (`infra-keycloak-realm`, force: true + wait: true), because the
-# realm import is an immutable Job. Listing it here would give it a second owner
-# without force, and the two would fight. Same convention as
-# apps/staging/databases/kustomization.yaml and db-migrations/.
+# Do NOT list realm/ here — it is applied by its own Flux Kustomization
+# (`infra-keycloak-realm`, force: true + wait: true) because the import is an
+# immutable Job; a second owner without force would fight it.
+# keycloak-db lives in ../databases/keycloak/.
 resources:
   - ../../base/keycloak/
-# `app/` (the sops keycloak-secret) is gone: the operator generates the
-# bootstrap admin into `keycloak-initial-admin` itself, so that Secret held a
-# credential nothing read, in the KC_BOOTSTRAP_ADMIN_* key spellings only the
-# retired StatefulSet understood.
-# keycloak-db itself moved to ../databases/keycloak/ — every infra/services
-# database now lives together there, mirroring apps/staging/databases/.

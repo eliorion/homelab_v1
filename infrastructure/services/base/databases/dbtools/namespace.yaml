@@ -1,15 +1,9 @@
-# Database-tooling namespace: the two clients that read the platform databases
-# (pgAdmin — SQL client; nao — analytics agent). Nothing here owns data; the
-# tools reach asp / fbref / scraper across namespaces, always through each
-# cluster's `-ro` REPLICA service, which cannot accept a write at all.
-#
-# Infrastructure rather than an app: these serve every project's database and
-# belong to no one project — same placing as ai-gateway.
+# Database-tooling namespace: pgAdmin, nao and postgres-mcp. See README.md.
 apiVersion: v1
 kind: Namespace
 metadata:
   name: database
   labels:
-    # Selectable by NetworkPolicies in other namespaces (and by the reflector
-    # allow-lists that mirror credentials in here).
+    # Selectable by NetworkPolicies in other namespaces — do not rename. (The
+    # reflector allow-lists match the namespace NAME, not this label.)
     name: database

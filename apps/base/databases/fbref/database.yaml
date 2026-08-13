@@ -5,7 +5,6 @@ metadata:
   namespace: fbref
 spec:
   instances: 2
-  # PostgreSQL image, pinned to what the operator deployed (Renovate bumps it).
   # NOTE: field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg
   # is the operator image and must never be used here.
   imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
@@ -14,46 +13,26 @@ spec:
     synchronous:
       method: any
       number: 1
-      # preferred: fall back to async when the replica is unavailable so writes
-      # never block (single-node homelab — no real HA to protect).
+      # `required` here would block writes whenever the replica is unavailable.
       dataDurability: preferred
     parameters:
       max_connections: "100"
       effective_cache_size: "512MB"
       work_mem: "4MB"
       maintenance_work_mem: "64MB"
-      # The replica is the ANALYTICS copy — nao, pgAdmin, Grafana and fbref-mcp
-      # all read `fbref-db-ro` and nothing reads the primary but the engine. At
-      # the 30s default, WAL replay cancels any reader whose snapshot still needs
-      # row versions vacuum wants gone, and a `nao sync` lost three tables to it:
-      #   canceling statement due to conflict with recovery
-      # player_season_stats and player_stats — the two the agent most needs.
-      #
-      # This buys the reader time by letting REPLAY wait. The alternative,
-      # hot_standby_feedback=on, makes the PRIMARY wait instead: it holds back
-      # vacuum for whatever the replica is doing, and the readers here are
-      # people and agents with no statement timeout. player_stats is 26GB,
-      # player_match_stats carries ~590k dead tuples on a good day, and the
-      # volume is at 72% of the 50Gi it was already once resized to after an
-      # ENOSPC took the whole stack down. Stale reads on an analytics replica
-      # cost nothing; unbounded bloat on that primary costs the cluster.
-      #
-      # The price is replica lag, bounded by this value and paid only during a
-      # conflict. Longest observed sync query: 21.4s.
+      # Do NOT lower toward the 30s default: the analytics readers on
+      # `fbref-db-ro` then get "canceling statement due to conflict with
+      # recovery". hot_standby_feedback=on is not the alternative — see README.
       max_standby_streaming_delay: "300s"
 
   bootstrap:
     initdb:
       database: fbref
       owner: app
-      # Schema is owned by Flyway (fbref-db-migrations Job, gated ahead of apps),
-      # mirroring asp — no postInit bootstrap. A fresh cluster comes up empty and
-      # the Job applies V1+; the existing cluster is baselined at 0 and healed by
-      # V2/V3 (drops the stale kind CHECK, adds worker_control).
+      # Schema is owned by Flyway (fbref-db-migrations Job) — no postInit here.
 
-  # Operator-managed read-only role for Grafana. Flyway V1 creates the role
-  # (NOLOGIN); here CNPG ensures it present + flips it to LOGIN with the password
-  # from the basic-auth Secret (staging overlay, sops-encrypted).
+  # Read-only roles: Flyway creates them NOLOGIN, CNPG flips them to LOGIN with
+  # the password from the basic-auth Secret in the staging overlay.
   managed:
     roles:
       - name: grafana_ro
@@ -61,20 +40,13 @@ spec:
         login: true
         passwordSecret:
           name: fbref-grafana-ro
-      # Operator-managed read-only role for fbref-mcp. Same shape as grafana_ro:
-      # Flyway V7 creates it NOLOGIN with SELECT on the data tables + the mcp
-      # schema (and deliberately NOT worker_control, so the MCP cannot pause the
-      # engine); CNPG flips it to LOGIN with the sops-encrypted password. This is
-      # the role grant that makes the MCP read-only in the database itself,
-      # underneath the replica endpoint it connects to and the
-      # default_transaction_read_only it sets per connection.
       - name: mcp_ro
         ensure: present
         login: true
         passwordSecret:
           name: fbref-mcp-ro
       # Flyway V3 creates the worker-control/nocodb roles while connected as
-      # app — needs CREATEROLE (hit 2026-06-12 on fresh initdb, doc 07).
+      # app — needs CREATEROLE.
       - name: app
         ensure: present
         login: true

@@ -9,7 +9,6 @@ spec:
   interval: 30m
   chart:
     spec:
-      # Renovate keeps this pinned version current.
       chart: radar
       version: "1.8.6"
       sourceRef:
@@ -19,13 +18,8 @@ spec:
       interval: 12h
   install:
     createNamespace: true
-  # NOT the default. `retries` defaults to 0, and 0 does not mean "retry on the
-  # next reconcile" -- it means helm-controller marks this release Stalled after
-  # ONE failed upgrade and never attempts it again, while the Kustomization above
-  # it stays Ready. It also leaves the failed upgrade UNREMEDIATED, so a chart
-  # that half-applied stays half-applied. Nexus sat Ready=False for 16 days on
-  # exactly this. See documentations/14-design-decisions.md, "Every HelmRelease
-  # sets upgrade.remediation.retries".
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
   upgrade:
     remediation:
       retries: 3
@@ -36,20 +30,14 @@ spec:
     service:
       type: ClusterIP
       port: 9280
-      # Publish the Radar UI (and /mcp) on the tailnet via the Tailscale
-      # operator -- authed by tailnet identity, off-LAN, never internet-exposed
-      # (same pattern as the Longhorn / asp / fbref admin UIs). Reach it at
-      # http://radar.<your-tailnet>.ts.net (plain HTTP, not 443).
+      # Publishes the UI and /mcp on the tailnet; L3 forward, keeps port 9280.
       annotations:
         tailscale.com/expose: "true"
         tailscale.com/hostname: radar
     mcp:
       enabled: true
-    # Mostly read-only: helm/podExec/secrets stay off (no mutate, no exec).
-    # portForward is on because Radar reaches Cilium Hubble Relay by
-    # port-forwarding to the relay pod (kube-system/hubble-relay:4245) -- it's
-    # the traffic/flows view's transport. Grants create pods/portforward
-    # cluster-wide; access is gated by the tailnet.
+    # Read-only, except portForward: Radar port-forwards to
+    # kube-system/hubble-relay:4245 -- false leaves the traffic view empty.
     rbac:
       create: true
       helm: false

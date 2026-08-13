@@ -5,8 +5,6 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1m0s
-  # dependsOn:
-  #   - name: infra-configs
   retryInterval: 1m
   timeout: 5m
   sourceRef:
@@ -15,11 +13,9 @@ spec:
   path: ./monitoring/controllers/staging
   prune: true
 
-  # REQUIRED since this path gained its first sops Secret
-  # (kube-prometheus-stack/grafana-admin.enc.yaml). Without it Flux applies the
-  # manifest verbatim, so the Secret's values are the literal
-  # ENC[AES256_GCM,...] ciphertext and NOTHING fails at apply time -- Grafana
-  # simply refuses the admin login with no error anywhere in the chain.
+  # REQUIRED: that path carries a sops Secret
+  # (kube-prometheus-stack/grafana-admin.enc.yaml). Remove this and Flux applies
+  # the ENC[AES256_GCM,...] ciphertext verbatim with no error at apply time.
   decryption:
     provider: sops
     secretRef:
@@ -34,8 +30,6 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1m0s
-  # dependsOn:
-  #   - name: infra-configs
   retryInterval: 1m
   timeout: 5m
   sourceRef:

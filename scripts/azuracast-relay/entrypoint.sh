@@ -1,5 +1,7 @@
 #!/bin/sh
-# Render the config from the environment, then hand off to Icecast.
+# Container entrypoint: renders icecast.xml from the environment, then execs Icecast.
+# Required env: MASTER_HOST, RELAY_PUBLIC_HOST, ADMIN_PASSWORD, SOURCE_PASSWORD,
+# RELAY_PASSWORD. Optional: MASTER_PORT, MOUNT, MAX_CLIENTS. See README.md.
 set -eu
 
 # No apostrophes in these messages: inside ${var:?...} bash treats a single
@@ -12,10 +14,7 @@ set -eu
 : "${SOURCE_PASSWORD:?set SOURCE_PASSWORD}"
 : "${RELAY_PASSWORD:?set RELAY_PASSWORD}"
 
-# MAX_CLIENTS is the quota control, not a performance setting. At 0.202 Mbps per
-# listener a continuously-occupied slot costs ~65 GB/month, so this number
-# multiplied by 65 GB is the worst case this host can bill you. Size it against
-# the plan's transfer allowance, not against what the CPU could handle.
+# Spend control, not a performance setting: each occupied slot costs ~65 GB/month.
 : "${MAX_CLIENTS:=50}"
 
 envsubst < /etc/icecast/icecast.xml.template > /tmp/icecast.xml

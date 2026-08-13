@@ -1,7 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# Cilium CRs -- applied after the chart (infra-cilium-config dependsOn
-# infra-cilium) so the CRDs exist.
+# Applied after the chart: infra-cilium-config dependsOn infra-cilium, so the CRDs exist.
 resources:
   - pool.yaml
   - gateway.yaml

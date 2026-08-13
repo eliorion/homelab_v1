@@ -1,13 +1,8 @@
-# One ClusterIP per Postgres MCP Pro instance. No Ingress and no tailscale
-# annotation: the only intended consumer is the ai-gateway, which reaches these
-# by Service DNS from inside the cluster —
+# One ClusterIP per Postgres MCP Pro instance. Add NO Ingress and no tailscale
+# annotation: the SSE endpoint has no authentication of its own. The only
+# consumer is the ai-gateway, which reaches these by Service DNS —
 #
 #   http://postgres-mcp-<project>.database.svc.cluster.local:8000/sse
-#
-# That URL is what gets registered as an MCP client in the ai-gateway dashboard.
-# The SSE endpoint has NO authentication of its own, which is why
-# postgres-mcp-networkpolicies.yaml adds an ingress rule admitting only the
-# ai-gateway namespace.
 ---
 apiVersion: v1
 kind: Service

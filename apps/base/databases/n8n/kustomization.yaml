@@ -1,9 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# n8n runs in its OWN `n8n` namespace with its own CNPG cluster (n8n-db).
-# The namespace ships here (databases tier) because that tier reconciles first —
-# apps/base/n8n then lands into an existing ns.
+# The `n8n` Namespace ships here: the databases tier reconciles before the apps
+# tier, so apps/base/n8n lands into an existing namespace. See README.md.
 resources:
   - namespace.yaml
   - database.yaml

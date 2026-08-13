@@ -1,7 +1,5 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: linkding
+# Scaffolding: renders nothing. See apps/base/linkding/README.md to enable.
 resources: []
-#  - ../../base/linkding/
-#  - linkding-secret.enc.yaml
-#  - ingress.yaml

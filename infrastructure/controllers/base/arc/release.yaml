@@ -5,15 +5,14 @@ metadata:
   namespace: flux-system
 spec:
   targetNamespace: arc-systems
-  # Pin the release name so the controller Deployment is predictably named
-  # arc-controller-gha-rs-controller (matches the Flux healthCheck).
+  # Fixes the Deployment name arc-controller-gha-rs-controller, which the
+  # infra-arc-controller Flux healthCheck waits on. Do not rename.
   releaseName: arc-controller
   interval: 30m
   chart:
     spec:
-      # Must stay in lockstep with the gha-runner-scale-set chart version
-      # in infrastructure/services/staging/arc-runner-set/release.yaml.
-      # Renovate keeps this pinned version current.
+      # Must stay in lockstep with the gha-runner-scale-set chart version in
+      # infrastructure/services/staging/arc-runner-set/release.yaml + release-xl.yaml.
       chart: gha-runner-scale-set-controller
       version: "0.14.2"
       sourceRef:
@@ -23,22 +22,14 @@ spec:
       interval: 12h
   install:
     createNamespace: true
-  # NOT the default. `retries` defaults to 0, and 0 does not mean "retry on the
-  # next reconcile" -- it means helm-controller marks this release Stalled after
-  # ONE failed upgrade and never attempts it again, while the Kustomization above
-  # it stays Ready. It also leaves the failed upgrade UNREMEDIATED, so a chart
-  # that half-applied stays half-applied. Nexus sat Ready=False for 16 days on
-  # exactly this. See documentations/14-design-decisions.md, "Every HelmRelease
-  # sets upgrade.remediation.retries".
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
   upgrade:
     remediation:
       retries: 3
       strategy: rollback
   values:
-    # Chart ships securityContext: {} -> manager container allowed privilege
-    # escalation (Radar audit privilegeEscalation danger). Drop it + caps.
-    # Kept minimal (no runAsNonRoot/readOnlyRootFilesystem) to avoid changing
-    # the controller's runtime assumptions.
+    # Chart default is securityContext: {} — do not drop this block.
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:

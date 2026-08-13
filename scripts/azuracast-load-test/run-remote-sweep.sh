@@ -1,35 +1,28 @@
 #!/usr/bin/env bash
 # Find where the home uplink gives out, using the two off-site tailnet proxies
-# as real remote listeners. No VPS, no port forward, nothing exposed.
+# as real remote listeners. Ramps the sites together, stops at the ceiling.
 #
-#   ./run-remote-sweep.sh
+#   ./run-remote-sweep.sh                                    # both sites
+#   SITES=c OUT=remote-results-site-c.csv ./run-remote-sweep.sh
 #
-# Ramps both sites together and stops as soon as listeners can no longer keep
-# up — there is no point measuring past the ceiling, and holding a saturated
-# uplink degrades everything else in the house.
+# Needs listener-sim-remote.yaml applied. See README.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 OUT="${OUT:-$HERE/remote-results.csv}"
 KUBECONFIG_PATH="${KUBECONFIG_PATH:-/workspaces/homelabv1/bootstraping/kubeconfig}"
-# Per site. Total concurrent listeners is twice this.
+# Per site. Total concurrent listeners is this x the participating sites.
 STEPS="${STEPS:-1 5 15 30 60 100 150 250}"
-# Which remote sites take part. Both by default; SITES=c retires the weak line.
 SITES="${SITES:-b c}"
-# Total listeners is per-step x participating sites, not x2 — a single-site run
-# would otherwise label every row with double the load it applied.
+# Multiplier for the `total` column: per-step x participating sites, never x2.
 NSITES="$(echo "$SITES" | wc -w)"
 SETTLE="${SETTLE:-150}"
-# 192 kbps is 24 000 B/s of payload. Below this a real player is draining its
-# buffer, and will eventually go silent.
+# 192 kbps is 24 000 B/s of payload; below this a real player goes silent.
 FLOOR="${FLOOR:-23000}"
 KUBECTL="$(command -v kubectl)"
 
 k() { sudo env KUBECONFIG="$KUBECONFIG_PATH" "$KUBECTL" "$@"; }
 
-# Median, not mean: one stalled listener among fifty should not be able to drag
-# the headline number down, and fifty struggling ones should not be able to hide
-# behind one fast one.
 median_rate() {
   k -n azuracast-loadtest logs -l "app=listener-sim-remote,site=$1" \
       --tail=-1 --since="${SETTLE}s" --prefix=false 2>/dev/null \
@@ -59,10 +52,7 @@ for N in $STEPS; do
   k -n azuracast-loadtest set env deploy/listener-sim-site-b "LISTENERS=$N" >/dev/null
   k -n azuracast-loadtest set env deploy/listener-sim-site-c "LISTENERS=$N" >/dev/null
 
-  # SITES selects which remote sites take part. The two-site discriminator only
-  # works when both lines are comparable; the first run showed site b topping out
-  # around 1 Mbps while site c was still clean at 12, which leaves b unable to act
-  # as the control. `SITES=c` retires it and ramps the healthy site alone.
+  # Scale up the participating sites, park the rest.
   for S in b c; do
     if echo "$SITES" | grep -qw "$S"; then
       k -n azuracast-loadtest scale "deploy/listener-sim-site-$S" --replicas=1 >/dev/null
@@ -72,7 +62,7 @@ for N in $STEPS; do
     fi
   done
 
-  # Long enough for at least one full reporting window to close on every client.
+  # SETTLE must exceed the pods' WINDOW (120s) or no reading has closed yet.
   sleep "$SETTLE"
 
   B=$(median_rate b); C=$(median_rate c)
@@ -80,8 +70,7 @@ for N in $STEPS; do
   CPU=$(q 'sum(rate(container_cpu_usage_seconds_total{namespace="azuracast",container="azuracast"}[3m]))')
   TX=$(q  'sum(rate(container_network_transmit_bytes_total{namespace="azuracast"}[3m]))')
 
-  # Judge only the sites actually taking part; a parked site reports 0 and would
-  # otherwise read as a saturated one.
+  # Judge only the participating sites: a parked one reports 0, not saturation.
   SHORT=0; ACTIVE=0
   for S in b c; do
     echo "$SITES" | grep -qw "$S" || continue
@@ -91,10 +80,7 @@ for N in $STEPS; do
   done
 
   VERDICT=ok
-  # Every participating site short means the shared leg — the uplink. Some but
-  # not all means those sites' own connections are the limit, and the uplink has
-  # more to give. With one site participating the distinction cannot be drawn,
-  # so say so rather than claiming the uplink.
+  # Attribution needs ACTIVE > 1; one site alone cannot implicate the uplink.
   if [ "$SHORT" -eq "$ACTIVE" ] && [ "$ACTIVE" -gt 1 ]; then VERDICT=uplink-saturated
   elif [ "$SHORT" -eq "$ACTIVE" ]; then VERDICT=single-site-limit-unattributed
   elif [ "$SHORT" -gt 0 ]; then VERDICT=one-site-limited

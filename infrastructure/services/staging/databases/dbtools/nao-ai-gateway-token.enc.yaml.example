@@ -1,19 +1,10 @@
-# TEMPLATE — nao's OWN ai-gateway virtual key. Fill the value, then:
-#
-#   cd infrastructure/services/staging/databases/dbtools
-#   cp nao-ai-gateway-token.enc.yaml.example nao-ai-gateway-token.enc.yaml
-#   sops --encrypt --in-place nao-ai-gateway-token.enc.yaml
+# TEMPLATE — nao's OWN ai-gateway virtual key. Procedure in README.md.
 #
 # .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.example`
 # matches nothing and is never encrypted — NEVER put the real key here.
 #
 # The key is CREATED IN THE AI-GATEWAY DASHBOARD (Virtual Keys) and only stored
-# here — nothing generates it locally. One key per project on purpose: spend is
-# attributable and revocation hits nao alone. Nothing is mirrored in from the
-# ai-gateway namespace, so that namespace never has to name this one.
-#
-# The Deployment reads it with `optional: true`, so a placeholder keeps nao
-# serving its UI — chat is what 401s, not the process.
+# here — nothing generates it locally.
 apiVersion: v1
 kind: Secret
 metadata:

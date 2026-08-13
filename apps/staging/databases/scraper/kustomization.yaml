@@ -5,19 +5,14 @@ namespace: scraper
 
 resources:
   - ../../../base/databases/scraper
-  # ghcr-pull-secret comes from the central reflector source
-  # (infrastructure/controllers/staging/reflector) — mirrored into this ns.
-  # The scraper coordination DB holds NO scraped data (queues/config/health
-  # only, rebuildable from the seed migrations), so it carries no R2 backups.
 
 patches:
-  # PVCs on Longhorn (explicit — also the cluster default SC on Talos).
+  # PVCs on Longhorn.
   - path: cluster-storage-patch.yaml
     target:
       kind: Cluster
       name: scraper-db
-  # Permit kubernetes-reflector to mirror the -app secret into the `database` ns
-  # (pgAdmin + nao read this DB through scraper-db-ro).
+  # Permit reflection of the -app secret into the `database` ns.
   - path: cluster-reflector-patch.yaml
     target:
       kind: Cluster

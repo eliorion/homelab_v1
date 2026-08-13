@@ -5,12 +5,10 @@ metadata:
   namespace: n8n
   labels:
     # The ServiceMonitor in monitoring/configs/staging/n8n-metrics selects on
-    # SERVICE labels, not on spec.selector below — without this it matches
-    # nothing and the N8nDown alert never has a series to evaluate.
+    # SERVICE labels, not on spec.selector below.
     app: n8n
-  # Deliberately NO tailscale.com/expose annotations: the tailnet device comes
-  # from ingress-tailscale.yaml (HTTPS via MagicDNS). Both mechanisms at once
-  # would register two devices contending for the same hostname.
+  # NO tailscale.com/expose annotation: the tailnet device comes from
+  # ingress-tailscale.yaml, and two mechanisms contend for the same hostname.
 spec:
   type: ClusterIP
   ports:

@@ -1,9 +1,5 @@
-# pgAdmin's config database, declared as a CNPG Database (the operator issues the
-# CREATE DATABASE against dbtools-db). initdb bootstraps exactly one database, so
-# this is the only declarative way to get a second one on the same cluster.
-#
-# retain: dropping this object must not drop the database — deleting a kustomize
-# resource by accident should never destroy the saved server list.
+# pgAdmin's config database — the second database on dbtools-db, which initdb
+# cannot create. `retain`: deleting this object must NOT drop the database.
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:

@@ -37,11 +37,9 @@ spec:
           annotations:
             summary: "etcd backup job {{ $labels.job_name }} failed"
             description: "The etcd snapshot job {{ $labels.job_name }} failed. Run: kubectl -n etcd-backup logs job/{{ $labels.job_name }} -- the Job is reaped 48h after it finishes. If backups stay broken, EtcdBackupStale escalates to critical after 9h."
-        # The important one: catches Garage being unreachable, credentials
-        # expiring, and the CronJob being accidentally suspended -- all of
-        # which are silent otherwise. 9h = one missed 6h cycle plus margin.
-        # Absent until the first successful run, so it will not fire on a
-        # freshly deployed cluster.
+        # 32400s = 9h: one missed cycle of the CronJob's "0 */6 * * *" plus
+        # margin. Retune both together. Absent until the first successful run,
+        # so it does not fire on a fresh cluster (README).
         - alert: EtcdBackupStale
           expr: |
             time() - max by (namespace, cronjob) (
