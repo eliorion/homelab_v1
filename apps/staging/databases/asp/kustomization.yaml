@@ -8,6 +8,7 @@ resources:
   - r2-backup-credentials.enc.yaml
   - objectstore.yaml
   - scheduledbackup.yaml
+  - ingestion-metrics-configmap.yaml
 
 patches:
   # Attach the Barman Cloud Plugin for R2 backups.
@@ -22,6 +23,11 @@ patches:
       name: asp-db
   # Permit kubernetes-reflector to mirror the -app secret out of this ns.
   - path: cluster-reflector-patch.yaml
+    target:
+      kind: Cluster
+      name: asp-db
+  # Export the ingestion pause flags as CNPG metrics.
+  - path: cluster-metrics-patch.yaml
     target:
       kind: Cluster
       name: asp-db

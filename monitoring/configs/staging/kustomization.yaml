@@ -11,3 +11,4 @@ resources:
   - longhorn-monitoring
   - node-capacity-alerts
   - control-plane-alerts
+  - ingestion-alerts
