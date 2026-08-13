@@ -10,7 +10,14 @@ data:
   N8N_HOST: "n8n.tail45b0ca.ts.net"
   N8N_PORT: "5678"
   N8N_PROTOCOL: "https"
-  WEBHOOK_URL: "https://n8n.tail45b0ca.ts.net/"
+
+  # Public, Cloudflare-tunnelled origin — only /webhook is routed there.
+  # Telegram must reach this, so it cannot be the tailnet host.
+  WEBHOOK_URL: "https://staging-n8n.eliorion.fr/"
+  # Editor + OAuth callback stay on the tailnet host. Without this,
+  # WEBHOOK_URL becomes the OAuth redirect and the LinkedIn credential
+  # breaks, because that URL is not registered with the LinkedIn app.
+  N8N_EDITOR_BASE_URL: "https://n8n.tail45b0ca.ts.net/"
 
   # Schedule Triggers resolve their cron against this.
   GENERIC_TIMEZONE: "Europe/Paris"
