@@ -1,0 +1,122 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-backup-prune
+  namespace: etcd-backup
+spec:
+  # 04:30: off the hour, so it never overlaps its own producer (0/6/12/18:00)
+  # or the 03:00 CNPG backups on the same tailnet path.
+  schedule: "30 4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  # A retained failed Job holds kube_job_status_failed at 1 for as long as it
+  # exists, and KubeJobFailed has no time bound.
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 172800
+      activeDeadlineSeconds: 600
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: prune
+              # renovate: datasource=docker depName=docker.io/amazon/aws-cli
+              image: docker.io/amazon/aws-cli:2.36.22
+              command:
+                - /bin/sh
+                - -c
+              args:
+                - |
+                  set -eu
+
+                  CUTOFF=$(date -u -d "-${RETENTION_DAYS} days" +%s)
+                  echo "retention=${RETENTION_DAYS}d min_keep=${MIN_KEEP} max_delete=${MAX_DELETE} dry_run=${DRY_RUN}"
+                  echo "cutoff=$(date -u -d "@${CUTOFF}" +%Y-%m-%dT%H:%M:%SZ)"
+
+                  # Ascending by LastModified: the newest are the LAST lines.
+                  aws --endpoint-url "$CUSTOM_S3_ENDPOINT" s3api list-objects-v2 \
+                    --bucket "$BUCKET" --prefix "$S3_PREFIX" \
+                    --query 'sort_by(Contents,&LastModified)[].[LastModified,Key]' \
+                    --output text > /tmp/objects.txt
+
+                  TOTAL=$(wc -l < /tmp/objects.txt)
+                  echo "objects=${TOTAL}"
+                  if [ "$TOTAL" -le "$MIN_KEEP" ]; then
+                    echo "at or below min_keep, nothing to consider"
+                    exit 0
+                  fi
+
+                  # Only the objects OUTSIDE the newest MIN_KEEP are candidates;
+                  # age then decides. Both conditions must hold to delete.
+                  CANDIDATES=$((TOTAL - MIN_KEEP))
+                  head -n "$CANDIDATES" /tmp/objects.txt > /tmp/candidates.txt
+
+                  DELETED=0
+                  while IFS="$(printf '\t')" read -r TS KEY; do
+                    [ -n "$KEY" ] || continue
+                    AGE=$(date -u -d "$TS" +%s)
+                    [ "$AGE" -lt "$CUTOFF" ] || continue
+                    if [ "$DELETED" -ge "$MAX_DELETE" ]; then
+                      echo "max_delete reached; $((CANDIDATES - DELETED)) candidate(s) left for the next run"
+                      break
+                    fi
+                    if [ "$DRY_RUN" = "true" ]; then
+                      echo "would delete ${KEY} (${TS})"
+                    else
+                      echo "deleting ${KEY} (${TS})"
+                      aws --endpoint-url "$CUSTOM_S3_ENDPOINT" s3api delete-object \
+                        --bucket "$BUCKET" --key "$KEY" > /dev/null
+                    fi
+                    DELETED=$((DELETED + 1))
+                  done < /tmp/candidates.txt
+
+                  echo "done: deleted=${DELETED} kept=$((TOTAL - DELETED))"
+              # THIS JOB DELETES BACKUPS. The four values below are guards, not
+              # tuning — MIN_KEEP in particular is what makes the others safe to
+              # get wrong. Do not change any of them without reading README.md.
+              env:
+                - name: RETENTION_DAYS
+                  value: "30"
+                # Floor on COUNT, not age. 28 = 7 days at 4 runs/day.
+                - name: MIN_KEEP
+                  value: "28"
+                - name: MAX_DELETE
+                  value: "24"
+                - name: DRY_RUN
+                  value: "false"
+                - name: HOME
+                  value: /tmp
+                - name: AWS_EC2_METADATA_DISABLED
+                  value: "true"
+              # Same Secret + ConfigMap the producer uses, so the prune can never
+              # be pointed at a different bucket than the backup writes to.
+              envFrom:
+                - secretRef:
+                    name: etcd-backup-s3
+                - configMapRef:
+                    name: etcd-backup-config
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+              securityContext:
+                runAsUser: 1000
+                runAsGroup: 1000
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+                seccompProfile:
+                  type: RuntimeDefault
+              volumeMounts:
+                - mountPath: /tmp
+                  name: tmp
+          volumes:
+            - name: tmp
+              emptyDir: {}
