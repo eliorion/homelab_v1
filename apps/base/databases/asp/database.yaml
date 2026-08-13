@@ -33,7 +33,11 @@ spec:
             key: init.sql
 
   # createrole is required: Flyway V6/V8 run CREATE ROLE as `app`. Removing it
-  # breaks every migration run (see README).
+  # breaks every migration run.
+  # Do NOT add a login role here to give webapp_ro/grafana_ro a password: this
+  # base is consumed by apps/production/databases/asp too, so a role pointing at
+  # a staging-only Secret fails production reconciliation. Patch the staging
+  # overlay instead (see README).
   managed:
     roles:
       - name: app

@@ -7,9 +7,32 @@ spec:
   schedule: "0 */6 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
+  # Was 3. A failed Job object keeps kube_job_status_failed == 1 for as long
+  # as it exists, and EtcdBackupJobFailed has no time bound, so three retained
+  # failures meant three permanently-firing criticals. Two of them dated from
+  # 31 July and one from 6 August while every run since has succeeded.
+  # Keep the most recent failure for post-mortem; the durable signal that
+  # backups are actually broken is EtcdBackupStale, not a tombstone count.
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      # Reap finished Jobs by age as well as by count, so a failure cannot
+      # outlive its usefulness just because nothing has failed since. 48h is
+      # comfortably longer than the 9h EtcdBackupStale window, so a genuine
+      # outage still alerts for its whole duration.
+      ttlSecondsAfterFinished: 172800
+      # The three historical failures all ended in "timed out waiting for the
+      # condition" -- the Job hung rather than erroring. Without a deadline a
+      # hung Job sits until the next schedule and Forbid then skips that run,
+      # so one hang silently costs two cycles. A successful run takes ~27s
+      # (156 MB snapshot, compress, upload); 15 min is ~30x headroom and still
+      # far inside the 6h period.
+      activeDeadlineSeconds: 900
+      # Left at 2 (3 attempts total) deliberately. The schedule is 6-hourly
+      # and EtcdBackupStale tolerates 9h, so the cluster already absorbs one
+      # entirely failed cycle. Against an unreachable Garage or a hung tailnet
+      # path -- the observed failure mode -- more in-Job retries only consume
+      # the deadline above; the meaningful retry is the next cycle.
       backoffLimit: 2
       template:
         spec:

@@ -160,6 +160,19 @@ selector matches both and Prometheus scrapes the same pod twice — duplicate
 series with no way to tell them apart. Selecting the pod directly yields exactly
 one target.
 
+**The metrics scrape needs basic auth.** Once `authConfig` was enabled the
+endpoint started answering `401` unauthenticated, so the target sat `up: 0` with
+a permanent `TargetDown` against it. Measured against the running pod: no
+credential → `401`; `Authorization: Bearer <admin>` → `401`; basic auth with the
+admin user and password → `200`. So it is `authConfig` — the dashboard and
+management credential — gating `/metrics`, **not** the governance plugin's
+`is_vk_mandatory`. A virtual key is for inference and does not open this path,
+which is why swapping one in re-breaks the scrape. The `basicAuth` reference
+must point at a Secret in the `ai-gateway` namespace, and does: the operator,
+not Prometheus, resolves it and inlines the credential into the generated scrape
+config, and its ServiceAccount can read Secrets there. Nothing new lands in Git —
+`ai-gateway-admin` is the SOPS Secret `authConfig.existingSecret` already uses.
+
 **`sourceOfTruth: "split"` — the database wins.** `split` is Bifrost's default:
 `config.json` seeds a section on first boot and is otherwise left alone, so edits
 made in the dashboard survive every restart. Combined with declaring no
@@ -239,8 +252,8 @@ only one of them failed silently with a 401.
 - **`podmonitor.yaml`'s `release: kube-prometheus-stack` label** must match
   Prometheus's `podMonitorSelector`, or the target is never scraped.
 - **The PodMonitor's `port: http`** is the container port name; `/metrics` is
-  served on the same port as the API. If a future release starts gating
-  `/metrics` behind the virtual key, this endpoint needs a `bearerTokenSecret`.
+  served on the same port as the API, and it is authenticated. Do not "fix" the
+  401 by swapping in a virtual key — see "The metrics scrape needs basic auth".
 - **`BIFROST_ENCRYPTION_KEY` can never be rotated or lost.** See "Backup &
   restore".
 - **Secrets stay in the overlay.** Never move `*.enc.yaml` into `base/`:

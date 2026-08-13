@@ -8,3 +8,6 @@ resources:
   - etcd-backup-alerts
   - cnpg-alerts
   - n8n-metrics
+  - longhorn-monitoring
+  - node-capacity-alerts
+  - control-plane-alerts

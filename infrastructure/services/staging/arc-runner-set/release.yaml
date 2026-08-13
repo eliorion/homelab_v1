@@ -32,7 +32,8 @@ spec:
         initContainers:
           # Copies runner externals where the dind container expects them.
           - name: init-dind-externals
-            image: ghcr.io/actions/actions-runner:latest
+            # renovate: datasource=docker depName=ghcr.io/actions/actions-runner
+            image: ghcr.io/actions/actions-runner:2.336.0
             command:
               ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
             volumeMounts:
@@ -79,7 +80,8 @@ spec:
                 mountPath: /home/runner/externals
         containers:
           - name: runner
-            image: ghcr.io/actions/actions-runner:latest
+            # renovate: datasource=docker depName=ghcr.io/actions/actions-runner
+            image: ghcr.io/actions/actions-runner:2.336.0
             command: ["/home/runner/run.sh"]
             env:
               - name: DOCKER_HOST

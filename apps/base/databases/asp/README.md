@@ -75,10 +75,26 @@ bumped by hand: `renovate.json` scopes the kubernetes manager to
 (`grafana_ro`) run `CREATE ROLE` while connected as `app`, which therefore needs
 `CREATEROLE`. Without it the migration image fails at V6 and — once the chart
 runs it as a pre-upgrade hook — takes every asp upgrade down with it. That is
-why `asp-db` sat at V5 while `db-migrations` was at `v0.6.0`. `fbref-db` carries
-the same grant for its own reason, recorded in
+why `asp-db` once sat at V5 while `db-migrations` was at `v0.6.0`. `fbref-db`
+carries the same grant for its own reason, recorded in
 `apps/base/databases/fbref/database.yaml`: its Flyway V3 creates the
 `worker-control` and `nocodb` roles while connected as `app`.
+
+**That incident is closed, and saying otherwise misleads.** The grant fixed it;
+a stale "stuck at V5" note survived in the manifest long after and was read as
+an open incident, justifying work that had already landed. Measured on staging
+2026-08-12: `flyway_schema_history` at `max(version) = 9`, all success; `app`
+has `login=true` and `createrole=true`; `webapp_ro` and `grafana_ro` exist as
+`NOLOGIN`, with `grafana_ro` holding 7 table grants.
+
+**Why the read-only roles are `NOLOGIN` and unmanaged.** Both appear under
+`managedRolesStatus.byStatus["not-managed"]`, which is the correct state rather
+than a gap: Flyway creates the role and its grants — the privilege boundary —
+and CNPG is what would attach a credential. Nothing has needed one yet. To give
+`grafana_ro` a login, add it to the roles list *with* a `passwordSecret` **in
+the staging overlay as a patch, never in this base**: `apps/production/databases/asp`
+consumes the same base and `clusters/production/apps.yaml` reconciles it, so a
+role pointing at a Secret that exists only in staging fails there.
 
 **The init schema.** `db-init-configmap.yaml` carries `init.sql`, written to be
 idempotent so it is safe on a clean database and on a re-run. It creates

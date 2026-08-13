@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Longhorn was the LAST storage layer in this cluster with no monitoring at
+# all: zero longhorn_* series were being scraped, and Radar's ServiceAccount is
+# RBAC-denied volumes.longhorn.io, so the only way to answer "is a volume
+# degraded right now?" was a manual kubectl by someone who already suspected it.
+#
+# It is also the layer that fails toward DATA LOSS rather than downtime, and
+# the one with no fallback view. That combination is why it goes first.
+resources:
+  - servicemonitor.yaml
+  - prometheusrule.yaml

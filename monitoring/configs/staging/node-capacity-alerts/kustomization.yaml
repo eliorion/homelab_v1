@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Rate-based filesystem runway alerts. Complements rather than replaces the
+# chart's NodeFilesystemSpaceFillingUp, which stays enabled as the backstop for
+# a sudden fill; see the rule file for the measurements that justify both.
+resources:
+  - prometheusrule.yaml

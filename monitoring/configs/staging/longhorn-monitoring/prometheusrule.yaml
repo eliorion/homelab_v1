@@ -1,0 +1,142 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: longhorn.rules
+      rules:
+        # ------------------------------------------------------------------
+        # ENCODING NOTE -- read before editing any expression below.
+        #
+        # longhorn_volume_robustness is NOT an enum-valued gauge. Longhorn
+        # emits it ONE-HOT: four series per volume, labelled
+        # state="healthy"|"degraded"|"faulted"|"unknown", each carrying 0 or 1.
+        # Verified against the live /metrics endpoint on v1.12.0:
+        #
+        #   longhorn_volume_robustness{pvc="asp-db-2",state="degraded"} 0
+        #   longhorn_volume_robustness{pvc="asp-db-2",state="faulted"}  0
+        #   longhorn_volume_robustness{pvc="asp-db-2",state="healthy"}  1
+        #   longhorn_volume_robustness{pvc="asp-db-2",state="unknown"}  0
+        #
+        # So `== 2` / `!= 2` style comparisons -- the obvious reading of the
+        # docs' "0=unknown 1=healthy 2=degraded 3=faulted" -- match NOTHING
+        # here, and would have shipped a storage alert that can never fire on
+        # the one layer that fails toward data loss. Always select the state
+        # by LABEL and compare to 1.
+        #
+        # longhorn-manager is a DaemonSet and every pod reports the FULL
+        # cluster view, so each volume yields 3 identical series. Every rule
+        # aggregates with max by (...) over the volume identity to collapse
+        # them; without that a single degraded volume pages three times.
+        # ------------------------------------------------------------------
+        - alert: LonghornVolumeFaulted
+          expr: |
+            max by (volume, pvc, pvc_namespace) (
+              longhorn_volume_robustness{state="faulted"}
+            ) == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Longhorn volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is FAULTED"
+            description: >-
+              Longhorn reports volume {{ $labels.volume }} (PVC
+              {{ $labels.pvc_namespace }}/{{ $labels.pvc }}) as faulted: no
+              usable replica remains and the workload cannot read or write.
+              This is data loss in progress, not degradation. Check
+              `kubectl -n longhorn-system get volumes.longhorn.io
+              {{ $labels.volume }}` and the replica states.
+
+        - alert: LonghornVolumeDegraded
+          expr: |
+            max by (volume, pvc, pvc_namespace) (
+              longhorn_volume_robustness{state="degraded"}
+            ) == 1
+          # 15m, not 5m. A degraded volume is the NORMAL transient state
+          # after a node reboot or a replica rebuild, and a rebuild of the
+          # larger volumes here takes minutes. Alerting sooner would fire on
+          # every routine drain and teach the operator to ignore it -- which
+          # matters more for this alert than most, because it is the only
+          # warning that precedes LonghornVolumeFaulted above.
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} degraded for 15m"
+            description: >-
+              Volume {{ $labels.volume }} is running below its configured
+              replica count and has not recovered in 15 minutes, so this is
+              not a routine rebuild. It is still serving reads and writes, but
+              the redundancy that protects it is gone. Common cause here: no
+              node has enough SCHEDULABLE space left for the replica -- see
+              LonghornNodeSchedulingHeadroomLow.
+
+        # The failure this cluster is actually closest to. Longhorn schedules
+        # against PROVISIONED size, not used size, and
+        # storageOverProvisioningPercentage is deliberately pinned at 100
+        # after two past outages -- so a node with plenty of free filesystem
+        # can still be unable to accept any new replica.
+        #
+        # THIS FIRES ON staging-controlplane-1 THE MOMENT IT IS DEPLOYED, and
+        # that is a true positive, not a tuning error: node 1 has ~18 GiB of
+        # schedulable headroom against 376 GiB already scheduled (95.5%). It
+        # is the smallest disk in the cluster (463 GiB vs 929 GiB) while
+        # carrying an equal one-of-three replica share of every volume.
+        #
+        # Deliberately NOT tuned to sit above the current value. Raising the
+        # threshold to hide a real constraint is how a cluster arrives at a
+        # full disk with a green dashboard.
+        - alert: LonghornNodeSchedulingHeadroomLow
+          expr: |
+            max by (node) (
+              longhorn_node_storage_scheduled_bytes
+              /
+              (longhorn_node_storage_capacity_bytes - longhorn_node_storage_reservation_bytes)
+            ) > 0.9
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn node {{ $labels.node }} is {{ $value | humanizePercentage }} scheduled"
+            description: >-
+              {{ $labels.node }} has almost no room to accept a new replica.
+              Any PVC created from a 3-replica StorageClass that does not fit
+              here will come up DEGRADED rather than failing loudly. Remedies,
+              in increasing order of effort: put reconstructible data (metrics,
+              caches) on a 2-replica class, shrink an over-provisioned volume
+              to its actual size, or give this node a larger disk. Do NOT raise
+              storageOverProvisioningPercentage -- it is 100 on purpose.
+
+        - alert: LonghornDiskUnschedulable
+          expr: |
+            max by (node, disk) (longhorn_disk_status{condition="schedulable"}) == 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn disk {{ $labels.disk }} on {{ $labels.node }} is unschedulable"
+            description: >-
+              Longhorn has marked this disk unschedulable, so no new replica
+              will land on {{ $labels.node }} and any volume needing one stays
+              degraded. Usually the disk crossed its reservation threshold or
+              failed a health check.
+
+        - alert: LonghornNodeNotReady
+          expr: |
+            max by (node) (longhorn_node_status{condition="ready"}) == 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Longhorn node {{ $labels.node }} is not ready"
+            description: >-
+              Longhorn cannot reach its manager on {{ $labels.node }}. Every
+              volume with a replica there is running degraded, and a second
+              node in this state means volumes go faulted. With three nodes
+              and a default replica count of 3, this is one failure away from
+              data loss.

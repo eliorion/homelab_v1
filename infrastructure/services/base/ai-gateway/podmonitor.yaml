@@ -18,7 +18,17 @@ spec:
       app.kubernetes.io/instance: ai-gateway
       app.kubernetes.io/component: server
   podMetricsEndpoints:
-    # `http` is the container port name; /metrics shares the API port.
+    # `http` is the container port name; /metrics shares the API port and is
+    # gated by authConfig (basic auth), not by the governance plugin. Swapping in
+    # a virtual key here 401s. The Secret must stay in this namespace: the
+    # operator resolves it and inlines the credential. See README.
     - port: http
       path: /metrics
       interval: 30s
+      basicAuth:
+        username:
+          name: ai-gateway-admin
+          key: username
+        password:
+          name: ai-gateway-admin
+          key: password

@@ -17,5 +17,5 @@ sops:
             -----END AGE ENCRYPTED FILE-----
     lastmodified: "2026-02-26T15:12:26Z"
     mac: ENC[AES256_GCM,data:uQSfDOdpjkZgbKDWz6+E3eyVkcRFh6IuMLvLlhlIexWkRW9FOe/TyvbzMI9K+F1a1ljidqE7nMXdikHrfU2Fq2k96tdy5CSFNATokFVhm6X0nC3ssUfdeItoYYSQ821BPRtJ4K80abFzCuelDyvzs3f7j4U4m2OSN7qErBuEGmA=,iv:e8G3xKv+fCjSqhAumIHKojZ5lJaE0ZDloa8pSMcPSic=,tag:0P5eZcaG+AN3LH6h6AiZHQ==,type:str]
-    encrypted_regex: ^(data|stringDate)$
+    encrypted_regex: ^(data|stringData)$
     version: 3.11.0

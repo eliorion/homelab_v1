@@ -69,6 +69,50 @@ spec:
     # `management` (health + metrics) stays unrestricted: the kubelet probes it
     # from the node, which is not a pod and would be dropped by a namespaceSelector.
 
+  # `instances: 2` above buys nothing if both land on the same node, and that
+  # is exactly what happened: keycloak-0 and keycloak-1 were BOTH scheduled on
+  # staging-controlplane-1, so an unplanned loss of that one node took out
+  # 100% of SSO -- every service behind this realm, at once.
+  #
+  # The operator already emits a maxSkew: 1 hostname constraint, but with
+  # whenUnsatisfiable: ScheduleAnyway. That is a preference, and the scheduler
+  # overrode it (node 1 is the one with the most allocatable headroom by
+  # requests, so it wins ties). Hardening it to DoNotSchedule is the whole fix.
+  #
+  # Safe on this cluster: 2 replicas across 3 schedulable nodes is always
+  # satisfiable, including during a single-node drain -- the evicted pod has
+  # the third node to land on, and the PDB (minAvailable 1) permits the
+  # eviction. It only strands a pod if two of three nodes are unavailable, at
+  # which point a co-located pair would not have survived either.
+  #
+  # Restated verbatim from the operator's own output rather than trimmed,
+  # because spec.scheduling REPLACES the generated constraints rather than
+  # merging with them. The zone constraint is kept for that reason alone; the
+  # nodes carry no topology.kubernetes.io/zone label, so it matches one
+  # implicit domain and is inert. The labelSelector must stay byte-identical
+  # to the operator's -- a selector that matches no pod is not an error, it is
+  # a silently absent constraint, which is the bug being fixed here.
+  scheduling:
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: keycloak
+            app.kubernetes.io/component: server
+            app.kubernetes.io/instance: keycloak
+            app.kubernetes.io/managed-by: keycloak-operator
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: keycloak
+            app.kubernetes.io/component: server
+            app.kubernetes.io/instance: keycloak
+            app.kubernetes.io/managed-by: keycloak-operator
+
   additionalOptions:
     # Return 503 under overload instead of queueing without bound.
     - name: http-max-queued-requests

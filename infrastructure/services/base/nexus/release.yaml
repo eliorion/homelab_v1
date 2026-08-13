@@ -19,6 +19,28 @@ spec:
       interval: 12h
   install:
     createNamespace: true
+  # Without an upgrade block, remediation.retries defaults to 0 -- and 0 means
+  # helm-controller marks the release Stalled after ONE failure and stops
+  # retrying entirely. That is what happened here: a single failed upgrade on
+  # 2026-07-27 latched Stalled=True reason=RetriesExceeded, and the release sat
+  # Ready=False for over two weeks with nothing retrying and nothing alerting
+  # loudly enough to be noticed.
+  #
+  # This does NOT by itself fix the current failure -- see the note on
+  # persistence.size below; that needs a one-off orphan-delete of the
+  # StatefulSet. What it fixes is the latch, so the NEXT transient failure
+  # (registry blip, slow boot past the 10m timeout) retries and self-heals
+  # instead of parking the CI cache indefinitely.
+  #
+  # Safe to add while the release is broken: this changes spec, not
+  # spec.values, so the rendered pod template is byte-identical. The
+  # StatefulSet's ControllerRevision hash is unchanged and nexus-0 is adopted
+  # in place rather than rolled -- which matters, because rolling it means a
+  # cold cache and a Longhorn re-attach of a 267 GiB volume.
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
   values:
     # Keep the service named `nexus` so cluster DNS stays nexus.nexus.svc:8081.
     fullnameOverride: nexus
@@ -26,6 +48,31 @@ spec:
       enabled: true
       # storageClass and size are immutable once the StatefulSet exists.
       storageClass: longhorn
+      # CURRENTLY BLOCKING EVERY UPGRADE OF THIS RELEASE, and not fixable from
+      # git alone. volumeClaimTemplates is immutable on a StatefulSet, so this
+      # 350Gi cannot be applied over the live template, which still reads
+      # 250Gi. Longhorn already expanded the PVC online -- it is at 350Gi
+      # today -- so the ONLY thing stale is the StatefulSet's copy, and every
+      # Helm upgrade dies on:
+      #
+      #   StatefulSet.apps "nexus" is invalid: spec: Forbidden: updates to
+      #   statefulset spec for fields other than 'replicas', 'ordinals', ...
+      #
+      # Clearing it is a one-off imperative step, documented with its rationale
+      # in documentations/04-ci-runners-cache.md (Troubleshooting). It is
+      # non-destructive on Longhorn:
+      #
+      #   kubectl -n nexus delete sts nexus --cascade=orphan
+      #   flux reconcile helmrelease nexus -n flux-system --force
+      #
+      # --cascade=orphan keeps nexus-0 and the PVC running; the recreated
+      # StatefulSet adopts the pod. Both flags are load-bearing: a plain
+      # `flux reconcile` logs "release in-sync with desired state" and skips
+      # the re-apply, so the orphaned StatefulSet is never recreated.
+      #
+      # AFTERWARDS, re-assert the one-replica setting described below. It lives
+      # on the Longhorn Volume CR, not in these values, and survives only
+      # because the orphan-delete preserves the PVC.
       size: 350Gi
       # The Longhorn replica count is NOT settable here — it is patched to 1 on
       # the Longhorn Volume CR, and a recreated PVC returns to the class
