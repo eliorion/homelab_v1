@@ -99,13 +99,42 @@ boots slowly (2min+) and helm-controller needs room to wait.
 
 ### Node affinity
 
-Pod placement prefers `staging-controlplane-1`. Longhorn keeps a replica on every
-node at the class default, so node-1 holds a local copy of the data volume and
-the engine reads its data locally. The rule is soft (preferred), so Nexus still
-schedules elsewhere if node-1 is down and the data survives via the other
-replicas. After a failover the pod does not automatically return to node-1 until
-it is rescheduled. Note that this rationale predates the one-replica decision
-above.
+Pod placement prefers `staging-controlplane-2`, **because that is where this
+volume's single replica lives**. The preference exists to make the engine read
+its data locally, so it is only worth anything if it names the right node.
+
+It used to say `staging-controlplane-1`, on the reasoning that "Longhorn keeps a
+replica on every node at the class default, so node-1 holds a local copy". That
+was true when written and stopped being true when the volume went to one replica
+— the note above already flagged that the rationale predated that decision, but
+nobody checked where the replica actually was. Measured 2026-08-12:
+
+```
+nexus-0 pod          staging-controlplane-1
+its ONLY replica     staging-controlplane-2
+dataLocality         disabled
+volume               350Gi provisioned / 272.7Gi actual
+```
+
+So every read and write of a 272 GiB CI cache was crossing the network to the
+other node, for a pin whose entire purpose was to avoid exactly that.
+
+**Why not `dataLocality: best-effort`**, which would keep this correct with no
+hardcoded node by migrating the replica to whichever node the pod lands on: it
+does not fit. With `storage-over-provisioning-percentage: 100` and a 15% disk
+reserve, node 1 has 17.9 GiB of schedulable headroom and node 2 has 23.6 GiB.
+Only node 3 could accept a second 350Gi replica, and moving it there means
+rebuilding 272 GiB across the network to solve a locality problem.
+
+**Why not drop the affinity entirely**: without it the scheduler picks freely and
+the cache is local only by luck.
+
+So it is hardcoded, and it tracks the replica. **If the replica is ever moved, or
+the volume goes multi-replica, this value moves with it.**
+
+It stays soft (`preferred`), not required: a single-replica volume cannot attach
+at all if node 2 is down, so a hard requirement would buy nothing and would only
+block scheduling in cases where the pod could otherwise start.
 
 ### Anonymous access and realms
 
