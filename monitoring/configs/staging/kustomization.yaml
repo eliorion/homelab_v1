@@ -10,3 +10,4 @@ resources:
   - n8n-metrics
   - longhorn-monitoring
   - node-capacity-alerts
+  - control-plane-alerts
