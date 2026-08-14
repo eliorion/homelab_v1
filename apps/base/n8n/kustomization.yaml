@@ -7,3 +7,6 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress-tailscale.yaml
+  - svg-render-deployment.yaml
+  - svg-render-service.yaml
+  - svg-render-networkpolicy.yaml
