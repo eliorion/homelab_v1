@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-vars
+  namespace: identity
+data:
+  # The applications realm name for THIS cluster. Read by the import Job as
+  # $(env:APPS_REALM) and substituted into realm-apps.yaml.
+  #
+  # This string is the issuer path. Every consumer resolves it by exact string:
+  # OIDC_DISCOVERY_URI in apps/staging/nextcloud/configmap.yaml, and the
+  # Cloudflare Access identity provider in the Zero Trust dashboard. Change it
+  # and all three change together, or logins fail with a 404 on discovery.
+  #
+  # Editing this file alone does NOT re-run the import: the Job spec is
+  # unchanged, so Flux has nothing to recreate. Delete the Job to re-run it.
+  APPS_REALM: staging-apps

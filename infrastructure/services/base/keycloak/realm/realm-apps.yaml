@@ -1,12 +1,18 @@
-# The `apps` realm — the login for self-hosted web UIs published through the
-# Cloudflare tunnel, authenticated at the EDGE by Cloudflare Access.
+# The applications realm — the ONE user pool for every self-hosted UI, whether
+# it is gated at the edge (Cloudflare Access) or delegates its own login (OIDC).
 #
-# Today that is exactly one UI, nao (https://nao.eliorion.fr). The realm is not
-# named after it because a Cloudflare Access identity provider is configured
-# ONCE per Zero Trust account and reused by every Access application: a second
-# published UI adds an Access application and a policy, not a second realm and a
-# second IdP. Naming this `nao` would have meant renaming it the first time
-# anything else was published.
+# The realm NAME is per-environment, from APPS_REALM (staging: `staging-apps`).
+# Substituted rather than hardcoded because this file lives in base/ and a
+# production cluster must not import a realm called `staging-*`. Changing it
+# renames the issuer, which every consumer resolves by exact string — see
+# README.md before touching it.
+#
+# ACCESS IS BY GROUP, one group per application, `<app>-users`. Membership in a
+# group IS access to that app; the realm itself grants nothing. That is what
+# makes one pool safe: a nao operator does not become a Nextcloud user by
+# existing here. Adding an application means adding a group below and teaching
+# exactly one enforcement point to read it — see the table in README.md, because
+# not every application can enforce a group by itself.
 #
 # WHY NOT THE `mcp` REALM. That realm has anonymous dynamic client registration
 # open to claude.ai and chatgpt.com, and its own comment states the access rule
@@ -20,7 +26,7 @@
 # feature — so Keycloak is not nao's identity provider. It authenticates the
 # request BEFORE it reaches the tunnel; nao's own login still follows. Two
 # logins is the cost of fronting an app that cannot delegate its own.
-realm: apps
+realm: $(env:APPS_REALM)
 enabled: true
 displayName: Apps
 
@@ -119,6 +125,22 @@ clients:
     # Consent would be shown on every login to an application the operator owns
     # outright, and Access cannot render it.
     consentRequired: false
+    protocolMappers:
+      # Lets Cloudflare Access policies match on GROUPS instead of listing email
+      # addresses one at a time. The claim must also be declared on the Access
+      # side (Zero Trust → Settings → Authentication → the OIDC IdP → OIDC
+      # Claims: `groups`), or Access never requests it and every group-based
+      # policy silently matches nobody.
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          "claim.name": groups
+          "full.path": "false"
+          "id.token.claim": "true"
+          "access.token.claim": "true"
+          "userinfo.token.claim": "true"
 
   # Nextcloud's own login, via the user_oidc app. Unlike cloudflare-access this
   # is the APPLICATION delegating its authentication, not an edge gate in front
@@ -176,15 +198,23 @@ clients:
           "access.token.claim": "true"
           "userinfo.token.claim": "true"
 
+# THE ACCESS CATALOGUE. One group per application; membership is the grant.
+# Kept by IMPORT_MANAGED_GROUP=no-delete, so a group added by hand in the admin
+# console survives the next import — but anything not listed here is undocumented
+# and nothing enforces it. Add the group AND its enforcement point together.
 groups:
-  # Holding this group IS permission to log in to Nextcloud: user_oidc is
-  # configured with group-restrict-login-to-whitelist. Declared here (and kept
-  # by IMPORT_MANAGED_GROUP=no-delete) so the gate is in Git; membership is
-  # still granted by hand in the admin console over the tailnet.
+  # ENFORCED by user_oidc itself: --group-restrict-login-to-whitelist with
+  # --group-whitelist-regex '^nextcloud-'. A user without this group logs into
+  # Keycloak successfully and is then refused by Nextcloud.
   - name: nextcloud-users
   # Provisioned into Nextcloud as a group, but it grants no Nextcloud admin
   # rights on its own — Nextcloud's own admin group is `admin`.
   - name: nextcloud-admins
+  # ENFORCED by the Cloudflare Access policy on https://nao.eliorion.fr, which
+  # must be set to match this group via the `groups` OIDC claim. Until that
+  # policy is changed from an email list to a group rule, this group is
+  # documentation and grants nothing.
+  - name: nao-users
 
 # NO `users:` BLOCK, DELIBERATELY — same rule as realm-mcp.yaml. Accounts are
 # created in the admin console over the tailnet, and the import Job's

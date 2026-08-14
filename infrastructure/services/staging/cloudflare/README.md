@@ -276,9 +276,9 @@ own login still follows it. **Two logins is expected, not a misconfiguration.**
 | Name | `Keycloak` |
 | App ID (client id) | `cloudflare-access` |
 | Client secret | `sops -d ../keycloak/realm/cloudflare-access-client.enc.yaml` |
-| Auth URL | `https://staging-keycloak.eliorion.fr/realms/apps/protocol/openid-connect/auth` |
-| Token URL | `https://staging-keycloak.eliorion.fr/realms/apps/protocol/openid-connect/token` |
-| Certificate (JWKS) URL | `https://staging-keycloak.eliorion.fr/realms/apps/protocol/openid-connect/certs` |
+| Auth URL | `https://staging-keycloak.eliorion.fr/realms/staging-apps/protocol/openid-connect/auth` |
+| Token URL | `https://staging-keycloak.eliorion.fr/realms/staging-apps/protocol/openid-connect/token` |
+| Certificate (JWKS) URL | `https://staging-keycloak.eliorion.fr/realms/staging-apps/protocol/openid-connect/certs` |
 | OIDC scopes | `openid`, `email`, `profile` |
 | PKCE | On |
 
@@ -303,7 +303,7 @@ Two values must match on both sides or the flow fails at the last step:
   the `team-domain` key of that Secret. **It ships as a placeholder** — set it
   before testing, or every login ends on *"Invalid parameter: redirect_uri"*.
 
-**Every Keycloak account in the `apps` realm needs an email address set.**
+**Every Keycloak account in the `staging-apps` realm needs an email address set.**
 Access identifies users by email and its policies match on it; a user with none
 authenticates successfully and is then refused by the policy, which reads as a
 broken login rather than a denied one.
@@ -319,7 +319,7 @@ broken login rather than a denied one.
 | Instant Auth | On (single IdP, so skip the chooser) |
 
 Policy: **Allow**, `Include → Emails` listing the operator addresses. Do **not**
-use `Include → Everyone` with the IdP as the only gate — the `apps` realm has
+use `Include → Everyone` with the IdP as the only gate — the `staging-apps` realm has
 `registrationAllowed: false`, but an emails include keeps the two independent.
 
 Leaving One-time PIN enabled would let anyone with any email address bypass
@@ -370,7 +370,7 @@ In the dashboard (each explained in its section above):
   bypasses Keycloak entirely.
 - The Access redirect URI ships as a placeholder (`team-domain` key); unset, every
   login ends on *"Invalid parameter: redirect_uri"*.
-- Accounts in the `apps` realm need an email address, or the Access policy refuses
+- Accounts in the `staging-apps` realm need an email address, or the Access policy refuses
   a successful login.
 
 ## Operating it
@@ -396,7 +396,7 @@ curl -sI https://nao.eliorion.fr/ | head -1          # 302 to cloudflareaccess.c
 curl -sIL https://nao.eliorion.fr/ | grep -i '^location:'
 
 # The realm's discovery document answers over the already-routed /realms/* path.
-curl -sS https://staging-keycloak.eliorion.fr/realms/apps/.well-known/openid-configuration \
+curl -sS https://staging-keycloak.eliorion.fr/realms/staging-apps/.well-known/openid-configuration \
   | head -c 120
 
 # The tailnet path is UNCHANGED and still bypasses Access by design — confirm it

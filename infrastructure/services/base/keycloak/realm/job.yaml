@@ -68,6 +68,15 @@ spec:
             # and every Cloudflare Access token exchange fails.
             - name: IMPORT_VARSUBSTITUTION_ENABLED
               value: "true"
+            # The applications realm NAME, per environment (staging:
+            # `staging-apps`). Substituted into realm-apps.yaml's `realm:` key.
+            # Changing it does NOT rename the live realm — config-cli creates
+            # the new one and leaves the old, users and all, behind.
+            - name: APPS_REALM
+              valueFrom:
+                configMapKeyRef:
+                  name: keycloak-realm-vars
+                  key: APPS_REALM
             # Substituted into realm-apps.yaml; from the sops Secret
             # cloudflare-access-client in staging/keycloak/realm/.
             - name: CF_ACCESS_CLIENT_SECRET

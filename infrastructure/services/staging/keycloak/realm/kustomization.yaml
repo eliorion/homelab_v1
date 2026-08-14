@@ -7,6 +7,8 @@ resources:
   - ../../../base/keycloak/realm/
   # The Cloudflare Access client secret + Zero Trust team domain, read by the
   # import Job as $(env:...). Same Kustomization as the Job, so it exists first.
+  # The applications realm name for this cluster ($(env:APPS_REALM)).
+  - realm-vars.yaml
   - cloudflare-access-client.enc.yaml
   # The Nextcloud OIDC client secret, read by the import Job as $(env:...) and
   # mirrored into the `nextcloud` namespace by reflector.
