@@ -1,0 +1,38 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: garage-store
+spec:
+  retentionPolicy: "7d"
+  configuration:
+    destinationPath: "s3://cnpg-staging-nextcloud"
+    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes.
+    endpointURL: "http://garage-s3.garage-gw.svc.cluster.local:3900"
+    s3Credentials:
+      accessKeyId:
+        name: garage-backup-credentials
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: garage-backup-credentials
+        key: ACCESS_KEY_SECRET
+    wal:
+      compression: gzip
+      # NO `encryption:` here. Garage does not support SSE-S3/AES256 (SSE-C
+      # only) -- setting AES256 would fail every WAL/base upload.
+    data:
+      compression: gzip
+      jobs: 2
+  instanceSidecarConfiguration:
+    env:
+      # Garage's own region -- must match it. A wrong region 400s the HeadBucket
+      # `barman-cloud-check-wal-archive` issues while the archive is EMPTY:
+      # invisible here, fatal when restoring into a fresh cluster.
+      - name: AWS_REGION
+        value: garage
+      - name: AWS_DEFAULT_REGION
+        value: garage
+      # boto3 >= 1.36 data-integrity checksum compat (plugin-barman-cloud #411).
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
