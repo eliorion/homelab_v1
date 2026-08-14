@@ -86,7 +86,10 @@ spec:
       limits:
         cpu: 10
         memory: 6Gi
-    # Soft preference for node staging-controlplane-1.
+    # MUST name the node holding this volume's single replica -- it is
+    # staging-controlplane-2, not -1. Verify before changing:
+    #   kubectl -n longhorn-system get replicas.longhorn.io \
+    #     -o custom-columns=VOL:.spec.volumeName,NODE:.spec.nodeID
     affinity:
       nodeAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -96,7 +99,7 @@ spec:
                 - key: kubernetes.io/hostname
                   operator: In
                   values:
-                    - staging-controlplane-1
+                    - staging-controlplane-2
     rootPassword:
       # SOPS-encrypted secret provided by the staging overlay.
       secret: nexus-root-password

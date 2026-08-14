@@ -80,27 +80,27 @@ spec:
       enabled: false
     kubeScheduler:
       enabled: false
-    # etcd is a deliberate, documented blind spot, NOT an oversight.
-    #
-    # Talos binds etcd's metrics listener to localhost by default. Making it
-    # scrapeable means setting etcd.extraArgs.listen-metrics-urls in
-    # bootstraping/talconfig.yaml and rolling all three control-plane nodes,
-    # which publishes unauthenticated plaintext etcd metrics onto a subnet
-    # that also carries the LB-IPAM pool and the Tailscale gateway.
-    #
-    # Until that trade is made deliberately in its own change window, all 15
-    # rules in the chart's etcd group are structurally inert: each thresholds
-    # on a series that is never ingested, and none carries an absent() guard,
-    # so they cannot fire even when etcd is genuinely broken. Leaving them
-    # loaded advertises etcd coverage that does not exist. Disabling the job
-    # removes the whole group (the chart guards it on kubeEtcd.enabled) and
-    # makes the gap honest and greppable.
-    #
-    # etcd is not unmonitored in practice: the 6-hourly talos-backup CronJob
-    # plus the EtcdBackupStale alert cover the failure this cluster actually
-    # cares about, which is losing recoverable control-plane state.
+    # REQUIRES the Talos change opening :2381
+    # (cluster.etcd.extraArgs.listen-metrics-urls in bootstraping/talconfig.yaml)
+    # to be APPLIED to all three nodes FIRST. Applied before that, every scrape
+    # fails and KubeEtcdDown fires against a closed port. Why this is on at all,
+    # and why plaintext is acceptable: README.md.
     kubeEtcd:
-      enabled: false
+      enabled: true
+      # etcd is a Talos system service, not a pod — no endpoints for a selector
+      # to find, so the targets are node addresses.
+      endpoints:
+        - 192.168.1.101
+        - 192.168.1.102
+        - 192.168.1.103
+      service:
+        enabled: true
+        port: 2381
+        targetPort: 2381
+      serviceMonitor:
+        # The chart default assumes the mTLS client port (2379) and would need
+        # etcd's peer certs mounted into Prometheus. 2381 is plaintext.
+        scheme: http
     grafana:
       # `grafana-admin` comes from each overlay. The overlay's Flux Kustomization
       # MUST carry a `decryption` block or the ciphertext applies silently. See README.md.

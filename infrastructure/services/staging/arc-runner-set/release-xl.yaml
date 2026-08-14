@@ -120,10 +120,16 @@ spec:
                 mountPath: /home/runner/_work
               - name: dind-sock
                 mountPath: /var/run
+        # sizeLimit is a RUNAWAY GUARD, not a quota. 80Gi here vs 25Gi on the
+        # standard set because this tier runs the k3d e2e: a whole cluster plus
+        # ~10 built images inside dind. See README.md.
         volumes:
           - name: work
-            emptyDir: {}
+            emptyDir:
+              sizeLimit: 80Gi
           - name: dind-sock
-            emptyDir: {}
+            emptyDir:
+              sizeLimit: 1Gi
           - name: dind-externals
-            emptyDir: {}
+            emptyDir:
+              sizeLimit: 2Gi

@@ -4,8 +4,8 @@ etcd holds the entire Kubernetes control plane — every object and every Secret
 so losing quorum without a snapshot means an unrecoverable cluster. This
 component runs `talos-backup` as a CronJob every 6 hours: it asks Talos for an
 etcd snapshot over the machined API
-(`/machine.MachineService/EtcdSnapshot`), compresses it with zstd, encrypts it
-with `age`, and uploads it to the bucket `homelab-staging-etcd-backup` on the
+(`/machine.MachineService/EtcdSnapshot`), encrypts it with `age`, and uploads it
+to the bucket `homelab-staging-etcd-backup` on the
 **off-cluster** Garage host. The full disaster-recovery procedure, the restore
 drill and the offsite prerequisites live in
 [`../../../../documentations/09-etcd-backup-dr.md`](../../../../documentations/09-etcd-backup-dr.md).
@@ -22,10 +22,11 @@ Base — `infrastructure/services/base/etcd-backup/`:
 
 | File | What it does |
 |---|---|
-| `kustomization.yaml` | Lists the three objects below. |
+| `kustomization.yaml` | Lists the four objects below. |
 | `namespace.yaml` | Namespace `etcd-backup`. The name is not free: it is the one namespace `bootstraping/talconfig.yaml` lets Talos issue API credentials into. |
 | `talos-serviceaccount.yaml` | `talos.dev/v1alpha1` `ServiceAccount` `etcd-backup-talos-secrets` with `roles: [os:etcd:backup]`. Talos watches this CR and materialises a Secret of the same name holding a short-lived, auto-rotated client cert. |
 | `cronjob.yaml` | The `CronJob etcd-backup` itself. |
+| `prune-cronjob.yaml` | `CronJob etcd-backup-prune`, daily at 04:30 — expires objects past the retention window. See Retention below. |
 
 `cronjob.yaml`, block by block:
 
@@ -114,9 +115,13 @@ Kubernetes Secret in plaintext, so `age` encryption is not optional. The age
 even SOPS-encrypted, because that would make it depend on
 `clusters/staging/age.agekey` and one loss would take out both.
 
-**Compression is on**, zstd before encryption, so objects are named
-`Homelab_staging-<RFC3339>.snap.zst.age` under `staging/` and a restore must
-**decrypt first, then decompress**.
+**`ENABLE_COMPRESSION: "true"` is set and has no effect on the pinned beta.3.**
+Objects are named `Homelab_staging-<RFC3339>.snap.age` under `staging/` — no
+`.zst` — and each is exactly the size of the raw snapshot. So a restore
+**decrypts only**; there is nothing to decompress. This is a third quirk of the
+beta.3 pin, alongside the two below. Fixing it would divide every size figure
+here by the zstd ratio, but it changes the object *name* and therefore the
+restore commands, so it is tracked separately.
 
 **Garage has no object lock or versioning**, unlike the R2 buckets used for
 CNPG. Anyone holding the write key can delete every snapshot. What limits that:
@@ -124,10 +129,51 @@ the Garage key is scoped to the `homelab-staging-etcd-backup` bucket only, and
 the age private key lives off-cluster. Replicating snapshots to R2 for full
 3-2-1 is a deliberate future step.
 
-**Retention is not the job's.** `talos-backup` does not prune; expiry is a
-bucket lifecycle rule set from the Garage host (30 days ≈ 120 objects at 4
-snapshots/day). See the retention section of
-[`../../../../documentations/09-etcd-backup-dr.md`](../../../../documentations/09-etcd-backup-dr.md).
+### Retention: a CronJob in git, not a bucket lifecycle rule
+
+`talos-backup` does not prune, and until 2026-08-12 nothing else did either —
+the bucket had grown unbounded since the day it was created. Measured by listing
+`s3://homelab-staging-etcd-backup/staging`:
+
+| | |
+|---|---|
+| Objects | 65, spanning 16.2 days |
+| Total stored | 9.45 GiB |
+| Per object | 148.8 MiB (64 of the 65 byte-identical) |
+| Growth | 4 runs/day → 602 MiB/day → **17.6 GiB/month**, forever |
+
+That measurement is what unblocked the decision; the job logs only ever reported
+the 156 MB pre-upload snapshot, so the stored size was unknown.
+
+`prune-cronjob.yaml` runs daily at 04:30 and keeps **30 days ≈ 120 objects ≈
+17.6 GiB** steady state. 30d over 7d (4.11 GiB) because the etcd restore drill
+has never been run end to end and the age key is offline — until a restore is
+*proven*, history is the cheapest insurance available. 30d over 90d (52.88 GiB)
+because a month-old snapshot restores a cluster Flux would immediately reconcile
+away.
+
+This deliberately takes what doc 09 called the fallback. A lifecycle rule applied
+with `aws s3api put-bucket-lifecycle-configuration` lives in no repository, and a
+retention policy nobody can review in a diff is how a bucket silently stops
+keeping what everyone assumed it kept.
+
+**It deletes backups, so it is guarded four ways**, each exercised against a
+65-object fixture before it shipped:
+
+| Guard | Value | Prevents |
+|---|---|---|
+| `set -e` | — | A failed listing falling through into a delete loop with no input |
+| `MIN_KEEP` | 28 objects (7d) | Any age logic, or a skewed clock, dropping below a week of history |
+| `MAX_DELETE` | 24/run | A wrong `RETENTION_DAYS` emptying the bucket in one pass instead of eroding visibly |
+| `DRY_RUN` | `false` | Logs the full plan and deletes nothing when `true` |
+
+**`MIN_KEEP` is the load-bearing one.** Simulated with `RETENTION_DAYS=0` — every
+object expired — the job converges to exactly 28 objects over two runs and then
+deletes nothing on every run after that. It cannot empty the bucket.
+
+It was safe to ship live rather than in dry-run: the oldest object was 16.2 days
+old against a 30-day retention, so the first ~14 days of runs are arithmetically
+incapable of deleting anything. They log the plan and exit.
 
 ## Traps
 

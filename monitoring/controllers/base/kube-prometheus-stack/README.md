@@ -118,8 +118,73 @@ node metrics.
 is not present in the rendered manifest, so with drift detection enabled Flux
 would see a permanent diff and fight the operator on every reconcile.
 
+### Four control-plane scrape jobs off, and etcd back on
+
+`kubeProxy`, `kubeControllerManager` and `kubeScheduler` are disabled because
+they cannot exist here. Talos binds the controller-manager and the scheduler to
+`127.0.0.1`, and Cilium runs `kubeProxyReplacement: true` with
+`cluster.proxy.disabled: true`, so there is no kube-proxy DaemonSet at all. The
+chart still creates a Service and ServiceMonitor for each, each scrapes nothing
+forever, and that held `KubeProxyDown`, `KubeControllerManagerDown` and
+`KubeSchedulerDown` permanently firing at `severity: critical` — three of the
+cluster's six firing criticals — plus two `TargetDown` warnings. Turning them off
+removes no coverage, because there was never any data behind them.
+
+**`kubeEtcd` was disabled for the same reason and has been turned back on**,
+which is a reversal of an earlier decision rather than a new one. The note it
+replaced argued that scraping etcd meant "publishing unauthenticated plaintext
+etcd metrics onto a subnet that also carries the LB-IPAM pool and the Tailscale
+gateway", and deferred it "until that trade is made deliberately in its own
+change window". This is that window. The blind spot turned out to cost more than
+the exposure.
+
+**What it cost.** On 2026-08-12 the apiserver logged `etcdserver: no leader` at
+15:40, 15:43, 18:29 and 18:48. Over six hours that produced:
+
+| | |
+|---|---|
+| apiserver 504 terminations | 256 |
+| 500s on `postgresql.cnpg.io/clusters` | 193 |
+| 500s / 504s on `leases` | 38 / 36 |
+| lease PUTs over 1s | 245 of 135,729 |
+
+Every controller-runtime operator lost its leader-election lease, and a
+controller that loses its lease **exits** — `plugin-barman-cloud` carries 109
+restarts, `source-controller` 11, `cainjector` 6. Nothing alerted, and nothing
+could: no `wal_fsync`, no `backend_commit`, no `leader_changes`, no failed
+heartbeats existed. The entire diagnosis had to be rebuilt from apiserver logs
+and node-exporter.
+
+The old note also claimed etcd was "not unmonitored in practice", because the
+6-hourly `talos-backup` CronJob and `EtcdBackupStale` cover it. **That was
+wrong**, and this is the counter-example: those cover *losing recoverable
+state*. They say nothing about etcd being unhealthy *while running*, which is
+what happened, four times, unseen.
+
+**On the exposure**, which was the real objection and is still true in kind:
+`2381` is etcd's dedicated metrics listener. It serves `/metrics` and `/health`
+only — no key material, no read or write path into the keyspace — and the client
+port keeps its mTLS on `2379`. What lands on the subnet is operational
+telemetry, not data. That is a materially smaller exposure than the original
+note implied, and it buys back visibility of the whole storage layer.
+
+Re-enabling the job also restores all 15 rules in the chart's etcd group, which
+the chart gates on `kubeEtcd.enabled`.
+
+`monitoring/configs/staging/control-plane-alerts/` is the complement, and stays
+regardless: it detects the same condition from **apiserver** metrics, so the
+coverage survives this etcd target being broken, misconfigured, or disabled
+again — which is exactly the state that kept the problem silent.
+
 ## Traps
 
+- **`kubeEtcd: true` depends on a Talos change Flux does not apply.** The scrape
+  targets port `2381`, which only exists once
+  `cluster.etcd.extraArgs.listen-metrics-urls` in `bootstraping/talconfig.yaml`
+  has been rendered with `talhelper genconfig` and pushed to all three nodes with
+  `talosctl apply-config`. Nothing in this repository can do that for you, and
+  nothing detects the mismatch in advance — the symptom is every etcd target
+  down and `KubeEtcdDown` firing.
 - **The overlay's Flux Kustomization must keep its `decryption` block.**
   `grafana-admin.enc.yaml` is the first SOPS Secret on this path. Without
   `decryption` Flux applies the manifest verbatim, the Secret's values become

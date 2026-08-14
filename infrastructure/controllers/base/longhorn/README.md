@@ -64,10 +64,54 @@ zero copies.
 
 **Disk reserve cut from 30% to 15%.** Longhorn's stock 30% reserve took 299GB
 out of each 997GB disk and left only 26GB schedulable, which blocked a routine
-`fbref-db` growth while real usage was about 537GB of 997GB. These are
-dedicated Talos data partitions that Longhorn owns outright, so nothing else on
-the host competes for the space the reserve is meant to protect, and 15% is the
-standard value for that situation.
+`fbref-db` growth while real usage was about 537GB of 997GB.
+
+The justification used to continue: "these are dedicated Talos data partitions
+that Longhorn owns outright, so nothing else on the host competes". **That is
+not true** — see the next section. 15% stays anyway, but for the opposite
+reason: raising it makes things worse. Node 1 has only 17.9 GiB of schedulable
+headroom as it is, and 30% would take roughly another 70 GiB of it. The
+protection against the disk actually filling comes from the kubelet image GC
+thresholds instead (`bootstraping/talconfig.yaml`), moved to 70/60 so the
+kubelet reclaims images *before* Longhorn's 25% unschedulable floor rather than
+46 GiB after it.
+
+### One partition per node, shared with etcd
+
+There is exactly one data partition on each node and everything lives on it:
+
+```
+node 1   /var   /dev/nvme0n1p4   463.4 GiB
+node 2   /var   /dev/sda6        928.9 GiB
+node 3   /var   /dev/sda6        928.9 GiB
+```
+
+`/var/lib/longhorn` is a **bind mount of a directory on `/var`** — that is all
+the `kubelet.extraMounts` entry in `talconfig.yaml` does. So Longhorn replica
+data competes for space *and IOPS* with etcd's WAL, the container image store
+and every CI ephemeral volume.
+
+This is not academic. On 2026-08-12 node 1 reached **load15 of 17.8 while using
+0.32 cores of container CPU** — processes blocked in D-state — with **141 ms per
+write on the NVMe etcd sits on**. etcd lost its leader four times that day
+(`etcdserver: no leader` at 15:40, 15:43, 18:29, 18:48), which produced 256
+apiserver 504s and killed the leader-election lease of every controller-runtime
+operator on the cluster.
+
+`concurrentReplicaRebuildPerNodeLimit: 1` (chart default 5) bounds the worst
+case: a node returning from maintenance and replenishing every replica it
+missed, which is the largest I/O burst this cluster can generate and the one
+most likely to land while the control plane is already degraded by having a node
+away. **It is hardening, not a fix for that incident** — there were no rebuild
+events at 15:40; that burst came from ordinary volume provisioning. The cost is
+that replenishment after a node outage is serialised, so a returning node takes
+proportionally longer to reach full redundancy; `replicaReplenishmentWaitInterval`
+is already 600s, so a brief reboot never starts a rebuild at all and pays
+nothing for this.
+
+The real fix is putting etcd on its own disk. Node 1 has no second physical disk
+(`installDisk: /dev/nvme0n1`, nothing else present), so that needs hardware, not
+configuration.
 
 **`storageOverProvisioningPercentage` stays at its 100% default, deliberately.**
 Raising it is the other way to make room and it is the wrong one: it lets
