@@ -11,4 +11,5 @@ resources:
   - glpi/
   - linkding/
   - n8n/
+  - nextcloud/
   - scraper/

@@ -1,0 +1,32 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: nextcloud-db
+  namespace: nextcloud
+spec:
+  instances: 2
+  # Field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg is the
+  # operator image and must never be used here.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      # `required` here would block writes whenever the replica is unavailable.
+      dataDurability: preferred
+    parameters:
+      max_connections: "100"
+      effective_cache_size: "512MB"
+      work_mem: "4MB"
+      maintenance_work_mem: "64MB"
+
+  bootstrap:
+    initdb:
+      database: nextcloud
+      owner: app
+      # No postInit and no db-migrations entry: Nextcloud owns its own schema
+      # (`occ maintenance:install` on first boot, `occ upgrade` after). See README.md.
+
+  storage:
+    size: 5Gi

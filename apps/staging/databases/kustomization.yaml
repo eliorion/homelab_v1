@@ -7,4 +7,5 @@ resources:
   - asp/
   - fbref/
   - n8n/
+  - nextcloud/
   - scraper/

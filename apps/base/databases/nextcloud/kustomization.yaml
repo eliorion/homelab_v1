@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# The `nextcloud` Namespace ships here: the databases tier reconciles before the
+# apps tier, so apps/base/nextcloud lands into an existing namespace. See README.md.
+resources:
+  - namespace.yaml
+  - database.yaml

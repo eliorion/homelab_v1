@@ -1,0 +1,11 @@
+# PLACEHOLDER -- NOT ENCRYPTED. Admin account created on FIRST BOOT ONLY.
+# Fill in, then encrypt in place:
+#   sops -e -i nextcloud-admin.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nextcloud-admin
+type: Opaque
+stringData:
+  NEXTCLOUD_ADMIN_USER: "admin"
+  NEXTCLOUD_ADMIN_PASSWORD: "<generate: openssl rand -base64 24>"

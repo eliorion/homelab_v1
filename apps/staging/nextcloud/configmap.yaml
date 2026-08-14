@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-config
+  namespace: nextcloud
+data:
+  # `localhost` is here for the kubelet probes (they send Host: localhost).
+  NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.eliorion.fr localhost"
+  # Cluster pod CIDR (bootstraping/talconfig.yaml). cloudflared terminates the
+  # tunnel here, so without this every client shows up as the cloudflared pod IP.
+  TRUSTED_PROXIES: "10.244.0.0/16"
+  # TLS ends at the Cloudflare edge; the in-cluster hop is plain HTTP. Without
+  # these three Nextcloud emits http:// asset URLs and the browser blocks them.
+  OVERWRITEPROTOCOL: "https"
+  OVERWRITEHOST: "nextcloud.eliorion.fr"
+  OVERWRITECLIURL: "https://nextcloud.eliorion.fr"
+  PHP_MEMORY_LIMIT: "1G"
+  PHP_UPLOAD_LIMIT: "4G"
