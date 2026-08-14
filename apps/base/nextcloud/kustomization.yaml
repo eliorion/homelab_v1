@@ -6,6 +6,14 @@ kind: Kustomization
 resources:
   - storage.yaml
   - valkey.yaml
-  - oidc-hook.yaml
   - deployment.yaml
   - service.yaml
+
+# Generated, NOT a plain ConfigMap resource: the content hash is part of the
+# name, so editing the hook renames the ConfigMap and rolls the Deployment.
+# A static ConfigMap updates the mounted file but restarts nothing, which means
+# a hook edit silently does not take effect until the pod happens to restart.
+configMapGenerator:
+  - name: nextcloud-oidc-hook
+    files:
+      - oidc-hook.sh

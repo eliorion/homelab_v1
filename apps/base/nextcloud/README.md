@@ -26,11 +26,15 @@ reconciles first — this directory assumes both already exist.
 - `valkey.yaml` — `nextcloud-valkey` Deployment + Service, port 6379, emptyDir,
   persistence disabled.
 - `service.yaml` — ClusterIP `nextcloud:80`, the tunnel origin.
-- `oidc-hook.yaml` — a ConfigMap mounted at
+- `oidc-hook.sh` — packed into a ConfigMap by `configMapGenerator` and mounted at
   `/docker-entrypoint-hooks.d/before-starting/`. The image entrypoint runs
   every executable script there on each container start, before apache; this one
-  installs `user_oidc` and (re)declares the Keycloak provider. Login is
-  delegated to the `apps` realm — see
+  installs `user_oidc` and (re)declares the Keycloak provider. It is *generated*
+  rather than written as a plain ConfigMap so its content hash is part of the
+  name — editing the script renames the ConfigMap and rolls the Deployment. A
+  static ConfigMap updates the mounted file but restarts nothing, so the edit
+  would not take effect until the pod happened to restart for some other reason.
+  Login is delegated to the `apps` realm — see
   [`infrastructure/services/base/keycloak`](../../../infrastructure/services/base/keycloak/README.md).
 
 The staging overlay (`apps/staging/nextcloud/`) adds:
