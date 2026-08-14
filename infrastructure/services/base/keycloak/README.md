@@ -55,7 +55,7 @@ Traffic in:
 |---|---|
 | `job.yaml` | A `keycloak-config-cli` Job (`adorsys/keycloak-config-cli:6.5.1-26`) that logs in as the operator-generated admin and applies the three realm files. |
 | `realm-mcp.yaml` | The `mcp` realm: anonymous dynamic client registration fenced by client-registration policies, the `mcp:tools` scope, and the audience mapper for `https://fbref-mcp.eliorion.fr/mcp`. |
-| `realm-apps.yaml` | The `apps` realm: one confidential client, `cloudflare-access`, for Zero Trust edge authentication of tunnel-published UIs (today: nao, `https://nao.eliorion.fr`). |
+| `realm-apps.yaml` | The `apps` realm: two confidential clients — `cloudflare-access` for Zero Trust edge authentication of tunnel-published UIs (today: nao, `https://nao.eliorion.fr`), and `nextcloud` for Nextcloud's own `user_oidc` login — plus the `nextcloud-users` / `nextcloud-admins` groups. |
 | `realm-master.yaml` | The `master` realm, carrying a single attribute: `frontendUrl`. |
 | `kustomization.yaml` | A `configMapGenerator` that packs the three realm files into the `keycloak-realm` ConfigMap, plus `job.yaml`. |
 
@@ -104,6 +104,28 @@ applied until the list is uncommented. It contains:
   `database/r2-staging-credentials.enc.yaml` — sops R2 credentials.
 
 ## Why it is like this
+
+**The `apps` realm now holds two kinds of client, and the difference matters.**
+`cloudflare-access` is an *edge gate*: it authenticates the request before it
+reaches the tunnel, and the application behind it never learns who the user is —
+which is why nao still shows its own login afterwards. `nextcloud` is the
+opposite: the application itself delegates authentication here, so it learns the
+identity, provisions the account, and maps `nextcloud-users` group membership
+into its own authorization. Only the second kind gives per-app authorization
+rather than a yes/no at the door, and only the second kind leaves non-browser
+clients (WebDAV, the Nextcloud desktop and mobile apps) working — an edge gate
+cannot be completed by a client that has no browser. Prefer a delegating client
+whenever the application supports OIDC; use the edge gate for the ones that
+never will (n8n without an Enterprise licence, azuracast, nao).
+
+**Group membership is the Nextcloud gate, and it lives in Git.**
+`realm-apps.yaml` declares `nextcloud-users`; `user_oidc` is configured with
+`--group-restrict-login-to-whitelist=1` and `--group-whitelist-regex='^nextcloud-'`,
+so a Keycloak account that is not in that group authenticates and is then
+refused. `IMPORT_MANAGED_GROUP=no-delete` is what stops a later realm edit from
+deleting groups added by hand, exactly as `IMPORT_MANAGED_USER` does for
+accounts. Membership itself is still granted in the admin console over the
+tailnet — the *gate* is code, the *grants* are not.
 
 **The operator, not a hand-written StatefulSet.** Running `instances: 2` is
 Keycloak's own production guidance — a login page that dies with one node is not

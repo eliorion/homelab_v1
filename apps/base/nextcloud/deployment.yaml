@@ -55,6 +55,14 @@ spec:
               value: nextcloud-valkey
             - name: REDIS_HOST_PORT
               value: "6379"
+            # Read by the before-starting hook. The Secret is authored in the
+            # `identity` namespace next to the realm file and mirrored here by
+            # reflector — do not create a second copy.
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: nextcloud-oidc-client
+                  key: client-secret
           envFrom:
             # NEXTCLOUD_ADMIN_USER / NEXTCLOUD_ADMIN_PASSWORD — read ONLY during
             # the first-boot install; editing them later changes nothing.
@@ -115,6 +123,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/www/html
+            # Replaces only this one hook subdirectory, not the whole tree.
+            - name: oidc-hook
+              mountPath: /docker-entrypoint-hooks.d/before-starting
         # Background jobs, every 5 min. Same pod, not a CronJob: the PVC is RWO
         # and a CronJob pod scheduled elsewhere could not mount it.
         - name: cron
@@ -146,3 +157,8 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: nextcloud-data-pvc
+        - name: oidc-hook
+          configMap:
+            name: nextcloud-oidc-hook
+            # The entrypoint only runs hook scripts that are executable.
+            defaultMode: 0755

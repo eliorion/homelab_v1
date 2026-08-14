@@ -1,0 +1,32 @@
+# Lives in `identity` because the realm import Job reads it as
+# $(env:NEXTCLOUD_OIDC_CLIENT_SECRET); reflector mirrors it into `nextcloud` for
+# the pod's OIDC hook. One value, two namespaces, no second encrypted file.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: nextcloud-oidc-client
+    namespace: identity
+    annotations:
+        reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+        reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: nextcloud
+        reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+        reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: nextcloud
+type: Opaque
+stringData:
+    #ENC[AES256_GCM,data:lZDvNgkKBphLQHZ5sRA3o+A554YCKqoJ,iv:03Imuu1Iiwyerq/rK90rdjp+TOKcDhgCEEyFhq7s1NQ=,tag:NCSyPzlB4a3butU5EY7p+Q==,type:comment]
+    client-secret: ENC[AES256_GCM,data:RipggiD1vCeylYrVOqi7rr0IeZP8pBxde60KJyU8k4aqBbeVbLVj+hErqd4=,iv:AA3DWsoSRMW4Ue8bG8khwEGkZB7IMRSqnR0BcDo1vik=,tag:5TWRxFR5UE/vFUWm/CIb2Q==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBHKzgxM1JEbkNwMkkzUmJ4
+            b0xMbW8xNU40bTVUNVJWWkltZ3Vza0grU1VBClZ3VkV4cUljSGp2TWw1dEhXZXFv
+            K2lZYlNuSDhIOVpBTng2S01rbkdGNmcKLS0tIGRPNnBaQXpTZFR2WXFsQ2oyN245
+            SnExenl0RENCNXVCa0ZwdE4vS2owZUEKogNctD7rgkLkCZEMZMHa3VFT1XUZw6K5
+            hemE5tk3CkSkhHb3Z9wZA0vIqFUQ7kGkmR3bVlfgZwAqA06MsB0BEw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-08-14T15:19:32Z"
+    mac: ENC[AES256_GCM,data:kxDb/XoUJvwOnQyiG1rsjwqSGmKNQRdVI7ILFM6lgZBuSP6MnXqP1oWX0lFsTGoABDd17RCoVtp+IEXJIRlc17bNLTICcm9Dhsk/lHo3cfJHLKNQbwm+xuRNThFdySSZaTmKIzwtyRPtzMl4Mnm8aEmsyEkVpk8s7anGWlh0vWk=,iv:TrIJMnWtoiBSdMsrns2YHnX3F5XHwhj7Ss+jvWuROh8=,tag:ULmMY8akqT+f4BXdZjBAcg==,type:str]
+    version: 3.13.3

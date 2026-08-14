@@ -8,3 +8,6 @@ resources:
   # The Cloudflare Access client secret + Zero Trust team domain, read by the
   # import Job as $(env:...). Same Kustomization as the Job, so it exists first.
   - cloudflare-access-client.enc.yaml
+  # The Nextcloud OIDC client secret, read by the import Job as $(env:...) and
+  # mirrored into the `nextcloud` namespace by reflector.
+  - nextcloud-oidc-client.enc.yaml

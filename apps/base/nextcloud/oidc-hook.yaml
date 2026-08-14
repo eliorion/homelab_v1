@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-oidc-hook
+  namespace: nextcloud
+data:
+  # Mounted into /docker-entrypoint-hooks.d/before-starting/ and run by the
+  # image entrypoint on EVERY container start, as root, before apache. Every
+  # command below is idempotent for that reason.
+  10-user_oidc.sh: |
+    #!/bin/sh
+    set -eu
+
+    # Same privilege drop the image's own entrypoint uses; occ refuses to run
+    # as a user that does not own config/config.php.
+    run_occ() {
+      if [ "$(id -u)" = 0 ]; then
+        su -p www-data -s /bin/sh -c "php /var/www/html/occ $1"
+      else
+        php /var/www/html/occ "$1"
+      fi
+    }
+
+    run_occ "app:install user_oidc" || run_occ "app:enable user_oidc"
+
+    # Re-running with the same identifier UPDATES the provider in place and
+    # clears the JWKS cache; it does not create a second one.
+    run_occ "user_oidc:provider ${OIDC_PROVIDER_ID} \
+      --clientid=${OIDC_CLIENT_ID} \
+      --clientsecret=${OIDC_CLIENT_SECRET} \
+      --discoveryuri=${OIDC_DISCOVERY_URI} \
+      --scope='openid email profile' \
+      --unique-uid=0 \
+      --mapping-uid=preferred_username \
+      --mapping-display-name=name \
+      --mapping-email=email \
+      --mapping-groups=groups \
+      --group-provisioning=1 \
+      --group-whitelist-regex='^nextcloud-' \
+      --group-restrict-login-to-whitelist=1 \
+      --check-bearer=0 \
+      --send-id-token-hint=1"

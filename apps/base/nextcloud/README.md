@@ -26,6 +26,12 @@ reconciles first — this directory assumes both already exist.
 - `valkey.yaml` — `nextcloud-valkey` Deployment + Service, port 6379, emptyDir,
   persistence disabled.
 - `service.yaml` — ClusterIP `nextcloud:80`, the tunnel origin.
+- `oidc-hook.yaml` — a ConfigMap mounted at
+  `/docker-entrypoint-hooks.d/before-starting/`. The image entrypoint runs
+  every executable script there on each container start, before apache; this one
+  installs `user_oidc` and (re)declares the Keycloak provider. Login is
+  delegated to the `apps` realm — see
+  [`infrastructure/services/base/keycloak`](../../../infrastructure/services/base/keycloak/README.md).
 
 The staging overlay (`apps/staging/nextcloud/`) adds:
 
@@ -74,6 +80,30 @@ Valkey stays because it is the distribution default and costs nothing to prefer.
 Why a cache exists at all is in the
 [database README](../databases/nextcloud/README.md#why-it-is-like-this).
 
+**Nextcloud delegates its own login instead of sitting behind an edge gate.**
+The alternative was a Cloudflare Access application in front of
+`nextcloud.eliorion.fr`, the way nao is fronted. It was rejected because Access
+requires an interactive browser flow that the desktop client, the mobile apps,
+WebDAV, CalDAV and CardDAV cannot complete — fronting Nextcloud that way leaves
+a Nextcloud you can only use in a browser tab, which is most of the product
+gone. Delegating instead means the sync clients keep working (the desktop client
+opens a real browser for Login Flow v2), *and* Keycloak group membership becomes
+Nextcloud authorization rather than a yes/no at the door.
+
+**Configured by an entrypoint hook, not by hand.** `occ` needs the app's own
+volume, which is RWO, so a separate Job could not reach it and a manual `occ`
+run would leave the configuration undocumented and unreproducible. The hook runs
+in the pod that already holds the volume, and every command in it is idempotent:
+re-running `user_oidc:provider` with the same identifier updates the provider in
+place and clears the JWKS cache.
+
+**The client secret is authored once, in the `identity` namespace.** It sits
+next to the realm file that consumes it as `$(env:NEXTCLOUD_OIDC_CLIENT_SECRET)`
+and is mirrored into `nextcloud` by kubernetes-reflector. A second encrypted
+copy in this overlay would be a value that must match another file — the exact
+class of thing that drifts silently and fails as an unexplained token-exchange
+error.
+
 ## Traps
 
 - **The probes send `Host: localhost`.** A kubelet `httpGet` otherwise sends the
@@ -103,6 +133,32 @@ Why a cache exists at all is in the
 - **`TRUSTED_PROXIES` is the pod CIDR `10.244.0.0/16`** (from
   `bootstraping/talconfig.yaml`). Wrong value and every login, rate limit, and
   audit entry records the cloudflared pod IP instead of the real client.
+- **The OIDC backchannel goes out through the internet and back.** Keycloak's
+  `networkPolicy.https` admits only the `cloudflare` and `identity` namespaces,
+  so this pod genuinely cannot reach `keycloak-service:8443` — `OIDC_DISCOVERY_URI`
+  is the public issuer on purpose. Consequence: **Nextcloud logins stop working
+  when the Cloudflare tunnel is down**, even from the tailnet.
+- **No Keycloak group means no login.** With
+  `--group-restrict-login-to-whitelist=1`, a user who is not in a group matching
+  `^nextcloud-` authenticates against Keycloak and is then refused by Nextcloud.
+  Add accounts to `nextcloud-users` in the admin console. If the `groups` claim
+  ever stops being emitted (someone removes the group-membership mapper on the
+  client), *every* OIDC user is locked out at once.
+- **Local login is deliberately still enabled.** It is the break-glass path
+  while OIDC is being proven, and the `admin` account is not an OIDC user.
+  Locking it down later is
+  `occ config:app:set --type=string --value=0 user_oidc allow_multiple_user_backends`;
+  after that, the local form is only reachable at `/login?direct=1`.
+- **Both redirect URI forms are registered.** user_oidc builds the callback from
+  Nextcloud's URL generator, which emits the `/index.php/apps/...` form when the
+  pretty-URL rewrite is inactive. Registering only one produces
+  "Invalid parameter: redirect_uri" on a login that otherwise looks correct.
+- **Group provisioning happens on login only.** It does not run when a bearer
+  token is validated, so group changes in Keycloak reach Nextcloud at the user's
+  next interactive login and not before.
+- **The hook passes the client secret on an `su -c` command line**, so it is
+  visible in `ps` inside the pod for the duration of the call. Acceptable for a
+  single-tenant pod; worth knowing before adding any sidecar that is not trusted.
 
 ## Operating it
 
@@ -126,6 +182,29 @@ stale cron):
 
 ```bash
 kubectl -n nextcloud logs deploy/nextcloud -c cron --tail=20
+```
+
+### Granting someone access
+
+1. Create the account in the Keycloak admin console over the tailnet
+   (`https://keycloak-admin.tail45b0ca.ts.net`), realm **apps**. Set an email —
+   it is mapped to the Nextcloud account.
+2. Add them to the **`nextcloud-users`** group. Without it they authenticate and
+   are refused.
+3. They log in at `https://nextcloud.eliorion.fr` via "Log in with Keycloak".
+   The account and its groups are provisioned on that first login.
+
+Revoking is the reverse: remove the group membership (or disable the account) in
+Keycloak. Existing Nextcloud sessions and issued app passwords survive that —
+`occ user:delete` or revoking the app passwords in the user's security settings
+is what ends them.
+
+Check the provider the hook installed:
+
+```bash
+kubectl -n nextcloud exec deploy/nextcloud -c nextcloud -- \
+  su -p www-data -s /bin/sh -c "php occ user_oidc:provider"
+kubectl -n nextcloud logs deploy/nextcloud -c nextcloud | grep -i user_oidc
 ```
 
 ### Cloudflare tunnel

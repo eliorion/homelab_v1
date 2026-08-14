@@ -80,6 +80,14 @@ spec:
                 secretKeyRef:
                   name: cloudflare-access-client
                   key: team-domain
+            # Substituted into realm-apps.yaml; the same Secret is mirrored into
+            # the `nextcloud` namespace by reflector, so both ends of the OIDC
+            # client read one value.
+            - name: NEXTCLOUD_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: nextcloud-oidc-client
+                  key: client-secret
             # no-delete everywhere: the default (full management) deletes every
             # live object the realm files do not declare.
             - name: IMPORT_MANAGED_COMPONENT
@@ -87,6 +95,11 @@ spec:
             - name: IMPORT_MANAGED_CLIENT
               value: no-delete
             - name: IMPORT_MANAGED_SUBCOMPONENT
+              value: no-delete
+            # Same reasoning as USER below: realm-apps.yaml declares the two
+            # nextcloud-* groups, and full management would delete any group
+            # added by hand in the admin console on the next import.
+            - name: IMPORT_MANAGED_GROUP
               value: no-delete
             # THE MOST IMPORTANT LINE IN THIS FILE. The realm files declare no
             # users, so full management would delete EVERY account on the next

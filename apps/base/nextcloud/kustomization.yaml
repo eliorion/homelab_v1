@@ -6,5 +6,6 @@ kind: Kustomization
 resources:
   - storage.yaml
   - valkey.yaml
+  - oidc-hook.yaml
   - deployment.yaml
   - service.yaml
