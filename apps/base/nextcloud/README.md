@@ -39,8 +39,12 @@ reconciles first — this directory assumes both already exist.
 
 The staging overlay (`apps/staging/nextcloud/`) adds:
 
-- `configmap.yaml` — trusted domains, `TRUSTED_PROXIES`, the `OVERWRITE*` trio,
-  PHP limits.
+- `nextcloud-config.env` — trusted domains, `TRUSTED_PROXIES`, the `OVERWRITE*`
+  trio, PHP limits and the OIDC provider settings, packed into the
+  `nextcloud-config` ConfigMap by `configMapGenerator`. Generated for the same
+  reason as the hook: these are read once at pod start via `envFrom`, so a
+  static ConfigMap would update in place and change nothing until the pod
+  happened to restart.
 - `nextcloud-admin.enc.yaml` — `NEXTCLOUD_ADMIN_USER` / `_PASSWORD`, SOPS-encrypted.
 
 ## Why it is like this
