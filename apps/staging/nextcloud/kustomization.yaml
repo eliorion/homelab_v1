@@ -5,5 +5,14 @@ namespace: nextcloud
 
 resources:
   - ../../base/nextcloud
-  - configmap.yaml
   - nextcloud-admin.enc.yaml
+
+# Generated, NOT a plain ConfigMap: these values are consumed with envFrom and
+# so are read once at pod start. A static ConfigMap updates in place and rolls
+# nothing, which means a hostname or realm change silently does not reach the
+# running pod. The content hash in the generated name is what forces the
+# rollout. See apps/base/nextcloud/README.md.
+configMapGenerator:
+  - name: nextcloud-config
+    envs:
+      - nextcloud-config.env
