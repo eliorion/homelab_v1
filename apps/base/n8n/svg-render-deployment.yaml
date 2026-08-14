@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: svg-render
+  namespace: n8n
+  labels:
+    app: svg-render
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: svg-render
+  template:
+    metadata:
+      labels:
+        app: svg-render
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        # Playwright base image's `pwuser` is uid/gid 1001, NOT 1000.
+        runAsUser: 1001
+        runAsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: svg-render
+          image: ghcr.io/eliorion/my-blog-svg-render:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 320Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            failureThreshold: 12
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 30
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            # Chromium writes only under the emptyDirs below; EROFS crashes here
+            # mean it wants a path that is not mounted — see README.
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            # Chromium dies on the 64 MiB /dev/shm a container gets by default.
+            - name: dshm
+              mountPath: /dev/shm
+            - name: tmp
+              mountPath: /tmp
+            - name: home
+              mountPath: /home/pwuser
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
+        - name: tmp
+          emptyDir: {}
+        - name: home
+          emptyDir: {}

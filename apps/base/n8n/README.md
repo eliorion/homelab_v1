@@ -38,6 +38,8 @@ Base (`apps/base/n8n/`), listed by `kustomization.yaml` in this order:
 - `service.yaml` — `ClusterIP` Service `n8n`, port `5678` named `http` →
   `targetPort: http`, selector `app: n8n`, and the Service-level label
   `app: n8n` that the ServiceMonitor matches.
+- `svg-render-deployment.yaml`, `svg-render-service.yaml`,
+  `svg-render-networkpolicy.yaml` — the `svg-render` helper, below.
 - `ingress-tailscale.yaml` — `Ingress` `n8n` with `ingressClassName: tailscale`,
   `defaultBackend` the `n8n` Service on `5678`, and `tls.hosts: [n8n]`, which is
   the tailnet device name MagicDNS serves at `https://n8n.tail45b0ca.ts.net`
@@ -72,6 +74,55 @@ Not in this directory but part of the component:
 - `monitoring/configs/staging/n8n-metrics/` — ServiceMonitor scraping
   `/metrics` on the `http` port every 60s, plus the `N8nDown` and
   `N8nMetricsMissing` alert rules routed to the Telegram receiver.
+
+## svg-render
+
+`svg-render` is a headless-Chromium rasteriser for the blog, reachable only from
+n8n at `http://svg-render.n8n.svc.cluster.local:8080`. It lives in this
+directory rather than in its own `apps/*/svg-render/` component because it has
+no ingress, no storage and no database: it exists to serve n8n workflows, and
+sharing the namespace is what lets the NetworkPolicy name its one caller.
+
+- `svg-render-deployment.yaml` — `Deployment` `svg-render`, `replicas: 1`, image
+  `ghcr.io/eliorion/my-blog-svg-render:latest` with `imagePullPolicy: Always`.
+  Container port `8080` named `http`, `PORT=8080` in the env. Public GHCR
+  package, so no `ghcr-pull-secret` and no reflector entry for the `n8n`
+  namespace. Requests `100m` / `320Mi`, limits `1` CPU / `1Gi`. Startup,
+  readiness and liveness probes on `/healthz`. Three `emptyDir`s: `/dev/shm`
+  (`medium: Memory`, `256Mi`), `/tmp` and `/home/pwuser`.
+- `svg-render-service.yaml` — `ClusterIP` Service `svg-render`, port `8080` →
+  `targetPort: http`, selector `app: svg-render`.
+- `svg-render-networkpolicy.yaml` — ingress from pods labelled `app: n8n` on TCP
+  `8080`; egress to DNS (`53/udp`, `53/tcp`) and nothing else.
+
+**Why `runAsUser: 1001`.** The image's `USER` is `pwuser`, from the Playwright
+base image — uid *1001*, not the 1000 the n8n container uses. `runAsNonRoot:
+true` with a non-numeric image user cannot be verified by the kubelet, so the
+uid has to be spelled out; spelling out the wrong one leaves `$HOME` and the
+`emptyDir`s owned by another id.
+
+**Why the `/dev/shm` `emptyDir`.** Chromium maps large shared-memory segments
+and the 64 MiB a container gets by default is not enough; it crashes mid-render.
+A `medium: Memory` `emptyDir` replaces it with a tmpfs — which counts against
+the pod's memory limit, hence `sizeLimit: 256Mi` inside the `1Gi` limit.
+
+**Why `readOnlyRootFilesystem: true` here but `false` for n8n.** Everything the
+renderer writes is under `/tmp` and `$HOME`, both mounted; the browsers live in
+`/ms-playwright` and the server in `/app`, both read-only. n8n cannot do this
+(see above), this can.
+
+**Why the NetworkPolicy selects only `svg-render`.** NetworkPolicies are
+additive per pod, so this one leaves the n8n pod's egress untouched — the
+LinkedIn/home-ISP constraint below still holds. Egress is DNS-only on purpose:
+the renderer is given its markup by n8n and has no reason to reach the internet.
+If a render needs remote fonts or images, that is the rule to add, and it is a
+deliberate decision, not a bug to route around.
+
+**`:latest`, deliberately.** The blog's renderer is rebuilt far more often than
+this repo changes, and `imagePullPolicy: Always` picks the new image up on any
+pod restart. The cost is the usual one: nothing in git records which build is
+running, and Flux will not roll the Deployment on its own — a new image needs
+`kubectl -n n8n rollout restart deploy/svg-render`.
 
 ## Why it is like this
 
@@ -150,6 +201,17 @@ from datacenter IP ranges.
   reintroduces the datacenter-IP block described above.
 - `n8n-secrets.enc.yaml` must be SOPS-encrypted before it is committed; an
   unencrypted commit puts the key in git history permanently.
+- svg-render's `runAsUser`/`runAsGroup` must stay `1001` (`pwuser`). `1000`
+  copied from the n8n container leaves `/home/pwuser` unwritable.
+- Removing the `/dev/shm` `emptyDir` puts Chromium back on a 64 MiB shm and
+  renders start crashing under load.
+- svg-render's `readOnlyRootFilesystem: true` holds only while `/tmp` and
+  `/home/pwuser` stay mounted. A render failing with `EROFS` means the image
+  now writes somewhere else — mount that path, or flip the flag to `false`.
+- The svg-render NetworkPolicy has no egress rule beyond DNS: a workflow whose
+  SVG references a remote font or image silently renders without it.
+- The NetworkPolicy's ingress rule matches on the `app: n8n` pod label. Renaming
+  that label cuts every workflow off from the renderer.
 
 ## Operating it
 
@@ -162,6 +224,12 @@ kubectl -n n8n get cluster n8n-db               # CNPG Ready first
 kubectl -n n8n get pods,pvc,svc,ingress
 kubectl -n n8n logs deploy/n8n | head -50       # schema migrations on first boot
 kubectl -n tailscale get pods                   # ts-n8n-… proxy registered
+
+kubectl -n n8n get deploy,svc,networkpolicy -l app=svg-render
+kubectl -n n8n logs deploy/svg-render           # EROFS ⇒ an unmounted write path
+kubectl -n n8n exec deploy/n8n -- \
+  wget -qO- http://svg-render:8080/healthz      # from the only allowed caller
+kubectl -n n8n rollout restart deploy/svg-render  # pull a new :latest build
 ```
 
 Creating the secret on a fresh install:
