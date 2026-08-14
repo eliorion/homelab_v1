@@ -156,9 +156,16 @@ error.
 - **Group provisioning happens on login only.** It does not run when a bearer
   token is validated, so group changes in Keycloak reach Nextcloud at the user's
   next interactive login and not before.
-- **The hook passes the client secret on an `su -c` command line**, so it is
-  visible in `ps` inside the pod for the duration of the call. Acceptable for a
-  single-tenant pod; worth knowing before adding any sidecar that is not trusted.
+- **Hook scripts already run as `www-data`.** The image's `run_path()` invokes
+  them through `run_as`, not as root. An `id -u`/`su` dance inside the hook
+  takes the wrong branch and passes the whole command as a single argv, whose
+  symptom is `Command "app:install user_oidc" is not defined.`
+- **The hook must end in `exit 0`.** The entrypoint treats a non-zero hook as
+  fatal and aborts before apache starts, so a failed `occ` call CrashLoopBackOffs
+  the pod and takes the file server down over an identity-provider misconfig.
+  Failures are logged with a `user_oidc-hook: WARNING` prefix instead — grep for
+  it after any change to the provider arguments, because a broken provider now
+  fails quietly by design.
 
 ## Operating it
 
