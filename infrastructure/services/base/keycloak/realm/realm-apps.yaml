@@ -164,8 +164,8 @@ clients:
     # generator, which emits the index.php form when the pretty-URL rewrite is
     # not active — a mismatch is rejected as "Invalid parameter: redirect_uri".
     redirectUris:
-      - https://nextcloud.eliorion.fr/index.php/apps/user_oidc/code
-      - https://nextcloud.eliorion.fr/apps/user_oidc/code
+      - $(env:NEXTCLOUD_URL)/index.php/apps/user_oidc/code
+      - $(env:NEXTCLOUD_URL)/apps/user_oidc/code
     # The flow is server-side redirects; no browser JavaScript calls Keycloak.
     webOrigins: []
     # `openid` is deliberately absent — request-time OIDC scope, not a Keycloak
