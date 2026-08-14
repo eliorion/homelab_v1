@@ -1,6 +1,6 @@
 # nextcloud
 
-Self-hosted file sync and share, published on `nextcloud.eliorion.fr` through
+Self-hosted file sync and share, published on `staging-nextcloud.eliorion.fr` through
 the Cloudflare tunnel. Single replica, `nextcloud:34.0.2-apache`, a crond
 sidecar for background jobs, a Valkey Deployment for locking and caching, and
 the CNPG cluster in
@@ -86,7 +86,7 @@ Why a cache exists at all is in the
 
 **Nextcloud delegates its own login instead of sitting behind an edge gate.**
 The alternative was a Cloudflare Access application in front of
-`nextcloud.eliorion.fr`, the way nao is fronted. It was rejected because Access
+`staging-nextcloud.eliorion.fr`, the way nao is fronted. It was rejected because Access
 requires an interactive browser flow that the desktop client, the mobile apps,
 WebDAV, CalDAV and CardDAV cannot complete — fronting Nextcloud that way leaves
 a Nextcloud you can only use in a browser tab, which is most of the product
@@ -202,7 +202,7 @@ kubectl -n nextcloud logs deploy/nextcloud -c cron --tail=20
    it is mapped to the Nextcloud account.
 2. Add them to the **`nextcloud-users`** group. Without it they authenticate and
    are refused.
-3. They log in at `https://nextcloud.eliorion.fr` via "Log in with Keycloak".
+3. They log in at `https://staging-nextcloud.eliorion.fr` via "Log in with Keycloak".
    The account and its groups are provisioned on that first login.
 
 Revoking is the reverse: remove the group membership (or disable the account) in

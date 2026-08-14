@@ -15,3 +15,9 @@ data:
   # Editing this file alone does NOT re-run the import: the Job spec is
   # unchanged, so Flux has nothing to recreate. Delete the Job to re-run it.
   APPS_REALM: staging-apps
+  # Nextcloud's public origin, used to build the OIDC redirect URIs. Scheme, no
+  # trailing slash. Must equal NEXTCLOUD_TRUSTED_DOMAINS / OVERWRITEHOST in
+  # apps/staging/nextcloud/configmap.yaml and the Cloudflare public hostname —
+  # Keycloak matches redirect URIs textually, so a mismatch rejects every login
+  # with "Invalid parameter: redirect_uri".
+  NEXTCLOUD_URL: https://staging-nextcloud.eliorion.fr
