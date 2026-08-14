@@ -120,8 +120,75 @@ clients:
     # outright, and Access cannot render it.
     consentRequired: false
 
+  # Nextcloud's own login, via the user_oidc app. Unlike cloudflare-access this
+  # is the APPLICATION delegating its authentication, not an edge gate in front
+  # of it — which is why the sync clients keep working. See
+  # apps/base/nextcloud/README.md.
+  - clientId: nextcloud
+    name: Nextcloud
+    description: Nextcloud login delegated to this realm via user_oidc
+    protocol: openid-connect
+    enabled: true
+    publicClient: false
+    # Substituted from NEXTCLOUD_OIDC_CLIENT_SECRET by keycloak-config-cli. The
+    # same Secret is mirrored into the `nextcloud` namespace by reflector —
+    # declared here rather than generated so both sides cannot drift.
+    secret: $(env:NEXTCLOUD_OIDC_CLIENT_SECRET)
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    # BOTH forms. user_oidc builds the callback from Nextcloud's own URL
+    # generator, which emits the index.php form when the pretty-URL rewrite is
+    # not active — a mismatch is rejected as "Invalid parameter: redirect_uri".
+    redirectUris:
+      - https://nextcloud.eliorion.fr/index.php/apps/user_oidc/code
+      - https://nextcloud.eliorion.fr/apps/user_oidc/code
+    # The flow is server-side redirects; no browser JavaScript calls Keycloak.
+    webOrigins: []
+    # `openid` is deliberately absent — request-time OIDC scope, not a Keycloak
+    # client scope; listing it logs "Referenced client scope doesn't exist".
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    fullScopeAllowed: false
+    consentRequired: false
+    protocolMappers:
+      # Keycloak ships NO built-in client scope that emits real group
+      # membership (`microprofile-jwt` maps realm ROLES to a `groups` claim,
+      # which is a different thing). Without this mapper the claim is absent,
+      # and with group-restrict-login-to-whitelist on that locks everyone out.
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          "claim.name": groups
+          # Flat names, not /parent/child paths — the Nextcloud-side whitelist
+          # regex `^nextcloud-` matches against whatever this emits.
+          "full.path": "false"
+          "id.token.claim": "true"
+          "access.token.claim": "true"
+          "userinfo.token.claim": "true"
+
+groups:
+  # Holding this group IS permission to log in to Nextcloud: user_oidc is
+  # configured with group-restrict-login-to-whitelist. Declared here (and kept
+  # by IMPORT_MANAGED_GROUP=no-delete) so the gate is in Git; membership is
+  # still granted by hand in the admin console over the tailnet.
+  - name: nextcloud-users
+  # Provisioned into Nextcloud as a group, but it grants no Nextcloud admin
+  # rights on its own — Nextcloud's own admin group is `admin`.
+  - name: nextcloud-admins
+
 # NO `users:` BLOCK, DELIBERATELY — same rule as realm-mcp.yaml. Accounts are
 # created in the admin console over the tailnet, and the import Job's
 # IMPORT_MANAGED_USER=no-delete is what keeps a realm edit from deleting them
-# all. Membership of this realm is not itself permission: the Cloudflare Access
-# policy on each application decides which of these users reaches which UI.
+# all. Membership of this realm is not itself permission: for Cloudflare Access
+# UIs the Access policy decides, and for Nextcloud the `nextcloud-users` group
+# above does.

@@ -16,3 +16,12 @@ data:
   OVERWRITECLIURL: "https://nextcloud.eliorion.fr"
   PHP_MEMORY_LIMIT: "1G"
   PHP_UPLOAD_LIMIT: "4G"
+  # Read by the before-starting hook (apps/base/nextcloud/oidc-hook.yaml).
+  OIDC_PROVIDER_ID: "Keycloak"
+  # Must equal the clientId in the `apps` realm.
+  OIDC_CLIENT_ID: "nextcloud"
+  # The PUBLIC issuer, deliberately: Keycloak's networkPolicy.https admits only
+  # the `cloudflare` and `identity` namespaces, so this pod cannot reach
+  # keycloak-service:8443 at all. The backchannel hairpins out through the
+  # tunnel and back — which means Nextcloud logins depend on the tunnel being up.
+  OIDC_DISCOVERY_URI: "https://staging-keycloak.eliorion.fr/realms/apps/.well-known/openid-configuration"

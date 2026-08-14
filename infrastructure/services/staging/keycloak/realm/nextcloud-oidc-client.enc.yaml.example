@@ -1,0 +1,24 @@
+# TEMPLATE — the Nextcloud OIDC client credential for the `apps` realm.
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.example`
+# matches nothing and is never encrypted — NEVER put the real secret here.
+# Changing this value requires re-running the import by hand AND restarting the
+# Nextcloud pod: the ConfigMap hash does not change when only this Secret does.
+#
+# Lives in `identity` because the realm import Job reads it as
+# $(env:NEXTCLOUD_OIDC_CLIENT_SECRET); reflector mirrors it into `nextcloud` for
+# the pod's OIDC hook. One value, two namespaces, no second encrypted file.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nextcloud-oidc-client
+  namespace: identity
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "nextcloud"
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "nextcloud"
+type: Opaque
+stringData:
+  # openssl rand -base64 32
+  client-secret: REPLACE_WITH_OPENSSL_RAND_BASE64_32
