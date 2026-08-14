@@ -100,7 +100,7 @@ The public nao route is the Cloudflare tunnel, which targets
 `http://nao.database.svc.cluster.local:5005` by cluster DNS. The route and the
 Access application are dashboard-managed (the tunnel is token-managed) and
 written down in [`../../../staging/cloudflare/README.md`](../../../staging/cloudflare/README.md);
-the Keycloak `apps` realm that fronts it is in git at
+the Keycloak `staging-apps` realm that fronts it is in git at
 [`../../keycloak/realm/realm-apps.yaml`](../../keycloak/realm/realm-apps.yaml).
 
 ## Why it is like this
@@ -150,7 +150,7 @@ all three project databases.**
 
 For pgAdmin that gate is tailnet membership. nao now has **two** gates, and the
 weaker of the two is what counts: tailnet membership as before, OR a Keycloak
-account in the `apps` realm plus a nao account — the second being an
+account in the `staging-apps` realm plus a nao account — the second being an
 internet-facing path, which raises the stakes of that unchanged credential. nao
 connects as each cluster's `app` OWNER role and executes model-authored SQL. The
 known fix is still the same one, and it has not been done: a per-database
@@ -262,7 +262,7 @@ silently change the running version.
 #### Two front doors
 
 The tailnet Ingress is unchanged; the tunnel adds a public one gated by
-**Cloudflare Access with Keycloak (`apps` realm) as the identity provider**.
+**Cloudflare Access with Keycloak (`staging-apps` realm) as the identity provider**.
 Four things follow, all load-bearing:
 
 - **`BETTER_AUTH_TRUSTED_ORIGINS` must list every host.** better-auth takes one

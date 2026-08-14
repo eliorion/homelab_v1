@@ -24,4 +24,6 @@ data:
   # the `cloudflare` and `identity` namespaces, so this pod cannot reach
   # keycloak-service:8443 at all. The backchannel hairpins out through the
   # tunnel and back — which means Nextcloud logins depend on the tunnel being up.
-  OIDC_DISCOVERY_URI: "https://staging-keycloak.eliorion.fr/realms/apps/.well-known/openid-configuration"
+  # The realm segment must equal APPS_REALM in
+  # infrastructure/services/staging/keycloak/realm/realm-vars.yaml.
+  OIDC_DISCOVERY_URI: "https://staging-keycloak.eliorion.fr/realms/staging-apps/.well-known/openid-configuration"

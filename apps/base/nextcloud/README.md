@@ -34,7 +34,7 @@ reconciles first — this directory assumes both already exist.
   name — editing the script renames the ConfigMap and rolls the Deployment. A
   static ConfigMap updates the mounted file but restarts nothing, so the edit
   would not take effect until the pod happened to restart for some other reason.
-  Login is delegated to the `apps` realm — see
+  Login is delegated to the `staging-apps` realm — see
   [`infrastructure/services/base/keycloak`](../../../infrastructure/services/base/keycloak/README.md).
 
 The staging overlay (`apps/staging/nextcloud/`) adds:

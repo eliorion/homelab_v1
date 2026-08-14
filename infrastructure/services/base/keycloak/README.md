@@ -55,7 +55,7 @@ Traffic in:
 |---|---|
 | `job.yaml` | A `keycloak-config-cli` Job (`adorsys/keycloak-config-cli:6.5.1-26`) that logs in as the operator-generated admin and applies the three realm files. |
 | `realm-mcp.yaml` | The `mcp` realm: anonymous dynamic client registration fenced by client-registration policies, the `mcp:tools` scope, and the audience mapper for `https://fbref-mcp.eliorion.fr/mcp`. |
-| `realm-apps.yaml` | The `apps` realm: two confidential clients — `cloudflare-access` for Zero Trust edge authentication of tunnel-published UIs (today: nao, `https://nao.eliorion.fr`), and `nextcloud` for Nextcloud's own `user_oidc` login — plus the `nextcloud-users` / `nextcloud-admins` groups. |
+| `realm-apps.yaml` | The applications realm — **name from `$(env:APPS_REALM)`**, `staging-apps` on this cluster. Two confidential clients: `cloudflare-access` for Zero Trust edge authentication of tunnel-published UIs (today: nao), and `nextcloud` for Nextcloud's own `user_oidc` login. Carries the access catalogue: one group per application. |
 | `realm-master.yaml` | The `master` realm, carrying a single attribute: `frontendUrl`. |
 | `kustomization.yaml` | A `configMapGenerator` that packs the three realm files into the `keycloak-realm` ConfigMap, plus `job.yaml`. |
 
@@ -105,7 +105,33 @@ applied until the list is uncommented. It contains:
 
 ## Why it is like this
 
-**The `apps` realm now holds two kinds of client, and the difference matters.**
+**One user pool, per-application groups.** `staging-apps` is the single account
+store for every self-hosted UI. The realm itself grants nothing — existence in
+it is not permission, unlike the `mcp` realm where it deliberately is. Access is
+a group named `<app>-users`, and granting someone an application is adding them
+to that group. This is the whole authorization model:
+
+| Group | Application | What actually enforces it |
+|---|---|---|
+| `nextcloud-users` | Nextcloud | **user_oidc itself** — `--group-restrict-login-to-whitelist=1` with `--group-whitelist-regex '^nextcloud-'`. Live. |
+| `nextcloud-admins` | Nextcloud | Provisioned as a Nextcloud group; grants no admin rights on its own (Nextcloud's admin group is `admin`). |
+| `nao-users` | nao | **A Cloudflare Access policy** matching the `groups` claim. Until that policy is switched from an email list to a group rule, this group grants nothing. |
+
+The right-hand column is the point. A group is inert unless something reads it,
+and the enforcement point differs per application: an app with native OIDC can
+refuse the login itself, an app without one needs the gate in front of it. Never
+add a group here without also naming what enforces it — an unenforced group
+reads like access control and is not.
+
+**The realm name is per-environment and is the issuer.** `realm: $(env:APPS_REALM)`
+comes from the `keycloak-realm-vars` ConfigMap in the staging overlay. Hardcoding
+`staging-apps` in `base/` would import a staging-named realm into a production
+cluster. The cost of the indirection is that the name is now a value that must
+match in three places: this ConfigMap, `OIDC_DISCOVERY_URI` in
+`apps/staging/nextcloud/configmap.yaml`, and the three URLs of the Cloudflare
+Access identity provider in the Zero Trust dashboard.
+
+**The `staging-apps` realm now holds two kinds of client, and the difference matters.**
 `cloudflare-access` is an *edge gate*: it authenticates the request before it
 reaches the tunnel, and the application behind it never learns who the user is —
 which is why nao still shows its own login afterwards. `nextcloud` is the
@@ -271,7 +297,7 @@ disable or delete the account to revoke. Access tokens are short (300s) and the
 connector refreshes, because a long-lived token is a long-lived database reader
 in someone else's cloud.
 
-**Why the `apps` realm is separate from `mcp`.** The `mcp` realm has anonymous
+**Why the `staging-apps` realm is separate from `mcp`.** The `mcp` realm has anonymous
 dynamic client registration open to claude.ai and chatgpt.com, and a user
 existing there is permission to read the fbref database. Adding the operators of
 a web UI to it would silently grant that, and adding a browser SSO client to it
@@ -282,7 +308,7 @@ per Zero Trust account and reused by every Access application: a second
 published UI adds an Access application and a policy, not a second realm and a
 second IdP.
 
-Note what the `apps` realm does **not** do: nao has no OIDC of its own —
+Note what the `staging-apps` realm does **not** do: nao has no OIDC of its own —
 self-hosted `getnao/nao` runs better-auth with local accounts and SSO is an
 Enterprise feature — so Keycloak is not nao's identity provider. It
 authenticates the request *before* it reaches the tunnel; nao's own login still
@@ -313,6 +339,20 @@ for both backup and restore (plugin-barman-cloud issue #411).
 
 ## Traps
 
+- **Renaming the applications realm does not rename anything.**
+  keycloak-config-cli CREATES the realm named by `APPS_REALM` and leaves the
+  previous one in place — users, clients and all — because it manages realm
+  contents, not the set of realms. After a rename, delete the old realm by hand
+  in the admin console once you have confirmed nothing still points at it. Two
+  realms differing by one word, both apparently working, is how you end up
+  granting a user access in the one nothing reads.
+- **Editing `keycloak-realm-vars` alone does not re-run the import.** The Job
+  spec is unchanged, so Flux has nothing to recreate. Only the realm *files*
+  are hashed into the ConfigMap name. Delete the Job to force a run:
+  `kubectl -n identity delete job keycloak-realm-config`.
+- **A group with nothing reading it is not access control.** See the catalogue
+  table above: `nao-users` exists but the Cloudflare Access policy still matches
+  on emails, so adding someone to that group today grants them nothing.
 - **Do not set `spec.image`.** It flips the operator into `--optimized` mode and
   decouples the server version from the operator version.
 - **Do not set `spec.bootstrapAdmin`.** The realm import Job reads the
@@ -355,7 +395,7 @@ for both backup and restore (plugin-barman-cloud issue #411).
   doesn't exist. Ignoring` on every import — a warning that looks like the cause
   of any nearby failure.
 - **Cloudflare Access identifies users by email.** A Keycloak account in the
-  `apps` realm with no email set authenticates and is then refused by every
+  `staging-apps` realm with no email set authenticates and is then refused by every
   Access policy, which reads as a broken login.
 - **The `cloudflare-access` client secret is declared in the realm, not
   generated by Keycloak.** A regenerated secret breaks the Cloudflare side
@@ -416,6 +456,41 @@ for both backup and restore (plugin-barman-cloud issue #411).
   is inert once it exists.
 
 ## Operating it
+
+### Granting a person an application
+
+This is the whole access-management workflow. Admin console over the tailnet
+(`https://keycloak-admin.tail45b0ca.ts.net`), realm **staging-apps**:
+
+1. **Users → Add user.** Set the username and an **email** — Cloudflare Access
+   identifies users by email, and Nextcloud maps it onto the account.
+2. **Credentials → Set password.**
+3. **Groups → Join Group** — one per application they should reach:
+   `nextcloud-users`, `nao-users`, …
+
+Revoking one application is leaving that group. Revoking the person entirely is
+disabling the account here. Both take effect at their next login; sessions and
+issued application passwords already in flight are not retroactively killed.
+
+Adding a *new* application to the catalogue is two edits, and both are required:
+the group in `realm-apps.yaml`, and whatever enforces it (the app's own OIDC
+group restriction, or a policy on the gate in front of it).
+
+### Renaming the applications realm
+
+`APPS_REALM` in `infrastructure/services/staging/keycloak/realm/realm-vars.yaml`
+is the realm name and therefore the issuer. Changing it means, in the same
+sitting:
+
+1. Edit `realm-vars.yaml`, then force the import: the Job spec does not change
+   on its own, so `kubectl -n identity delete job keycloak-realm-config` and let
+   Flux recreate it.
+2. Update `OIDC_DISCOVERY_URI` in `apps/staging/nextcloud/configmap.yaml`.
+3. Update the three Keycloak URLs on the Cloudflare Access identity provider
+   (Zero Trust → Settings → Authentication) — see
+   `infrastructure/services/staging/cloudflare/README.md`.
+4. Delete the OLD realm in the admin console. config-cli does not remove it, and
+   a stale realm with the same clients is a live login page nobody is watching.
 
 Render check before committing:
 
