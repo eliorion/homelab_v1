@@ -21,7 +21,7 @@ drills — that span more than one component:
 `04` CI runners and cache, `05` alerting, `06`/`07` Talos + Longhorn migration
 and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
 `11`/`13` AzuraCast capacity, `12` Garage object storage,
-`14` design decisions.
+`14` design decisions, `15` node-1 spare-disk expansion.
 
 ## Repo layout
 

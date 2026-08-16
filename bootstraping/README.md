@@ -83,6 +83,14 @@ broken thing.
 | `ipAddress` | `192.168.1.101` | `192.168.1.102` | `192.168.1.103` |
 | `installDisk` | `/dev/nvme0n1` | `/dev/sda` | `/dev/sda` |
 | `talosImageURL` schematic | `65cf8364…` (AMD box, amd-ucode) | `36cd6536…` (Intel, intel-ucode) | `36cd6536…` |
+| `patches` | three `UserVolumeConfig` + Longhorn disk annotation | — | — |
+
+Only node-1 carries per-node `patches`. It has three spare disks the other two do not: a
+640 GB SATA HDD and a two-LUN USB dock (1 TB + 500 GB). Each becomes an `xfs` user volume
+under `/var/mnt/hdd-*` for Longhorn's `hdd`-tagged tier. The USB pair share one WWID, so the
+selectors match on `disk.size`; the dock's disks also arrive holding APFS filesystems and
+must be wiped before Talos can provision them. Full runbook and rationale:
+[../documentations/15-node-1-hdd-expansion.md](../documentations/15-node-1-hdd-expansion.md).
 
 Everything else in `networkInterfaces` is identical across the three: `deviceSelector.physical: true`
 (match the physical NIC whatever it is called), `dhcp: false` with a static `/24`,
@@ -194,8 +202,15 @@ it is still in `talconfig.yaml`.
   is why the Talos config is applied before Flux reconciles.
 - **Do not enable Cilium's `bpf.masquerade`** while `hostDNS.forwardKubeDNSToHost` is `true`
   here. That combination breaks CoreDNS.
-- **Never add a Talos `UserVolumeConfig` for Longhorn** while the `/var/lib/longhorn` kubelet
-  bind mount exists — the two mask each other (siderolabs/talos#13069).
+- **Never pair a Talos user volume with a `kubelet.extraMounts` bind on the same path.**
+  That combination is mount masking, siderolabs/talos#13069 — closed as not planned, still
+  unfixed, and it hits *any* `/var/mnt/<name>` volume, not only ones aimed at
+  `/var/lib/longhorn`. node-1's three `hdd-*` volumes therefore have no `extraMounts` entry;
+  Talos propagates `/var/mnt` to the kubelet by itself. The `/var/lib/longhorn` bind in the
+  shared machine patch predates user volumes and stays.
+- **node-1's `patches` must never move into the shared cluster-wide `patches:` block.** Its
+  disk selectors match on `transport`/`size`; nodes 2 and 3 have a single SATA SSD each,
+  which is their *install* disk.
 - **`/var/lib/longhorn` lives on the EPHEMERAL partition.** There is no separate disk for it
   in this file, so `talosctl reset --system-labels-to-wipe=EPHEMERAL` destroys that node's
   Longhorn replicas. One node is survivable; all three at once is not.

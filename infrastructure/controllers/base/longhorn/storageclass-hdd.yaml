@@ -1,0 +1,20 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-hdd
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  # Must match the `tags` in the node.longhorn.io/default-disks-config
+  # annotation in bootstraping/talconfig.yaml. A disk carrying a tag accepts
+  # ONLY volumes that request it, so dropping this line does not widen the
+  # class -- it makes the HDDs unreachable and every other disk eligible.
+  diskSelector: "hdd"
+  # ONE replica: the tagged disks exist on staging-controlplane-1 only, and
+  # Longhorn will not place two replicas of a volume on one node. Asking for
+  # more leaves the volume permanently unschedulable, not merely degraded.
+  numberOfReplicas: "1"
+  staleReplicaTimeout: "30"
+  fsType: ext4

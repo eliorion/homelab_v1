@@ -125,8 +125,27 @@ volumes.
   Garage, see
   [../../../../documentations/03-backups.md](../../../../documentations/03-backups.md))
   survive a correlated failure across all three nodes.
-- **Never add a Talos `UserVolumeConfig` while the `/var/lib/longhorn` kubelet
-  bind exists** — mount masking, siderolabs/talos#13069.
+- **Never add a `kubelet.extraMounts` bind for a Talos user volume path.** The
+  `/var/lib/longhorn` bind stays, but node-1's `/var/mnt/hdd-*` user volumes
+  deliberately have none: a hand-written bind stacked on a user volume mount
+  point is mount masking, siderolabs/talos#13069, closed as not planned and
+  still unfixed. See
+  [../../../../documentations/15-node-1-hdd-expansion.md](../../../../documentations/15-node-1-hdd-expansion.md).
+- **`longhorn-hdd` is one replica on one node.** Its `diskSelector: hdd` only
+  matches the two USB disks on `staging-controlplane-1`, and Longhorn will not
+  stack two replicas of a volume on one node — raising `numberOfReplicas` makes
+  volumes unschedulable, not degraded. No backup target exists. Bulk regenerable
+  data only, never a database.
+- **node-1's `hdd-sata-640` is deliberately untagged**, so the default class
+  uses it. Tagging it would strand 640 GB beside an NVMe with 3.1 GB
+  schedulable, which is what actually happened on 2026-08-16
+  ([../../../../documentations/15-node-1-hdd-expansion.md](../../../../documentations/15-node-1-hdd-expansion.md)).
+  The trade is that a Postgres replica can land on a 5400 rpm drive.
+- **A disk's `tags` and the StorageClass `diskSelector` are one setting in two
+  files.** `bootstraping/talconfig.yaml` carries the tags (in the
+  `node.longhorn.io/default-disks-config` annotation, and on the live CRs);
+  `storageclass-hdd.yaml` carries the selector. Removing the selector does not
+  widen the class — it makes the tagged disks unreachable.
 - **Never upgrade Talos without an explicit `install.image`.** The extensions
   Longhorn needs (`iscsi-tools`, `util-linux-tools`) silently vanish and
   Longhorn dies.
