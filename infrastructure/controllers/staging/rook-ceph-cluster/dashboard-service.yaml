@@ -1,12 +1,10 @@
+# The Ceph dashboard's backing Service. It carries NO tailscale annotations:
+# ingress-tailscale.yaml exposes it, and both mechanisms at once register two
+# devices contending for one hostname (the loser is silently suffixed `ceph-1`).
 apiVersion: v1
 kind: Service
 metadata:
   name: rook-ceph-dashboard-tailnet
-  annotations:
-    # L3 expose, forwards the Service port. Reached at
-    # http://ceph.<tailnet>.ts.net:7000 — plain HTTP, dashboard ssl is off.
-    tailscale.com/expose: "true"
-    tailscale.com/hostname: ceph
   namespace: rook-ceph
 spec:
   type: ClusterIP

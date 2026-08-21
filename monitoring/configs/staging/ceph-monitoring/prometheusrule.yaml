@@ -1,0 +1,133 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ceph
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: ceph.rules
+      rules:
+        # ------------------------------------------------------------------
+        # ENCODING NOTES -- verified against the live mgr /metrics on Ceph
+        # 20.2.2 (tentacle), 2026-08-21.
+        #
+        #   ceph_health_status            0 = OK, 1 = WARN, 2 = ERR (unlabelled)
+        #   ceph_osd_up{ceph_daemon="osd.N"}      1 / 0
+        #   ceph_osd_in{ceph_daemon="osd.N"}      1 / 0
+        #   ceph_mon_quorum_status{ceph_daemon}   1 / 0
+        #   ceph_pg_{active,clean,degraded,undersized,incomplete,stale}{pool_id}
+        #   ceph_cluster_total_bytes / ceph_cluster_total_used_bytes  (RAW)
+        #
+        # Only the ACTIVE mgr serves these; the standby exposes nothing, so
+        # every series here has exactly one producer and no aggregation is
+        # needed to avoid double-counting. That is the opposite of the Longhorn
+        # rules next door, where a DaemonSet reports the full view three times.
+        #
+        # pool_id is an integer, not a name. Join through ceph_pool_metadata to
+        # get a readable pool in the alert text.
+        #
+        # CAPACITY IS RAW. ceph_cluster_total_bytes is 3.8 TB of disk, not
+        # usable space -- at size 2 the usable figure is roughly half, and the
+        # real ceiling is ~1.55 TB because no disk may hold both copies of an
+        # object (documentations/16). Alert on the raw ratio and let the human
+        # halve it.
+        # ------------------------------------------------------------------
+        - alert: CephHealthError
+          expr: ceph_health_status == 2
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Ceph is in HEALTH_ERR"
+            description: >-
+              HEALTH_ERR means Ceph has stopped guaranteeing something, not that
+              it is merely unhappy. Get the reason before touching anything:
+              `kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph health detail`.
+
+        - alert: CephHealthWarning
+          expr: ceph_health_status == 1
+          # 1h, not minutes: a node reboot puts this cluster into HEALTH_WARN by
+          # design -- failureDomain is osd, so PGs whose two copies both live on
+          # the rebooting node go undersized until it returns. Paging on every
+          # Talos upgrade would train everyone to ignore the one alert that
+          # matters.
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Ceph has been in HEALTH_WARN for an hour"
+            description: >-
+              Longer than a reboot, so this is not routine maintenance.
+              `ceph health detail` names the cause.
+
+        - alert: CephOSDDown
+          expr: ceph_osd_up == 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Ceph {{ $labels.ceph_daemon }} is down"
+            description: >-
+              Every pool here is size 2, so one OSD down means the PGs it held
+              are running on a SINGLE copy. A second disk failure in that window
+              loses data, and there is no backup target. If the disk is gone
+              rather than rebooting, replace it — the pool only self-heals if it
+              holds less than the surviving disks can absorb
+              (documentations/16).
+
+        - alert: CephMonQuorumAtRisk
+          expr: count(ceph_mon_quorum_status == 1) < 3
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Ceph mon quorum is down to {{ $value }} of 3"
+            description: >-
+              Mons live on all three nodes, including node-3 which has no OSD.
+              Two is still quorum; one is not, and the cluster stops serving.
+
+        - alert: CephPGsUnavailable
+          expr: |
+            sum(ceph_pg_total) - sum(ceph_pg_active) > 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $value }} Ceph PGs are not active"
+            description: >-
+              Inactive PGs block I/O — a pod using ceph-block hangs rather than
+              errors. Expected briefly during a node reboot with
+              failureDomain: osd; 15 minutes is past that.
+
+        - alert: CephPGsDegraded
+          expr: |
+            sum(ceph_pg_degraded) + sum(ceph_pg_undersized) > 0
+          # 2h: recovery onto 5400/7200 rpm USB disks is slow by nature, and a
+          # rebuild that is progressing is not an incident.
+          for: 2h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Ceph PGs have been degraded or undersized for 2 hours"
+            description: >-
+              Still degraded well past a reboot. Either recovery is stuck or
+              there is not enough free space on the surviving OSDs to restore a
+              second copy — check `ceph -s` and `ceph osd df`.
+
+        - alert: CephClusterNearFull
+          expr: |
+            ceph_cluster_total_used_bytes / ceph_cluster_total_bytes > 0.75
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Ceph raw usage is {{ $value | humanizePercentage }}"
+            description: >-
+              RAW usage, so at size 2 this is about half as much real data. Ceph
+              stops accepting writes near 95% and refuses backfill before that,
+              which is what turns a full cluster into an unrecoverable one. The
+              practical ceiling here is ~1.55 TB of data
+              (documentations/16); plan at 75%.

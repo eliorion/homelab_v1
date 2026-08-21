@@ -9,6 +9,7 @@ resources:
   - cnpg-alerts
   - n8n-metrics
   - longhorn-monitoring
+  - ceph-monitoring
   - node-capacity-alerts
   - control-plane-alerts
   - ingestion-alerts

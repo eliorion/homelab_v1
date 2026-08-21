@@ -133,9 +133,9 @@ storage config and the pool pin `hdd`.
 
 ## The dashboard, on the tailnet
 
-`http://ceph.<your-tailnet>.ts.net:7000` — plain HTTP on port 7000, not 443 and
-not 80. Same pattern as the Longhorn UI: authenticated by tailnet identity,
-reachable off-LAN, never internet-exposed.
+**`https://ceph.<your-tailnet>.ts.net`** — real HTTPS on 443, with a certificate
+issued to the tailnet device. Authenticated by tailnet identity, reachable
+off-LAN, never internet-exposed.
 
 Username `admin`; Rook generates the password and keeps it in a Secret:
 
@@ -144,15 +144,30 @@ kubectl -n rook-ceph get secret rook-ceph-dashboard-password \
   -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
-The exposure is a **separate Service**,
-`staging/rook-ceph-cluster/dashboard-service.yaml`, not an annotation on Rook's
-own `rook-ceph-mgr-dashboard`. Rook owns that one and reconciles it, so an
-annotation there is drift waiting to be reverted. Ours carries the same selector,
-including `mgr_role: active` — that label is what makes the dashboard follow a
-failover to the standby mgr instead of pointing at a dead one.
+Two objects in `staging/rook-ceph-cluster/`, and the split matters:
 
-`ssl: false` in the CephCluster is why the port is 7000. Turning SSL on moves it
-to 8443 and the Service port must move with it.
+- `dashboard-service.yaml` — a plain `ClusterIP` on port 7000. It is **separate
+  from Rook's own `rook-ceph-mgr-dashboard`** because Rook owns and reconciles
+  that one, so anything added to it is drift waiting to be reverted. Ours carries
+  the identical selector, `mgr_role: active` included — that label is what makes
+  the dashboard follow a failover to the standby mgr instead of pointing at a
+  dead one.
+- `ingress-tailscale.yaml` — `ingressClassName: tailscale`, which terminates TLS
+  and serves 443. The same pattern pgAdmin, Keycloak, n8n and the AI gateway
+  already use.
+
+**The Service must carry no `tailscale.com/*` annotations.** Ingress and the
+Service-annotation method are two different mechanisms; running both registers
+two devices contending for one hostname, and the loser is silently renamed
+`ceph-1`. This started on the annotation method and was converted, so if a stale
+`ceph` device lingers in the tailnet admin console, that is where it came from.
+
+**Precondition:** HTTPS Certificates must be enabled in the Tailscale admin
+console (DNS → HTTPS Certificates), or the proxy comes up with no certificate.
+
+The backend is plain HTTP on 7000 because the CephCluster sets
+`dashboard.ssl: false`; the proxy adds the TLS. Turning Ceph's own SSL on moves
+the backend to 8443 and the Ingress port must move with it.
 
 ## Talos specifics
 
@@ -184,13 +199,17 @@ Less than expected. Verified on v1.13.4, kernel 6.18.34:
 - **Ceph has no backup target here**, exactly like Longhorn. Only workloads with
   their own database-level backup survive a correlated failure
   ([`documentations/03-backups.md`](../../../../documentations/03-backups.md)).
-- **Monitoring is off.** `monitoring.enabled: false` on both charts, so no
-  ServiceMonitor and no Ceph PrometheusRules yet. That is a deliberate first
-  bring-up choice, not an oversight — wiring Ceph alerts into the conventions of
-  [`documentations/05-alerting.md`](../../../../documentations/05-alerting.md) is
-  its own change.
-- **The dashboard is HTTP, no TLS.** It is on the tailnet at port 7000, not 80
-  and not 443, so a bare hostname in a browser will not reach it.
+- **The chart's own `monitoring.enabled` stays `false`, and that is not the same
+  as unmonitored.** Ceph already exposes metrics (the mgr `prometheus` module and
+  `rook-ceph-exporter` are on by default); what the chart's flag adds is its own
+  ServiceMonitor and PrometheusRules, which would arrive without the
+  `release: kube-prometheus-stack` label this cluster's Prometheus selects on,
+  and so would be silently ignored. The scrape configs and alerts are
+  hand-written under `monitoring/configs/staging/ceph-monitoring/` instead, the
+  same as Longhorn's.
+- **The dashboard reaches you over HTTPS, but Ceph itself serves plain HTTP.**
+  The tailscale proxy terminates TLS; the mgr behind it has `ssl: false`. Nothing
+  outside the tailnet can reach either end.
 
 ## Bringing it up
 
