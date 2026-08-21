@@ -12,3 +12,7 @@ results/*_slat.*.log
 # kept — they are the evidence that nothing degraded over three days.
 results/*-soak_lat.*.log
 results/*-soak_clat.*.log
+# The soak's raw 10-second bandwidth samples: 415k lines for a claim that
+# soak-summary.csv makes in 1.7k. Regenerate them by re-running the soak; the
+# per-10-minute means are the evidence worth keeping in git.
+results/*-soak_bw.*.log

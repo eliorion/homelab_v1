@@ -105,7 +105,7 @@ each pass.
 | `run.sh` | One phase, one device, one node. Guards on transport before writing. |
 | `watch-dmesg.sh` | Hourly kernel + device-mapping checkpoint per node, with the reset and stale-mount alarms. Runs on the workstation. |
 | `plot-bw.sh` | Collapses an fio bandwidth log into per-bucket mean MB/s. The SMR cliff is visible in that table. |
-| `results/` | Pulled fio JSON, fio logs, dmesg checkpoints. |
+| `results/` | Pulled fio JSON, the phase-2 bandwidth logs, and `soak-summary.csv` (per-10-minute read/write means for the 72 h soak). The soak's raw 10 s samples are gitignored — 415k lines for what the summary says in 1.7k. |
 
 ## Running it
 
