@@ -5,4 +5,3 @@ resources:
   - repository.yaml
   - release.yaml
   - recurringjob-trim.yaml
-  - storageclass-hdd.yaml

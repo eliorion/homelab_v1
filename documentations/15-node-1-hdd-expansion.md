@@ -4,6 +4,15 @@
 document is the runbook to change that, and the record of why the result looks
 the way it does.
 
+> **Superseded in part, 2026-08-17.** The two USB disks left Longhorn the next
+> day: they are raw block devices for a Rook/Ceph trial, their
+> `UserVolumeConfig` documents and the `longhorn-hdd` class are gone, and one
+> USB enclosure elsewhere in the cluster was caught faking cache flushes. Only
+> `hdd-sata-640` is still a Longhorn disk. See
+> [16-usb-disk-qualification.md](16-usb-disk-qualification.md). Everything below
+> stands as the record of how the disks were provisioned and why — the reasoning
+> applies again if they ever come back.
+
 Status: **fully applied 2026-08-16.** All three disks are partitioned, xfs,
 mounted, and registered with Longhorn. `hdd-sata-640` is registered **untagged**
 (see "Why `hdd-sata-640` ended up untagged" — the tagged plan was abandoned, and
