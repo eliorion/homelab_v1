@@ -74,9 +74,12 @@ spec:
       # on the Longhorn Volume CR, not in these values, and survives only
       # because the orphan-delete preserves the PVC.
       size: 350Gi
-      # The Longhorn replica count is NOT settable here — it is patched to 1 on
-      # the Longhorn Volume CR, and a recreated PVC returns to the class
-      # default of 3. See README.md.
+      # Neither the Longhorn replica count nor dataLocality is settable here —
+      # both are patched on the Longhorn Volume CR (numberOfReplicas: 1,
+      # dataLocality: best-effort), and a recreated PVC returns to the class
+      # default of 3 with locality disabled. dataLocality is what keeps the
+      # single replica on the same node as the pod; without it the affinity
+      # below places the pod without moving its data. See README.md.
     # Raise -Xmx and resources.limits.memory together, never one alone.
     install4jAddVmParams: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2048m"
     resources:
