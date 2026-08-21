@@ -528,6 +528,22 @@ silently suffixed `ceph-1`. Ceph itself still speaks plain HTTP behind the proxy
 (`dashboard.ssl: false`), so turning its own TLS on moves the backend to 8443 and
 the Ingress must move with it.
 
+**The dashboard's own panels stayed dark for a day after that**, which is worth
+recording because nothing about it looks like a misconfiguration until you read
+the banner. Ceph's dashboard does not discover Prometheus; it needs
+`mgr/dashboard/PROMETHEUS_API_HOST` set, and without it every graph fails with
+*Invalid URL '/api/v1/query_range': No schema supplied* — a URL built from an
+empty host. `ALERTMANAGER_API_HOST` is separate, because the alerts panel reads
+Alertmanager directly rather than through Prometheus.
+
+The Hosts and Physical Disks pages failed differently, with *503 Orchestrator is
+unavailable*, and that one also cost log volume: the mgr `prometheus` module
+retried `Failed to collect cephadm daemon status` **every 15 seconds**. Two
+settings fix it and neither implies the other — `mgr.modules` enabling the `rook`
+module makes the backend available, `mgr/orchestrator/orchestrator` selects it.
+Rook enables modules from the spec but never selects a backend; its binary
+carries no `orch set backend`. All four keys are in the HelmRelease.
+
 ## Upstream telemetry, and the half of it git cannot hold
 
 Enabled 2026-08-21. The cluster reports to `https://telemetry.ceph.com/report`
