@@ -69,26 +69,30 @@ overlay: the CI stack is staging-only. Both are reconciled by the
 
 ## Why it is like this
 
-### Storage: 350Gi on Longhorn, at one replica
+### Storage: 350Gi on Ceph RBD
 
-The volume is Longhorn (`storageClass: longhorn`, 350Gi); on the old k3s box it
-was the local-path provisioner. It runs at **one** Longhorn replica against the
-class default of three, deliberately: everything in the volume is a cache.
-Proxied PyPI and Docker artifacts re-download on the next miss, and the hosted
-`docker-cache` is CI output that gets rebuilt. Losing the node costs a cold cache
-and a slow first CI run, not data.
+The volume is `ceph-block` (350Gi), on the Rook/Ceph HDD pool. It was Longhorn at
+one replica until 2026-08-21, and the local-path provisioner on the old k3s box.
 
-It is also the most expensive volume in the cluster: 350Gi provisioned per
-replica against roughly 287Gi actual, which at three replicas was about 1TB of
-the cluster's ~2.1TB of schedulable Longhorn space and left routine growth
-elsewhere (`fbref-db`) with nowhere to go.
+Everything in the volume is a cache, which is what made it the first thing moved
+to Ceph and why the migration **discarded** it rather than copying: proxied PyPI
+and Docker artifacts re-download on the next miss, and the hosted `docker-cache`
+is CI output that gets rebuilt. The cost of losing it is a cold cache and slow
+first CI runs, not data.
 
-The replica count is not settable from the chart values. Longhorn takes it from
-the StorageClass, and both the PVC's `storageClassName` and the StatefulSet's
-`volumeClaimTemplate` are immutable, so pointing at a one-replica class would
-mean deleting the StatefulSet and the volume with it. It lives on the Longhorn
-Volume CR instead — see Operating it. See also
-[../../../../documentations/14-design-decisions.md](../../../../documentations/14-design-decisions.md).
+It was also the most expensive volume in the cluster — 350Gi provisioned against
+roughly 310Gi actual, the single largest real consumer of Longhorn space, and the
+reason routine growth elsewhere (`fbref-db`) had nowhere to go. Moving it is what
+frees node-1 for the rest of the Longhorn → Ceph migration.
+
+Redundancy is now a property of the pool, not the volume: `ceph-blockpool` runs
+`size: 2` on a `failureDomain: osd`, so there is no per-volume replica count to
+set or re-assert. That removes the one-replica patch this README used to carry.
+
+**Ceph has no backup target**, exactly as Longhorn had none. Unchanged for a pure
+cache. See
+[../../../../documentations/14-design-decisions.md](../../../../documentations/14-design-decisions.md)
+and [../../../../infrastructure/controllers/base/rook-ceph/README.md](../../../../infrastructure/controllers/base/rook-ceph/README.md).
 
 ### JVM and resources
 
@@ -99,13 +103,13 @@ boots slowly (2min+) and helm-controller needs room to wait.
 
 ### Node affinity
 
-Pod placement prefers `staging-controlplane-1`. Longhorn keeps a replica on every
-node at the class default, so node-1 holds a local copy of the data volume and
-the engine reads its data locally. The rule is soft (preferred), so Nexus still
-schedules elsewhere if node-1 is down and the data survives via the other
-replicas. After a failover the pod does not automatically return to node-1 until
-it is rescheduled. Note that this rationale predates the one-replica decision
-above.
+Pod placement prefers `staging-controlplane-1`. The original rationale was
+Longhorn data locality — a replica on every node meant node-1 read its copy
+locally. **That rationale is dead twice over**: it already predated the
+one-replica decision, and on Ceph RBD every read crosses the network to whichever
+OSDs hold the PGs, so no node is closer to the data than any other. The rule is
+soft (preferred) and now costs nothing either way; it is kept only so the pod has
+a stable home across reschedules.
 
 ### Anonymous access and realms
 
@@ -142,9 +146,15 @@ stay on disk until a `blobstore.compact` task physically frees them. There was n
 such task, so the `default` blob store grew unbounded and filled the PVC to 99% —
 about 270GB of dead direct-path Docker-upload blobs
 (`deletedReason=Docker upload cleaned up`, written by every BuildKit push to
-`docker-cache`). Running compaction reclaimed it to 20% (67G/344G). A daily
-Longhorn `filesystem-trim` RecurringJob (04:00) then returns the freed blocks to
-the volume.
+`docker-cache`). Running compaction reclaimed it to 20% (67G/344G).
+
+Returning those freed blocks to the *storage layer* is a second, separate step.
+On Longhorn a daily `filesystem-trim` RecurringJob (04:00) did it. **Ceph has no
+equivalent RecurringJob** — RBD relies on discard being issued against the
+filesystem instead. Compaction still frees space inside the volume either way, so
+Nexus never runs out; what is lost is the pool-level reclaim, which means
+`rbd du` will over-report until something issues a trim. Worth an `fstrim`
+CronJob if pool usage becomes tight.
 
 The chart cannot provision the task. Nexus 3.92 runs on JDK 25 — every 3.92.2
 image tag does (plain, `-alpine`, `-ubi`); there is no `-java17` variant. The
@@ -182,11 +192,14 @@ its own config Job (it has `curl`, `jq` and `sh`).
   CI sees `connection refused` on pulls with the real error only in the Job's
   logs. This has happened; the duplicate `ghcr` repo colliding on port 5000 had to
   be removed.
-- **The Longhorn replica count is not in git.** It is a patch on the Longhorn
-  Volume CR. Longhorn persists it across restarts and upgrades, but a recreated
-  PVC comes back at the class default of 3 and nothing detects that.
 - **`storageClassName` and `volumeClaimTemplates` are immutable.** Changing the
-  storage class or resizing means deleting the StatefulSet and the PVC.
+  storage class or resizing means deleting the StatefulSet and the PVC. This is
+  what the 2026-08-21 move to `ceph-block` had to do, and what previously latched
+  the release `Stalled` for two weeks when git said 350Gi and the live template
+  still said 250Gi.
+- **Redundancy is a pool property on Ceph, not a volume one.** There is no
+  per-volume replica count to re-assert after a PVC recreate — the old Longhorn
+  trap here (a rebuilt PVC silently returning to 3 replicas) no longer applies.
 - **The ExtDirect create call needs `timeZoneOffset`.** With
   `schedule: "advanced"` and no explicit `timeZoneOffset`, the create returns 400
   with the message `offsetId`. The cron string in that payload is Quartz format
@@ -221,11 +234,10 @@ kubectl -n nexus exec nexus-0 -c nexus3 -- env NP="$PW" sh -c \
   "curl -s -X POST -u admin:\$NP http://localhost:8081/service/rest/v1/tasks/$ID/run"
 ```
 
-Pin the data volume back to one Longhorn replica after a PVC recreate:
+Check what the volume is actually consuming in the Ceph pool:
 
 ```bash
-kubectl -n longhorn-system patch volumes.longhorn.io <pv-name> \
-  --type=merge -p '{"spec":{"numberOfReplicas":1}}'
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- rbd -p ceph-blockpool du
 ```
 
 Check external reachability:

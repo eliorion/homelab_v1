@@ -46,37 +46,10 @@ spec:
     fullnameOverride: nexus
     persistence:
       enabled: true
-      # storageClass and size are immutable once the StatefulSet exists.
-      storageClass: longhorn
-      # CURRENTLY BLOCKING EVERY UPGRADE OF THIS RELEASE, and not fixable from
-      # git alone. volumeClaimTemplates is immutable on a StatefulSet, so this
-      # 350Gi cannot be applied over the live template, which still reads
-      # 250Gi. Longhorn already expanded the PVC online -- it is at 350Gi
-      # today -- so the ONLY thing stale is the StatefulSet's copy, and every
-      # Helm upgrade dies on:
-      #
-      #   StatefulSet.apps "nexus" is invalid: spec: Forbidden: updates to
-      #   statefulset spec for fields other than 'replicas', 'ordinals', ...
-      #
-      # Clearing it is a one-off imperative step, documented with its rationale
-      # in documentations/04-ci-runners-cache.md (Troubleshooting). It is
-      # non-destructive on Longhorn:
-      #
-      #   kubectl -n nexus delete sts nexus --cascade=orphan
-      #   flux reconcile helmrelease nexus -n flux-system --force
-      #
-      # --cascade=orphan keeps nexus-0 and the PVC running; the recreated
-      # StatefulSet adopts the pod. Both flags are load-bearing: a plain
-      # `flux reconcile` logs "release in-sync with desired state" and skips
-      # the re-apply, so the orphaned StatefulSet is never recreated.
-      #
-      # AFTERWARDS, re-assert the one-replica setting described below. It lives
-      # on the Longhorn Volume CR, not in these values, and survives only
-      # because the orphan-delete preserves the PVC.
+      # storageClass and size are immutable once the StatefulSet exists —
+      # changing either means deleting the StatefulSet and the PVC.
+      storageClass: ceph-block
       size: 350Gi
-      # The Longhorn replica count is NOT settable here — it is patched to 1 on
-      # the Longhorn Volume CR, and a recreated PVC returns to the class
-      # default of 3. See README.md.
     # Raise -Xmx and resources.limits.memory together, never one alone.
     install4jAddVmParams: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2048m"
     resources:
