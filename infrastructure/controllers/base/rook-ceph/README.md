@@ -14,22 +14,19 @@ Two pieces, two tiers:
 The two charts are pinned to the **same version** and must be bumped together,
 the same rule the two ARC charts already carry.
 
-## Status: operator running, cluster suspended
+## Status: live
 
-The operator is **installed and running** — `rook-ceph-operator` and
-`ceph-csi-controller-manager`, both `1/1`. It is harmless in that state: with no
-`CephCluster` it watches and does nothing.
+The operator and the `CephCluster` are both running. Four OSDs on four USB hard
+disks across two nodes, one pool, one StorageClass (`ceph-block`, not the
+default). The disks were qualified first — flush honesty, no SMR, 72 h of
+saturated concurrent random I/O with zero bus events —
+[`documentations/16`](../../../../documentations/16-usb-disk-qualification.md).
 
-`rook-ceph-cluster` carries `suspend: true`, so **no `CephCluster` exists and no
-disk has been touched by Ceph.** The burn-in that qualified these disks passed
-in full — flush honesty, no SMR, and 72 h of saturated concurrent random I/O with
-zero bus events
-([`documentations/16`](../../../../documentations/16-usb-disk-qualification.md)).
-
-Two steps remain, both in "Bringing it up": delete the `hdd-burnin` namespace,
-then flip `suspend`. It stays suspended rather than merged as `false` because
-unsuspending wipes four disks — that should be a reviewed one-line change, not
-something a reconcile does by surprise.
+**`suspend: true` is no longer a safety catch.** Before bring-up it meant "these
+are still ordinary disks". Now the disks belong to Ceph and hold data, so
+suspending the HelmRelease only stops Flux reconciling it; it does not hand the
+disks back and it does not protect anything. What destroys data now is deleting
+the `CephCluster`, or wiping a device out from under an OSD.
 
 ## Why the disks are selected by `devicePathFilter`
 
