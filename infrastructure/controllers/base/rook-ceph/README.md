@@ -16,15 +16,20 @@ the same rule the two ARC charts already carry.
 
 ## Status: the cluster HelmRelease is suspended
 
-`suspend: true` on `rook-ceph-cluster`. Unsuspending hands four raw disks to
-`ceph-volume`, which wipes them, and those disks are running a 72-hour burn-in
-([`scripts/hdd-burn-in/`](../../../../scripts/hdd-burn-in/README.md)). Flip it to
-`false` only after that passes and
-[`documentations/16`](../../../../documentations/16-usb-disk-qualification.md)
-records the verdict.
+`suspend: true` on `rook-ceph-cluster`. The burn-in passed — four disks cleared
+all three phases, including 72 h of saturated concurrent random I/O with zero bus
+events
+([`documentations/16`](../../../../documentations/16-usb-disk-qualification.md)).
+What remains before unsuspending is the teardown in "Bringing it up" below: the
+`hdd-burnin` namespace still has to go, because `ceph-volume` cannot claim a disk
+another pod holds open.
 
-The operator is safe to run before then: with no `CephCluster` it watches and
-does nothing.
+It stays suspended rather than merged as `false` because unsuspending wipes four
+disks. That should be a reviewed one-line change, not something a reconcile does
+by surprise.
+
+The operator is safe to run meanwhile: with no `CephCluster` it watches and does
+nothing.
 
 ## Why the disks are selected by `devicePathFilter`
 
@@ -58,27 +63,68 @@ The filter on node-2 also excludes, by construction, the 250 GB disk on
 8.33 ms. Ceph would treat every commit as durable while it sat in a cache that a
 power cut empties. **It must never become an OSD.**
 
-## Why `size: 2`, and what it costs
+## Why `size: 2` on `failureDomain: osd`, and what it costs
 
-OSDs exist on node-1 and node-2 only; node-3 has no spare disk. With
-`failureDomain: host` that caps replication at two copies — asking for three
-would leave the pool permanently unschedulable rather than degraded, which is
-exactly the trap `longhorn-hdd` hit in
-[`documentations/15`](../../../../documentations/15-node-1-hdd-expansion.md).
+**Disk redundancy, deliberately not node redundancy.** Two copies land on two
+different OSDs, which may sit on the same node. Any single disk can die without
+losing data. Losing a *node* can lose data, and that was chosen with the
+numbers below in hand.
 
-Three settings encode one decision, and none of them can be left to a default:
+Three settings encode it and none can be left to a default:
 
-- `size: 2` — one copy per host, survives losing a node.
+- `size: 2` — two copies.
 - `requireSafeReplicaSize: false` — Rook considers anything below 3 unsafe and
   refuses the pool without it. Setting it is an acknowledgement, not a tweak.
-- `min_size: "1"` — the pool keeps accepting writes while only one copy is
-  reachable. This is what makes surviving a node loss actually useful; at
-  `min_size: 2` a node loss blocks all writes instead. **The cost is real: a
-  second disk failure before recovery completes loses data.** There is no backup
-  target for Ceph in this cluster, so treat `ceph-block` as regenerable data.
+- `min_size: "1"` — a PG with one surviving copy keeps serving. Note what this
+  does *not* buy here: with `failureDomain: osd` a PG can have both copies on one
+  node, so a node going away drops those PGs to zero copies and their I/O blocks
+  regardless of `min_size`.
 
-Giving node-3 a disk is what lifts this to `size: 3`, and it is the single
-highest-value hardware change available.
+### Why not `failureDomain: host`
+
+Because of how lopsided the disks are. node-1 holds 1.5 TB, node-2 holds 2.3 TB.
+Under `host` every object needs one copy on each node, so the smaller node is the
+ceiling: ~1,500 GB usable and **~800 GB on node-2 unreachable forever**. Under
+`osd` the constraint is only that no disk holds two copies of one object, which
+puts one copy of everything on the 2 TB disk and the second copies across the
+other three (1,000 + 500 + 320 = 1,820 GB).
+
+| | `host` | `osd` |
+|---|---:|---:|
+| Theoretical max | 1,500 GB | 1,820 GB |
+| Practical, 85 % nearfull | ~1,275 GB | ~1,550 GB |
+| Stranded | ~800 GB | none |
+
+The larger gain is recovery. A dead disk rebuilds onto any surviving OSD instead
+of only onto its own node's other disk, so the pool self-heals from a much larger
+working set:
+
+| Disk that dies | Self-heals if the pool holds under |
+|---|---|
+| 2 TB (worst case) | **910 GB** |
+| 1 TB | 1,410 GB |
+| 500 GB | 1,660 GB |
+| 320 GB | 1,750 GB |
+
+Under `host` the worst case is ~300 GB. Above whichever threshold applies, a disk
+failure leaves the pool running on single copies until someone replaces hardware
+— no data lost, but no redundancy either, and that is the window where a second
+failure does lose data.
+
+### The cost that is easy to under-price
+
+`failureDomain: osd` does not only mean "a node dying may lose data". It means
+**every planned node reboot takes part of the pool offline** — Talos upgrades,
+kernel updates, the `apply-config` reboots this repo does routinely. PGs with both
+copies on the rebooting node have zero reachable copies and their I/O hangs until
+it comes back. Under `host` that never happens.
+
+That trade is acceptable for a bulk tier of regenerable data, which is what
+`ceph-block` is here, and it is not acceptable for anything whose hang would be
+noticed. There is no backup target for Ceph in this cluster.
+
+Giving node-3 a disk is what would allow `size: 3` on a `host` domain and remove
+the whole trade. It remains the single highest-value hardware change available.
 
 ## Why `deviceClass: hdd` is forced
 
@@ -145,5 +191,17 @@ kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
 kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph osd tree
 ```
 
-`ceph osd tree` must show two hosts, two OSDs each, all `hdd` class. A third
-host or a stray `ssd` class means the device filter or the device class is wrong.
+
+`ceph osd tree` must show two hosts, two OSDs each, all `hdd` class. A third host
+or a stray `ssd` class means the device filter or the device class is wrong.
+
+Then confirm the failure domain actually took, because getting it wrong is silent
+rather than loud:
+
+```bash
+kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- \
+  ceph osd crush rule dump ceph-blockpool | grep -A2 chooseleaf
+```
+
+It must choose `osd`. If it says `host`, the pool quietly caps at node-1's
+capacity and strands ~800 GB on node-2 — no error, just less space than expected.

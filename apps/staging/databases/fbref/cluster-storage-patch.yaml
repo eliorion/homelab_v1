@@ -3,6 +3,8 @@
   value: longhorn
 # Staging sizing; base stays at 10Gi. A full volume halts the primary with CNPG's
 # "Not enough disk space" and takes the whole fbref stack down with it.
+# The two Longhorn volumes run numberOfReplicas: 1 (patched, see README) — the
+# class provisions 3, which no longer fits.
 - op: replace
   path: /spec/storage/size
-  value: 100Gi
+  value: 200Gi

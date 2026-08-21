@@ -245,11 +245,13 @@ matters for it, but the lesson stands: check
 - **The 250 GB disk cannot be an OSD.** Not tunable, not quirk-able. Excluding it
   is also the only way to keep the pool off a 480 Mb/s `queue_depth=1` path, which
   would have gated every OSD in the cluster.
-- **The four survivors sit on two nodes, 1.5 TB on node-2 and 1.5 TB on node-1.**
-  Two nodes is enough for a `host` failure domain at size 2, not at size 3. The
-  default CRUSH rule with `size: 3` would leave the pool unschedulable — the same
-  trap doc 15 hit when `longhorn-hdd` was set to two replicas with all tagged disks
-  on one node.
+- **The four survivors sit on two nodes, and unevenly: 1.5 TB on node-1, 2.3 TB
+  on node-2.** That asymmetry, not the node count, is what drove the failure
+  domain. A `host` domain needs one copy per node and so caps the pool at the
+  smaller node, stranding ~800 GB. `size: 3` on a `host` domain is impossible
+  with two nodes at all — it would leave the pool unschedulable rather than
+  degraded, the same trap doc 15 hit when `longhorn-hdd` was set to two replicas
+  with every tagged disk on one node.
 - **There is no device for BlueStore WAL/DB.** node-1's NVMe has 3.1 GB
   schedulable and node-2's only fast disk is its install disk. WAL and DB colocate
   on the spindles, so the usual "put the journal on flash" escape does not exist
@@ -258,12 +260,38 @@ matters for it, but the lesson stands: check
 
 ### What was decided
 
-`size: 2`, `failureDomain: host`, `min_size: 1`, Ceph alongside Longhorn with
-Longhorn staying the default class. Two copies on two hosts survives losing a
-node and keeps the pool writable while it is gone; the accepted cost is that a
-second disk failure before recovery completes loses data, on a pool with no
-backup target. Giving node-3 a disk is what lifts this to `size: 3`, and it is
-the single highest-value hardware change available to this cluster.
+`size: 2`, `failureDomain: osd`, `min_size: 1`, Ceph alongside Longhorn with
+Longhorn staying the default class.
+
+**Disk redundancy, explicitly not node redundancy.** Two copies on two different
+OSDs, which may share a node. Any one disk can die with no data loss; losing a
+node can lose data, and that was chosen deliberately over `failureDomain: host`
+because the disks are lopsided — node-1 holds 1.5 TB against node-2's 2.3 TB, so
+a host domain caps the pool at ~1,500 GB and strands ~800 GB on node-2 forever.
+
+| | `host` | `osd` (chosen) |
+|---|---:|---:|
+| Theoretical max | 1,500 GB | 1,820 GB |
+| Practical at 85 % nearfull | ~1,275 GB | ~1,550 GB |
+| Self-heals after worst-case disk loss, up to | ~300 GB | **910 GB** |
+
+The recovery column is the bigger reason. Under `osd` a dead disk rebuilds onto
+any surviving OSD rather than only onto its own node's other disk, so the pool
+repairs itself across roughly three times the working set.
+
+Two costs, both accepted:
+
+- **Every planned node reboot takes part of the pool offline**, not just an
+  unplanned failure. PGs with both copies on the rebooting node have zero
+  reachable copies and their I/O blocks until it returns; `min_size: 1` does not
+  help, because the floor is zero and not one. Talos upgrades and `apply-config`
+  reboots are routine in this repo, so this is a recurring cost, not a rare one.
+- **A second disk failure before recovery completes loses data**, on a pool with
+  no backup target.
+
+Giving node-3 a disk is what would allow `size: 3` on a `host` domain and remove
+the whole trade. It remains the single highest-value hardware change available to
+this cluster.
 
 The manifests live in `infrastructure/controllers/base/rook-ceph/` (operator) and
 `infrastructure/controllers/staging/rook-ceph-cluster/` (the `CephCluster`, whose

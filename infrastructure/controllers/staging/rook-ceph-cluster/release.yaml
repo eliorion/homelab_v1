@@ -86,19 +86,21 @@ spec:
     cephBlockPools:
       - name: ceph-blockpool
         spec:
-          failureDomain: host
+          failureDomain: osd
           deviceClass: hdd
           replicated:
-            # Two copies on two hosts: OSDs exist on node-1 and node-2 only, so
-            # size 3 with failureDomain host would be permanently unschedulable.
+            # Two copies on two different DISKS, which may share a node. Disk
+            # redundancy without node redundancy, chosen deliberately: see the
+            # README. failureDomain host would cap the pool at node-1's 1.5 TB
+            # and strand 800 GB on node-2.
             size: 2
             # Rook treats anything under 3 as unsafe and refuses without this.
             requireSafeReplicaSize: false
           parameters:
-            # Explicit, not inherited: at min_size 1 the pool keeps serving
-            # writes when a node dies, which is the point of failureDomain host
-            # here. The cost is that a second disk failure before recovery
-            # completes loses data. documentations/16 records the trade.
+            # At min_size 1 a PG with one surviving copy keeps serving. With
+            # failureDomain osd a PG can have BOTH copies on one node, so a node
+            # reboot drops those to zero copies and their I/O blocks until it
+            # returns — min_size does not save you there. documentations/16.
             min_size: "1"
         storageClass:
           enabled: true
