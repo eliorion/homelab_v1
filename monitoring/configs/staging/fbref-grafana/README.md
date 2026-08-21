@@ -36,7 +36,7 @@ sops`), via the resource list in `../kustomization.yaml`.
 Grafana itself is the chart's, installed by the `kube-prometheus-stack`
 HelmRelease (chart `66.2.2`,
 [`../../../controllers/base/kube-prometheus-stack/release.yaml`](../../../controllers/base/kube-prometheus-stack/release.yaml),
-UI at `https://grafana-k3s.eliorion.fr`). That HelmRelease sets no
+UI at `https://grafana.<tailnet>.ts.net`). That HelmRelease sets no
 `grafana.sidecar` values, so the chart defaults apply: the sidecars watch the
 release namespace, `monitoring`, which is why both ConfigMaps must live there
 and not in `fbref`.

@@ -34,10 +34,10 @@ Values in `release.yaml`, block by block:
 - **`grafana.admin`** — `existingSecret: grafana-admin`, `userKey: admin-user`,
   `passwordKey: admin-password`. The Secret itself is not in `base/`; each
   overlay supplies its own `grafana-admin.enc.yaml`.
-- **`grafana.ingress`** — enabled, `ingressClassName: traefik`, host
-  `grafana-k3s.eliorion.fr`, TLS from secret `grafana-tls-secret`. That Secret
-  is created by `monitoring/configs/staging/kube-prometheus-stack/grafana-tls-secret.enc.yaml`,
-  which belongs to the other Flux Kustomization.
+- **`grafana.ingress`** — enabled, `ingressClassName: tailscale`, no `hosts`,
+  `tls.hosts: [grafana]`. That publishes Grafana on the tailnet over HTTPS on
+  443 and nowhere else. See "Grafana, on the tailnet" below for why `hosts` must
+  stay empty.
 - **`alertmanager.alertmanagerSpec.secrets`** — mounts the Secret
   `alertmanager-telegram` (namespace `monitoring`) at
   `/etc/alertmanager/secrets/alertmanager-telegram/`. That Secret comes from
@@ -73,10 +73,10 @@ tiers.
   It is referenced from `monitoring/controllers/staging/kustomization.yaml`.
 - **production** — the same two resources, plus one JSON 6902 patch on the
   `HelmRelease` that replaces `/spec/values/grafana/ingress/enabled` with
-  `false`. The reason is that `monitoring/configs/production/` does not exist
-  and `clusters/production/monitoring.yaml` declares no `monitoring-configs`
-  Kustomization, so `grafana-tls-secret` is never created there and the ingress
-  would reference a Secret that cannot appear. The production
+  `false`. The reason is that the Tailscale operator is staging-only — it is
+  declared in `infrastructure/controllers/staging/tailscale-operator/` with no
+  `base/` and no production copy — so `ingressClassName: tailscale` names a
+  controller production does not run. The production
   `grafana-admin.enc.yaml` is a separate ciphertext from the staging one.
   The production tree is wired but not deployed.
 
@@ -118,6 +118,47 @@ node metrics.
 is not present in the rendered manifest, so with drift detection enabled Flux
 would see a permanent diff and fight the operator on every reconcile.
 
+## Grafana, on the tailnet
+
+**`https://grafana.<your-tailnet>.ts.net`** — HTTPS on 443 with a MagicDNS
+certificate, authenticated by tailnet identity before Grafana's own login even
+appears. Not on the LAN, not on the internet.
+
+It replaced an `Ingress` that had not worked since k3s was retired:
+`ingressClassName: traefik` on `grafana-k3s.eliorion.fr`, naming a controller
+this cluster no longer runs. The object existed, applied cleanly and routed
+nothing, so the documented way in was `kubectl port-forward`.
+
+**The Ingress is chart-generated, not hand-written.** `grafana.ingress` in
+`release.yaml` is the whole of it — no separate `ingress-tailscale.yaml` like the
+six other tailnet services in this repo, because the chart already renders the
+object and a second one would register a second device contending for the same
+hostname. For the same reason the Grafana `Service` must never grow
+`tailscale.com/*` annotations: that is the other exposure mechanism, and running
+both silently suffixes the loser `grafana-1`.
+
+Two properties of the rendered object are load-bearing:
+
+- **`hosts: []`**, so the chart emits a rule with no `host`. The Tailscale proxy
+  forwards the original Host (`grafana.<tailnet>.ts.net`), which would never
+  match `rules[0].host: grafana`.
+- **no `secretName` under `tls`**, because the proxy holds the certificate.
+  `tls.hosts[0]` is read as the device name, not as a matcher.
+
+**Precondition:** HTTPS Certificates must be enabled in the Tailscale admin
+console (DNS → HTTPS Certificates), or the proxy comes up with no certificate.
+The same precondition every other tailnet service here carries.
+
+**Known cosmetic limitation.** Grafana's `root_url` is not set anywhere, so it
+keeps the chart default `http://localhost:3000/`. Navigation and login are
+unaffected — Grafana serves those from relative paths — but a copied share link
+will read `localhost:3000`. The fix, if it ever matters, is
+`grafana.grafana.ini.server.root_url` in the **staging overlay**, not here: the
+value contains the tailnet name, and `base/` stays environment-independent.
+
+Deleting the old ingress orphaned `grafana-tls-secret`, whose SOPS file and
+directory (`monitoring/configs/staging/kube-prometheus-stack/`) went with it.
+
 ## Traps
 
 - **The overlay's Flux Kustomization must keep its `decryption` block.**
@@ -153,12 +194,12 @@ would see a permanent diff and fight the operator on every reconcile.
   has no `dependsOn` on `monitoring-controllers`. A cold bootstrap can therefore
   leave the Alertmanager pod stuck mounting a Secret that does not exist yet; it
   resolves itself once `monitoring-configs` reconciles.
-- **`ingressClassName: traefik` names a controller this cluster no longer
-  runs.** Traefik was retired with k3s; L7 ingress is now Cilium Gateway API.
-  The Grafana `Ingress` object is created in staging and is inert. It is one of
-  the three stale `traefik` references tracked in
-  [14-design-decisions.md](../../../../documentations/14-design-decisions.md)
-  and [08-cilium-cni-ingress-migration.md](../../../../documentations/08-cilium-cni-ingress-migration.md).
+- **`grafana.ingress.hosts` must stay empty.** Put a host there and the chart
+  renders `rules[0].host: grafana`, which never matches the
+  `grafana.<tailnet>.ts.net` Host the Tailscale proxy forwards — every request
+  404s while the Ingress, the device and the certificate all look healthy. Empty
+  renders a host-less rule, which matches any Host. The tailnet name belongs in
+  `tls.hosts`, and only there.
 - **The chart version is pinned and Renovate bumps it.** `66.2.2` here. A major
   bump of this chart moves the bundled Prometheus, Alertmanager and Grafana
   versions and can change the CRD schemas that the rest of the repository is
@@ -191,14 +232,15 @@ kubectl -n monitoring get prometheusrule,podmonitor,servicemonitor
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
 ```
 
-Reach Grafana without the inert ingress:
+Grafana is at **`https://grafana.<your-tailnet>.ts.net`**. Credentials are the
+decrypted contents of the overlay's `grafana-admin.enc.yaml` (`admin-user` /
+`admin-password`).
+
+Break-glass, if the Tailscale proxy is the thing that is broken:
 
 ```sh
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
 ```
-
-The admin credentials are the decrypted contents of the overlay's
-`grafana-admin.enc.yaml` (`admin-user` / `admin-password`).
 
 Deeper detail:
 [monitoring/configs/README.md](../../../configs/README.md) (the rules,

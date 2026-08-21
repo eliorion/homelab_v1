@@ -110,13 +110,16 @@ spec:
         passwordKey: admin-password
       ingress:
         enabled: true
-        ingressClassName: traefik
-        hosts:
-          - grafana-k3s.eliorion.fr
+        ingressClassName: tailscale
+        # MUST stay empty. A host here renders `rules[0].host`, which never
+        # matches the `grafana.<tailnet>.ts.net` Host the proxy sends, and every
+        # request 404s. Empty renders a host-less rule, which matches any.
+        hosts: []
+        # No secretName: the tailscale proxy holds the MagicDNS certificate.
         tls:
-          - secretName: grafana-tls-secret
-            hosts:
-              - grafana-k3s.eliorion.fr
+          # The tailnet device name.
+          - hosts:
+              - grafana
       # /var/lib/grafana was an emptyDir, so every pod restart destroyed
       # grafana.db: all UI-created dashboards, users, API keys, annotations
       # and unified-alerting rules. Only sidecar-provisioned dashboards

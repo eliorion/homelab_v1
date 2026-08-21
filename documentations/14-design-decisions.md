@@ -191,7 +191,7 @@ before the chart creates its GatewayClass.
 
 **Cost.** Honest status: the migration is not finished. There is one Gateway with a single
 plaintext listener on port 80, one HTTPRoute, and its hostname does not resolve on the LAN
-yet. Three objects elsewhere in the repository still name `ingressClassName: traefik`, a
+yet. Two objects elsewhere in the repository still name `ingressClassName: traefik`, a
 controller this cluster no longer runs.
 
 **Reference.** [08-cilium-cni-ingress-migration.md](08-cilium-cni-ingress-migration.md)
