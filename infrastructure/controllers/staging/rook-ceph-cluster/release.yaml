@@ -35,6 +35,16 @@ spec:
       enabled: true
     cephClusterSpec:
       dataDirHostPath: /var/lib/rook
+      cephConfig:
+        global:
+          # Ceph auto-creates the .mgr pool at size 3 on the default host-domain
+          # CRUSH rule, which two hosts can never satisfy -- one PG stays
+          # undersized and the cluster sits at HEALTH_WARN forever, masking real
+          # warnings. These defaults apply to pools created AFTER they land, so a
+          # rebuilt cluster is covered; an existing .mgr needs a one-time
+          # `ceph osd pool set .mgr size 2`. documentations/16.
+          osd_pool_default_size: "2"
+          osd_pool_default_min_size: "1"
       mon:
         # 3 mons across 3 nodes. node-3 carries a mon but no OSD — mons live on
         # dataDirHostPath, not on a Ceph disk.
