@@ -169,6 +169,58 @@ The backend is plain HTTP on 7000 because the CephCluster sets
 `dashboard.ssl: false`; the proxy adds the TLS. Turning Ceph's own SSL on moves
 the backend to 8443 and the Ingress port must move with it.
 
+### What the dashboard needs to stop showing errors
+
+Ceph's dashboard ships knowing nothing about where Prometheus lives or who
+orchestrates the cluster, and says so on every page load. Both are settings, not
+bugs, and both live in `cephConfig.mgr` in `staging/rook-ceph-cluster/`:
+
+| Key | Without it |
+|---|---|
+| `mgr/dashboard/PROMETHEUS_API_HOST` | Every graph panel fails: *Could not reach Prometheus's API on /api/v1 error Invalid URL '/api/v1/query_range': No schema supplied*. The dashboard builds the URL from an empty host. |
+| `mgr/dashboard/ALERTMANAGER_API_HOST` | The alerts panel is empty — it reads Alertmanager directly, not Prometheus. |
+| `mgr/orchestrator/orchestrator` | *503 Orchestrator is unavailable* on the Hosts, OSDs and Physical Disks pages, and the mgr `prometheus` module logs `Failed to collect cephadm daemon status` **every 15 seconds** forever. |
+
+Both API hosts point at in-cluster Service DNS, not at the tailnet name. This
+call is mgr-to-Prometheus inside the cluster; sending it over the tailnet would
+make Ceph's own graphs fail whenever the Tailscale proxy is down.
+
+**The orchestrator needs two halves and neither implies the other.**
+`mgr.modules: [{name: rook, enabled: true}]` makes the backend *available*;
+`mgr/orchestrator/orchestrator: rook` *selects* it. Rook enables modules from the
+spec but does not select the backend — its binary carries no `orch set backend`
+string, and `ceph orch status` returns `ENOENT` until the config key lands. Set
+one without the other and the 503 stays exactly where it was.
+
+What that buys is inventory, not control: hosts, daemons and device listings.
+The Rook orchestrator implements far less than cephadm's, so buttons that would
+create or destroy daemons stay unavailable. That is correct here — Rook owns
+those decisions through the `CephCluster` CR, and this repo owns Rook through
+git.
+
+**The Grafana tab stays empty on purpose.** Filling it needs
+`auth.anonymous.enabled` and `allow_embedding` on Grafana, because the iframe
+carries no Grafana session and Grafana's cookie is `SameSite=Lax`. That would let
+anyone on the tailnet read Grafana without logging in — too much for one tab.
+Grafana itself is at `https://grafana.<your-tailnet>.ts.net`.
+
+### One key that must be removed by hand, once
+
+```bash
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- \
+  ceph config rm mgr/dashboard/MULTICLUSTER_CONFIG
+```
+
+A leftover from when the dashboard was exposed as plain HTTP on port 7000. It
+still pins `current_url` and `hub_url` to `http://ceph.<tailnet>.ts.net:7000`,
+which serves nothing now, so the cluster switcher points at a dead endpoint.
+Rook's `cephConfig` can only *set* keys, never remove them — the same gap the
+telemetry licence command fills.
+
+It also embeds a dashboard admin JWT in plaintext, visible to anyone who can run
+`ceph config dump`. The token expires 8 h after issue so this is not an incident,
+but it is a reason not to recreate the entry by hand.
+
 ## Upstream telemetry
 
 This cluster reports to the Ceph project: **`https://telemetry.ceph.com/report`**,

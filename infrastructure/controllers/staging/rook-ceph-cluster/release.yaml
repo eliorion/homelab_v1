@@ -59,6 +59,16 @@ spec:
           # report; perf ships per-daemon counters. Pinned off on purpose.
           mgr/telemetry/channel_ident: "false"
           mgr/telemetry/channel_perf: "false"
+          # Without these two the dashboard builds `/api/v1/query_range` with no
+          # scheme and every graph panel fails. In-cluster DNS on purpose, not
+          # the tailnet name: this call is mgr-to-Prometheus, and routing it over
+          # the tailnet would make Ceph's graphs depend on the Tailscale proxy.
+          mgr/dashboard/PROMETHEUS_API_HOST: "http://kube-prometheus-stack-prometheus.monitoring.svc:9090"
+          mgr/dashboard/ALERTMANAGER_API_HOST: "http://kube-prometheus-stack-alertmanager.monitoring.svc:9093"
+          # Selects the backend that mgr.modules below makes available. Rook does
+          # NOT set this -- its binary carries no `orch set backend`. Both halves
+          # are needed; either alone leaves the dashboard's 503.
+          mgr/orchestrator/orchestrator: "rook"
       mon:
         # 3 mons across 3 nodes. node-3 carries a mon but no OSD — mons live on
         # dataDirHostPath, not on a Ceph disk.
@@ -66,6 +76,12 @@ spec:
         allowMultiplePerNode: false
       mgr:
         count: 2
+        modules:
+          # Clears the dashboard's `503 Orchestrator is unavailable` and the mgr
+          # prometheus module's 15s `Failed to collect cephadm daemon status`.
+          # Pairs with mgr/orchestrator/orchestrator above.
+          - name: rook
+            enabled: true
       dashboard:
         enabled: true
         ssl: false
