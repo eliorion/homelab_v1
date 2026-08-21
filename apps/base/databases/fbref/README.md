@@ -211,6 +211,13 @@ central reflector source.
   `fbref-db-1`'s volume lives on node-2 and `fbref-db-3`'s on node-3, and each
   needs the full increase on its own node. Check schedulable space per node
   before raising `storage.size`.
+- **Raising `storage.size` does not resize the PVCs by itself** once the cluster
+  is already in "Not enough disk space". CNPG's low-disk guard returns before it
+  reaches PVC reconciliation, so the Cluster carries the new size and the PVCs
+  stay at the old one. Patch them by hand — see "Operating it".
+- **A Garage outage fills this volume.** Failing WAL archiving is not just a
+  missing backup: PostgreSQL retains every unarchived segment. Watch
+  `ContinuousArchiving` on the Cluster, not only the disk.
 - The etcd Garage key has **no** fbref access. The backup key must be a
   dedicated Garage key scoped to the fbref bucket.
 - The header comments still sitting in `garage-backup-credentials.enc.yaml`
@@ -226,6 +233,17 @@ Render check before committing:
 kubectl kustomize apps/staging/databases/fbref
 flux get kustomizations
 ```
+
+Apply a `storage.size` increase to the PVCs when CNPG will not (see Traps):
+
+```bash
+for p in $(kubectl -n fbref get pvc -l cnpg.io/cluster=fbref-db -o name); do
+  kubectl -n fbref patch "$p" --type=merge \
+    -p '{"spec":{"resources":{"requests":{"storage":"200Gi"}}}}'
+done
+```
+
+Longhorn expands online; the filesystem grows without restarting the pods.
 
 Pin the volumes back to one Longhorn replica after a PVC recreate:
 

@@ -24,7 +24,8 @@ never races the CNPG cluster it needs credentials from.
 
 The staging overlay (`apps/staging/databases/nextcloud/`) adds:
 
-- `cluster-storage-patch.yaml` — `storageClass: longhorn`.
+- `cluster-storage-patch.yaml` — `storageClass: longhorn` and `storage.size`
+  replaced with `10Gi`.
 - `garage-backup-credentials.enc.yaml` — the Garage S3 key used by the barman
   sidecars. `…​.exemple` is the plaintext template; the real file is SOPS-encrypted.
 - `objectstore.yaml` — barman-cloud `ObjectStore` `garage-store`: 7d retention,
@@ -55,6 +56,28 @@ the two clusters that already live there (`keycloak-db`, `asp-db`), and Garage
 is the free-tier off-site target. See
 [`documentations/03-backups.md`](../../../../documentations/03-backups.md).
 
+**10Gi in staging, and the reason is WAL, not data.** On 2026-08-21 the primary
+filled its 5Gi volume and CNPG halted it with "Not enough disk space", taking
+the app tier down with it via the `databases` gate described under Traps. Only
+624MB of that was the database: the rest was `pg_wal` that PostgreSQL could not
+recycle because WAL archiving was failing, so the segments accumulated until the
+volume was full. This is a deadlock CNPG does not resolve on its own — its
+low-disk guard short-circuits the reconcile loop before it reaches PVC
+reconciliation, so raising `storage.size` in git applies to the Cluster but the
+PVCs are never enlarged. See "Operating it" for the manual step.
+
+Growing this cluster is bounded by one node. Both volumes carry three Longhorn
+replicas, so +5Gi of `storage.size` costs 10Gi on *every* node, and node-2 was
+at 3Gi schedulable at the time — two monitoring replicas had to be evicted off
+it first. Check per-node schedulable space before raising the size; the command
+is in [`../fbref/README.md`](../fbref/README.md).
+
+**Three Longhorn replicas, unlike `fbref-db`.** fbref runs its volumes at
+`numberOfReplicas: 1` because its data is scraped and re-derivable. This one
+holds users, shares and file metadata for files that live elsewhere on disk —
+losing it does not lose the files but does orphan them, and it is small enough
+that three copies cost 30Gi rather than 600Gi. It keeps the default.
+
 **Valkey carries the file locks, so the database does not.** Without a memcache
 configured, Nextcloud stores transactional file locks in the `oc_file_locks`
 table — every file operation becomes an SQL write, which on this setup means
@@ -79,8 +102,28 @@ entire write path. This is the reason a cache service exists at all.
   reconciling. Create the bucket and key *before* the first push.
 - **The bucket name is `cnpg-staging-nextcloud`.** `destinationPath` and the key
   grant must agree, or the failure only surfaces at restore time.
+- **A Garage outage fills this volume.** Failing WAL archiving is not just a
+  missing backup: PostgreSQL retains every unarchived segment, so a Garage that
+  cannot reach write quorum converts directly into a full volume and a halted
+  primary. Watch `ContinuousArchiving` on the Cluster, not only the disk.
+- **Raising `storage.size` does not resize the PVCs by itself** once the cluster
+  is already in "Not enough disk space". Patch them by hand — see "Operating it".
 
 ## Operating it
+
+Apply a `storage.size` increase to the PVCs. CNPG does this itself on a healthy
+cluster; once the phase is "Not enough disk space" its low-disk guard returns
+before PVC reconciliation and the PVCs stay at the old size, so patch them to
+the value already in git:
+
+```bash
+for p in $(kubectl -n nextcloud get pvc -l cnpg.io/cluster=nextcloud-db -o name); do
+  kubectl -n nextcloud patch "$p" --type=merge \
+    -p '{"spec":{"resources":{"requests":{"storage":"10Gi"}}}}'
+done
+```
+
+Longhorn expands online; the filesystem grows without restarting the pods.
 
 Create the Garage bucket and a key scoped to it (run on a Garage node — the
 `garage` CLI is not reachable from the cluster):
