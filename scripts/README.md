@@ -16,10 +16,12 @@ All four are shellchecked together by `mise run lint`
 ([`../mise.toml`](../mise.toml)), which is the check to run after editing any of
 them.
 
-The three subdirectories are self-contained rigs and document themselves:
+The four subdirectories are self-contained rigs and document themselves:
 [`azuracast-embed/`](azuracast-embed/README.md),
 [`azuracast-load-test/`](azuracast-load-test/README.md),
-[`azuracast-relay/`](azuracast-relay/README.md).
+[`azuracast-relay/`](azuracast-relay/README.md),
+[`hdd-burn-in/`](hdd-burn-in/README.md) — the last writes to raw block devices
+and destroys them, so read it before running anything in it.
 
 ---
 

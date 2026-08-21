@@ -1,0 +1,14 @@
+# watch-dmesg.sh writes one full ring-buffer dump per node per hour. A 72h soak
+# is ~150 files and tens of MB; the fio JSON and bw logs beside them are the
+# results worth keeping. Quote the decisive lines into documentations/16 instead.
+results/dmesg-*.log
+results/mounts-*.log
+results/disks-*.log
+results/watch.log
+# fio writes an empty submission-latency log whenever the engine is synchronous.
+results/*_slat.*.log
+# fio's per-sample latency traces for the 72h soak: ~11 MB, and the JSON beside
+# them already carries the full percentile distribution. The bandwidth logs are
+# kept — they are the evidence that nothing degraded over three days.
+results/*-soak_lat.*.log
+results/*-soak_clat.*.log
