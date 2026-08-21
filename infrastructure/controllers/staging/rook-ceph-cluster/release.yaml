@@ -1,0 +1,115 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: rook-ceph-cluster
+  namespace: flux-system
+spec:
+  targetNamespace: rook-ceph
+  # UNSUSPEND ONLY AFTER the 72h burn-in passes. Unsuspending hands four raw
+  # disks to ceph-volume, which wipes them — scripts/hdd-burn-in/README.md.
+  suspend: true
+  interval: 30m
+  dependsOn:
+    # The CephCluster CR does not exist until the operator's CRDs land.
+    - name: rook-ceph-operator
+      namespace: flux-system
+  chart:
+    spec:
+      chart: rook-ceph-cluster
+      # Must match the operator in infrastructure/controllers/base/rook-ceph.
+      version: "v1.20.4"
+      sourceRef:
+        kind: HelmRepository
+        name: rook-release
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: false
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    operatorNamespace: rook-ceph
+    toolbox:
+      enabled: true
+    cephClusterSpec:
+      dataDirHostPath: /var/lib/rook
+      mon:
+        # 3 mons across 3 nodes. node-3 carries a mon but no OSD — mons live on
+        # dataDirHostPath, not on a Ceph disk.
+        count: 3
+        allowMultiplePerNode: false
+      mgr:
+        count: 2
+      dashboard:
+        enabled: true
+        ssl: false
+      storage:
+        useAllNodes: false
+        useAllDevices: false
+        config:
+          # The 2 TB disk reports rotational=0 through its USB bridge and is a
+          # 7200 rpm HDD (documentations/16). Without this, ceph-volume classes
+          # it as ssd and CRUSH splits the pool across two device classes.
+          deviceClass: hdd
+        nodes:
+          # devicePathFilter, not device names: a USB bridge that re-enumerates
+          # renames sdl -> sdb and Rook would then adopt the wrong disk or none.
+          # These paths encode the physical port; moving a dock breaks them on
+          # purpose, visibly, instead of silently claiming something else.
+          - name: staging-controlplane-1
+            devicePathFilter: "^/dev/disk/by-path/pci-0000:04:00\\.4-usb-0:2:1\\.0-scsi-0:0:0:[01]$"
+          - name: staging-controlplane-2
+            # Excludes the 250 GB disk on pci-0000:00:1d.0 — its bridge fakes
+            # cache flushes and it must never become an OSD.
+            devicePathFilter: "^/dev/disk/by-path/pci-0000:00:14\\.0-usb-0:6:1\\.0-scsi-0:0:0:[01]$"
+      resources:
+        osd:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            memory: 4Gi
+        mon:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            memory: 1Gi
+        mgr:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            memory: 1Gi
+    cephBlockPools:
+      - name: ceph-blockpool
+        spec:
+          failureDomain: host
+          deviceClass: hdd
+          replicated:
+            # Two copies on two hosts: OSDs exist on node-1 and node-2 only, so
+            # size 3 with failureDomain host would be permanently unschedulable.
+            size: 2
+            # Rook treats anything under 3 as unsafe and refuses without this.
+            requireSafeReplicaSize: false
+          parameters:
+            # Explicit, not inherited: at min_size 1 the pool keeps serving
+            # writes when a node dies, which is the point of failureDomain host
+            # here. The cost is that a second disk failure before recovery
+            # completes loses data. documentations/16 records the trade.
+            min_size: "1"
+        storageClass:
+          enabled: true
+          name: ceph-block
+          # Longhorn stays the default class; nothing moves to Ceph implicitly.
+          isDefault: false
+          reclaimPolicy: Delete
+          allowVolumeExpansion: true
+          parameters:
+            imageFormat: "2"
+            imageFeatures: layering
+            csi.storage.k8s.io/fstype: ext4
+    cephFileSystems: []
+    cephObjectStores: []
