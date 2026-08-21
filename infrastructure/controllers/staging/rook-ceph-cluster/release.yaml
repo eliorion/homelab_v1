@@ -104,6 +104,16 @@ spec:
             # Excludes the 250 GB disk on pci-0000:00:1d.0 — its bridge fakes
             # cache flushes and it must never become an OSD.
             devicePathFilter: "^/dev/disk/by-path/pci-0000:00:14\\.0-usb-0:6:1\\.0-scsi-0:0:0:[01]$"
+          # A Talos RawVolumeConfig partition of the install disk, not a whole
+          # disk — node-3 has no second disk. bootstraping/talconfig.yaml owns
+          # its size; the name there must never contain "ceph".
+          # deviceClass ssd overrides the cluster-wide hdd pin. ceph-blockpool
+          # selects hdd, so this OSD stays unused until an ssd pool exists.
+          - name: staging-controlplane-3
+            devices:
+              - name: /dev/disk/by-partlabel/r-fastpool
+            config:
+              deviceClass: ssd
       resources:
         osd:
           requests:

@@ -83,9 +83,9 @@ broken thing.
 | `ipAddress` | `192.168.1.101` | `192.168.1.102` | `192.168.1.103` |
 | `installDisk` | `/dev/nvme0n1` | `/dev/sda` | `/dev/sda` |
 | `talosImageURL` schematic | `65cf8364…` (AMD box, amd-ucode) | `36cd6536…` (Intel, intel-ucode) | `36cd6536…` |
-| `patches` | one `UserVolumeConfig` + Longhorn disk annotation | — | — |
+| `patches` | one `UserVolumeConfig` + Longhorn disk annotation | — | `RawVolumeConfig` + `EPHEMERAL` sizing |
 
-Only node-1 carries per-node `patches`, for its 640 GB SATA HDD: an `xfs` user volume at
+node-1 carries per-node `patches` for its 640 GB SATA HDD: an `xfs` user volume at
 `/var/mnt/hdd-sata-640`, registered with Longhorn. The selector matches
 `disk.transport == 'sata' && disk.rotational && !system_disk`, which is exactly why the block
 must stay per-node — evaluated on node-2 or node-3 it would match their install disk.
@@ -96,6 +96,36 @@ The USB disks on node-1 and node-2 deliberately have **no** `UserVolumeConfig`. 
 block devices held for a Rook/Ceph trial, and giving them a filesystem here takes them away
 from Ceph:
 [../documentations/16-usb-disk-qualification.md](../documentations/16-usb-disk-qualification.md).
+
+#### node-3's `fastpool` raw volume
+
+node-3 has no second disk, so it is the only node in the cluster with no Ceph OSD — which is
+what pins the Ceph pool to `failureDomain: osd` and makes every planned reboot take part of
+the pool offline
+([../infrastructure/controllers/base/rook-ceph/README.md](../infrastructure/controllers/base/rook-ceph/README.md)).
+A `RawVolumeConfig` carves 250 GB of unformatted space out of the install disk instead, which
+gives node-3 an OSD without new hardware. It is deliberately **SSD class**: the four existing
+OSDs are USB spindles measured at 67–119 durable IOPS, which is a bulk tier and not somewhere
+a Postgres commit can live.
+
+Unlike `UserVolumeConfig`, a raw volume is never formatted or mounted. Talos provisions the
+partition, labels it `r-<name>`, and publishes a stable symlink at
+`/dev/disk/by-partlabel/r-fastpool`. Rook takes that path in its `devices` list.
+
+**The volume is named `fastpool`, not anything containing `ceph`, and that is load-bearing.**
+`ceph-volume` reads a partition label holding the substring `ceph` as a legacy ceph-disk
+device and skips it with `skipping device 'sdaN': ['Used by ceph-disk']`. This was
+siderolabs/talos#11778, closed as a documentation fix rather than a code change, so the
+constraint is permanent.
+
+Raw volumes are provisioned **before** `EPHEMERAL`, which is what lets the two coexist on one
+disk. `EPHEMERAL` is capped at 740 GB rather than left to fill the disk (it is `/dev/sda6` at
+998 GB today) because it carries both `/var/lib/longhorn` and the container image store. The
+cap has to clear the sum of the two, not just Longhorn — see the traps below.
+
+The 250 GB is sized by what node-3 can spare today, not by what the SSD pool eventually wants.
+Longhorn holds 478 GB scheduled here; as workloads move to Ceph that shrinks and the partition
+can be re-cut larger, at the cost of another EPHEMERAL wipe.
 
 Everything else in `networkInterfaces` is identical across the three: `deviceSelector.physical: true`
 (match the physical NIC whatever it is called), `dhcp: false` with a static `/24`,
@@ -223,6 +253,34 @@ it is still in `talconfig.yaml`.
 - **`/var/lib/longhorn` lives on the EPHEMERAL partition.** There is no separate disk for it
   in this file, so `talosctl reset --system-labels-to-wipe=EPHEMERAL` destroys that node's
   Longhorn replicas. One node is survivable; all three at once is not.
+- **A raw volume name must never contain the substring `ceph`.** `ceph-volume` treats the
+  `r-<name>` partition label as a legacy ceph-disk marker and refuses the device, so the OSD
+  is silently never created. siderolabs/talos#11778, closed as documentation — it will not be
+  fixed in Talos.
+- **Shrinking `EPHEMERAL` requires wiping it; Talos will not shrink a volume in place.**
+  Adding node-3's `maxSize: 630GB` to a node whose EPHEMERAL already fills the disk does
+  nothing until `talosctl reset --system-labels-to-wipe=EPHEMERAL`, which on a control plane
+  also drops that node out of etcd and destroys its Longhorn replicas. Never run it on two
+  nodes at once.
+- **node-3's `EPHEMERAL` cap must clear Longhorn's scheduled bytes *plus* the image store.**
+  Measured 2026-08-21: 478 GB scheduled, 163 GB of container images, 348 GB actually used of
+  997 GB. Longhorn admits against *provisioned* size, and this disk carries
+  `storageReserved: 0` — the chart's 15 % default never applied to it, because that setting
+  only touches disks Longhorn adds after it lands. So nothing but this cap stops Longhorn
+  scheduling into space the images already hold. 740 GB leaves ~99 GB of margin once the
+  re-registered disk finally does pick up the 15 % reserve.
+- **`minSize` + `maxSize` on the raw volume plus the `EPHEMERAL` cap must fit the disk**,
+  leaving ~2 GB for the system partitions (`STATE` 105 MB, `META` 1 MB, plus EFI/BOOT).
+  250 + 740 against node-3's 997 GB. Raw volumes are provisioned first, so an over-large pair
+  starves `EPHEMERAL`, not the OSD.
+- **Wiping node-3's EPHEMERAL destroys three things, not one:** its etcd member, its Longhorn
+  replicas, and the `rook-ceph-mon-b` store under `/var/lib/rook`. All three re-form from the
+  surviving two nodes, and both quorums hold at 2 of 3 — but there is no second fault budget
+  while it runs, so never overlap it with any other node work.
+- **`fbref/fbref-db-3` runs `numberOfReplicas: 1` with its only replica on node-3.** Wiping
+  EPHEMERAL destroys it outright. It is the CNPG *replica* (primary is `fbref-db-1` on
+  node-2), so the recovery is to delete the pod and PVC and let CNPG re-bootstrap — a 214 GB
+  `pg_basebackup` over the network. Check this placement again before any node wipe; it moves.
 - **Apply the machine config before Flux installs Cilium.** Doing it the other way round
   deadlocked the live cluster on 2026-06-12.
 - **Keep the Talos API off the VIP.** Point `talosconfig` endpoints at `192.168.1.101–103`,
