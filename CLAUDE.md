@@ -86,8 +86,8 @@ and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
   + L2 announce and Gateway API — `infrastructure/controllers/base/cilium/README.md`.
 - Storage is **Longhorn**, 3 replicas, storage class `longhorn` (the default) —
   `infrastructure/controllers/base/longhorn/README.md`. A **Rook/Ceph** trial on
-  four USB disks sits beside it, class `ceph-block`, 2 replicas, and its
-  `CephCluster` is suspended pending teardown of the burn-in rig —
+  four USB disks runs beside it, class `ceph-block`, 2 replicas on an `osd`
+  failure domain, dashboard at `https://ceph.<tailnet>.ts.net` —
   `infrastructure/controllers/base/rook-ceph/README.md`.
 - CI is two ARC scale sets plus a Nexus proxy cache —
   `infrastructure/services/staging/arc-runner-set/README.md`.

@@ -16,7 +16,8 @@ Status: **complete. All three phases passed for four of the five disks.** The
 
 **Ceph is live** since 2026-08-21: `HEALTH_OK`, four OSDs across two hosts,
 3.5 TiB raw, `ceph-block` provisioning verified end to end (PVC bound, RBD mapped
-as `/dev/rbd0`, data written and checksummed). The dashboard is on the tailnet.
+as `/dev/rbd0`, data written and checksummed). Alerts and scrapes are wired into
+Prometheus, and the dashboard is on the tailnet over HTTPS.
 Bring-up cost four bugs, all fixed and all recorded under "Bringing Ceph up".
 
 ## Phase 1 — flush honesty
@@ -478,12 +479,56 @@ A `devices: [{name: sdl}]` config would have been stale, and a config naming
 `sda` would have pointed Rook at whichever disk happened to hold that letter. The
 by-path filter resolved to the correct pair across the rename without edits.
 
+## Monitoring, and the dashboard on the tailnet
+
+Both added 2026-08-21, after bring-up.
+
+**Alerts live in `monitoring/configs/staging/ceph-monitoring/`, not in the
+chart.** The chart's `monitoring.enabled: true` would generate a ServiceMonitor
+and PrometheusRules without the `release: kube-prometheus-stack` label this
+cluster's Prometheus selects on — objects that apply cleanly, appear in
+`kubectl get`, and are never scraped, with no error anywhere. That is the exact
+failure `monitoring/configs/README.md` warns about, so the flag stays `false` and
+the configs are hand-written, the same as Longhorn's. Ceph exposes the metrics
+regardless: the mgr `prometheus` module and `rook-ceph-exporter` are on by
+default.
+
+Two ServiceMonitors — the mgr for the cluster-wide view, the exporter for
+per-node daemon metrics. Only the *active* mgr serves metrics and its Service
+already selects `mgr_role: active`, so the scrape follows a failover unaided.
+Four targets up, verified: one mgr, three exporters.
+
+Seven alerts. Every expression was read off the live `/metrics` on Ceph 20.2.2
+rather than lifted from a dashboard, then evaluated in Prometheus to confirm it
+returns a series — the encoding traps are real:
+
+- `ceph_health_status` is **unlabelled**, valued 0 / 1 / 2.
+- `ceph_osd_up`, `ceph_osd_in`, `ceph_mon_quorum_status` are per-`ceph_daemon`
+  1 / 0.
+- the `ceph_pg_*` family is keyed by `pool_id`, an integer — join through
+  `ceph_pool_metadata` for a readable name.
+- `ceph_cluster_total_bytes` and `..._used_bytes` are **raw**. At `size: 2` the
+  usable figure is roughly half, and the practical ceiling is lower still.
+
+**The `for:` durations are the part tuned to this cluster.** `failureDomain: osd`
+means a node reboot puts Ceph into `HEALTH_WARN` by design, so
+`CephHealthWarning` waits an hour rather than paging on every Talos upgrade, and
+`CephPGsDegraded` waits two because recovery onto USB spindles is slow and a
+progressing rebuild is not an incident. `CephOSDDown` stays at 10 minutes: at
+`size: 2` one OSD down leaves those PGs on a single copy, with no backup target.
+
+**The dashboard is at `https://ceph.<tailnet>.ts.net`** — real HTTPS on 443,
+served by an `Ingress` with `ingressClassName: tailscale`, the same mechanism
+pgAdmin, Keycloak, n8n and the AI gateway use. It started on the
+Service-annotation expose (plain HTTP on 7000) and was converted; the annotations
+were removed from the Service in the same change, because running both mechanisms
+registers two tailnet devices contending for one hostname and the loser is
+silently suffixed `ceph-1`. Ceph itself still speaks plain HTTP behind the proxy
+(`dashboard.ssl: false`), so turning its own TLS on moves the backend to 8443 and
+the Ingress must move with it.
+
 ## Still open
 
-- **Monitoring.** Ceph ships with none here — `monitoring.enabled: false` on both
-  charts, so no ServiceMonitor and no Ceph PrometheusRules. A cluster nobody
-  watches is the next gap, and wiring its alerts into the conventions of
-  [05-alerting.md](05-alerting.md) is its own change.
 - **No backup target**, exactly like Longhorn. `ceph-block` is for regenerable
   data until that changes.
 - **The two-node failure domain.** `size: 2`, `min_size: 1` on
@@ -503,4 +548,7 @@ by-path filter resolved to the correct pair across the rename without edits.
   provisioned for Longhorn, and the hardware inventory
 - [../infrastructure/controllers/base/rook-ceph/README.md](../infrastructure/controllers/base/rook-ceph/README.md) — the Ceph component itself
 - [../infrastructure/controllers/base/longhorn/README.md](../infrastructure/controllers/base/longhorn/README.md)
+- [../monitoring/configs/README.md](../monitoring/configs/README.md) — why every
+  ServiceMonitor and rule needs the `release: kube-prometheus-stack` label
+- [05-alerting.md](05-alerting.md) — how alerts reach Telegram
 - [14-design-decisions.md](14-design-decisions.md) — section 1, "Platform"

@@ -24,11 +24,11 @@ directly, one per Flux Kustomization, and only two go through the aggregate
 
 | Path | What it does |
 |---|---|
-| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `longhorn/`, `reflector/`, `rook-ceph/`. **There is no `base/kustomization.yaml`** and there should not be one. |
+| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `longhorn/`, `reflector/`, `rook-ceph/` (operator + the ceph-csi-drivers chart). **There is no `base/kustomization.yaml`** and there should not be one. |
 | `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. Three resources: `cnpg/`, `tailscale-operator/` and `rook-ceph-cluster/`. |
 | `staging/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/` (the operator only — `base/cnpg/kustomization.yaml` does not include `plugin/`). |
 | `staging/tailscale-operator/` | Staging-only component, no base counterpart. Reconciled through the aggregate above. |
-| `staging/rook-ceph-cluster/` | The `CephCluster`, pool and StorageClass. Separate from `base/rook-ceph/` (the operator) because it names this cluster's PCI/USB device paths. Its HelmRelease is **suspended**; the burn-in passed, so what remains is deleting the `hdd-burnin` namespace and flipping it. |
+| `staging/rook-ceph-cluster/` | The `CephCluster`, pool and StorageClass, plus the dashboard `Service` and its tailscale `Ingress`. Separate from `base/rook-ceph/` (the operator) because it names this cluster's PCI/USB device paths. Live &mdash; `suspend: false`. |
 | `staging/reflector/` | Lives under `staging/` but is **not** listed in `staging/kustomization.yaml`. It has its own Flux Kustomization, `infra-reflector`, pointing straight at `./infrastructure/controllers/staging/reflector`. |
 | `production/kustomization.yaml` | The production aggregate. One resource: `cnpg/`. |
 | `production/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/`. |
