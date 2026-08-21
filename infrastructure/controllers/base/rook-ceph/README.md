@@ -238,8 +238,11 @@ kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph health detail
 ```
 
 `status` must show `enabled: true` and, after the first interval, a non-null
-`last_upload`. `collection` must be a populated list, not `[]`. Health must be
-`HEALTH_OK` — a lingering `TELEMETRY_CHANGED` means the command did not run.
+`last_upload`. `collection` must be a populated list, not `[]` — and it will
+contain `ident_base` and `perf_perf` even though both channels are off. That is
+not a leak: collections are opted in wholesale, channels decide what is actually
+gathered, and `ceph telemetry show` is the file of record for what left.
+Health must be `HEALTH_OK` — a lingering `TELEMETRY_CHANGED` means the command did not run.
 
 ### Turning it off
 
