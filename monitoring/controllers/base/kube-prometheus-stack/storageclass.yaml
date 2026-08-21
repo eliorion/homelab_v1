@@ -13,11 +13,16 @@ parameters:
   # Longhorn schedules against PROVISIONED size, and
   # storageOverProvisioningPercentage is deliberately pinned at 100 after two
   # past outages, so a node can be unable to accept a replica while its
-  # filesystem still looks half empty. Measured at the time of writing:
+  # filesystem still looks half empty. Re-measured 2026-08-21, GB, after node-3
+  # gave 250 GB of its install disk to a Ceph OSD (max - reserved - scheduled):
   #
-  #   staging-controlplane-1   usable 393.9 GiB   scheduled 376.0   FREE  17.9
-  #   staging-controlplane-2   usable 789.6 GiB   scheduled 726.0   FREE  63.6
-  #   staging-controlplane-3   usable 789.6 GiB   scheduled 376.0   FREE 413.6
+  #   staging-controlplane-1  default-disk   497 -  74 - 253 = FREE 169
+  #   staging-controlplane-1  hdd-sata-640   639 -  96 - 386 = FREE 157
+  #   staging-controlplane-2  default-disk   997 - 149 - 693 = FREE 154
+  #   staging-controlplane-3  default-disk   739 - 149 - 435 = FREE 154
+  #
+  # No disk can accept a 214 GB replica any more, which is why both fbref
+  # volumes are stranded on node-2 with no second copy.
   #
   # Node 1 is the smallest disk in the cluster (463 GiB against 929 GiB on the
   # other two) yet carries an equal one-in-three replica share of every volume.
