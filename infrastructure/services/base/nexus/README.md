@@ -99,13 +99,38 @@ boots slowly (2min+) and helm-controller needs room to wait.
 
 ### Node affinity
 
-Pod placement prefers `staging-controlplane-1`. Longhorn keeps a replica on every
-node at the class default, so node-1 holds a local copy of the data volume and
-the engine reads its data locally. The rule is soft (preferred), so Nexus still
-schedules elsewhere if node-1 is down and the data survives via the other
-replicas. After a failover the pod does not automatically return to node-1 until
-it is rescheduled. Note that this rationale predates the one-replica decision
-above.
+Pod placement prefers `staging-controlplane-1`, and the volume's single Longhorn
+replica lives there too, on `/var/mnt/hdd-sata-640`. Node-1 is the strongest
+machine in the cluster — 16 CPUs against 8 on nodes 2 and 3 — which is what a
+JVM serving CI artifact pulls wants.
+
+The pairing is what matters. Pod affinity alone does not put the *data* on
+node-1: for most of this cluster's life the pod ran on node-3 while the only
+replica sat on node-2, so every cache read crossed 1GbE to a node the pod was
+not even on. `dataLocality: best-effort` on the Longhorn Volume is what pins the
+replica to whatever node the pod is attached from, and it is set out of band —
+see "Operating it".
+
+**It is on the spinning disk, and that was a deliberate trade.** Node-1's NVMe
+presents 394Gi schedulable with ~236Gi already held by DB replicas, so it cannot
+take a 350Gi volume; `hdd-sata-640` is the only disk on node-1 that fits. A
+5400rpm 2.5in drive is seek-bound, which is the wrong shape for thousands of
+small npm and Maven artifacts, so this buys node-1's CPU and a local read path
+at the cost of disk seek time. Moving it to the NVMe means first evacuating
+~193Gi of DB replicas off node-1.
+
+**The soft rule does not buy availability here.** `preferred` scheduling means
+the pod can land elsewhere, but with one replica on node-1 it would then fail to
+attach and Nexus would be down until node-1 returns — degraded-but-running is
+not on the table. A second replica would fix that and does not fit: 350Gi
+exceeds the free space on both other nodes. For a rebuildable proxy cache that
+is an acceptable trade, but do not plan around Nexus surviving a node-1 loss.
+
+Two further consequences of `preferred`: it is evaluated only at scheduling
+time, so the pod does not return to node-1 by itself after a failover — delete
+it once node-1 is back. And node-1 being **cordoned** is enough to keep the pod
+away, since Longhorn also refuses to schedule replicas onto a cordoned node
+(`disable-scheduling-on-cordoned-node: true`).
 
 ### Anonymous access and realms
 
@@ -221,11 +246,35 @@ kubectl -n nexus exec nexus-0 -c nexus3 -- env NP="$PW" sh -c \
   "curl -s -X POST -u admin:\$NP http://localhost:8081/service/rest/v1/tasks/$ID/run"
 ```
 
-Pin the data volume back to one Longhorn replica after a PVC recreate:
+Pin the data volume back to one Longhorn replica **on node-1** after a PVC
+recreate. Both fields live on the Longhorn Volume CR, not in git, and a
+recreated PVC returns to the class default of 3 replicas with locality
+disabled:
 
 ```bash
-kubectl -n longhorn-system patch volumes.longhorn.io <pv-name> \
-  --type=merge -p '{"spec":{"numberOfReplicas":1}}'
+PV=$(kubectl -n nexus get pvc data-nexus-0 -o jsonpath='{.spec.volumeName}')
+kubectl -n longhorn-system patch volumes.longhorn.io "$PV" --type=merge \
+  -p '{"spec":{"numberOfReplicas":1,"dataLocality":"best-effort"}}'
+```
+
+Order matters: get the pod onto node-1 *first*, because `best-effort` chases
+whatever node the volume is attached from. Setting it while the pod is still
+elsewhere pulls the replica to that node instead.
+
+Move the pod to node-1 after a failover, or after node-1 is uncordoned — the
+affinity is `preferred`, so only a reschedule applies it:
+
+```bash
+kubectl -n nexus delete pod nexus-0
+```
+
+Check where the data actually is, which is the thing that decides read
+performance:
+
+```bash
+kubectl -n longhorn-system get replicas.longhorn.io \
+  -l longhornvolume="$PV" \
+  -o custom-columns=NODE:.spec.nodeID,DISK:.spec.diskPath,STATE:.status.currentState
 ```
 
 Check external reachability:
