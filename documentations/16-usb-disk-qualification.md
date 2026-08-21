@@ -14,11 +14,10 @@ empties.
 Status: **complete. All three phases passed for four of the five disks.** The
 72 h soak ran 2026-08-17 20:35 to 2026-08-20 20:35 UTC and was clean.
 
-Merged to `main` as `2e00a19`. The Rook operator is **installed and running**
-(`rook-ceph-operator` and `ceph-csi-controller-manager`, both `1/1`), and the
-`rook-ceph-cluster` HelmRelease exists but is **suspended**, so no `CephCluster`
-has been created and no disk has been touched by Ceph. Two manual steps remain
-before Ceph holds data — see "Still open".
+**Ceph is live** since 2026-08-21: `HEALTH_OK`, four OSDs across two hosts,
+3.5 TiB raw, `ceph-block` provisioning verified end to end (PVC bound, RBD mapped
+as `/dev/rbd0`, data written and checksummed). The dashboard is on the tailnet.
+Bring-up cost four bugs, all fixed and all recorded under "Bringing Ceph up".
 
 ## Phase 1 — flush honesty
 
@@ -340,6 +339,12 @@ talosctl apply-config -n 192.168.1.101 --file clusterconfig/Homelab_staging-stag
 # 3. the disks, raw for Rook — irreversible
 talosctl -n 192.168.1.101 wipe disk sdl sdm --drop-partition
 talosctl -n 192.168.1.102 wipe disk sdk sdl --drop-partition
+
+# 4. the .mgr pool, which Ceph auto-created at size 3 on a host domain that two
+#    hosts cannot satisfy. cephConfig in the HelmRelease covers a REBUILD; this
+#    is the one-time fix for the pool that already exists.
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph osd pool set .mgr size 2
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph osd pool set .mgr min_size 1
 ```
 
 node-1 was cordoned and drained before step 2 and uncordoned after. The drain
@@ -410,33 +415,83 @@ phase 2 showed node-1's does not, and Rook does exactly that when it zaps a
 device to create an OSD. Expect that burst once per OSD at creation, and do not
 mistake it for the soak's verdict being wrong.
 
+## Bringing Ceph up — four bugs worth knowing
+
+The soak said the hardware was fine. Bring-up was still four failures deep, and
+every one of them presented as healthy until a PVC was actually created.
+
+**1. Only two OSDs appeared instead of four.** node-1's disks were skipped:
+
+```
+skipping device "sdl": failed to execute ceph-volume inventory on disk "/dev/sdl".
+RuntimeError: No udev data could be retrieved for /sys/block/sdl
+```
+
+`/run/udev/data` had no entry for that device — fallout from the phase 2 reset
+storm, where `udevd`'s queue timed out. `ceph-volume inventory` walks *every*
+block device to build its list, so one device without udev data raises before it
+reaches the others, which is why both node-1 disks were skipped rather than one.
+Talos refuses `service udevd restart` over the API, so the fix is a node reboot:
+coldplug repopulates `/run/udev/data`, which is tmpfs.
+
+**2. `storageClass.parameters` replaces the chart's defaults, it does not merge.**
+Setting `imageFormat`/`imageFeatures`/`fstype` silently dropped the four CSI
+secret name/namespace pairs the chart ships, and every provision failed with
+`provided secret is empty` while the pool, the OSDs and every CSI pod looked
+healthy. Worse on the second pass: StorageClass `parameters` is **immutable**, so
+the corrected Helm chart could not patch it —
+`updates to parameters are forbidden`. The class has to be deleted and recreated.
+
+**3. Rook v1.20 installs only half of ceph-csi.** It delegates CSI to
+`ceph-csi-operator` and pulls in the operator, but the `Driver` CRs, their
+ServiceAccounts and their RBAC live in a separate `ceph-csi-drivers` chart that
+Rook does not install. Nothing created `rbd-ctrlplugin-sa`/`rbd-nodeplugin-sa`, so
+the plugin DaemonSet could not schedule at all:
+`error looking up service account`. That chart is now its own HelmRelease. The
+driver name is load-bearing twice over — it must equal the StorageClass
+provisioner, *and* the operator derives both ServiceAccount names from it.
+
+**4. Self-inflicted: never live-patch a HelmRelease that owns CRDs.** Toggling
+`csi.installCsiOperator` on the live release to test an alternative uninstalled
+the CSI subchart, and its `clientprofiles.csi.ceph.io` CRD then stuck in
+`Terminating` behind a `ClientProfile` holding the `csi.ceph.com/cleanup`
+finalizer — whose controller had just been removed. Helm then timed out waiting
+for that CRD on every retry and rolled back four times. Breaking the deadlock
+needs the finalizer cleared by hand:
+
+```bash
+kubectl -n rook-ceph patch clientprofiles.csi.ceph.io rook-ceph \
+  --type=merge -p '{"metadata":{"finalizers":[]}}'
+```
+
+### The device-letter rotation, and why `devicePathFilter` earned its place
+
+The node-1 reboot in bug 1 renamed every disk on the node. The SATA disk holding
+a live Longhorn replica moved `sda` → `sdc`, and the 1 TB USB disk took `sda`:
+
+```
+pci-0000:04:00.4-usb-0:2:1.0-scsi-0:0:0:0 -> ../../sda   (1.0 TB USB)
+pci-0000:04:00.4-usb-0:2:1.0-scsi-0:0:0:1 -> ../../sdb   (500 GB USB)
+```
+
+A `devices: [{name: sdl}]` config would have been stale, and a config naming
+`sda` would have pointed Rook at whichever disk happened to hold that letter. The
+by-path filter resolved to the correct pair across the rename without edits.
+
 ## Still open
 
-Two manual steps stand between here and Ceph holding data, in this order:
-
-1. **Tear down the rig.** The `hdd-burnin` namespace is still up with four
-   `Complete` Jobs in it. `ceph-volume` cannot claim a device another pod holds
-   open, so `kubectl delete ns hdd-burnin` comes first.
-2. **Unsuspend.** `suspend: false` in
-   `infrastructure/controllers/staging/rook-ceph-cluster/release.yaml`, commit,
-   `flux reconcile kustomization infrastructure-controllers --with-source`. Then
-   verify per
-   [../infrastructure/controllers/base/rook-ceph/README.md](../infrastructure/controllers/base/rook-ceph/README.md):
-   four OSDs, two hosts, all `hdd` class, and a CRUSH rule choosing `osd` — that
-   last one fails silently, capping capacity with no error anywhere.
-
-Then:
-
-- **Ceph itself.** Nothing here says Rook works on Talos with these disks, only
-  that four of them hold data honestly, none is shingled, and all four survive
-  three days of saturated I/O. The operator runs; the cluster has never started.
-- **The two-node failure domain.** `size: 2` at `min_size: 1` on
-  `failureDomain: osd` is the accepted trade, and it stays a trade until node-3
-  gets a disk. Nothing measured here changes that; it is the one hardware change
-  worth making.
 - **Monitoring.** Ceph ships with none here — `monitoring.enabled: false` on both
-  charts. Wiring its alerts into the conventions of
+  charts, so no ServiceMonitor and no Ceph PrometheusRules. A cluster nobody
+  watches is the next gap, and wiring its alerts into the conventions of
   [05-alerting.md](05-alerting.md) is its own change.
+- **No backup target**, exactly like Longhorn. `ceph-block` is for regenerable
+  data until that changes.
+- **The two-node failure domain.** `size: 2`, `min_size: 1` on
+  `failureDomain: osd` survives any one disk with no data loss, and does not
+  survive losing a node. It also means every *planned* node reboot takes part of
+  the pool offline. Giving node-3 a disk lifts this to `size: 3` on a `host`
+  domain and removes the trade entirely — the single highest-value hardware
+  change available to this cluster.
 - **The 250 GB disk.** Still attached to node-2, excluded by the device filter,
   unused. Physically removing it is the safest end state: a filter is a weaker
   guarantee than an absent disk.
