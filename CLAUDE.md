@@ -87,7 +87,7 @@ and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
 - Storage is **Longhorn**, 3 replicas, storage class `longhorn` (the default) —
   `infrastructure/controllers/base/longhorn/README.md`. A **Rook/Ceph** trial on
   four USB disks sits beside it, class `ceph-block`, 2 replicas, and its
-  `CephCluster` is suspended until the disk burn-in passes —
+  `CephCluster` is suspended pending teardown of the burn-in rig —
   `infrastructure/controllers/base/rook-ceph/README.md`.
 - CI is two ARC scale sets plus a Nexus proxy cache —
   `infrastructure/services/staging/arc-runner-set/README.md`.

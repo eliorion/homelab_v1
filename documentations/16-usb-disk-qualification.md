@@ -11,8 +11,14 @@ disqualified outright — its bridge acknowledges flushes it never performs, so
 BlueStore would call data durable while it sits in a cache that a power cut
 empties.
 
-Status: **complete. All three phases passed for four of the five disks.**
-The 72 h soak ran 2026-08-17 20:35 UTC to 2026-08-20 20:35 UTC and was clean.
+Status: **complete. All three phases passed for four of the five disks.** The
+72 h soak ran 2026-08-17 20:35 to 2026-08-20 20:35 UTC and was clean.
+
+Merged to `main` as `2e00a19`. The Rook operator is **installed and running**
+(`rook-ceph-operator` and `ceph-csi-controller-manager`, both `1/1`), and the
+`rook-ceph-cluster` HelmRelease exists but is **suspended**, so no `CephCluster`
+has been created and no disk has been touched by Ceph. Two manual steps remain
+before Ceph holds data — see "Still open".
 
 ## Phase 1 — flush honesty
 
@@ -306,13 +312,17 @@ load the `rbd` module predate this.
 
 ## What changed in git
 
-| File | Change |
+Merged as `2e00a19`, one squashed commit. What it carries:
+
+| Path | Change |
 |---|---|
 | `bootstraping/talconfig.yaml` | Dropped the `hdd-usb-1000` / `hdd-usb-500` `UserVolumeConfig` documents and their entries in the Longhorn `default-disks-config` annotation. `hdd-sata-640` stays. |
-| `infrastructure/controllers/base/longhorn/storageclass-hdd.yaml` | Deleted. `longhorn-hdd` selected `tags: [hdd]`, which only the two USB disks carried; with them gone the class matches no disk and any PVC on it hangs forever. Nothing used it. |
-| `infrastructure/controllers/base/longhorn/kustomization.yaml` | Dropped the class. |
-| `infrastructure/controllers/base/longhorn/README.md`, `bootstraping/README.md` | No disk carries a tag and no class carries a `diskSelector` any more; recorded the no-reboot unmount recovery. |
-| `scripts/hdd-burn-in/` | New rig. |
+| `infrastructure/controllers/base/longhorn/storageclass-hdd.yaml` | Deleted. `longhorn-hdd` selected `tags: [hdd]`, which only the two USB disks carried; with them gone the class matches no disk and any PVC on it hangs forever rather than failing. Nothing used it. |
+| `infrastructure/controllers/base/rook-ceph/` | New: operator, namespace, Helm repository. Rook `v1.20.4`. |
+| `infrastructure/controllers/staging/rook-ceph-cluster/` | New: the `CephCluster`, pool and StorageClass. `suspend: true`. |
+| `clusters/staging/infrastructure.yaml` | New `infra-rook-ceph` Kustomization. |
+| `scripts/hdd-burn-in/` | New rig, plus results. |
+| `bootstraping/README.md`, `infrastructure/controllers/{README.md,base/longhorn/README.md}`, `CLAUDE.md`, `documentations/15` | Prose caught up with the above. |
 
 Live-cluster changes not expressible in git, in order applied:
 
@@ -323,16 +333,25 @@ kubectl -n longhorn-system patch nodes.longhorn.io staging-controlplane-1 --type
 kubectl -n longhorn-system patch nodes.longhorn.io staging-controlplane-1 --type=json \
   -p '[{"op":"remove","path":"/spec/disks/hdd-usb-1000"},{"op":"remove","path":"/spec/disks/hdd-usb-500"}]'
 
-# 2. the disks, raw for Rook — irreversible
+# 2. the machine config, which unmounted both stale volumes without a reboot
+cd bootstraping && SOPS_AGE_KEY_FILE=../clusters/staging/age.agekey talhelper genconfig
+talosctl apply-config -n 192.168.1.101 --file clusterconfig/Homelab_staging-staging-controlplane-1.yaml
+
+# 3. the disks, raw for Rook — irreversible
 talosctl -n 192.168.1.101 wipe disk sdl sdm --drop-partition
 talosctl -n 192.168.1.102 wipe disk sdk sdl --drop-partition
 ```
+
+node-1 was cordoned and drained before step 2 and uncordoned after. The drain
+could not complete — `instance-manager` and `dbtools-db-1` (a **single-instance**
+CNPG cluster, no failover partner) both refused eviction on their
+PodDisruptionBudgets — and it turned out not to matter, because no reboot was
+needed. Every volume stayed healthy and `dbtools-db-1` was never restarted.
 
 node-1 now presents two Longhorn disks, `default-disk-080600000000` and
 `hdd-sata-640`, both `Ready`/`Schedulable`. This partially reverts `ab28713`; doc
 15 stays as the record of how those disks were provisioned and why, because the
 same reasoning applies if they ever come back to Longhorn.
-
 ## Phase 3 — the 72 h soak: passed
 
 Ran 2026-08-17 20:35 to 2026-08-20 20:35 UTC. All four surviving disks, both bays
@@ -393,13 +412,28 @@ mistake it for the soak's verdict being wrong.
 
 ## Still open
 
+Two manual steps stand between here and Ceph holding data, in this order:
+
+1. **Tear down the rig.** The `hdd-burnin` namespace is still up with four
+   `Complete` Jobs in it. `ceph-volume` cannot claim a device another pod holds
+   open, so `kubectl delete ns hdd-burnin` comes first.
+2. **Unsuspend.** `suspend: false` in
+   `infrastructure/controllers/staging/rook-ceph-cluster/release.yaml`, commit,
+   `flux reconcile kustomization infrastructure-controllers --with-source`. Then
+   verify per
+   [../infrastructure/controllers/base/rook-ceph/README.md](../infrastructure/controllers/base/rook-ceph/README.md):
+   four OSDs, two hosts, all `hdd` class, and a CRUSH rule choosing `osd` — that
+   last one fails silently, capping capacity with no error anywhere.
+
+Then:
+
 - **Ceph itself.** Nothing here says Rook works on Talos with these disks, only
   that four of them hold data honestly, none is shingled, and all four survive
-  three days of saturated I/O. The manifests exist and are suspended; bringing
-  them up is the next exercise.
-- **The two-node failure domain.** `size: 2` at `min_size: 1` is the accepted
-  trade, and it stays a trade until node-3 gets a disk. Nothing measured here
-  changes that; it is the one hardware change worth making.
+  three days of saturated I/O. The operator runs; the cluster has never started.
+- **The two-node failure domain.** `size: 2` at `min_size: 1` on
+  `failureDomain: osd` is the accepted trade, and it stays a trade until node-3
+  gets a disk. Nothing measured here changes that; it is the one hardware change
+  worth making.
 - **Monitoring.** Ceph ships with none here — `monitoring.enabled: false` on both
   charts. Wiring its alerts into the conventions of
   [05-alerting.md](05-alerting.md) is its own change.
@@ -412,5 +446,6 @@ mistake it for the soak's verdict being wrong.
 - [../scripts/hdd-burn-in/README.md](../scripts/hdd-burn-in/README.md) — the rig
 - [15-node-1-hdd-expansion.md](15-node-1-hdd-expansion.md) — how these disks were
   provisioned for Longhorn, and the hardware inventory
+- [../infrastructure/controllers/base/rook-ceph/README.md](../infrastructure/controllers/base/rook-ceph/README.md) — the Ceph component itself
 - [../infrastructure/controllers/base/longhorn/README.md](../infrastructure/controllers/base/longhorn/README.md)
 - [14-design-decisions.md](14-design-decisions.md) — section 1, "Platform"

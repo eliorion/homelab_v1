@@ -4,5 +4,5 @@ resources:
   - cnpg/
   # Tailscale operator — exposes the asp/fbref admin UIs on the tailnet.
   - tailscale-operator/
-  # CephCluster. Its HelmRelease is suspended until the disk burn-in passes.
+  # CephCluster. Its HelmRelease is suspended — unsuspending wipes four disks.
   - rook-ceph-cluster/
