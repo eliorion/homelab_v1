@@ -1,0 +1,95 @@
+# Asserts that the Nexus CE EULA is accepted (see README.md).
+# Acceptance lives in Nexus's database ON THE PVC, not in git, so a recreated
+# volume comes back gated and every Docker pull 403s. The chart has no value for
+# it -- license.* is the Pro licence, not the CE EULA.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nexus-ensure-eula
+  namespace: nexus
+spec:
+  # Hourly, not daily like the compact task: a gated Nexus fails every CI Docker
+  # pull, so a 24h worst case is not acceptable.
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app: nexus-ensure-eula
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: ensure
+              # curl + jq + sh
+              image: docker.io/alpine/k8s:1.31.2
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: NEXUS_PW
+                  valueFrom:
+                    secretKeyRef:
+                      name: nexus-root-password
+                      key: password
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 32Mi
+                limits:
+                  memory: 64Mi
+              command: ["/bin/sh", "-ceu"]
+              args:
+                - |
+                  BASE=http://nexus.nexus.svc.cluster.local:8081
+                  AUTH="admin:${NEXUS_PW}"
+                  EULA="$BASE/service/rest/v1/system/eula"
+
+                  # Wait for the Nexus API (pod may still be booting).
+                  ok=0
+                  for i in $(seq 1 30); do
+                    if curl -sf -o /dev/null -u "$AUTH" "$BASE/service/rest/v1/status"; then ok=1; break; fi
+                    echo "waiting for nexus ($i/30)"; sleep 5
+                  done
+                  [ "$ok" = 1 ] || { echo "ERROR: nexus API not reachable"; exit 1; }
+
+                  # Idempotent: do nothing if already accepted.
+                  if curl -sf -u "$AUTH" "$EULA" | jq -e '.accepted == true' >/dev/null; then
+                    echo "EULA already accepted — nothing to do"
+                    exit 0
+                  fi
+
+                  echo "EULA not accepted — accepting"
+                  # POST, not PUT (PUT is 405). The disclaimer must be echoed back
+                  # BYTE-EXACT, curly quotes included, or the API returns
+                  # 500 "Invalid EULA disclaimer" -- so round-trip the GET body
+                  # rather than hand-writing the string.
+                  curl -sf -u "$AUTH" "$EULA" \
+                    | jq -c '.accepted = true' > /tmp/eula.json
+                  curl -sf -u "$AUTH" -H 'Content-Type: application/json' \
+                    -X POST -d @/tmp/eula.json "$EULA"
+
+                  curl -sf -u "$AUTH" "$EULA" | jq -e '.accepted == true' >/dev/null \
+                    || { echo "ERROR: EULA still not accepted"; exit 1; }
+                  echo "EULA accepted"
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            # readOnlyRootFilesystem: the round-trip needs somewhere to write.
+            - name: tmp
+              emptyDir: {}

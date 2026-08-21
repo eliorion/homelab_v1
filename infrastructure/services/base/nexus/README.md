@@ -24,6 +24,7 @@ Full CI-stack context lives in
 | `release.yaml` | The `HelmRelease` — chart `nexus3`, pinned at `5.22.0` and kept current by Renovate, plus storage, JVM sizing, resources, node affinity, root password wiring, the extra Service ports and the whole `config` block (realms, cleanup policies, repositories). |
 | `services.yaml` | `nexus-lb`, a second `type: LoadBalancer` Service exposing 8081 and 5000-5002 outside the cluster. |
 | `compact-task-cronjob.yaml` | `nexus-ensure-compact-task`, a daily CronJob that makes sure the `blobstore.compact` task exists inside Nexus. |
+| `eula-cronjob.yaml` | `nexus-ensure-eula`, an hourly CronJob that makes sure the CE EULA is accepted. Hourly rather than daily because a gated Nexus 403s every CI Docker pull. |
 
 ### Repositories and ports
 
@@ -197,6 +198,17 @@ its own config Job (it has `curl`, `jq` and `sh`).
   what the 2026-08-21 move to `ceph-block` had to do, and what previously latched
   the release `Stalled` for two weeks when git said 350Gi and the live template
   still said 250Gi.
+- **A recreated PVC comes back with the EULA un-accepted, and every Docker pull
+  403s.** Nexus CE keeps acceptance in its database *on the volume*, so it is not
+  in git and does not survive a volume recreate. The symptom reads like an auth
+  problem — `403 Forbidden` on `/v2/` with no `WWW-Authenticate` header — but the
+  body says `You must accept the End User License Agreement`. `nexus-ensure-eula`
+  now asserts it hourly; before that CronJob existed, the 2026-08-21 Ceph move
+  broke every CI Docker pull until it was accepted by hand.
+- **The EULA API is POST, not PUT, and the disclaimer must be byte-exact.** `PUT`
+  returns 405. A hand-written disclaimer returns 500 `Invalid EULA disclaimer` —
+  the string contains typographic quotes. Round-trip the `GET` body and flip
+  `accepted`, which is what the CronJob does.
 - **Redundancy is a pool property on Ceph, not a volume one.** There is no
   per-volume replica count to re-assert after a PVC recreate — the old Longhorn
   trap here (a rebuilt PVC silently returning to 3 replicas) no longer applies.
