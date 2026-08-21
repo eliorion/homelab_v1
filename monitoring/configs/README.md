@@ -23,9 +23,9 @@ This README documents the four alerting directories:
 | `staging/etcd-backup-alerts/` | Alerts on the `etcd-backup` CronJob |
 | `staging/cnpg-alerts/` | CNPG scrape + WAL-archiving and volume alerts |
 
-The other siblings are outside the scope of this file. `kube-prometheus-stack/`
-(the Grafana TLS Secret), `fbref-grafana/` (dashboards + datasource) and
-`n8n-metrics/` are not alerting at all. The component-specific alert directories
+The other siblings are outside the scope of this file. `fbref-grafana/`
+(dashboards + datasource) and `n8n-metrics/` are not alerting at all. The
+component-specific alert directories
 — `longhorn-monitoring/`, `ceph-monitoring/`, `node-capacity-alerts/`,
 `control-plane-alerts/`, `ingestion-alerts/` — follow the same wiring as the four
 above and document themselves **inline**: their `PrometheusRule` files carry the

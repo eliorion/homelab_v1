@@ -73,7 +73,6 @@ so its components hard-code their staging values.
 
 | Directory | What it adds |
 |---|---|
-| `kube-prometheus-stack/` | Only `grafana-tls-secret.enc.yaml` — the TLS Secret the Grafana `Ingress` from the controllers tier references. |
 | `flux-alerts/` | notification-controller → Telegram (the event path): `Provider`, `Alert` and bot token, all in `flux-system`. |
 | `flux-am/` | Flux metrics → Prometheus → Alertmanager → Telegram (the metric path): `PodMonitor`, `PrometheusRule`, and the Alertmanager token Secret in `monitoring`. |
 | `fbref-grafana/` | The SOPS-encrypted Grafana datasource for `fbref-db` plus two dashboard ConfigMaps (`fbref-grafana-dashboard`, `fbref-grafana-dashboard-audit`), picked up by the Grafana sidecar through the label `grafana_dashboard: "1"`. |
@@ -104,10 +103,13 @@ Secret, the Grafana datasource and the two Telegram tokens.
 
 **Production is wired but not deployed.** `clusters/production/monitoring.yaml`
 reconciles only `monitoring/controllers/production`, and there is no
-`monitoring/configs/production/`. That is exactly why the production overlay
-patches the Grafana ingress off: `grafana-tls-secret` is created by
-`monitoring-configs`, which does not exist there, so the ingress would reference
-a Secret that can never appear.
+`monitoring/configs/production/`. Nothing in the `configs` table above exists
+there: no alert rules, no dashboards, no Alertmanager token.
+
+The production overlay also patches the Grafana ingress off, for a separate
+reason — the Tailscale operator is declared only in the staging infrastructure
+overlay, so `ingressClassName: tailscale` names a controller production does not
+run.
 
 ## Traps
 

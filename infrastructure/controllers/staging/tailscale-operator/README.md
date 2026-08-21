@@ -65,6 +65,8 @@ Tailscale `Ingress` (HTTPS on 443, no port in the URL):
 | `pgadmin` | `infrastructure/services/staging/databases/dbtools/pgadmin-ingress-tailscale.yaml` |
 | `nao` | `infrastructure/services/staging/databases/dbtools/nao-ingress-tailscale.yaml` |
 | `n8n` | `apps/base/n8n/ingress-tailscale.yaml` |
+| `ceph` | `infrastructure/controllers/staging/rook-ceph-cluster/ingress-tailscale.yaml` |
+| `grafana` | `monitoring/controllers/base/kube-prometheus-stack/release.yaml` (`grafana.ingress`) — the only chart-rendered one; the chart owns the object, so there is no `ingress-tailscale.yaml` to find |
 
 ### Egress Services (`egress-proxies.yaml`)
 
