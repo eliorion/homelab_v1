@@ -17,7 +17,8 @@ Status: **complete. All three phases passed for four of the five disks.** The
 **Ceph is live** since 2026-08-21: `HEALTH_OK`, four OSDs across two hosts,
 3.5 TiB raw, `ceph-block` provisioning verified end to end (PVC bound, RBD mapped
 as `/dev/rbd0`, data written and checksummed). Alerts and scrapes are wired into
-Prometheus, and the dashboard is on the tailnet over HTTPS.
+Prometheus, the dashboard is on the tailnet over HTTPS, and the cluster reports
+upstream telemetry.
 Bring-up cost four bugs, all fixed and all recorded under "Bringing Ceph up".
 
 ## Phase 1 — flush honesty
@@ -526,6 +527,46 @@ registers two tailnet devices contending for one hostname and the loser is
 silently suffixed `ceph-1`. Ceph itself still speaks plain HTTP behind the proxy
 (`dashboard.ssl: false`), so turning its own TLS on moves the backend to 8443 and
 the Ingress must move with it.
+
+## Upstream telemetry, and the half of it git cannot hold
+
+Enabled 2026-08-21. The cluster reports to `https://telemetry.ceph.com/report`
+every 24 h under CDLA-Sharing-1.0. Counts and versions only — daemon counts,
+per-`pool_id` sizing and usage, CRUSH shape, capacity, CPU model, kernel, Ceph /
+Rook / k8s versions, and a random `report_id` that is **not** the cluster `fsid`.
+No hostnames, no addresses, no pool names, no object data; `ceph telemetry
+preview` prints the whole payload and needs no opt-in to run. The `ident` channel
+— `contact`, `organization`, `description` — and `perf` are both pinned off.
+
+The point of writing it up is that **the opt-in is split across two mon stores,
+and the HelmRelease can only reach one of them**:
+
+| What | Store | Reachable from the chart |
+|---|---|---|
+| `enabled`, the five `channel_*` flags | config (`ceph config`) | yes — `cephConfig.mgr` |
+| collection opt-in, licence acknowledgement | config-**key** (`ceph config-key`, via the module's `set_store()`) | no |
+
+Rook renders `cephConfig` to `ceph config set`, which cannot write config-key.
+Setting `mgr/telemetry/enabled: "true"` alone therefore lands in a state that
+looks enabled and is not useful: `mgr/telemetry/collection` stays `[]`, so
+`compile_report` skips almost every section, and `should_nag()` finds the two
+collections flagged `nag` — `perf_perf` and `basic_rook_v01` — missing and raises
+`TELEMETRY_CHANGED`. That is a **permanent `HEALTH_WARN`**, and this cluster's
+`CephHealthWarning` picks it up an hour later. The same shape as the `.mgr` pool
+trap above: a default that quietly parks the cluster at WARN and masks real
+warnings.
+
+One command closes it, and it is the licence acknowledgement — the module refuses
+without the flag by design:
+
+```bash
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- \
+  ceph telemetry on --license sharing-1-0
+```
+
+It writes the same `mgr/telemetry/enabled` the chart declares, so it does not
+fight Flux. **It must be re-run after a cluster rebuild** — config-key state does
+not survive one, and `cephConfig` will happily re-enable telemetry without it.
 
 ## Still open
 

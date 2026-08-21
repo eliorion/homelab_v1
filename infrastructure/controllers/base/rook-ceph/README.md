@@ -169,6 +169,83 @@ The backend is plain HTTP on 7000 because the CephCluster sets
 `dashboard.ssl: false`; the proxy adds the TLS. Turning Ceph's own SSL on moves
 the backend to 8443 and the Ingress port must move with it.
 
+## Upstream telemetry
+
+This cluster reports to the Ceph project: **`https://telemetry.ceph.com/report`**,
+every 24 h, under the [CDLA-Sharing-1.0][cdla] licence. It is opt-in and it is on
+deliberately — a Rook-on-Talos cluster with `failureDomain: osd` and USB-attached
+OSDs is exactly the shape upstream has no data for.
+
+[cdla]: https://cdla.dev/sharing-1-0/
+
+### What leaves the cluster, and what does not
+
+The payload was read before it was enabled (`ceph telemetry preview`, which needs
+no opt-in). It is counts and versions:
+
+- daemon counts, `pg_num`/`size`/`min_size`/usage **per pool id**, CRUSH shape,
+  RBD feature bits, cluster capacity
+- CPU model, kernel version, distro, Ceph version, Rook version, k8s version
+- a `report_id` UUID — random and stored in the mon config-key store, **not** the
+  cluster `fsid`
+
+No hostnames, no IP addresses, no pool *names*, no image names, no object data.
+The `ident` channel — the one that carries `contact`, `organization` and
+`description` — is pinned **off**; so is `perf`. Turning `ident` on is what would
+attach a real identity to the report.
+
+Read it yourself at any time:
+
+```bash
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph telemetry preview | less
+```
+
+### Why it takes a manual command as well as the chart values
+
+The opt-in is stored in **two different places**, and only one of them is
+reachable from the HelmRelease:
+
+| What | Stored in | In git? |
+|---|---|---|
+| `enabled`, the five `channel_*` flags | mon **config** store (`ceph config`) | yes — `cephConfig.mgr` in `staging/rook-ceph-cluster/release.yaml` |
+| the collection opt-in, the licence acknowledgement | mon **config-key** store (`ceph config-key`, written by `set_store()`) | no |
+
+Rook's `cephConfig` renders to `ceph config set`, which cannot write the
+config-key store. So flipping `mgr/telemetry/enabled` on its own gets you the
+worst of both: the module reports, but `mgr/telemetry/collection` is still `[]`,
+so the report is nearly empty **and** `should_nag()` fires
+`TELEMETRY_CHANGED` — a permanent `HEALTH_WARN` that our `CephHealthWarning`
+alert picks up an hour later.
+
+One command closes the gap, and it is the licence acknowledgement — `ceph
+telemetry on` refuses without the `--license` flag by design:
+
+```bash
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- \
+  ceph telemetry on --license sharing-1-0
+```
+
+It writes the same `mgr/telemetry/enabled` the chart declares, so it does not
+drift from git; everything else it touches is config-key state git cannot own.
+**Re-run it after a cluster rebuild** — the config-key store does not survive one.
+
+Verify:
+
+```bash
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph telemetry status
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph config-key get mgr/telemetry/collection
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph health detail
+```
+
+`status` must show `enabled: true` and, after the first interval, a non-null
+`last_upload`. `collection` must be a populated list, not `[]`. Health must be
+`HEALTH_OK` — a lingering `TELEMETRY_CHANGED` means the command did not run.
+
+### Turning it off
+
+Set `mgr/telemetry/enabled: "false"` in `release.yaml` and commit. That is
+sufficient — `ceph telemetry off` does nothing else that matters.
+
 ## Talos specifics
 
 Less than expected. Verified on v1.13.4, kernel 6.18.34:
@@ -210,6 +287,11 @@ Less than expected. Verified on v1.13.4, kernel 6.18.34:
 - **The dashboard reaches you over HTTPS, but Ceph itself serves plain HTTP.**
   The tailscale proxy terminates TLS; the mgr behind it has `ssl: false`. Nothing
   outside the tailnet can reach either end.
+- **A Ceph upgrade can page you through telemetry.** When a release adds a
+  collection marked `nag`, `TELEMETRY_CHANGED` raises `HEALTH_WARN` and
+  `CephHealthWarning` fires an hour later. That warning is a consent prompt, not
+  a fault: read the new collections with `ceph telemetry diff`, then re-opt-in
+  with `ceph telemetry on --license sharing-1-0`. Nothing in git changes.
 
 ## Bringing it up
 

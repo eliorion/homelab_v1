@@ -45,6 +45,20 @@ spec:
           # `ceph osd pool set .mgr size 2`. documentations/16.
           osd_pool_default_size: "2"
           osd_pool_default_min_size: "1"
+        mgr:
+          # Upstream telemetry opt-in. Turning `enabled` on WITHOUT also running
+          # `ceph telemetry on --license sharing-1-0` once leaves the cluster at
+          # HEALTH_WARN (TELEMETRY_CHANGED) and uploads an almost empty report:
+          # the collection opt-in lives in the mon config-KEY store, which
+          # `ceph config` — and so this block — cannot reach. documentations/16.
+          mgr/telemetry/enabled: "true"
+          mgr/telemetry/channel_basic: "true"
+          mgr/telemetry/channel_crash: "true"
+          mgr/telemetry/channel_device: "true"
+          # ident carries contact/organization/description and de-anonymises the
+          # report; perf ships per-daemon counters. Pinned off on purpose.
+          mgr/telemetry/channel_ident: "false"
+          mgr/telemetry/channel_perf: "false"
       mon:
         # 3 mons across 3 nodes. node-3 carries a mon but no OSD — mons live on
         # dataDirHostPath, not on a Ceph disk.
