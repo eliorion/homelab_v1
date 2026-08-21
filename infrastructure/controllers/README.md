@@ -24,10 +24,11 @@ directly, one per Flux Kustomization, and only two go through the aggregate
 
 | Path | What it does |
 |---|---|
-| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `longhorn/`, `reflector/`. **There is no `base/kustomization.yaml`** and there should not be one. |
-| `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. Two resources: `cnpg/` and `tailscale-operator/`. |
+| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `longhorn/`, `reflector/`, `rook-ceph/`. **There is no `base/kustomization.yaml`** and there should not be one. |
+| `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. Three resources: `cnpg/`, `tailscale-operator/` and `rook-ceph-cluster/`. |
 | `staging/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/` (the operator only — `base/cnpg/kustomization.yaml` does not include `plugin/`). |
 | `staging/tailscale-operator/` | Staging-only component, no base counterpart. Reconciled through the aggregate above. |
+| `staging/rook-ceph-cluster/` | The `CephCluster`, pool and StorageClass. Separate from `base/rook-ceph/` (the operator) because it names this cluster's PCI/USB device paths. Its HelmRelease is **suspended** until the disk burn-in passes. |
 | `staging/reflector/` | Lives under `staging/` but is **not** listed in `staging/kustomization.yaml`. It has its own Flux Kustomization, `infra-reflector`, pointing straight at `./infrastructure/controllers/staging/reflector`. |
 | `production/kustomization.yaml` | The production aggregate. One resource: `cnpg/`. |
 | `production/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/`. |
@@ -42,6 +43,7 @@ From `clusters/staging/infrastructure.yaml`:
 | `infra-cnpg-plugin` | `base/cnpg/plugin` | `dependsOn: infra-certmanager`, `wait: true`, `timeout: 10m` |
 | `infra-arc-controller` | `base/arc` | `wait: true`, health check on `arc-controller-gha-rs-controller` |
 | `infra-longhorn` | `base/longhorn` | `wait: true`, `timeout: 15m` (first install pulls all Longhorn images on a cold node) |
+| `infra-rook-ceph` | `base/rook-ceph` | `wait: true`, `timeout: 15m`, health check on the `rook-ceph-operator` HelmRelease |
 | `infra-cilium` | `base/cilium` | `wait: true`, `timeout: 10m` (cold agent/operator/hubble image pull) |
 | `infra-cilium-config` | `base/cilium/config` | `dependsOn: infra-cilium` — needs the CRDs the chart installs |
 | `infra-keda` | `base/keda` | `wait: true`, `timeout: 10m` |

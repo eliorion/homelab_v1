@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${JOB_NAME}
+  namespace: hdd-burnin
+  labels:
+    app: hdd-burnin
+    dev: ${DEV}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: ${DEADLINE}
+  template:
+    metadata:
+      labels:
+        app: hdd-burnin
+        dev: ${DEV}
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        kubernetes.io/hostname: ${NODE_HOSTNAME}
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: fio
+          image: alpine:3.22
+          securityContext:
+            # Required to open the block device: a BlockDevice hostPath mounts the
+            # device node, but the device cgroup still denies access without this.
+            privileged: true
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              apk add --no-cache fio >/dev/null
+              fio --version
+              ${FIO_ARGS}
+          volumeMounts:
+            - name: target
+              mountPath: /dev/target
+            - name: out
+              mountPath: /out
+          resources:
+            requests:
+              cpu: 500m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: target
+          hostPath:
+            # Device letters change when a USB bridge re-enumerates. If this pod
+            # will not start, check the letter against `talosctl get disks`.
+            path: /dev/${DEV}
+            type: BlockDevice
+        - name: out
+          hostPath:
+            path: /var/log/hdd-burnin
+            type: DirectoryOrCreate

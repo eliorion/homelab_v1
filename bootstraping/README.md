@@ -83,14 +83,19 @@ broken thing.
 | `ipAddress` | `192.168.1.101` | `192.168.1.102` | `192.168.1.103` |
 | `installDisk` | `/dev/nvme0n1` | `/dev/sda` | `/dev/sda` |
 | `talosImageURL` schematic | `65cf8364…` (AMD box, amd-ucode) | `36cd6536…` (Intel, intel-ucode) | `36cd6536…` |
-| `patches` | three `UserVolumeConfig` + Longhorn disk annotation | — | — |
+| `patches` | one `UserVolumeConfig` + Longhorn disk annotation | — | — |
 
-Only node-1 carries per-node `patches`. It has three spare disks the other two do not: a
-640 GB SATA HDD and a two-LUN USB dock (1 TB + 500 GB). Each becomes an `xfs` user volume
-under `/var/mnt/hdd-*` for Longhorn's `hdd`-tagged tier. The USB pair share one WWID, so the
-selectors match on `disk.size`; the dock's disks also arrive holding APFS filesystems and
-must be wiped before Talos can provision them. Full runbook and rationale:
+Only node-1 carries per-node `patches`, for its 640 GB SATA HDD: an `xfs` user volume at
+`/var/mnt/hdd-sata-640`, registered with Longhorn. The selector matches
+`disk.transport == 'sata' && disk.rotational && !system_disk`, which is exactly why the block
+must stay per-node — evaluated on node-2 or node-3 it would match their install disk.
+Runbook and rationale:
 [../documentations/15-node-1-hdd-expansion.md](../documentations/15-node-1-hdd-expansion.md).
+
+The USB disks on node-1 and node-2 deliberately have **no** `UserVolumeConfig`. They are raw
+block devices held for a Rook/Ceph trial, and giving them a filesystem here takes them away
+from Ceph:
+[../documentations/16-usb-disk-qualification.md](../documentations/16-usb-disk-qualification.md).
 
 Everything else in `networkInterfaces` is identical across the three: `deviceSelector.physical: true`
 (match the physical NIC whatever it is called), `dhcp: false` with a static `/24`,
@@ -205,12 +210,16 @@ it is still in `talconfig.yaml`.
 - **Never pair a Talos user volume with a `kubelet.extraMounts` bind on the same path.**
   That combination is mount masking, siderolabs/talos#13069 — closed as not planned, still
   unfixed, and it hits *any* `/var/mnt/<name>` volume, not only ones aimed at
-  `/var/lib/longhorn`. node-1's three `hdd-*` volumes therefore have no `extraMounts` entry;
+  `/var/lib/longhorn`. node-1's `hdd-sata-640` volume therefore has no `extraMounts` entry;
   Talos propagates `/var/mnt` to the kubelet by itself. The `/var/lib/longhorn` bind in the
   shared machine patch predates user volumes and stays.
 - **node-1's `patches` must never move into the shared cluster-wide `patches:` block.** Its
-  disk selectors match on `transport`/`size`; nodes 2 and 3 have a single SATA SSD each,
-  which is their *install* disk.
+  disk selector matches on `transport`/`rotational`; nodes 2 and 3 have a single SATA SSD
+  each, which is their *install* disk.
+- **Removing a `UserVolumeConfig` and applying unmounts the volume without a reboot.** That is
+  the recovery path when a USB disk re-enumerates and leaves a stale mount behind — verified
+  on v1.13.4, 2026-08-17
+  ([../documentations/16-usb-disk-qualification.md](../documentations/16-usb-disk-qualification.md)).
 - **`/var/lib/longhorn` lives on the EPHEMERAL partition.** There is no separate disk for it
   in this file, so `talosctl reset --system-labels-to-wipe=EPHEMERAL` destroys that node's
   Longhorn replicas. One node is survivable; all three at once is not.

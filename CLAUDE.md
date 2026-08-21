@@ -21,7 +21,8 @@ drills — that span more than one component:
 `04` CI runners and cache, `05` alerting, `06`/`07` Talos + Longhorn migration
 and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
 `11`/`13` AzuraCast capacity, `12` Garage object storage,
-`14` design decisions, `15` node-1 spare-disk expansion.
+`14` design decisions, `15` node-1 spare-disk expansion,
+`16` USB disk qualification for Ceph.
 
 ## Repo layout
 
@@ -83,8 +84,11 @@ and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
   `talosctl apply-config`. Never regenerate `talsecret` (new PKI = dead cluster).
 - CNI is **Cilium** `1.19.4`, kube-proxy-free, with LB-IPAM (`192.168.1.110-130`)
   + L2 announce and Gateway API — `infrastructure/controllers/base/cilium/README.md`.
-- Storage is **Longhorn**, 3 replicas, storage class `longhorn` —
-  `infrastructure/controllers/base/longhorn/README.md`.
+- Storage is **Longhorn**, 3 replicas, storage class `longhorn` (the default) —
+  `infrastructure/controllers/base/longhorn/README.md`. A **Rook/Ceph** trial on
+  four USB disks sits beside it, class `ceph-block`, 2 replicas, and its
+  `CephCluster` is suspended until the disk burn-in passes —
+  `infrastructure/controllers/base/rook-ceph/README.md`.
 - CI is two ARC scale sets plus a Nexus proxy cache —
   `infrastructure/services/staging/arc-runner-set/README.md`.
 - Backups are CNPG → R2 or Garage and etcd → Garage, age-encrypted with an

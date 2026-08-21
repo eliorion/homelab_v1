@@ -27,7 +27,8 @@ nodes:
     controlPlane: true
     installDisk: /dev/nvme0n1
     talosImageURL: factory.talos.dev/installer/65cf8364cd0de4cf7b851dc7067a2db83d0ba04f11d8635c6cd3334be6ffb825
-    # Only node-1 has spare disks; these must NOT become cluster-wide patches.
+    # These must NOT become cluster-wide patches: the sata selector below would
+    # match node-2's and node-3's install disks.
     # Adding a kubelet extraMounts bind for /var/mnt/* here re-triggers
     # siderolabs/talos#13069 -- Talos already propagates /var/mnt to kubelet.
     patches:
@@ -42,30 +43,8 @@ nodes:
           grow: true
         filesystem:
           type: xfs
-      # sdb/sdc share wwid naa.5000000000000001 (one USB dock, two LUNs), so
-      # the selector must discriminate on size, never on wwid.
-      - |-
-        apiVersion: v1alpha1
-        kind: UserVolumeConfig
-        name: hdd-usb-1000
-        provisioning:
-          diskSelector:
-            match: disk.transport == 'usb' && disk.size == 1000204886016u
-          minSize: 100GB
-          grow: true
-        filesystem:
-          type: xfs
-      - |-
-        apiVersion: v1alpha1
-        kind: UserVolumeConfig
-        name: hdd-usb-500
-        provisioning:
-          diskSelector:
-            match: disk.transport == 'usb' && disk.size == 500107862016u
-          minSize: 100GB
-          grow: true
-        filesystem:
-          type: xfs
+      # No UserVolumeConfig for the USB disks: they are raw block devices for
+      # Rook/Ceph. Giving them a filesystem here takes them away from Ceph.
       # Longhorn reads this pair ONLY when it first registers the node, so it
       # is a rebuild path, not a live one. Malformed JSON = node with no disk.
       # The /var/lib/longhorn entry must stay listed or a rebuilt node loses it.
@@ -74,7 +53,7 @@ nodes:
           nodeLabels:
             node.longhorn.io/create-default-disk: config
           nodeAnnotations:
-            node.longhorn.io/default-disks-config: '[{"path":"/var/lib/longhorn","allowScheduling":true,"storageReserved":74633213952,"tags":[]},{"path":"/var/mnt/hdd-sata-640","allowScheduling":true,"storageReserved":96020254310,"tags":[]},{"path":"/var/mnt/hdd-usb-1000","allowScheduling":true,"storageReserved":150030732902,"tags":["hdd"]},{"path":"/var/mnt/hdd-usb-500","allowScheduling":true,"storageReserved":75016179302,"tags":["hdd"]}]'
+            node.longhorn.io/default-disks-config: '[{"path":"/var/lib/longhorn","allowScheduling":true,"storageReserved":74633213952,"tags":[]},{"path":"/var/mnt/hdd-sata-640","allowScheduling":true,"storageReserved":96020254310,"tags":[]}]'
     nameservers:
       - 192.168.1.1
     networkInterfaces:
