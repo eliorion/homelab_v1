@@ -53,7 +53,9 @@ Staging overlay (`apps/staging/databases/fbref/`):
   `serverName: fbref-db`.
 - `cluster-storage-patch.yaml` — JSON 6902 patch: `storageClass: longhorn`
   (explicit, though Longhorn is also the cluster default storage class on
-  Talos) and `storage.size` replaced with `100Gi`.
+  Talos) and `storage.size` replaced with `200Gi`. The two Longhorn volumes
+  behind those PVCs are patched out of band to `numberOfReplicas: 1`; the class
+  provisions 3.
 - `cluster-reflector-patch.yaml` — `inheritedMetadata` annotations that permit
   kubernetes-reflector to mirror this cluster's Secrets into the `lab` and
   `database` namespaces.
@@ -111,15 +113,35 @@ connection. `app` carries `createrole: true` because Flyway V3 creates the
 worker-control and nocodb roles while connected as `app`; the missing privilege
 was hit on 2026-06-12 on a fresh initdb.
 
-**100Gi on Longhorn in staging.** 10Gi filled and CNPG halted the primary with
-"Not enough disk space", which took the whole fbref stack down with it:
-`fbref-db-rw` has a single endpoint (the primary), so fbref-engine got "No route
-to host", CrashLooped, stopped submitting, and the scraper platform's fbref
-queue drained to zero. The size lives in the overlay rather than in base because
-this is staging's Longhorn sizing and base is shared with a cluster whose disks
-are not this size. The later 50Gi to 100Gi step is ordinary growth, not relief:
-both instances reached 85% of 50Gi on real data. Longhorn thin-provisions, so
-the extra is provisioned, not consumed.
+**200Gi on Longhorn in staging, one Longhorn replica per volume.** 10Gi filled
+and CNPG halted the primary with "Not enough disk space", which took the whole
+fbref stack down with it: `fbref-db-rw` has a single endpoint (the primary), so
+fbref-engine got "No route to host", CrashLooped, stopped submitting, and the
+scraper platform's fbref queue drained to zero. The size lives in the overlay
+rather than in base because this is staging's Longhorn sizing and base is shared
+with a cluster whose disks are not this size. The 50Gi to 100Gi step was
+ordinary growth, not relief: both instances reached 85% of 50Gi on real data.
+Longhorn thin-provisions, so the extra is provisioned, not consumed.
+
+The 100Gi to 200Gi step on 2026-08-21 could not be taken at three replicas.
+Every Longhorn volume costs its provisioned size on *each* node, so 2 instances
+× 100Gi × 3 replicas is 200Gi of node-1's disk — and node-1's install disk is a
+500GB NVMe presenting 394Gi schedulable, against 928GB SSDs on nodes 2 and 3.
+Node-1 and node-2 were both down to 3Gi schedulable; three-replica fbref caps at
+roughly 197Gi *per instance* even after evicting every other volume off node-1,
+which is below where it already sat. The volumes were therefore patched to
+`numberOfReplicas: 1` with `dataLocality: best-effort`, which freed 400Gi at
+once and pinned each volume's single replica to the node its pod already runs
+on (`fbref-db-1` → node-2, `fbref-db-3` → node-3).
+
+One Longhorn replica is not one copy of the data. CNPG runs two instances, each
+on its own volume on a different node, with streaming replication between them,
+plus a daily Barman base backup and continuous WAL archiving to Garage. Losing a
+node loses one instance's volume; CNPG re-provisions it and re-syncs from the
+survivor. Six Longhorn copies of a 74GB scraped, re-derivable dataset was the
+largest single consumer in a 2.3TB cluster. Nexus already runs this way for the
+same reason — see
+[`../../../../infrastructure/services/base/nexus/README.md`](../../../../infrastructure/services/base/nexus/README.md).
 
 **Garage instead of R2.** fbref is the one CNPG cluster archived to the
 off-cluster Garage store rather than Cloudflare R2, reached through the
@@ -180,8 +202,15 @@ central reflector source.
   annotations in `cluster-reflector-patch.yaml`; anything else added under
   `inheritedMetadata` lands on every object the cluster owns.
 - The storage size is overlay-scoped: base stays at `10Gi`, staging replaces it
-  with `100Gi`. Raising it in base would apply it to a cluster whose disks are
+  with `200Gi`. Raising it in base would apply it to a cluster whose disks are
   not this size.
+- **`numberOfReplicas: 1` lives on the Longhorn volume, not in git.** The
+  `longhorn` class provisions 3, so a recreated PVC comes back at 3 replicas and
+  will not fit. Re-apply the patch under "Operating it" after any PVC recreate.
+- **Growing this cluster is bounded by one node, not by the cluster total.**
+  `fbref-db-1`'s volume lives on node-2 and `fbref-db-3`'s on node-3, and each
+  needs the full increase on its own node. Check schedulable space per node
+  before raising `storage.size`.
 - The etcd Garage key has **no** fbref access. The backup key must be a
   dedicated Garage key scoped to the fbref bucket.
 - The header comments still sitting in `garage-backup-credentials.enc.yaml`
@@ -196,6 +225,25 @@ Render check before committing:
 ```bash
 kubectl kustomize apps/staging/databases/fbref
 flux get kustomizations
+```
+
+Pin the volumes back to one Longhorn replica after a PVC recreate:
+
+```bash
+for pv in $(kubectl -n fbref get pvc -o jsonpath='{.items[*].spec.volumeName}'); do
+  kubectl -n longhorn-system patch volumes.longhorn.io "$pv" --type=merge \
+    -p '{"spec":{"numberOfReplicas":1,"dataLocality":"best-effort"}}'
+done
+```
+
+Schedulable space per node, which is what bounds `storage.size`:
+
+```bash
+kubectl get nodes.longhorn.io -n longhorn-system -o json | jq -r '.items[]
+  | .metadata.name as $n | (.spec.disks // {}) as $s | .status.diskStatus
+  | to_entries[] | [$n, .key,
+      ((.value.storageMaximum - ($s[.key].storageReserved // 0)
+        - .value.storageScheduled) / 1073741824 | floor)] | @tsv'
 ```
 
 Recreate the Garage backup credential from the template. The `garage` commands

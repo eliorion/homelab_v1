@@ -62,6 +62,15 @@ growth — and the reminder that **replicas are resilience, not backup**: there
 is no `backupTarget` configured, so three copies of a deleted file is still
 zero copies.
 
+Two workloads are patched out of that default because their own layer already
+replicates: `data-nexus-0` (a rebuildable proxy cache) and both `fbref-db`
+volumes (two CNPG instances on two nodes, plus Barman base backups and WAL
+archiving to Garage) run `numberOfReplicas: 1`. fbref at three replicas cost
+200Gi on *every* node and was the largest consumer in the cluster; dropping it
+to one freed 400Gi. Node-1's install disk is a 500GB NVMe against 928GB SSDs on
+nodes 2 and 3, so node-1 is what a three-replica volume actually has to fit in,
+and it is the node that runs out first.
+
 **Disk reserve cut from 30% to 15%.** Longhorn's stock 30% reserve took 299GB
 out of each 997GB disk and left only 26GB schedulable, which blocked a routine
 `fbref-db` growth while real usage was about 537GB of 997GB. These are
