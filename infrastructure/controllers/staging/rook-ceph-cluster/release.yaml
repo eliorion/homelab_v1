@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   targetNamespace: rook-ceph
-  # UNSUSPEND ONLY AFTER the 72h burn-in passes. Unsuspending hands four raw
+  # UNSUSPEND ONLY AFTER the hdd-burnin namespace is gone. Unsuspending hands four raw
   # disks to ceph-volume, which wipes them — scripts/hdd-burn-in/README.md.
   suspend: true
   interval: 30m

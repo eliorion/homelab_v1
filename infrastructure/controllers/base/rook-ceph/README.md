@@ -14,22 +14,22 @@ Two pieces, two tiers:
 The two charts are pinned to the **same version** and must be bumped together,
 the same rule the two ARC charts already carry.
 
-## Status: the cluster HelmRelease is suspended
+## Status: operator running, cluster suspended
 
-`suspend: true` on `rook-ceph-cluster`. The burn-in passed — four disks cleared
-all three phases, including 72 h of saturated concurrent random I/O with zero bus
-events
+The operator is **installed and running** — `rook-ceph-operator` and
+`ceph-csi-controller-manager`, both `1/1`. It is harmless in that state: with no
+`CephCluster` it watches and does nothing.
+
+`rook-ceph-cluster` carries `suspend: true`, so **no `CephCluster` exists and no
+disk has been touched by Ceph.** The burn-in that qualified these disks passed
+in full — flush honesty, no SMR, and 72 h of saturated concurrent random I/O with
+zero bus events
 ([`documentations/16`](../../../../documentations/16-usb-disk-qualification.md)).
-What remains before unsuspending is the teardown in "Bringing it up" below: the
-`hdd-burnin` namespace still has to go, because `ceph-volume` cannot claim a disk
-another pod holds open.
 
-It stays suspended rather than merged as `false` because unsuspending wipes four
-disks. That should be a reviewed one-line change, not something a reconcile does
-by surprise.
-
-The operator is safe to run meanwhile: with no `CephCluster` it watches and does
-nothing.
+Two steps remain, both in "Bringing it up": delete the `hdd-burnin` namespace,
+then flip `suspend`. It stays suspended rather than merged as `false` because
+unsuspending wipes four disks — that should be a reviewed one-line change, not
+something a reconcile does by surprise.
 
 ## Why the disks are selected by `devicePathFilter`
 
@@ -175,11 +175,11 @@ Less than expected. Verified on v1.13.4, kernel 6.18.34:
 ## Bringing it up
 
 ```bash
-# 1. burn-in must be finished and clean
+# 1. burn-in is DONE and clean (documentations/16) — this is a re-check, not a gate
 kubectl -n hdd-burnin get jobs
 grep -E "NEW KERNEL EVENT|STALE MOUNT" scripts/hdd-burn-in/results/watch.log
 
-# 2. tear the rig down so nothing holds the disks open
+# 2. tear the rig down — REQUIRED, ceph-volume cannot claim a disk a pod holds open
 kubectl delete ns hdd-burnin
 
 # 3. flip suspend: false in staging/rook-ceph-cluster/release.yaml, commit, then

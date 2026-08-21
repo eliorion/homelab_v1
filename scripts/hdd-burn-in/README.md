@@ -17,6 +17,16 @@ and `staging-controlplane-2` as Ceph OSDs. Three questions, in the order where a
 Results and verdicts:
 [`documentations/16-usb-disk-qualification.md`](../../documentations/16-usb-disk-qualification.md).
 
+## Run status: complete, teardown pending
+
+The qualification run finished 2026-08-20. Four disks passed, one was
+disqualified, and the verdicts are in
+[`documentations/16`](../../documentations/16-usb-disk-qualification.md).
+
+**The `hdd-burnin` namespace is still up**, holding four `Complete` Jobs. It has
+to go before Ceph can start — `ceph-volume` cannot claim a disk another pod holds
+open. So on this cluster, right now, it is pending teardown rather than leftover.
+
 ## This is deliberately not Flux-managed
 
 Nothing here sits under a path any Flux Kustomization reconciles
