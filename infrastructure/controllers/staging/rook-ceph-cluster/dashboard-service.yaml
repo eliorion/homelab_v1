@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rook-ceph-dashboard-tailnet
+  annotations:
+    # L3 expose, forwards the Service port. Reached at
+    # http://ceph.<tailnet>.ts.net:7000 — plain HTTP, dashboard ssl is off.
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: ceph
+  namespace: rook-ceph
+spec:
+  type: ClusterIP
+  # Same selector as Rook's own rook-ceph-mgr-dashboard Service: mgr_role active
+  # is what follows a mgr failover to the standby.
+  selector:
+    app: rook-ceph-mgr
+    mgr_role: active
+    rook_cluster: rook-ceph
+  ports:
+    - name: http-dashboard
+      port: 7000
+      targetPort: 7000
+      protocol: TCP

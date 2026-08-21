@@ -131,6 +131,29 @@ autodetect, `ceph-volume` would class it `ssd`, and CRUSH would then see two
 device classes across four disks and place data unevenly. Both the cluster
 storage config and the pool pin `hdd`.
 
+## The dashboard, on the tailnet
+
+`http://ceph.<your-tailnet>.ts.net:7000` — plain HTTP on port 7000, not 443 and
+not 80. Same pattern as the Longhorn UI: authenticated by tailnet identity,
+reachable off-LAN, never internet-exposed.
+
+Username `admin`; Rook generates the password and keeps it in a Secret:
+
+```bash
+kubectl -n rook-ceph get secret rook-ceph-dashboard-password \
+  -o jsonpath='{.data.password}' | base64 -d; echo
+```
+
+The exposure is a **separate Service**,
+`staging/rook-ceph-cluster/dashboard-service.yaml`, not an annotation on Rook's
+own `rook-ceph-mgr-dashboard`. Rook owns that one and reconciles it, so an
+annotation there is drift waiting to be reverted. Ours carries the same selector,
+including `mgr_role: active` — that label is what makes the dashboard follow a
+failover to the standby mgr instead of pointing at a dead one.
+
+`ssl: false` in the CephCluster is why the port is 7000. Turning SSL on moves it
+to 8443 and the Service port must move with it.
+
 ## Talos specifics
 
 Less than expected. Verified on v1.13.4, kernel 6.18.34:
@@ -166,8 +189,8 @@ Less than expected. Verified on v1.13.4, kernel 6.18.34:
   bring-up choice, not an oversight — wiring Ceph alerts into the conventions of
   [`documentations/05-alerting.md`](../../../../documentations/05-alerting.md) is
   its own change.
-- **The dashboard is HTTP, no TLS**, reachable only in-cluster. It is not exposed
-  on the tailnet the way Longhorn's UI is.
+- **The dashboard is HTTP, no TLS.** It is on the tailnet at port 7000, not 80
+  and not 443, so a bare hostname in a browser will not reach it.
 
 ## Bringing it up
 
