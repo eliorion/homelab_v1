@@ -204,11 +204,28 @@ carries no Grafana session and Grafana's cookie is `SameSite=Lax`. That would le
 anyone on the tailnet read Grafana without logging in — too much for one tab.
 Grafana itself is at `https://grafana.<your-tailnet>.ts.net`.
 
+**Verify the value, not the key.** On the reconcile that first enabled the
+orchestrator, `PROMETHEUS_API_HOST` came back *present and empty* — the operator
+logged `successfully set option`, and the key showed up in `ceph config dump`
+with nothing after it, while the dashboard stayed exactly as broken. Setting the
+identical value again stuck. Rook writes a key only when the stored value
+differs, so it repairs this on its next pass either way, but a `config dump |
+grep` in the meantime reads like success:
+
+```bash
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph dashboard get-prometheus-api-host
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph dashboard get-alertmanager-api-host
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph orch status   # Backend: rook / Available: Yes
+```
+
+Empty output from either `get-` command means the setting is not there,
+whatever `ceph config dump` shows.
+
 ### One key that must be removed by hand, once
 
 ```bash
 kubectl -n rook-ceph exec deploy/rook-ceph-tools -- \
-  ceph config rm mgr/dashboard/MULTICLUSTER_CONFIG
+  ceph config rm mgr mgr/dashboard/MULTICLUSTER_CONFIG
 ```
 
 A leftover from when the dashboard was exposed as plain HTTP on port 7000. It
