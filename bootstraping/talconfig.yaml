@@ -96,6 +96,30 @@ nodes:
     controlPlane: true
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/36cd6536eaec8ba802be2d38974108359069cedba8857302f69792b26b87c010
+    patches:
+      # Unformatted partition for a Rook/Ceph SSD-class OSD; Rook takes it at
+      # /dev/disk/by-partlabel/r-fastpool. The name must NOT contain "ceph" --
+      # ceph-volume reads that label as ceph-disk's and skips the device.
+      - |-
+        apiVersion: v1alpha1
+        kind: RawVolumeConfig
+        name: fastpool
+        provisioning:
+          diskSelector:
+            match: system_disk
+          minSize: 350GB
+          maxSize: 350GB
+      # Carries /var/lib/longhorn: must stay above node-3's 404GB scheduled or its
+      # replicas have nowhere to rebuild. 350 + 630 + ~3GB of system partitions
+      # must fit the 997GB disk. Shrinking this needs an EPHEMERAL wipe.
+      - |-
+        apiVersion: v1alpha1
+        kind: VolumeConfig
+        name: EPHEMERAL
+        provisioning:
+          diskSelector:
+            match: system_disk
+          maxSize: 630GB
     nameservers:
       - 192.168.1.1
     networkInterfaces:
