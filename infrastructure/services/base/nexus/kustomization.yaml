@@ -6,3 +6,4 @@ resources:
   - release.yaml
   - services.yaml
   - compact-task-cronjob.yaml
+  - eula-cronjob.yaml
