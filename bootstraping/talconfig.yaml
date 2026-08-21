@@ -107,11 +107,13 @@ nodes:
         provisioning:
           diskSelector:
             match: system_disk
-          minSize: 350GB
-          maxSize: 350GB
-      # Carries /var/lib/longhorn: must stay above node-3's 404GB scheduled or its
-      # replicas have nowhere to rebuild. 350 + 630 + ~3GB of system partitions
-      # must fit the 997GB disk. Shrinking this needs an EPHEMERAL wipe.
+          minSize: 250GB
+          maxSize: 250GB
+      # Carries /var/lib/longhorn AND the container images. Must clear Longhorn's
+      # 478GB scheduled plus 163GB of images, or the partition fills: Longhorn
+      # schedules against provisioned size and reserves nothing here today.
+      # 250 + 740 + ~2GB of system partitions must fit the 997GB disk.
+      # Shrinking this needs an EPHEMERAL wipe; Talos never shrinks in place.
       - |-
         apiVersion: v1alpha1
         kind: VolumeConfig
@@ -119,7 +121,7 @@ nodes:
         provisioning:
           diskSelector:
             match: system_disk
-          maxSize: 630GB
+          maxSize: 740GB
     nameservers:
       - 192.168.1.1
     networkInterfaces:

@@ -103,7 +103,7 @@ node-3 has no second disk, so it is the only node in the cluster with no Ceph OS
 what pins the Ceph pool to `failureDomain: osd` and makes every planned reboot take part of
 the pool offline
 ([../infrastructure/controllers/base/rook-ceph/README.md](../infrastructure/controllers/base/rook-ceph/README.md)).
-A `RawVolumeConfig` carves 350 GB of unformatted space out of the install disk instead, which
+A `RawVolumeConfig` carves 250 GB of unformatted space out of the install disk instead, which
 gives node-3 an OSD without new hardware. It is deliberately **SSD class**: the four existing
 OSDs are USB spindles measured at 67–119 durable IOPS, which is a bulk tier and not somewhere
 a Postgres commit can live.
@@ -119,9 +119,13 @@ siderolabs/talos#11778, closed as a documentation fix rather than a code change,
 constraint is permanent.
 
 Raw volumes are provisioned **before** `EPHEMERAL`, which is what lets the two coexist on one
-disk. `EPHEMERAL` is capped at 630 GB rather than left to fill the disk, because it still
-carries `/var/lib/longhorn` on this node — see the traps below for the number that cap has to
-clear.
+disk. `EPHEMERAL` is capped at 740 GB rather than left to fill the disk (it is `/dev/sda6` at
+998 GB today) because it carries both `/var/lib/longhorn` and the container image store. The
+cap has to clear the sum of the two, not just Longhorn — see the traps below.
+
+The 250 GB is sized by what node-3 can spare today, not by what the SSD pool eventually wants.
+Longhorn holds 478 GB scheduled here; as workloads move to Ceph that shrinks and the partition
+can be re-cut larger, at the cost of another EPHEMERAL wipe.
 
 Everything else in `networkInterfaces` is identical across the three: `deviceSelector.physical: true`
 (match the physical NIC whatever it is called), `dhcp: false` with a static `/24`,
@@ -258,13 +262,25 @@ it is still in `talconfig.yaml`.
   nothing until `talosctl reset --system-labels-to-wipe=EPHEMERAL`, which on a control plane
   also drops that node out of etcd and destroys its Longhorn replicas. Never run it on two
   nodes at once.
-- **node-3's `EPHEMERAL` cap must stay above its Longhorn load.** 630 GB leaves ~535 GB
-  schedulable after Longhorn's 15 % reserve, against 404 GB scheduled. Cut it further and
-  node-3's replicas have nowhere to rebuild — nodes 1 and 2 had 17.9 and 63.6 GiB free when
-  this was written, so the volumes would simply stay degraded at two replicas.
+- **node-3's `EPHEMERAL` cap must clear Longhorn's scheduled bytes *plus* the image store.**
+  Measured 2026-08-21: 478 GB scheduled, 163 GB of container images, 348 GB actually used of
+  997 GB. Longhorn admits against *provisioned* size, and this disk carries
+  `storageReserved: 0` — the chart's 15 % default never applied to it, because that setting
+  only touches disks Longhorn adds after it lands. So nothing but this cap stops Longhorn
+  scheduling into space the images already hold. 740 GB leaves ~99 GB of margin once the
+  re-registered disk finally does pick up the 15 % reserve.
 - **`minSize` + `maxSize` on the raw volume plus the `EPHEMERAL` cap must fit the disk**,
-  leaving ~3 GB for the system partitions. 350 + 630 against node-3's 997 GB. Raw volumes are
-  provisioned first, so an over-large pair starves `EPHEMERAL`, not the OSD.
+  leaving ~2 GB for the system partitions (`STATE` 105 MB, `META` 1 MB, plus EFI/BOOT).
+  250 + 740 against node-3's 997 GB. Raw volumes are provisioned first, so an over-large pair
+  starves `EPHEMERAL`, not the OSD.
+- **Wiping node-3's EPHEMERAL destroys three things, not one:** its etcd member, its Longhorn
+  replicas, and the `rook-ceph-mon-b` store under `/var/lib/rook`. All three re-form from the
+  surviving two nodes, and both quorums hold at 2 of 3 — but there is no second fault budget
+  while it runs, so never overlap it with any other node work.
+- **`fbref/fbref-db-3` runs `numberOfReplicas: 1` with its only replica on node-3.** Wiping
+  EPHEMERAL destroys it outright. It is the CNPG *replica* (primary is `fbref-db-1` on
+  node-2), so the recovery is to delete the pod and PVC and let CNPG re-bootstrap — a 214 GB
+  `pg_basebackup` over the network. Check this placement again before any node wipe; it moves.
 - **Apply the machine config before Flux installs Cilium.** Doing it the other way round
   deadlocked the live cluster on 2026-06-12.
 - **Keep the Talos API off the VIP.** Point `talosconfig` endpoints at `192.168.1.101–103`,
