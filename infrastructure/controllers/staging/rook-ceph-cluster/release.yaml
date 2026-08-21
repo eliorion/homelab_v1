@@ -5,9 +5,9 @@ metadata:
   namespace: flux-system
 spec:
   targetNamespace: rook-ceph
-  # UNSUSPEND ONLY AFTER the hdd-burnin namespace is gone. Unsuspending hands four raw
-  # disks to ceph-volume, which wipes them — scripts/hdd-burn-in/README.md.
-  suspend: true
+  # Live. The disks are Ceph's now: re-suspending does NOT hand them back,
+  # and deleting the CephCluster is what would destroy the data on them.
+  suspend: false
   interval: 30m
   dependsOn:
     # The CephCluster CR does not exist until the operator's CRDs land.
