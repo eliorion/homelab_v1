@@ -174,5 +174,67 @@ spec:
             imageFormat: "2"
             imageFeatures: layering
             csi.storage.k8s.io/fstype: ext4
-    cephFileSystems: []
-    cephObjectStores: []
+    cephFileSystems:
+      - name: ceph-filesystem
+        spec:
+          metadataPool:
+            # CephFS metadata cannot be erasure coded, and this pool is tiny.
+            replicated:
+              size: 2
+              requireSafeReplicaSize: false
+          dataPools:
+            - name: data0
+              failureDomain: osd
+              deviceClass: hdd
+              replicated:
+                size: 2
+                requireSafeReplicaSize: false
+          metadataServer:
+            activeCount: 1
+            activeStandby: true
+            resources:
+              requests:
+                cpu: 500m
+                memory: 2Gi
+              limits:
+                memory: 4Gi
+        storageClass:
+          enabled: true
+          name: ceph-filesystem
+          isDefault: false
+          reclaimPolicy: Delete
+    cephObjectStores:
+      - name: ceph-objectstore
+        spec:
+          metadataPool:
+            failureDomain: osd
+            deviceClass: hdd
+            replicated:
+              size: 2
+              requireSafeReplicaSize: false
+          dataPool:
+            failureDomain: osd
+            deviceClass: hdd
+            # Replicated, NOT erasure coded. Rook's sample uses EC 2+1 on a host
+            # domain and needs 3 OSDs on 3 nodes, which this cluster does not
+            # have. EC is also WORSE here: across these four lopsided disks the
+            # shard-placement constraint binds before the overhead ratio does,
+            # so EC 2+1 yields ~1,640 GB against replication's ~1,820 GB.
+            replicated:
+              size: 2
+              requireSafeReplicaSize: false
+          # Keep the pools if the CephObjectStore CR is ever deleted.
+          preservePoolsOnDelete: true
+          gateway:
+            port: 80
+            instances: 1
+            resources:
+              requests:
+                cpu: 250m
+                memory: 1Gi
+              limits:
+                memory: 2Gi
+        storageClass:
+          enabled: true
+          name: ceph-bucket
+          reclaimPolicy: Delete

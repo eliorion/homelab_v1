@@ -41,7 +41,8 @@ spec:
         enabled: true
       nvmeof:
         enabled: false
+      # Required by the ceph-filesystem StorageClass; S3/RGW does NOT need it.
       cephfs:
-        enabled: false
+        enabled: true
       nfs:
         enabled: false
