@@ -127,6 +127,43 @@ The 250 GB is sized by what node-3 can spare today, not by what the SSD pool eve
 Longhorn holds 478 GB scheduled here; as workloads move to Ceph that shrinks and the partition
 can be re-cut larger, at the cost of another EPHEMERAL wipe.
 
+#### node-1 has no `fastpool`, and cannot get one without a rebuild
+
+**Talos applies `EPHEMERAL` sizing only when that volume is first provisioned, never
+retroactively, and XFS cannot be shrunk.** node-1 was installed with `EPHEMERAL` filling the
+disk — `/dev/nvme0n1p4`, 498 GB of a 500 GB NVMe — so there is no unallocated space for a raw
+partition. A `RawVolumeConfig` added afterwards does not fail loudly: the volume sits `failed`
+with
+
+```
+no disks matched for volume (1 matched selector): 1 have not enough space
+```
+
+and the `block.VolumeManagerController` retries it every 30 s indefinitely. The blocks were
+removed from this node on 2026-08-22 so the config converges; the volume then goes
+`failed -> closed`.
+
+**A reboot does not help, and neither does re-applying the config.** There is no persisted
+reset marker in META (`talosctl get metakeys` shows only `0x09`, null — identical to node-3,
+which provisioned cleanly). Only a first provisioning creates the layout.
+
+Nor is there a second disk to point it at. Every disk on node-1 is claimed:
+
+| Disk | Size | Owner |
+|---|---:|---|
+| `nvme0n1` | 500 GB | Talos system + `EPHEMERAL` |
+| `sda` | 1.0 TB | Ceph OSD — Talos reports `bluestore` |
+| `sdb` | 500 GB | Ceph OSD — `bluestore` |
+| `sdc1` | 640 GB | `u-hdd-sata-640`, the Longhorn user volume |
+
+`sdc` is the only one that could be freed, and it is a 5400 rpm `WDC WD6400BPVT` measured at
+**20 IOPS** ([`../documentations/16`](../documentations/16-usb-disk-qualification.md)).
+`fastpool` exists to give Postgres an SSD tier away from the 119-IOPS USB spindles, so putting
+it there would satisfy the config and defeat its purpose. That disk belongs in the *HDD* pool.
+
+Giving node-1 a `fastpool` therefore requires a controlled reinstall with `EPHEMERAL` capped
+from the start — planned downtime, not a config change.
+
 Everything else in `networkInterfaces` is identical across the three: `deviceSelector.physical: true`
 (match the physical NIC whatever it is called), `dhcp: false` with a static `/24`,
 `vip.ip: 192.168.1.100`, nameserver `192.168.1.1`, a default route via `192.168.1.1`, and a
