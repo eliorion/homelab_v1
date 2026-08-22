@@ -121,3 +121,43 @@ spec:
               symptom of those and not an independent fault — fix the storage
               layer, not this pod. If it is firing alone, read the pod's own
               logs; a CrashLoop here is its own bug.
+
+        # The LEADING indicator for the three rules above, added 2026-08-22
+        # while carving a Ceph OSD out of each node's install disk.
+        #
+        # WHY THIS METRIC AND NOT etcd's OWN. There is no
+        # etcd_disk_wal_fsync_duration_seconds on this cluster: Talos does not
+        # enable etcd's metrics listener (nothing binds :2381, verified), and
+        # turning it on means listen-metrics-urls in talconfig plus rolling all
+        # three control planes. etcd_request_duration_seconds is the apiserver's
+        # OWN view of how long etcd takes to answer it, so it needs no etcd
+        # scrape and still moves for the same underlying cause.
+        #
+        # 500ms: measured p99 baseline is 44ms, and the highest 2h peak under
+        # normal load -- including a live storage migration -- was 198ms. 250ms
+        # would flap on that. etcd's election timeout is 1000ms, so 500ms sits
+        # between "clearly degraded" and "already losing the leader", which is
+        # the whole point of a leading indicator.
+        #
+        # NOT replayed against the 2026-08-12 incident: the TSDB predating this
+        # rule is gone. Unproven against a real event, recorded here rather than
+        # left to be assumed otherwise.
+        - alert: EtcdRequestLatencyHigh
+          expr: |
+            histogram_quantile(0.99,
+              sum(rate(etcd_request_duration_seconds_bucket[5m])) by (le)
+            ) > 0.5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "etcd p99 request latency {{ $value | printf \"%.2f\" }}s as seen by the apiserver"
+            description: >-
+              etcd is answering the apiserver slowly. This fires BEFORE
+              EtcdLeaderLossSuspected and is the window in which to act. The
+              known cause on this cluster is I/O contention on the single /var
+              partition each node runs etcd, container images and CI writes
+              from -- and, since 2026-08-22 on node-3, a Ceph OSD carved from
+              the same physical disk. Check `ceph status` for backfill or
+              recovery in progress, and throttle it with osd_max_backfills
+              before this becomes leader loss.
