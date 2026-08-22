@@ -21,7 +21,7 @@ Base — `monitoring/controllers/base/kube-prometheus-stack/`:
 
 | File | What it does |
 |---|---|
-| `kustomization.yaml` | Lists `namespace.yaml`, `repository.yaml`, `release.yaml`. |
+| `kustomization.yaml` | Lists `namespace.yaml`, `repository.yaml`, `release.yaml`, `hpa-maxedout-rule.yaml`. |
 | `namespace.yaml` | Namespace `monitoring`, carrying `pod-security.kubernetes.io/enforce`, `/audit` and `/warn` all set to `privileged`. |
 | `repository.yaml` | `HelmRepository/kube-prometheus-stack` in namespace `monitoring`, `https://prometheus-community.github.io/helm-charts`, `interval: 24h`. |
 | `release.yaml` | `HelmRelease/kube-prometheus-stack` in namespace `monitoring`, chart `kube-prometheus-stack` pinned to `66.2.2`, `interval: 30m` with a `12h` chart interval, `install.crds: Create`, `upgrade.crds: CreateReplace`, drift detection enabled, plus the values described below. |
@@ -61,9 +61,39 @@ Kustomization (`path: ./monitoring/controllers/<env>`, `interval: 1m0s`,
 `retryInterval: 1m`, `timeout: 5m`, `prune: true`) with a `decryption` block
 pointing at the `sops-age` Secret. Staging additionally declares
 `monitoring-configs` (`path: ./monitoring/configs/staging`), also with
-decryption. Neither has a `dependsOn`, so both reconcile straight off the root
-Kustomization with no ordering relative to each other or to the infrastructure
-tiers.
+decryption. `monitoring-configs` has no `dependsOn` and reconciles straight off
+the root Kustomization. `monitoring-controllers` gained one on 2026-08-22 — see
+Storage below.
+
+### Storage: 30Gi TSDB + 10Gi grafana.db on `ceph-block`
+
+Both claim from `ceph-block` (Rook/Ceph, HDD pool). Until 2026-08-22 they used a
+dedicated two-replica `longhorn-monitoring` class that shipped from this very
+directory, because node-1 had 17.9 GiB of schedulable headroom and a 30Gi volume
+on the three-replica default could not place its node-1 replica — Longhorn would
+bring the volume up DEGRADED rather than fail loudly. Ceph replicates at the pool
+(`size: 2`), so there is no per-volume replica count and that whole class of
+problem is gone. The class was deleted with the move.
+
+**That deletion moved the StorageClass to a different owner, and the ordering
+matters.** `longhorn-monitoring` shipped in the same Kustomization as the
+HelmRelease deliberately: a class owned elsewhere is a cross-Kustomization race
+where the PVC sits Pending, the pod with it, and the HelmRelease fails its 5m
+timeout and rolls back. `ceph-block` comes from the `rook-ceph-cluster`
+HelmRelease under `infrastructure-controllers`, so `monitoring-controllers` now
+declares `dependsOn: infrastructure-controllers`.
+
+This is **weaker than the old arrangement**, and worth knowing on a cold
+bootstrap: `infrastructure-controllers` carries no `wait: true`, so it reports
+Ready once applied rather than once the HelmRelease has reconciled. The race can
+still be lost; the difference is that `retryInterval: 1m` retries it instead of
+the class being guaranteed present.
+
+Neither volume's contents survived the move, deliberately. The TSDB is bounded by
+`retention: 10d` and is reconstructible by definition. `grafana.db` was 265 MB
+holding exactly one user (`admin`) — every dashboard is sidecar-provisioned from
+ConfigMaps in git, so nothing in git was lost. Discarding it also re-inits the
+admin credentials from `grafana-admin`, which is the documented rotation path.
 
 ### Overlays
 
