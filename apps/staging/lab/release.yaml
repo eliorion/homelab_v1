@@ -26,6 +26,10 @@ spec:
       strategy: rollback
   values:
     replicas: 1
+    # Empty in the chart means "cluster default"; pin it so the class is visible
+    # here and does not silently change when the default flips.
+    storage:
+      className: ceph-block
     # ADD A PROJECT: append it here AND add the reflector permit annotation to its
     # CNPG cluster (apps/staging/databases/<project>/cluster-reflector-patch.yaml).
     projects:
