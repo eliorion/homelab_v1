@@ -13,6 +13,19 @@ spec:
   path: ./monitoring/controllers/staging
   prune: true
 
+  # Prometheus and Grafana claim from `ceph-block`, which the rook-ceph-cluster
+  # HelmRelease under this Kustomization creates. They used to claim from a
+  # `longhorn-monitoring` class shipped in the same Kustomization as the
+  # HelmRelease precisely to avoid this ordering race; moving them to Ceph gives
+  # the StorageClass a different owner, so the dependency has to be declared.
+  # NOTE this is weaker than the old arrangement: infrastructure-controllers
+  # carries no `wait: true`, so it reports Ready once applied rather than once
+  # the HelmRelease has reconciled. A cold bootstrap can still land here first —
+  # the PVCs sit Pending and retryInterval retries it, instead of the
+  # StorageClass being guaranteed present.
+  dependsOn:
+    - name: infrastructure-controllers
+
   # REQUIRED: that path carries a sops Secret
   # (kube-prometheus-stack/grafana-admin.enc.yaml). Remove this and Flux applies
   # the ENC[AES256_GCM,...] ciphertext verbatim with no error at apply time.

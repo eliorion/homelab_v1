@@ -140,17 +140,15 @@ spec:
       persistence:
         enabled: true
         type: pvc
-        # Same 2-replica class as the TSDB above, for the same reason and one
-        # more: grafana.db is a few MB of dashboards and users, so a third
-        # copy on the cluster's scarcest disk buys almost nothing.
-        storageClassName: longhorn-monitoring
+        storageClassName: ceph-block
         accessModes: ["ReadWriteOnce"]
         size: 10Gi
-      # Longhorn RWO cannot be attached to two pods at once, so the default
+      # RWO cannot be attached to two pods at once, so the default
       # RollingUpdate deadlocks: the new pod waits for a volume the old pod
       # still holds, and the HelmRelease fails on timeout. Recreate takes the
       # old pod down first. The brief outage is acceptable -- Grafana is a
-      # read-only view, and nothing alerts through it.
+      # read-only view, and nothing alerts through it. True on RBD as it was
+      # on Longhorn.
       deploymentStrategy:
         type: Recreate
     prometheus:
@@ -164,18 +162,10 @@ spec:
         # 30Gi against retention: 10d. Measured: the emptyDir was holding
         # 8.7 GiB, and disabling the four dead control-plane jobs above only
         # reduces the series count, so 30Gi is roughly 3x headroom.
-        #
-        # longhorn-monitoring, NOT the default longhorn class, and that is
-        # load-bearing rather than a preference. Longhorn schedules against
-        # PROVISIONED size with over-provisioning pinned at 100, and node 1
-        # has 17.9 GiB of schedulable headroom left (376 of 393.9 GiB used).
-        # A 30Gi volume on the 3-replica default cannot place its node-1
-        # replica -- and Longhorn does not fail loudly, it brings the volume up
-        # DEGRADED. See storageclass.yaml for the measurements.
         storageSpec:
           volumeClaimTemplate:
             spec:
-              storageClassName: longhorn-monitoring
+              storageClassName: ceph-block
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:
