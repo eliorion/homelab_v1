@@ -532,9 +532,32 @@ the Ingress must move with it.
 recording because nothing about it looks like a misconfiguration until you read
 the banner. Ceph's dashboard does not discover Prometheus; it needs
 `mgr/dashboard/PROMETHEUS_API_HOST` set, and without it every graph fails with
-*Invalid URL '/api/v1/query_range': No schema supplied* — a URL built from an
-empty host. `ALERTMANAGER_API_HOST` is separate, because the alerts panel reads
+*Invalid URL '/api/v1/query': No schema supplied* — a URL built from an empty
+host. `ALERTMANAGER_API_HOST` is separate, because the alerts panel reads
 Alertmanager directly rather than through Prometheus.
+
+**Setting it through `cephConfig` did not work, and failed in the most
+misleading way available.** Rook owns `mgr/dashboard/PROMETHEUS_API_HOST`: every
+dashboard reconcile deletes it from `mgr.a` and `mgr.b` along with
+`PROMETHEUS_API_SSL_VERIFY`, `ssl`, `server_port`, `ssl_server_port` and
+`url_prefix`, rewrites them from `cephClusterSpec.dashboard`, and restarts the
+dashboard module. Rook applies `cephConfig` first and reconciles the dashboard
+second, so the operator log reads `successfully set option` about seven seconds
+before the deletion that undoes it, and `ceph config dump` afterwards shows the
+key present with an empty value — which greps like success. The fix is the field
+Rook actually reads, `dashboard.prometheusEndpoint`. `ALERTMANAGER_API_HOST` is
+untouched by any of this: Rook's binary contains one occurrence of
+`PROMETHEUS_API_HOST` and no Alertmanager string at all.
+
+`ceph config log` is what settled it — it records who changed what and when,
+which is the only view in which a value that is set and then immediately
+reverted looks different from a value that was never set:
+
+```
+--- 28 --- 02:01:01 ---  + mgr/mgr/dashboard/PROMETHEUS_API_HOST = http://…:9090
+--- 29 --- 02:01:08 ---  - mgr/mgr/dashboard/PROMETHEUS_API_HOST = http://…:9090
+                         + mgr/mgr/dashboard/PROMETHEUS_API_HOST =
+```
 
 The Hosts and Physical Disks pages failed differently, with *503 Orchestrator is
 unavailable*, and that one also cost log volume: the mgr `prometheus` module
@@ -542,7 +565,7 @@ retried `Failed to collect cephadm daemon status` **every 15 seconds**. Two
 settings fix it and neither implies the other — `mgr.modules` enabling the `rook`
 module makes the backend available, `mgr/orchestrator/orchestrator` selects it.
 Rook enables modules from the spec but never selects a backend; its binary
-carries no `orch set backend`. All four keys are in the HelmRelease.
+carries no `orch set backend`. All of it is in the HelmRelease.
 
 ## Upstream telemetry, and the half of it git cannot hold
 

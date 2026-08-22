@@ -59,11 +59,12 @@ spec:
           # report; perf ships per-daemon counters. Pinned off on purpose.
           mgr/telemetry/channel_ident: "false"
           mgr/telemetry/channel_perf: "false"
-          # Without these two the dashboard builds `/api/v1/query_range` with no
-          # scheme and every graph panel fails. In-cluster DNS on purpose, not
-          # the tailnet name: this call is mgr-to-Prometheus, and routing it over
-          # the tailnet would make Ceph's graphs depend on the Tailscale proxy.
-          mgr/dashboard/PROMETHEUS_API_HOST: "http://kube-prometheus-stack-prometheus.monitoring.svc:9090"
+          # The alerts panel reads Alertmanager directly. Rook does not manage
+          # this key, so cephConfig owns it -- unlike PROMETHEUS_API_HOST, which
+          # belongs under dashboard.prometheusEndpoint below and must NOT be set
+          # here. In-cluster DNS on purpose, not the tailnet name: this call is
+          # mgr-to-Alertmanager, and routing it over the tailnet would make the
+          # dashboard depend on the Tailscale proxy.
           mgr/dashboard/ALERTMANAGER_API_HOST: "http://kube-prometheus-stack-alertmanager.monitoring.svc:9093"
           # Selects the backend that mgr.modules below makes available. Rook does
           # NOT set this -- its binary carries no `orch set backend`. Both halves
@@ -85,6 +86,12 @@ spec:
       dashboard:
         enabled: true
         ssl: false
+        # Rook OWNS mgr/dashboard/PROMETHEUS_API_HOST: every dashboard reconcile
+        # deletes it and rewrites it from this field, so setting it through
+        # cephConfig is silently reverted ~7s later and every graph panel fails
+        # with "Invalid URL '/api/v1/query': No schema supplied".
+        prometheusEndpoint: "http://kube-prometheus-stack-prometheus.monitoring.svc:9090"
+        prometheusEndpointSSLVerify: false
       storage:
         useAllNodes: false
         useAllDevices: false
