@@ -6,6 +6,7 @@ metadata:
   name: azuracast-db
   namespace: azuracast
 spec:
+  storageClassName: ceph-block
   accessModes:
     - ReadWriteOnce
   resources:
@@ -19,6 +20,7 @@ metadata:
   name: azuracast-stations
   namespace: azuracast
 spec:
+  storageClassName: ceph-block
   accessModes:
     - ReadWriteOnce
   resources:
@@ -33,6 +35,7 @@ metadata:
   name: azuracast-storage
   namespace: azuracast
 spec:
+  storageClassName: ceph-block
   accessModes:
     - ReadWriteOnce
   resources:
@@ -45,6 +48,7 @@ metadata:
   name: azuracast-backups
   namespace: azuracast
 spec:
+  storageClassName: ceph-block
   accessModes:
     - ReadWriteOnce
   resources:
