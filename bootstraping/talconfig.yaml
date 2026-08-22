@@ -54,6 +54,12 @@ nodes:
             node.longhorn.io/create-default-disk: config
           nodeAnnotations:
             node.longhorn.io/default-disks-config: '[{"path":"/var/lib/longhorn","allowScheduling":true,"storageReserved":74633213952,"tags":[]},{"path":"/var/mnt/hdd-sata-640","allowScheduling":true,"storageReserved":96020254310,"tags":[]}]'
+      # NO RawVolumeConfig here, unlike node-3. Talos sizes EPHEMERAL only when
+      # the volume is FIRST provisioned and XFS cannot shrink, so this node's
+      # 498GB EPHEMERAL leaves no room for a 145GB raw partition: the volume
+      # sits `failed` and the controller retries every 30s forever. Adding the
+      # blocks back only works from a first provisioning -- see README,
+      # "node-1 has no fastpool".
     nameservers:
       - 192.168.1.1
     networkInterfaces:
