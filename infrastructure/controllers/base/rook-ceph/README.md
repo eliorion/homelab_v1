@@ -172,18 +172,43 @@ the backend to 8443 and the Ingress port must move with it.
 ### What the dashboard needs to stop showing errors
 
 Ceph's dashboard ships knowing nothing about where Prometheus lives or who
-orchestrates the cluster, and says so on every page load. Both are settings, not
-bugs, and both live in `cephConfig.mgr` in `staging/rook-ceph-cluster/`:
+orchestrates the cluster, and says so on every page load. All three settings are
+in `staging/rook-ceph-cluster/release.yaml`, but **not in the same block**, and
+that distinction is the whole trap:
 
-| Key | Without it |
-|---|---|
-| `mgr/dashboard/PROMETHEUS_API_HOST` | Every graph panel fails: *Could not reach Prometheus's API on /api/v1 error Invalid URL '/api/v1/query_range': No schema supplied*. The dashboard builds the URL from an empty host. |
-| `mgr/dashboard/ALERTMANAGER_API_HOST` | The alerts panel is empty — it reads Alertmanager directly, not Prometheus. |
-| `mgr/orchestrator/orchestrator` | *503 Orchestrator is unavailable* on the Hosts, OSDs and Physical Disks pages, and the mgr `prometheus` module logs `Failed to collect cephadm daemon status` **every 15 seconds** forever. |
+| Setting | Where it goes | Without it |
+|---|---|---|
+| `dashboard.prometheusEndpoint` | `cephClusterSpec.dashboard` | Every graph panel fails: *Could not reach Prometheus's API on /api/v1 error Invalid URL '/api/v1/query': No schema supplied*. The dashboard builds the URL from an empty host. |
+| `mgr/dashboard/ALERTMANAGER_API_HOST` | `cephConfig.mgr` | The alerts panel is empty — it reads Alertmanager directly, not Prometheus. |
+| `mgr/orchestrator/orchestrator` | `cephConfig.mgr` | *503 Orchestrator is unavailable* on the Hosts, OSDs and Physical Disks pages, and the mgr `prometheus` module logs `Failed to collect cephadm daemon status` **every 15 seconds** forever. |
 
-Both API hosts point at in-cluster Service DNS, not at the tailnet name. This
-call is mgr-to-Prometheus inside the cluster; sending it over the tailnet would
-make Ceph's own graphs fail whenever the Tailscale proxy is down.
+**`PROMETHEUS_API_HOST` must never be set through `cephConfig`.** Rook owns that
+key. Every dashboard reconcile it *deletes* `mgr/dashboard/PROMETHEUS_API_HOST`
+(along with `PROMETHEUS_API_SSL_VERIFY`, `ssl`, `server_port`, `ssl_server_port`
+and `url_prefix`) from `mgr.a` and `mgr.b`, rewrites them from
+`cephClusterSpec.dashboard`, and restarts the dashboard module. A value written
+through `cephConfig` is therefore reverted roughly **seven seconds** after Rook
+sets it, on every single pass — Rook applies `cephConfig` first and its own
+dashboard reconcile second, so the operator log cheerfully reads
+`successfully set option` immediately before the deletion that undoes it.
+
+This was diagnosed with `ceph config log`, which is the tool for the job — it
+records who changed what, when:
+
+```
+--- 28 --- 02:01:01 ---  + mgr/mgr/dashboard/PROMETHEUS_API_HOST = http://…:9090
+--- 29 --- 02:01:08 ---  - mgr/mgr/dashboard/PROMETHEUS_API_HOST = http://…:9090
+                         + mgr/mgr/dashboard/PROMETHEUS_API_HOST =
+```
+
+`ALERTMANAGER_API_HOST` is not in Rook's list — its binary contains exactly one
+occurrence of `PROMETHEUS_API_HOST` and no Alertmanager string at all — so that
+one is safe in `cephConfig` and has held its value throughout.
+
+Both endpoints point at in-cluster Service DNS, not at the tailnet name. These
+are mgr-to-Prometheus and mgr-to-Alertmanager calls inside the cluster; sending
+them over the tailnet would make Ceph's own graphs fail whenever the Tailscale
+proxy is down.
 
 **The orchestrator needs two halves and neither implies the other.**
 `mgr.modules: [{name: rook, enabled: true}]` makes the backend *available*;
@@ -204,39 +229,47 @@ carries no Grafana session and Grafana's cookie is `SameSite=Lax`. That would le
 anyone on the tailnet read Grafana without logging in — too much for one tab.
 Grafana itself is at `https://grafana.<your-tailnet>.ts.net`.
 
-**Verify the value, not the key.** On the reconcile that first enabled the
-orchestrator, `PROMETHEUS_API_HOST` came back *present and empty* — the operator
-logged `successfully set option`, and the key showed up in `ceph config dump`
-with nothing after it, while the dashboard stayed exactly as broken. Setting the
-identical value again stuck. Rook writes a key only when the stored value
-differs, so it repairs this on its next pass either way, but a `config dump |
-grep` in the meantime reads like success:
+**Verify the value, not the key, and verify it twice.** A reverted setting still
+appears in `ceph config dump` — as a key with nothing after it, which greps like
+success. And a single check right after a reconcile can catch the good value in
+the seconds before Rook removes it:
 
 ```bash
 kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph dashboard get-prometheus-api-host
 kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph dashboard get-alertmanager-api-host
 kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph orch status   # Backend: rook / Available: Yes
+
+# who last changed it, and to what
+kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph config log 20
 ```
 
-Empty output from either `get-` command means the setting is not there,
-whatever `ceph config dump` shows.
+Empty output from either `get-` command means the setting is not there, whatever
+`ceph config dump` shows.
 
-### One key that must be removed by hand, once
+### The multicluster key, which cannot be removed for good
 
 ```bash
 kubectl -n rook-ceph exec deploy/rook-ceph-tools -- \
   ceph config rm mgr mgr/dashboard/MULTICLUSTER_CONFIG
 ```
 
-A leftover from when the dashboard was exposed as plain HTTP on port 7000. It
-still pins `current_url` and `hub_url` to `http://ceph.<tailnet>.ts.net:7000`,
-which serves nothing now, so the cluster switcher points at a dead endpoint.
-Rook's `cephConfig` can only *set* keys, never remove them — the same gap the
-telemetry licence command fills.
+**That removal does not stick, and it is not meant to.** The dashboard rebuilds
+the key from the browser's `Host` plus its own `server_port` the next time
+someone logs in — measured at roughly three minutes — and refreshes the token
+inside it every eight hours. It is the dashboard's own record of which cluster
+is the multi-cluster hub, not configuration anyone owns.
+
+What the removal is good for is clearing a *stale* `current_url` / `hub_url`.
+Ours still reads `http://ceph.<tailnet>.ts.net:7000`, left from when the
+dashboard was exposed as plain HTTP on 7000; the port is appended from
+`server_port`, which is still 7000 behind the Tailscale proxy, so it will
+reappear looking the same. Harmless — the switcher lists one cluster and this
+repo runs one — but do not mistake it for drift and do not put it in git.
 
 It also embeds a dashboard admin JWT in plaintext, visible to anyone who can run
-`ceph config dump`. The token expires 8 h after issue so this is not an incident,
-but it is a reason not to recreate the entry by hand.
+`ceph config dump`. The token expires 8 h after issue and is refreshed in place,
+so there is always a live one there. That is worth knowing before handing anyone
+read access to the mon config store.
 
 ## Upstream telemetry
 
