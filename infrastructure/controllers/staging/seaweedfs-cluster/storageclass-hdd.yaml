@@ -7,8 +7,13 @@ allowVolumeExpansion: true
 volumeBindingMode: Immediate
 reclaimPolicy: Delete
 parameters:
+  # Do NOT set `collection` here. A fixed value puts every PVC in one
+  # collection, and -collectionQuotaMB is enforced against that collection's
+  # total -- so each volume is measured against every other volume's data and
+  # the smallest request decides when they all go read-only. Left unset the
+  # driver uses collection=<pv-name>, one quota per volume.
+  #
   # A misspelled key here is NOT an error -- the driver logs
   # "VolumeContext '<key>' ignored" and mounts anyway. Verify against the actual
   # `weed mount` argv in the seaweedfs-mount pod, not against this file.
-  collection: hdd
   replication: "010"

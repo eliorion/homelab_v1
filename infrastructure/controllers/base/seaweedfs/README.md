@@ -142,6 +142,37 @@ as the single highest-value hardware change available to this cluster.
 - **Each bucket is a collection that pre-allocates ~7 volumes of ~30 GB.** Set
   `fs.configure -locationPrefix=/buckets/ -volumeGrowthCount=1 -apply` or a
   handful of buckets returns `no free volumes left`.
+- **Never set `collection` on the `hdd` StorageClass.** A fixed value puts every
+  PVC in one collection, and `-collectionQuotaMB` is enforced against that
+  collection's *total* — so each volume is measured against every other volume's
+  data and the smallest request decides when they all go read-only. Measured
+  2026-08-24: a brand-new 1 Gi PVC mounted already 100% full, because the shared
+  `hdd` collection held 1.11 GiB. Left unset the driver uses
+  `collection=<pv-name>`, one quota per volume. The parameter is immutable on
+  existing PVs, so fixing it means recreating them.
+- **A PVC's quota counts every replica.** `-collectionQuotaMB` is set from the
+  PVC request while the collection size counts both copies, so a `010` volume
+  holds about *half* its requested size — measured: 1.4 GB written to a 2 Gi PVC
+  reported 2.7 G used, 100%. Size `hdd` PVCs at twice the data you intend to keep.
+- **The filer Service is `seaweedfs-seaweedfs-filer`, not `seaweedfs-filer`** —
+  the chart prefixes the release name *and* the chart name. The CSI driver's
+  `seaweedfsFiler` pointed at the short name and every provision failed with
+  `DeadlineExceeded`, which reads like a slow filer rather than a missing one.
+  Use the `-client` variant: the plain one sets `publishNotReadyAddresses` and
+  hands out filers that are still starting.
+- **`upgrade.disableWait: true` is required on the CSI HelmRelease.** Both its
+  DaemonSets are `OnDelete`, so updated pods never appear on their own, Helm
+  waits the full timeout and then *rolls back* — silently reverting the values
+  you just changed. After a chart bump, delete the node and mount pods by hand.
+- **`master.volumeSizeLimitMB` defaults to 1000 in the chart**, not the
+  SeaweedFS default of 30000. Left alone the 4.4 TB tier is carved into ~4200
+  one-gigabyte volumes, ~2100 per volume server, each an open `.dat`/`.idx` pair
+  with an in-memory index. Only cheap to change while the tier is empty.
+- **Two data nodes cannot survive one loss for writes.** node-3 carries no HDD,
+  so `010` has only two racks to place its copies in. Drilled 2026-08-24: with
+  node-2's volume server down, reads served correctly and checksums matched, but
+  every write returned `I/O error` until it came back. No data was lost and
+  replication restored itself. A third HDD node is what closes this.
 - **`global.seaweedfs.monitoring.additionalLabels` must carry `release:
   kube-prometheus-stack`** or the chart's ServiceMonitors are applied and then
   silently ignored — the same trap recorded for Ceph and Longhorn in

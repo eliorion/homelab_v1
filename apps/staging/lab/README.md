@@ -119,6 +119,20 @@ leaves the project namespace — see
   `reconcileStrategy: Revision` means a new commit to that path rolls the labs. The
   GitRepository `ignore` block is what keeps unrelated `asp` commits from doing so.
 
+- **A Helm re-apply empties the reflected pull Secret, and reflector will not refill it.** The
+  chart owns `ghcr-pull-secret` and re-applies it as `{}` while leaving the
+  `reflected-version` annotation intact, so reflector compares versions, decides the copy is
+  current, and logs `Validated 4` — leaving an empty Secret and `401 Unauthorized` on every image
+  pull. Hit on 2026-08-24 resuming the suspended release. Fix:
+  ```bash
+  kubectl -n lab annotate secret ghcr-pull-secret \
+    reflector.v1.k8s.emberstack.com/reflected-version- --overwrite
+  kubectl -n reflector annotate secret ghcr-pull-secret refresh-trigger="$(date -u +%s)" --overwrite
+  kubectl -n lab delete pod --all
+  ```
+  Check the other three namespaces the source permits (`asp`, `fbref`, `scraper`) with
+  `kubectl -n <ns> get secret ghcr-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d`
+  — an empty `{}` is the symptom, and only a namespace whose release was re-applied is affected.
 ## Operating it
 
 Park or wake a single lab, and reach it without the tailnet:
