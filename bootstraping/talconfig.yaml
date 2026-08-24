@@ -191,7 +191,10 @@ nodes:
     patches:
       # Same r-linstor label as node-1 and node-2, so a single
       # LinstorSatelliteConfiguration covers all three nodes. Was Ceph's
-      # r-fastpool; renaming it required dropping that partition first.
+      # r-fastpool: Talos refused `wipe disk sda7 --drop-partition` with
+      # "block device is in use" (siderolabs/talos#12263) even with no mount,
+      # no holder and no dm device -- the CLI exposes no override for a
+      # partition of the system disk. The EPHEMERAL wipe and reboot removed it.
       - |-
         apiVersion: v1alpha1
         kind: RawVolumeConfig
