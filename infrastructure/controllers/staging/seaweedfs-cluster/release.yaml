@@ -37,6 +37,9 @@ spec:
 
     master:
       replicas: 3
+      # Chart default is 1000, which would carve the 4.4TB tier into ~4200
+      # volumes. 30000 is the upstream default and what documentations/17 assumes.
+      volumeSizeLimitMB: 30000
       data:
         # NOT hostPath: -mdir holds the raft log and the cluster's topology
         # UUID, and a rescheduled master on a hostPath comes back as a brand
