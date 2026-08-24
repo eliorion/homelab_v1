@@ -18,6 +18,11 @@ spec:
   install:
     createNamespace: false
   upgrade:
+    # Both DaemonSets are OnDelete (see node.updateStrategy below), so their
+    # updated pods never appear on their own and a waiting upgrade hangs the
+    # full timeout, then rolls back. Rotate the node and mount pods by hand
+    # after a chart bump.
+    disableWait: true
     remediation:
       retries: 3
       strategy: rollback
