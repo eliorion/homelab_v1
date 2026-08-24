@@ -1,4 +1,4 @@
-# TEMPORARY -- restores asp-db from its Barman object store after the Longhorn
+# TEMPORARY -- restores nextcloud-db from its Barman object store after the Longhorn
 # volumes were lost in the LINSTOR migration. bootstrap is read ONCE, at
 # cluster creation, so this is inert on an existing cluster: it only takes
 # effect if the Cluster and its PVCs are deleted first. Remove it once the
@@ -8,13 +8,13 @@
   path: /spec/bootstrap
   value:
     recovery:
-      source: asp-db-backup
+      source: nextcloud-db-backup
 - op: add
   path: /spec/externalClusters
   value:
-    - name: asp-db-backup
+    - name: nextcloud-db-backup
       plugin:
         name: barman-cloud.cloudnative-pg.io
         parameters:
-          barmanObjectName: r2-store
-          serverName: asp-db
+          barmanObjectName: garage-store
+          serverName: nextcloud-db

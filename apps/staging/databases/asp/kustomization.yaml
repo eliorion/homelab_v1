@@ -11,6 +11,11 @@ resources:
   - ingestion-metrics-configmap.yaml
 
 patches:
+  # TEMPORARY restore from the Barman object store -- see the patch file.
+  - path: cluster-recovery-patch.yaml
+    target:
+      kind: Cluster
+      name: asp-db
   # Attach the Barman Cloud Plugin for R2 backups.
   - path: cluster-backup-patch.yaml
     target:

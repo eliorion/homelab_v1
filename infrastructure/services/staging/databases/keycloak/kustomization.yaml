@@ -10,6 +10,11 @@ resources:
   - scheduledbackup.yaml
 
 patches:
+  # TEMPORARY restore from the Barman object store -- see the patch file.
+  - path: cluster-recovery-patch.yaml
+    target:
+      kind: Cluster
+      name: keycloak-db
   - path: cluster-backup-patch.yaml
     target:
       kind: Cluster

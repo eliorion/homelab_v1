@@ -14,6 +14,11 @@ resources:
   - scheduledbackup.yaml
 
 patches:
+  # TEMPORARY restore from the Barman object store -- see the patch file.
+  - path: cluster-recovery-patch.yaml
+    target:
+      kind: Cluster
+      name: nextcloud-db
   # Attach the Barman Cloud plugin -> Garage (WAL archiver + daily base backup).
   - path: cluster-backup-patch.yaml
     target:
