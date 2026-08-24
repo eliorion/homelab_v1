@@ -22,7 +22,10 @@ spec:
       retries: 3
       strategy: rollback
   values:
-    seaweedfsFiler: "seaweedfs-filer.seaweedfs.svc.cluster.local:8888"
+    # -client, not the peer service: the peer one sets publishNotReadyAddresses
+    # and would hand the CSI driver a filer that is still starting. The name is
+    # seaweedfs-seaweedfs- because the chart prefixes release name AND chart name.
+    seaweedfsFiler: "seaweedfs-seaweedfs-filer-client.seaweedfs.svc.cluster.local:8888"
     # Empty means the chart creates no StorageClass. The `hdd` class ships from
     # infrastructure/controllers/staging/seaweedfs-cluster so it can carry
     # parameters the chart does not expose.
