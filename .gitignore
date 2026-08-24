@@ -26,3 +26,4 @@ bootstraping/talsecret.yaml
 bootstraping/clusterconfig/
 # dead helm render from the rejected inlineManifest approach (embeds a Hubble CA)
 cilium-indented.yaml
+.claude/worktrees/
