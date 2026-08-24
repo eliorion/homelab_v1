@@ -5,6 +5,9 @@ metadata:
   namespace: flux-system
 spec:
   targetNamespace: piraeus-datastore
+  # Without this Flux names the release <targetNamespace>-<name> and the chart
+  # then generates a 69-character Service name, which the 63-char limit rejects.
+  releaseName: piraeus-operator
   interval: 30m
   chart:
     spec:
