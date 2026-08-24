@@ -31,9 +31,14 @@ spec:
             values:
               - staging-controlplane-3
   storagePools:
-      # Same pool NAME as the other nodes -- the StorageClass selects by name.
-      # Different partition: node-3 reuses the 250GB r-fastpool Ceph left behind
-      # rather than taking an EPHEMERAL wipe. bootstraping/talconfig.yaml owns it.
+      # Same pool NAME as the other nodes, so the StorageClass sees one `ssd` pool
+      # across the cluster -- this is NOT a second pool. It exists as a separate
+      # object only because node-3 still carries Ceph's r-fastpool label while
+      # the others use r-linstor, and source.hostDevices is per-configuration.
+      # TEMPORARY: when node-3 is repartitioned to 745GB its raw volume is renamed
+      # `linstor`, and this whole object collapses into ssd-pool above with its
+      # nodeAffinity dropped. Do NOT delete it before then -- Piraeus deletes any
+      # storage pool that disappears from its config, and this one is live.
     - name: ssd
       lvmThinPool: {}
       source:

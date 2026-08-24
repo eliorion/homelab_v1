@@ -138,6 +138,39 @@ no new volume can be grown. Giving node-3 a real HDD is what lifts this, and
 [`16-usb-disk-qualification.md`](16-usb-disk-qualification.md) already calls that
 the single highest-value hardware change available here.
 
+## The `ssd` pool is one pool, described by two objects
+
+`linstor storage-pool list` shows `ssd` on every node that has one, with the same
+LVM VG (`linstor_ssd/ssd`) and the same driver. The StorageClass selects it by
+name, so there is exactly one pool as far as any PVC is concerned.
+
+It is written as two `LinstorSatelliteConfiguration` objects only because the
+backing partitions are labelled differently: node-1 and node-2 use
+`/dev/disk/by-partlabel/r-linstor`, while node-3 still carries `r-fastpool`
+inherited from Ceph. `source.hostDevices` is per-configuration, so two device
+paths need two objects.
+
+**This collapses when node-3 is repartitioned.** Its raw volume is renamed
+`linstor`, and the two objects become one with no `nodeAffinity` — every node
+carrying `r-linstor` gets the pool. Until then, do not delete `ssd-pool-node-3`:
+Piraeus deletes any storage pool that disappears from its config, and that one
+is live.
+
+## Measured: these SSDs are slow
+
+A Longhorn replica rebuild between node-2 and node-3 — both **Samsung 840 EVO
+1TB**, sequential WWIDs, same batch, node-3 on firmware `EXT0CB6Q` — sustained
+**26 MB/s**, and node-3 dropped to `NodeStatusUnknown` once under that load
+before recovering. `dmesg` shows no I/O errors: the drives are not failing, they
+are simply this slow, which matches the 840 EVO's documented read degradation on
+cold data.
+
+That is the hardware the `ssd` class sits on for two of three nodes, and DRBD
+protocol C makes every commit wait for the slowest replica. node-1's Crucial
+NVMe is the only modern device in the set. Treat "high performance" as unproven
+here until it is benchmarked; [16-usb-disk-qualification.md](16-usb-disk-qualification.md)
+is the method this repo already uses to qualify a disk before trusting it.
+
 ## Phase 0 — git only (done)
 
 New: `infrastructure/controllers/base/{linstor,seaweedfs}/`,

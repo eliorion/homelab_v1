@@ -8,7 +8,7 @@ spec:
   # Without this Flux names the release <targetNamespace>-<name> and the chart
   # then generates a 69-character Service name, which the 63-char limit rejects.
   releaseName: piraeus-operator
-  interval: 30m
+  interval: 1m
   chart:
     spec:
       chart: piraeus
