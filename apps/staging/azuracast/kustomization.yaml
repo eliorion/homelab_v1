@@ -2,15 +2,3 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base/azuracast/
-
-# TEMPORARY, remove after the migration restore: keeps the pod off the PVCs so
-# they can be populated from the pre-migration archives before AzuraCast starts
-# and initialises them itself.
-patches:
-  - target:
-      kind: Deployment
-      name: azuracast
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 0
