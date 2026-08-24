@@ -3,9 +3,14 @@ kind: Cluster
 metadata:
   name: fbref-db
 spec:
+  # serverName is -v2 because this cluster was RECOVERED from the pre-v2
+  # archive. CNPG refuses to start a recovered cluster that would archive into
+  # the prefix it restored from -- barman-cloud-check-wal-archive fails with
+  # "Expected empty archive" -- and mixing two cluster identities under one
+  # serverName corrupts the archive. The old prefix stays readable for PITR.
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true
       parameters:
         barmanObjectName: garage-store
-        serverName: fbref-db
+        serverName: fbref-db-v2
