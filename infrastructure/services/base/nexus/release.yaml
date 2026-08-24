@@ -48,7 +48,7 @@ spec:
       enabled: true
       # storageClass and size are immutable once the StatefulSet exists —
       # changing either means deleting the StatefulSet and the PVC.
-      storageClass: ceph-block
+      storageClass: hdd
       size: 350Gi
     # Raise -Xmx and resources.limits.memory together, never one alone.
     install4jAddVmParams: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2048m"

@@ -4,7 +4,7 @@ metadata:
   name: n8n-data-pvc
   namespace: n8n
 spec:
-  storageClassName: ceph-block
+  storageClassName: ssd
   accessModes:
     - ReadWriteOnce
   resources:

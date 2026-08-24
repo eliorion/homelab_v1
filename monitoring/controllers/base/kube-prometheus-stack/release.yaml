@@ -140,7 +140,7 @@ spec:
       persistence:
         enabled: true
         type: pvc
-        storageClassName: ceph-block
+        storageClassName: ssd
         accessModes: ["ReadWriteOnce"]
         size: 10Gi
       # RWO cannot be attached to two pods at once, so the default
@@ -165,7 +165,7 @@ spec:
         storageSpec:
           volumeClaimTemplate:
             spec:
-              storageClassName: ceph-block
+              storageClassName: ssd
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:

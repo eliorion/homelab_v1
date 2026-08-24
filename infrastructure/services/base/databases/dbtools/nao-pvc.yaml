@@ -7,7 +7,7 @@ metadata:
   labels:
     component: dbtools
 spec:
-  storageClassName: ceph-block
+  storageClassName: ssd
   accessModes:
     - ReadWriteOnce
   resources:

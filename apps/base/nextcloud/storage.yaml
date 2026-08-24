@@ -4,7 +4,7 @@ metadata:
   name: nextcloud-data-pvc
   namespace: nextcloud
 spec:
-  storageClassName: ceph-block
+  storageClassName: ssd
   accessModes:
     - ReadWriteOnce
   resources:
