@@ -157,8 +157,8 @@ nodes:
         provisioning:
           diskSelector:
             match: system_disk
-          minSize: 730GB
-          maxSize: 730GB
+          minSize: 745GB
+          maxSize: 745GB
       - |-
         apiVersion: v1alpha1
         kind: VolumeConfig
