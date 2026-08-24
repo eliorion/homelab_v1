@@ -87,6 +87,12 @@ entire write path. This is the reason a cache service exists at all.
 
 ## Traps
 
+- **A `bootstrap.recovery` patch must carry `database: nextcloud` and
+  `owner: app`.** They are not inherited from `initdb`, and CNPG defaults both to
+  `app` — the generated `nextcloud-db-app` Secret then feeds `POSTGRES_DB=app` to
+  the Nextcloud pod, which reads an empty database instead of the restored 196
+  tables. Hit on 2026-08-24; repair procedure in
+  [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md).
 - **`imageName`, not `image`.** And never
   `ghcr.io/cloudnative-pg/cloudnative-pg` — that is the *operator* image.
 - **`AWS_REGION` and `AWS_DEFAULT_REGION` must both stay `garage`.** A wrong

@@ -92,6 +92,12 @@ as the single highest-value hardware change available to this cluster.
 
 ## Traps
 
+- **A `bootstrap.recovery` patch on `seaweedfs-db` must carry
+  `database: seaweedfs` and `owner: seaweedfs`.** Neither is inherited from
+  `initdb` and CNPG defaults both to `app`, which leaves the filer authenticating
+  as the wrong role against an empty database — the non-`app` owner makes this
+  the failing variant, not the silently-empty one. See
+  [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md).
 - **`weed volume -max` defaults to `8`, not to auto.** Left alone every server
   caps at 8 × 30 GB = 240 GB and the 2 TB disks are invisible. `maxVolumes: 0`
   per `dataDirs` entry is what sets `-max 0`. A count mismatch between `-dir` and

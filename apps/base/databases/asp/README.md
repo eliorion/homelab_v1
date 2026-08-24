@@ -167,6 +167,13 @@ for later.
 
 ## Traps
 
+- A `bootstrap.recovery` patch must carry `database: automarket` and
+  `owner: app`. They are not inherited from `initdb`, and CNPG defaults both to
+  `app`, so the generated `asp-db-app` Secret ends up pointing at an empty `app`
+  database while the restored `automarket` sits untouched beside it — all four
+  workloads (`admin-ui`, `analyzer-cars`, `asp-engine`, `webapp`) read
+  `asp-db-app/uri`. Hit on 2026-08-24; repair procedure in
+  [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md).
 - `imageName`, not `image`. `ghcr.io/cloudnative-pg/cloudnative-pg` is the
   *operator* image and must never be set here.
 - `postgresql.synchronous.number` must stay lower than `spec.instances`. It is

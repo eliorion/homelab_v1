@@ -240,6 +240,9 @@ spec:
   bootstrap:
     recovery:
       source: keycloak-db
+      # Not inherited from initdb -- omitting them yields db/role `app`.
+      database: keycloak
+      owner: keycloak
       recoveryTarget:
         targetTime: "2026-06-02 02:30:00+00"   # any point within 7d
   externalClusters:
@@ -250,6 +253,66 @@ spec:
           barmanObjectName: r2-store
           serverName: keycloak-db
 ```
+
+### `bootstrap.recovery` must name `database` and `owner`
+
+`bootstrap.initdb.database` / `.owner` are read **only** on an initdb bootstrap.
+A recovery bootstrap does not inherit them: CNPG falls back to its own defaults,
+`app` / `app`, creates an empty `app` database alongside the restored one, an
+`app` role, and a `<cluster>-app` Secret describing *those*. The restored
+database is intact and untouched — but every workload that reads `dbname`,
+`username` or `uri` out of that Secret stops pointing at it.
+
+Repeat the pair from the cluster's own `initdb` in every recovery patch:
+
+| Cluster | `database` | `owner` |
+|---|---|---|
+| `fbref-db` | `fbref` | `app` |
+| `asp-db` | `automarket` | `app` |
+| `nextcloud-db` | `nextcloud` | `app` |
+| `n8n-db` | `n8n` | `app` |
+| `scraper-db` | `scraper` | `app` |
+| `dbtools-db` | `nao` | `app` |
+| `keycloak-db` | `keycloak` | `keycloak` |
+| `ai-gateway-db` | `bifrost` | `bifrost` |
+| `seaweedfs-db` | `seaweedfs` | `seaweedfs` |
+
+The `-app` Secret is operator-generated and holds a generated password, so it is
+not in git and this cannot be pre-committed: CNPG writes it once at bootstrap and
+never rewrites `dbname` or `username` afterwards. Getting the pair wrong is
+therefore repaired by hand, not by a reconcile — see
+[Repairing a recovery that defaulted to `app`](#repairing-a-recovery-that-defaulted-to-app).
+
+### Repairing a recovery that defaulted to `app`
+
+Happened on 2026-08-24: the five recovery patches dropped in `59364b2` restored
+correctly (`fbref` 84 GB, `automarket` 537,161 listings, `keycloak` 100 tables,
+`bifrost` 58 tables, `nextcloud` 196 tables) but every `-app` Secret came back as
+`dbname=app`. The fbref admin UI read 1,475 rows out of the fresh empty `app`
+database while `player_stats` held 72,458,716 in `fbref`; Flyway rebuilt the
+whole schema into the wrong database; `keycloak-1` sat in CrashLoopBackOff on
+`permission denied for table user_entity`, connecting as `app` to a database
+owned by `keycloak`.
+
+Repair, per cluster:
+
+1. Rewrite the `<cluster>-app` Secret's `dbname`, `user`, `username`, `uri`,
+   `fqdn-uri`, `jdbc-uri`, `fqdn-jdbc-uri` and `pgpass` to the real database and
+   owner. Leave `password`, `host` and `port` alone. Back the Secret up first —
+   there is no other copy of that password.
+2. Where the owner is not `app`, the restored owner role's password came out of
+   the backup and does not match the Secret. Re-issue it:
+   `ALTER ROLE <owner> WITH LOGIN PASSWORD '<the Secret's password>';`
+3. Restart every consumer. `secretKeyRef` env vars resolve at container start, so
+   a Deployment that never restarts keeps the old value indefinitely — that is
+   also why a workload can fail auth while a freshly-restarted neighbour in the
+   same namespace succeeds.
+4. Verify by connection, not by pod status:
+   `SELECT datname, count(*) FROM pg_stat_activity WHERE backend_type='client backend' GROUP BY datname`.
+
+The empty `app` database is then droppable. Do it only after every consumer is
+confirmed on the real one — on fbref it had absorbed 1,475 rows of live scrapes
+and a full Flyway schema by the time the mismatch was found.
 
 ### Restore drill — performed 2026-07-26 (fbref-db ← Garage)
 

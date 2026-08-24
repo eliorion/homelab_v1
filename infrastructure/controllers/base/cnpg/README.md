@@ -83,6 +83,17 @@ ai-gateway WAL-archiving failure ran for three days unseen.
 
 ## Traps
 
+- **`bootstrap.recovery` does not inherit `database:` / `owner:` from
+  `bootstrap.initdb`.** Omit them and the operator defaults both to `app`: it
+  creates an empty `app` database next to the restored one, an `app` role, and a
+  `<cluster>-app` Secret describing those. Nothing fails — the restore reports
+  healthy and the real database is intact — but every consumer reading `dbname`,
+  `username` or `uri` out of that Secret is now pointed at the empty one. This
+  cost five clusters on 2026-08-24. The Secret is operator-generated, holds a
+  generated password and is not in git, so it cannot be pre-committed: the pair
+  has to be right in the recovery patch, or repaired by hand afterwards. Both the
+  per-cluster values and the repair are in
+  [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md).
 - **Anything that declares an `ObjectStore` must `dependsOn: infra-cnpg-plugin`.**
   The CRD ships with the plugin; the CRs are applied by the `databases`
   Kustomization (`path: ./apps/staging/databases`), which declares that
