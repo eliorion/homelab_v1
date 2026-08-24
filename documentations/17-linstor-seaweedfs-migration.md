@@ -564,3 +564,49 @@ file, not just a count:
 n8n came back with its four workflows active, which is the real proof: the
 encryption key in `n8n-data` still decrypts the restored credentials. AzuraCast
 resumed playback from restored media.
+
+### Bringing the suspended tiers back — 2026-08-24
+
+`monitoring-controllers`, `lab` and `nexus` came off suspend. Grafana and
+Prometheus bound `ssd` PVCs (10Gi and 30Gi) with no trouble, which finally gives
+the TSDB a real volume — the emptyDir problem recorded in the chart's values is
+now closed.
+
+The other two turned up defects worth keeping.
+
+**The `hdd` StorageClass put every PVC in one collection.** `collection: hdd`
+was a fixed value, and `-collectionQuotaMB` is enforced against a *collection's*
+total, not a volume's. Every `hdd` PVC was therefore measured against every other
+`hdd` PVC's data, and the smallest request decided when they all went read-only.
+The symptom is unmistakable once seen: a brand-new 1 Gi PVC mounted **already
+100% full**, because the shared collection held 1.11 GiB of AzuraCast and lab
+data. Left unset the driver uses `collection=<pv-name>` — verified on a scratch
+class, where an isolated 2 Gi PVC mounted 0% used.
+
+The parameter is immutable on an existing PV, so all five `hdd` volumes had to be
+recreated. `azuracast-stations` was re-restored and re-verified at the same
+`eba81fad…`; the rest were empty. The orphaned `hdd` collection was then dropped
+with `collection.delete`, reclaiming 1.19 GB.
+
+While measuring it, the replica accounting got a firmer number: 1.4 GB written to
+a 2 Gi PVC reports 2.7 G used at 100%. **Size `hdd` PVCs at twice the data they
+must hold.**
+
+**Nexus did not go on `hdd` at all.** Its 350Gi would have yielded ~175 GiB of
+usable cache — less than the volume it replaced — on spindles measured at
+26–49 MB/s. It runs instead on `ssd-single`, a new LINSTOR class with
+`placementCount: 1`: the cache is rebuildable from upstream, so a second replica
+doubles the space for nothing. LINSTOR placed it on node-1, the NVMe box and the
+fastest storage here, whose SSD pool was almost entirely unused.
+
+Size is 150Gi, and the limit is the *thin pool*, not the disk. node-1's pool is
+223 GiB and already carries ~50 GiB of small database replicas. At 200Gi the
+cache alone could exhaust it and outdate every one of them; at 150Gi it cannot.
+
+Two operational notes. A HelmRelease whose `volumeClaimTemplates` changed cannot
+be upgraded in place — and Flux's rollback remediation *recreates the old
+StatefulSet* faster than the new one can apply, so `--force` loops forever. The
+way through is to suspend the owning Kustomization, delete the HelmRelease
+(which uninstalls), delete the leftover PVC, then resume and let it install
+fresh. And a StatefulSet never recreates a PVC that already exists, so the old
+one must be deleted or the new template is silently ignored.
