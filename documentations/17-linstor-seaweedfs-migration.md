@@ -179,7 +179,8 @@ New: `infrastructure/controllers/base/{linstor,seaweedfs}/`,
 `bootstraping/talconfig.yaml` changes — new schematics, `machine.kernel.modules`,
 the `r-linstor` raw volumes, the EPHEMERAL caps and the five HDD user volumes.
 
-Both cluster directories are staged **inert**:
+Both cluster directories were staged **inert** (both gates came off 2026-08-24 —
+see the phase results below):
 
 - `seaweedfs-cluster`'s HelmRelease ships `suspend: true`. Its volume servers use
   `hostPath` with `DirectoryOrCreate`, so starting them before the Talos user
@@ -422,6 +423,41 @@ for R2.
 Restore the staged AzuraCast volumes onto `hdd`. Recreate Nexus empty and let CI
 refill it — discard-and-re-cache, as `d9268a0` did. Recreate Prometheus and
 Grafana empty on `ssd`.
+
+### Phase 4 result — 2026-08-24
+
+Done. All five HDD user volumes provisioned and mounted, the HelmRelease
+unsuspended, and 20 pods up: 3 masters, 2 volume servers (node-1 and node-2),
+2 filers, 2 S3, admin and worker. Racks are per node and `010` places one copy
+in each.
+
+Three things had to change before the tier worked, all recorded as traps in
+`infrastructure/controllers/base/seaweedfs/README.md`: the CSI driver's filer
+address was `seaweedfs-filer` where the chart creates
+`seaweedfs-seaweedfs-filer`; `upgrade.disableWait: true` was missing, so the
+fix for that rolled itself back; and `master.volumeSizeLimitMB` sat at the
+chart default of 1000, which would have carved the tier into ~4200 volumes.
+
+Drill results, on a pod pinned to node-3 — which runs no volume server, so
+every byte crossed the network twice:
+
+| Check | Result |
+|---|---|
+| `weed mount` argv | `-replication=010 -collection=hdd`, both parameters honoured |
+| Write 512 MB | 43 MB/s, md5 `8af625e7…` |
+| Read with node-2's volume server down | served, md5 unchanged |
+| Write with node-2's volume server down | **`I/O error`** |
+| Recovery | writes resumed immediately, `volume.fix.replication` restored both racks |
+| S3 round-trip, 32 MB multipart | byte-for-byte identical |
+| S3 credential scoping | `AccessDenied` on a bucket outside the identity's grants |
+
+The write failure is structural, not a fault: node-3 carries no HDD, so `010`
+has two racks to choose from and cannot place two copies when one is gone. The
+`hdd` tier therefore survives a node loss **read-only**. `ssd` on LINSTOR does
+not have this limit — it has three nodes. Closing it needs a third HDD node.
+
+Also worth knowing before sizing PVCs: `-collectionQuotaMB` comes from the PVC
+request and counts every replica, so a 5 Gi `hdd` PVC holds 2.5 Gi of data.
 
 ## Phase 5 — Nextcloud onto S3
 
