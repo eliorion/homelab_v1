@@ -111,8 +111,10 @@ as the single highest-value hardware change available to this cluster.
   cluster UUID, and `volumeClaimTemplates` is immutable afterwards.
 - **`hostPath` volume dirs use `DirectoryOrCreate`.** Starting a volume server
   before its Talos user volume is mounted silently creates the directory on
-  `EPHEMERAL` and writes bulk data onto the install disk. This is why the
-  overlay's HelmRelease ships `suspend: true`.
+  `EPHEMERAL` and writes bulk data onto the install disk. The overlay's
+  HelmRelease shipped `suspend: true` until the five `u-hdd-*` user volumes were
+  mounted; adding a sixth disk means mounting it before the StatefulSet
+  references it, not after.
 - **A misspelled StorageClass parameter is not an error.** The driver logs
   `VolumeContext '<key>' ignored` and mounts anyway. Verify against the real
   `weed mount` argv in the `seaweedfs-mount` pod.

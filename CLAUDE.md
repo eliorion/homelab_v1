@@ -85,14 +85,15 @@ and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
   `talosctl apply-config`. Never regenerate `talsecret` (new PKI = dead cluster).
 - CNI is **Cilium** `1.19.4`, kube-proxy-free, with LB-IPAM (`192.168.1.110-130`)
   + L2 announce and Gateway API — `infrastructure/controllers/base/cilium/README.md`.
-- Storage is mid-migration. **Longhorn** still holds every live volume (class
-  `longhorn`, the default) —
-  `infrastructure/controllers/base/longhorn/README.md`. **Rook/Ceph is gone**,
-  removed 2026-08-24. **LINSTOR/DRBD** (Piraeus) is taking the block tier as
-  class `ssd` and **SeaweedFS** takes bulk plus S3 as class `hdd`.
-  Read `documentations/17-linstor-seaweedfs-migration.md` before touching
-  storage: node-2 still has no LINSTOR pool, both fbref volumes sit there at a
-  single replica, and the SeaweedFS HelmRelease is deliberately `suspend: true`.
+- Storage is **LINSTOR/DRBD** (Piraeus) for the block tier, class `ssd`, the
+  default — `infrastructure/controllers/base/linstor/README.md` — and
+  **SeaweedFS** for bulk plus S3, class `hdd` —
+  `infrastructure/controllers/base/seaweedfs/README.md`. **Longhorn and
+  Rook/Ceph are both gone**, removed 2026-08-24. Read
+  `documentations/17-linstor-seaweedfs-migration.md` before touching storage:
+  `ssd` is `placementCount: 2` plus a diskless tiebreaker, so a node loss leaves
+  one copy and the rebuild is manual; only node-1 and node-2 carry HDDs, so
+  losing either pauses `hdd` writes.
 - CI is two ARC scale sets plus a Nexus proxy cache —
   `infrastructure/services/staging/arc-runner-set/README.md`.
 - Backups are CNPG → R2 or Garage and etcd → Garage, age-encrypted with an
