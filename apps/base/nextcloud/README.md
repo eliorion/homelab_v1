@@ -114,6 +114,31 @@ error.
 
 ## Traps
 
+- **Primary storage is the SeaweedFS `nextcloud` bucket, not the PVC.** The
+  image's `config/s3.config.php` reads `OBJECTSTORE_S3_*` at PHP runtime, so the
+  env vars alone switch it — `apps/staging/nextcloud/nextcloud-config.env` for
+  the plain ones, `nextcloud-s3.enc.yaml` for the key pair. `USEPATH_STYLE` is
+  mandatory: the S3 gateway serves no per-bucket DNS. `AUTOCREATE` stays false
+  because the bucket comes from the `infra-seaweedfs-config` Job, which also
+  sets its volume growth. The `nextcloud-data-pvc` still holds the app tree —
+  only user file *content* lives in S3, under `urn:oid:<fileid>` keys.
+- **The key pair is duplicated.** It is written here and in the `nextcloud`
+  identity of
+  `infrastructure/controllers/staging/seaweedfs-cluster/s3-config.enc.yaml`.
+  Nothing checks the two agree; a mismatch surfaces as `403` on every upload.
+- **An app tree without a `config.php` installs nothing.** The entrypoint picks
+  install-vs-upgrade by comparing `version.php` in the volume against the image.
+  A populated volume plus a missing `config.php` reads as *upgrade*, so it skips
+  `maintenance:install` silently, and the pod goes Ready serving an uninstalled
+  instance — `status.php` returns 200 while `occ status` says
+  `installed: false`. Run `occ maintenance:install` by hand to recover.
+- **A restored database cannot be adopted into object storage.** Its
+  `oc_storages` rows are `local::`/`home::`, which objectstore mode never uses,
+  so the file tree stays permanently unreachable. When primary storage moved to
+  S3 on 2026-08-24 the pre-migration database was preserved as
+  `nextcloud_premigration` on the same cluster and a fresh one installed beside
+  it; it is still readable with `psql -d nextcloud_premigration`.
+
 - **The probes send `Host: localhost`.** A kubelet `httpGet` otherwise sends the
   pod IP, and Nextcloud answers "access through untrusted domain". `localhost`
   is in `NEXTCLOUD_TRUSTED_DOMAINS` for exactly this reason — remove it and the

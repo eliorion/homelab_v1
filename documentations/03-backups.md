@@ -269,3 +269,42 @@ separate drill — see `09-etcd-backup-dr.md`.)
 
 Rotate the R2 token periodically: mint a new scoped token, update the SOPS secret
 (`sops -e -i`), commit, then revoke the old token.
+
+## Restoring from a SQL dump breaks the app credentials
+
+Found 2026-08-24, on `dbtools-db`, `n8n-db` and `scraper-db` — the three clusters
+rebuilt from `pg_dump` output rather than Barman.
+
+CNPG generates the `app` role's password and publishes it in the
+`<cluster>-app` Secret. A dump that carries its own `CREATE ROLE` / `ALTER ROLE`
+re-creates that role with the password it had on the *old* cluster, silently
+overwriting the generated one. Nothing errors: the restore reports success, the
+data is complete and correct, and `psql` as `postgres` works fine. Only
+applications fail, with `28P01` — `password authentication failed` — which reads
+like a misconfigured Secret rather than a clobbered role.
+
+It cost a crashlooping `nao` and two failed HelmReleases before it was traced.
+The five Barman-restored clusters were unaffected: a physical recovery restores
+the whole cluster and CNPG resets the password afterwards.
+
+Check every dump-restored cluster:
+
+```bash
+U=$(kubectl -n $NS get secret $CL-app -o jsonpath='{.data.username}' | base64 -d)
+D=$(kubectl -n $NS get secret $CL-app -o jsonpath='{.data.dbname}'   | base64 -d)
+PW=$(kubectl -n $NS get secret $CL-app -o jsonpath='{.data.password}' | base64 -d)
+kubectl -n $NS exec $CL-1 -c postgres -- \
+  env PGPASSWORD="$PW" psql -h 127.0.0.1 -U "$U" -d "$D" -tAc 'select 1'
+```
+
+An `exit code 2` instead of `1` is the symptom. Repair by putting the Secret
+back in charge — it is the authority, not the dump:
+
+```bash
+kubectl -n $NS exec $CL-1 -c postgres -- \
+  psql -tAc "ALTER ROLE \"$U\" WITH LOGIN PASSWORD '$PW'"
+```
+
+Better: strip roles from the dump before restoring (`pg_dump --no-owner
+--no-acl`, or `pg_restore` without `-C`), so the cluster's own credentials are
+never touched.

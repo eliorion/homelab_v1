@@ -513,3 +513,54 @@ have avoided every repartition would have forfeited exactly this.
 - [16-usb-disk-qualification.md](16-usb-disk-qualification.md) — why these four disks and not the fifth
 - [09-etcd-backup-dr.md](09-etcd-backup-dr.md) — what an EPHEMERAL wipe costs
 - [12-garage-object-storage.md](12-garage-object-storage.md) — the S3 target and its region trap
+
+### Phase 5 result — 2026-08-24
+
+Done. Nextcloud runs on the SeaweedFS `nextcloud` bucket, verified with a 5 MB
+WebDAV round-trip: `201` on upload, `200` on download, md5 identical, and the
+object visible as `/buckets/nextcloud/urn:oid:76` replicated byte-identically to
+both racks. `user_oidc` 8.11.0 reinstalled and enabled, so Keycloak login works.
+
+The phase note above was right that there is no filesystem → S3 migration, and
+the restored database made it concrete: its `oc_storages` rows are `local::` and
+`home::`, which objectstore mode never uses. Adopting it would have left the
+file tree permanently unreachable for the sake of one user account, with the old
+`passwordsalt` and `secret` lost along with the config volume anyway.
+
+Nothing was dropped. The pre-migration database was **renamed** to
+`nextcloud_premigration` on the same CNPG cluster and a fresh `nextcloud`
+created beside it, so the 196 tables and 243 filecache rows are still readable
+with `psql -d nextcloud_premigration` — and still in Barman regardless. Delete
+it once you are satisfied nothing is wanted from it.
+
+Two things bit on the way through, both now in
+`apps/base/nextcloud/README.md`:
+
+- `ALTER DATABASE … RENAME` and `CREATE DATABASE` cannot share a `psql -c`.
+  The multi-statement form runs in one transaction, `CREATE DATABASE` refuses to
+  run inside one, and the rollback silently undoes the rename that already
+  succeeded. Issue them as separate commands.
+- With the app tree already on the volume and `config.php` gone, the entrypoint
+  compares `version.php` against the image, decides *upgrade*, and skips
+  `maintenance:install` without a word. The pod goes Ready and `status.php`
+  returns 200 while `occ status` reports `installed: false`. Run
+  `occ maintenance:install` by hand.
+
+### Archive restores — 2026-08-24
+
+Restored into the PVCs while the deployments were held at zero in git, then
+released. Each verified against the manifest recorded at capture time —
+`find . -type f | sort | xargs sha256sum | sha256sum`, i.e. every byte of every
+file, not just a count:
+
+| Volume | Class | Files | Verified |
+|---|---|---|---|
+| `azuracast-db` | ssd | 282 | `efa20b3c…` |
+| `azuracast-stations` | hdd | 21 | `eba81fad…` |
+| `n8n-data` | ssd | 170 | `4ae5e440…` |
+| `nao-project` | ssd | 118 | `f293d5fe…` |
+| `azuracast-storage`, `azuracast-backups` | hdd | 0 | empty before the migration |
+
+n8n came back with its four workflows active, which is the real proof: the
+encryption key in `n8n-data` still decrypts the restored credentials. AzuraCast
+resumed playback from restored media.
