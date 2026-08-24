@@ -182,6 +182,17 @@ central reflector source.
 
 ## Traps
 
+- A `bootstrap.recovery` patch must carry `database: fbref` and `owner: app`.
+  They are not inherited from `initdb`, and CNPG defaults both to `app`, which
+  points the generated `fbref-db-app` Secret at an empty `app` database while the
+  restored 84 GB `fbref` sits untouched beside it. On 2026-08-24 that put the
+  admin UI on 1,475 rows against 72,458,716 real ones and had Flyway rebuild the
+  whole schema in the wrong database. Repair procedure in
+  [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md).
+- `fbref-mcp` hardcodes `.../fbref` in its `DATABASE_URL` while `admin-ui`,
+  `fbref-engine` and both CronJobs read `fbref-db-app/uri`. MCP therefore keeps
+  answering correctly through exactly the failure that blanks the admin UI — it
+  is not a health signal for the rest of the namespace.
 - The Cluster image field is `imageName`, not `image`, and
   `ghcr.io/cloudnative-pg/cloudnative-pg` is the *operator* image — it must
   never be used here.

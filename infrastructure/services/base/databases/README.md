@@ -200,6 +200,15 @@ so there is nothing to split a tier up.
 
 ## Traps
 
+- **A `bootstrap.recovery` patch must set `database:` and `owner:` explicitly.**
+  They are not inherited from `initdb`; CNPG defaults both to `app` and then
+  writes a `<cluster>-app` Secret describing an empty `app` database instead of
+  the restored one. Both clusters here own the *worse* variant of this, because
+  their owner is not `app` — `keycloak`/`keycloak` and `bifrost`/`bifrost` — so a
+  defaulted recovery also leaves the workload authenticating as the wrong role
+  (`permission denied for table user_entity` on Keycloak, 2026-08-24). Repair
+  procedure in
+  [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md).
 - **`AWS_REGION` and `AWS_DEFAULT_REGION` must both be `garage`** on
   `staging/databases/ai-gateway/objectstore.yaml`. Removing either one silently
   stops WAL archiving; only `HeadBucket` enforces the region, so backups keep
