@@ -1,0 +1,12 @@
+# Must match the `nextcloud` identity in
+# infrastructure/controllers/staging/seaweedfs-cluster/s3-config.enc.yaml --
+# the same key pair is written in both places and nothing checks they agree.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nextcloud-s3
+  namespace: nextcloud
+type: Opaque
+stringData:
+  OBJECTSTORE_S3_KEY: REPLACE_ME
+  OBJECTSTORE_S3_SECRET: REPLACE_ME

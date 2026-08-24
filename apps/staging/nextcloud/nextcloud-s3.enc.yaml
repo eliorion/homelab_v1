@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: nextcloud-s3
+    namespace: nextcloud
+type: Opaque
+stringData:
+    OBJECTSTORE_S3_KEY: ENC[AES256_GCM,data:iooYhFsYqPmPuGa+Ou7lZ8eHXeJhTjzxFjh/B8hkU5U=,iv:pmMIK9oS+3oZTmBpHIpsSfo/PLRrHpYuu8+pZ6yxkYU=,tag:jsbIYlwqSqbG8re0xtyp1A==,type:str]
+    OBJECTSTORE_S3_SECRET: ENC[AES256_GCM,data:Tear0//k8Rxf/SEvBaIfXWvFUMg9ntQusJs3XSqyuTgbLbN5PireUZpJxA==,iv:jwfX0YQqI9mDR42x0WF7iCu9fmGp08UFGamgHUidaQM=,tag:6t9BdiupPELspbCwydgpiQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBOMHZhK2h2SU13TllIWjdq
+            TTQ3K0dRYWs0czBIRHhLR0tiTFptaUV3NWswCklhblRUZU02RzNLbDNUWkFLOWRD
+            a1NkNXJDUFFveTU5ZlRkYjBxN09DaGcKLS0tIE1wd2krOXM1bXhxNGNFZVFJMk1Z
+            UituM05xY1hyeW9JQ0N6aHdBanFSTVkKR4Iw0T9icIId+bO/GHg2iXKht92gLXn0
+            czi9dXfWB6F1L2Cat/PEmIlGgbBpcVBaGH8XFg55QpKGUtrUJDQtlA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-08-24T21:15:02Z"
+    mac: ENC[AES256_GCM,data:O/KhtIBKjybujL/QYNP5xBSam+fZge5ZGICWt2Uv+ncesLChWDGRKnm70ZUnI68w0P3uskVITkNodU/8WO/3ViMp9MkouRCizXO7JPzJiiO8lBf2qNiYM8AS59cPbKUQLtWatcrVyoMncFCIv9sJYdpkhilxCXDiKXxH/EGuiR0=,iv:QMC8Ggnrsqv/4JGRT7l5oe9DyYD31YwIekIT9ilIVpI=,tag:KApwzWvDshTI7ytSdJ3v3w==,type:str]
+    version: 3.13.3

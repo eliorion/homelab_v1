@@ -6,6 +6,7 @@ namespace: nextcloud
 resources:
   - ../../base/nextcloud
   - nextcloud-admin.enc.yaml
+  - nextcloud-s3.enc.yaml
 
 # Generated, NOT a plain ConfigMap: these values are consumed with envFrom and
 # so are read once at pod start. A static ConfigMap updates in place and rolls
@@ -16,15 +17,3 @@ configMapGenerator:
   - name: nextcloud-config
     envs:
       - nextcloud-config.env
-
-# TEMPORARY, remove once primary storage is switched to S3: starting against the
-# emptied nextcloud-data PVC would let Nextcloud re-initialise local storage
-# under a database that describes the pre-migration file tree.
-patches:
-  - target:
-      kind: Deployment
-      name: nextcloud
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 0

@@ -68,6 +68,8 @@ spec:
             # the first-boot install; editing them later changes nothing.
             - secretRef:
                 name: nextcloud-admin
+            - secretRef:
+                name: nextcloud-s3
             - configMapRef:
                 name: nextcloud-config
           # 60 x 10s: first boot unpacks the source tree and runs occ maintenance:install.
