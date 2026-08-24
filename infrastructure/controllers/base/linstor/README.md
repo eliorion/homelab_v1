@@ -115,6 +115,17 @@ keep redundancy intact through a node loss, at 1.5× the space.
   unreadable. Treat it like the offline age key for the etcd backups.
 
 ## Operating it
+- **There are two classes, and only one is safe for data.** `ssd` places two
+  diskful replicas plus a diskless tiebreaker. `ssd-single`
+  (`placementCount: 1`) places one and has no redundancy at all: lose the node
+  and the data is gone, and while that node is down the volume does not follow
+  the pod, so its consumer stays down too. It exists for the Nexus proxy cache,
+  which is rebuildable from upstream. Never point a database at it.
+- **The pool is LVM-thin, so provisioned size is not reserved.** The sum of PVC
+  requests already exceeds each node's pool. That is fine until it is not: if a
+  thin pool fills, *every* volume on that node fails at once, not just the one
+  that grew. Check headroom with `linstor storage-pool list` before adding a
+  large volume, and treat a large non-database volume as the main risk.
 
 ```bash
 kubectl kustomize infrastructure/controllers/base/linstor >/dev/null

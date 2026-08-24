@@ -46,10 +46,19 @@ spec:
     fullnameOverride: nexus
     persistence:
       enabled: true
+      # ONE replica on SSD: this is a rebuildable proxy cache, so redundancy is
+      # not worth the space and DRBD would double it. The node holding it going
+      # down takes Nexus down until it returns.
+      #
+      # 200Gi, not more: the `ssd` LVM-thin pool is shared with every database
+      # and only ~490 GiB is free on the largest node. A cache that fills the
+      # thin pool breaks every database on that node, which is far worse than a
+      # cache that evicts early.
+      #
       # storageClass and size are immutable once the StatefulSet exists —
       # changing either means deleting the StatefulSet and the PVC.
-      storageClass: hdd
-      size: 350Gi
+      storageClass: ssd-single
+      size: 200Gi
     # Raise -Xmx and resources.limits.memory together, never one alone.
     install4jAddVmParams: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2048m"
     resources:

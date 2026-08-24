@@ -1,0 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ssd-single
+provisioner: linstor.csi.linbit.com
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+parameters:
+  # ONE diskful replica: losing it loses the data. Only for volumes that are
+  # rebuildable from somewhere else, and never for a database.
+  linstor.csi.linbit.com/placementCount: "1"
+  linstor.csi.linbit.com/storagePool: ssd
+  # Its own group, so autoplace settings here cannot leak onto the `ssd` class.
+  linstor.csi.linbit.com/resourceGroup: ssd-single
+  csi.storage.k8s.io/fstype: xfs

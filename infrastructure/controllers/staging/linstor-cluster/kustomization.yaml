@@ -5,4 +5,5 @@ resources:
   - satellite-talos.yaml
   - satellite-pools.yaml
   - storageclass-ssd.yaml
+  - storageclass-ssd-single.yaml
   - linstor-passphrase.enc.yaml

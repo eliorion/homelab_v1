@@ -198,6 +198,17 @@ its own config Job (it has `curl`, `jq` and `sh`).
   what the 2026-08-21 move to `ceph-block` had to do, and what previously latched
   the release `Stalled` for two weeks when git said 350Gi and the live template
   still said 250Gi.
+- **The blob store is a single-replica SSD volume.** It runs on `ssd-single`
+  (LINSTOR `placementCount: 1`), chosen 2026-08-24: a proxy cache is rebuildable
+  from upstream, so paying for a DRBD replica would double the space for nothing.
+  Two consequences. The node holding the replica going down takes Nexus down
+  until it returns — the volume does not follow the pod. And the `ssd` pool is
+  LVM-thin and shared with every CNPG database, so a runaway cache can exhaust
+  the pool and break the databases on that node; that risk, not the disk size,
+  is why it is 200Gi against ~490 GiB free rather than the old 350Gi.
+- **It is not on `hdd` on purpose.** A SeaweedFS PVC's quota counts every
+  replica, so `hdd` would have given half the requested size, on spindles
+  measured at 26–49 MB/s.
 - **A recreated PVC comes back with the EULA un-accepted, and every Docker pull
   403s.** Nexus CE keeps acceptance in its database *on the volume*, so it is not
   in git and does not survive a volume recreate. The symptom reads like an auth
