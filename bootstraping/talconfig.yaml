@@ -189,24 +189,20 @@ nodes:
     installDisk: /dev/sda
     talosImageURL: factory.talos.dev/installer/b86969a5f5abcc3e3be770b80c8cbf963af64f5d6d1000a2a88366943b272671
     patches:
-      # Unformatted partition, published at /dev/disk/by-partlabel/r-fastpool.
-      # Was a Ceph OSD; becomes LINSTOR's ssd pool on this node, which is why
-      # node-3 needs no EPHEMERAL wipe. Keep the name: renaming it recreates
-      # the partition and evacuating the pool first is the only safe order.
+      # Same r-linstor label as node-1 and node-2, so a single
+      # LinstorSatelliteConfiguration covers all three nodes. Was Ceph's
+      # r-fastpool; renaming it required dropping that partition first.
       - |-
         apiVersion: v1alpha1
         kind: RawVolumeConfig
-        name: fastpool
+        name: linstor
         provisioning:
           diskSelector:
             match: system_disk
-          minSize: 250GB
-          maxSize: 250GB
-      # Carries /var/lib/longhorn AND the container images. Must clear Longhorn's
-      # 478GB scheduled plus 163GB of images, or the partition fills: Longhorn
-      # schedules against provisioned size and reserves nothing here today.
-      # 250 + 740 + ~2GB of system partitions must fit the 997GB disk.
-      # Shrinking this needs an EPHEMERAL wipe; Talos never shrinks in place.
+          minSize: 745GB
+          maxSize: 745GB
+      # 250 + 745 + ~2.3GB of system partitions must fit the 1000GB disk.
+      # Longhorn is gone, so EPHEMERAL only carries the image store and system.
       - |-
         apiVersion: v1alpha1
         kind: VolumeConfig
@@ -214,7 +210,7 @@ nodes:
         provisioning:
           diskSelector:
             match: system_disk
-          maxSize: 740GB
+          maxSize: 250GB
     nameservers:
       - 192.168.1.1
     networkInterfaces:
