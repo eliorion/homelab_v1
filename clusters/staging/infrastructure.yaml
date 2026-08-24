@@ -292,3 +292,22 @@ spec:
       kind: HelmRelease
       name: seaweedfs-csi-driver
       namespace: flux-system
+---
+# force: true so the Job is deleted and recreated when its script changes.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-seaweedfs-config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 15m
+  dependsOn:
+    - name: infrastructure-controllers
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/staging/seaweedfs-config
+  prune: true
+  force: true

@@ -122,6 +122,13 @@ as the single highest-value hardware change available to this cluster.
 - **Under-replication never self-heals on its own.** `volume.fix.replication`
   restores one replica per volume per run; the `admin` + `worker` pair exists so
   the default 17-minute maintenance script runs it.
+- **The worker gives up if it starts before the admin.** It retries the admin
+  gRPC port for about 45 seconds with `no route to host`, then stops trying and
+  stays `Running` forever — so a healthy-looking pod means nothing. Confirm with
+  `Plugin worker connected` in the admin log; `kubectl rollout restart
+  deploy/seaweedfs-seaweedfs-worker` is the fix. Note the admin's own
+  `Topology status: … 0 workers` line is a *different* registry and reads 0 even
+  when the plugin worker is connected and running tasks — do not trust it.
 - **`-minFreeSpacePercent` is 1.** Crossing it marks *all* of that server's
   volumes read-only at once.
 - **`fs.configure` applies at write time only.** Configure a path before creating
@@ -157,3 +164,14 @@ volume slots, after which new volumes stop being placed there:
 ```bash
 kubectl -n seaweedfs exec -it deploy/seaweedfs-filer -- weed shell <<< 'volume.list'
 ```
+
+## Filer configuration is not in the chart
+
+`fs.configure` and `s3.bucket.create` write to the filer's metadata store, which
+here is the `seaweedfs-db` CNPG cluster — not to any Helm value. Applied by hand
+they survive pod restarts and disappear with the database. They ship instead as
+`infrastructure/controllers/staging/seaweedfs-config`, a Job carrying
+`configure.sh`, applied by the `infra-seaweedfs-config` Flux Kustomization with
+`force: true` so a script change deletes and recreates the Job. Both commands are
+idempotent — re-creating an existing bucket is a no-op that exits 0 — so the Job
+is safe to re-run at any time. Add new buckets there, not in a shell.

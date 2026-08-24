@@ -1,0 +1,24 @@
+# A Job is immutable, so this is applied by its own Flux Kustomization
+# (`infra-seaweedfs-config`, force: true) — the delete+recreate is what re-runs it.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seaweedfs-config
+  namespace: seaweedfs
+spec:
+  backoffLimit: 10
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: configure
+          image: chrislusf/seaweedfs:4.44
+          command: ["/bin/sh", "/script/configure.sh"]
+          volumeMounts:
+            - name: script
+              mountPath: /script
+      volumes:
+        - name: script
+          configMap:
+            name: seaweedfs-config-script
