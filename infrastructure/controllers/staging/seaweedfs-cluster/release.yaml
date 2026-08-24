@@ -5,10 +5,6 @@ metadata:
   namespace: flux-system
 spec:
   targetNamespace: seaweedfs
-  # Volume servers use hostPath DirectoryOrCreate. Unsuspending before the
-  # Talos user volumes are mounted creates empty dirs on EPHEMERAL and fills
-  # the install disk with bulk data. documentations/17, phase 4.
-  suspend: true
   interval: 30m
   chart:
     spec:
