@@ -82,8 +82,8 @@ broken thing.
 | `hostname` | `staging-controlplane-1` | `staging-controlplane-2` | `staging-controlplane-3` |
 | `ipAddress` | `192.168.1.101` | `192.168.1.102` | `192.168.1.103` |
 | `installDisk` | `/dev/nvme0n1` | `/dev/sda` | `/dev/sda` |
-| `talosImageURL` schematic | `65cf8364…` (AMD box, amd-ucode) | `36cd6536…` (Intel, intel-ucode) | `36cd6536…` |
-| `patches` | one `UserVolumeConfig` + Longhorn disk annotation | — | `RawVolumeConfig` + `EPHEMERAL` sizing |
+| `talosImageURL` schematic | `11928acc…` (AMD box, amd-ucode + amdgpu) | `b86969a5…` (Intel, intel-ucode) | `b86969a5…` |
+| `patches` | three `UserVolumeConfig` + `RawVolumeConfig` + `EPHEMERAL` sizing + Longhorn disk annotation | two `UserVolumeConfig` + `RawVolumeConfig` + `EPHEMERAL` sizing | `RawVolumeConfig` + `EPHEMERAL` sizing |
 
 node-1 carries per-node `patches` for its 640 GB SATA HDD: an `xfs` user volume at
 `/var/mnt/hdd-sata-640`, registered with Longhorn. The selector matches
@@ -111,6 +111,14 @@ a Postgres commit can live.
 Unlike `UserVolumeConfig`, a raw volume is never formatted or mounted. Talos provisions the
 partition, labels it `r-<name>`, and publishes a stable symlink at
 `/dev/disk/by-partlabel/r-fastpool`. Rook takes that path in its `devices` list.
+
+**It is being reassigned to LINSTOR.** The same partition becomes node-3's LVM-thin `ssd`
+storage pool, which is why node-3 — alone of the three — needs no `EPHEMERAL` wipe to join
+LINSTOR. The name stays `fastpool`: renaming it recreates the partition, and evacuating the
+pool first is the only safe order. node-1 and node-2 get an equivalent `r-linstor` partition,
+and both **do** need the wipe, because their `EPHEMERAL` was provisioned filling the disk and
+Talos only ever grows a volume — see
+[../documentations/17-linstor-seaweedfs-migration.md](../documentations/17-linstor-seaweedfs-migration.md).
 
 **The volume is named `fastpool`, not anything containing `ceph`, and that is load-bearing.**
 `ceph-volume` reads a partition label holding the substring `ceph` as a legacy ceph-disk
@@ -192,10 +200,30 @@ completely cold cluster that means one manual `cilium install` before Flux can r
 anything.
 
 **Why the two nodes have different installer schematics.** Both factory images carry
-`siderolabs/iscsi-tools` and `siderolabs/util-linux-tools` for Longhorn; they differ only in
-the microcode extension (amd-ucode for the AMD box, intel-ucode for the two Intel ones).
-Booting a stock Talos image instead gives a cluster where Longhorn fails with
-`failed to execute iscsiadm: No such file or directory`.
+`siderolabs/drbd` (LINSTOR) plus `siderolabs/iscsi-tools` and
+`siderolabs/util-linux-tools` (Longhorn, kept until it is uninstalled); they differ in the
+microcode extension (amd-ucode for the AMD box, intel-ucode for the two Intel ones) and
+node-1 additionally carries `amdgpu`. Booting a stock Talos image instead gives a cluster
+where Longhorn fails with `failed to execute iscsiadm: No such file or directory`.
+
+**The DRBD extension is version-locked to the Talos patch release**, currently
+`ghcr.io/siderolabs/drbd:9.3.2-v1.13.4`. This makes the `install.image` trap below sharper
+than it was: with Longhorn a missing extension cost a failed mount, but with LINSTOR the
+satellite comes up with no DRBD module and **every local replica goes Diskless**. An
+extension cannot be added with `apply-config` — it is baked into the image, so it takes
+`talosctl upgrade --image factory.talos.dev/installer/<id>:v1.13.4`, which reboots. Upgrade
+one node at a time and verify before touching the next:
+
+```bash
+talosctl -n <ip> read /proc/modules | grep drbd
+talosctl -n <ip> read /sys/module/drbd/parameters/usermode_helper   # -> disabled
+```
+
+The extension only ships the modules. Loading them is the shared
+`machine.kernel.modules` patch (`drbd` with `usermode_helper=disabled`,
+`drbd_transport_tcp`, and `dm-thin-pool` for LVM-thin pools) — without it no LINSTOR volume
+is ever created, piraeus-operator#692. See
+[../documentations/17-linstor-seaweedfs-migration.md](../documentations/17-linstor-seaweedfs-migration.md).
 
 **Why `kubernetesTalosAPIAccess` instead of a mounted `talosconfig`.** The etcd-backup
 CronJob calls the Talos API for snapshots. Through this feature it gets short-lived,

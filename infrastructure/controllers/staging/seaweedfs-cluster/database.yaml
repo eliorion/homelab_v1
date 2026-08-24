@@ -1,0 +1,19 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: seaweedfs-db
+  namespace: seaweedfs
+spec:
+  instances: 2
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+  bootstrap:
+    initdb:
+      database: seaweedfs
+      owner: seaweedfs
+  storage:
+    storageClass: ssd
+    size: 10Gi

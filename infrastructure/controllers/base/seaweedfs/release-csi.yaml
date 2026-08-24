@@ -1,0 +1,35 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: seaweedfs-csi-driver
+  namespace: flux-system
+spec:
+  targetNamespace: seaweedfs
+  interval: 30m
+  chart:
+    spec:
+      chart: seaweedfs-csi-driver
+      version: "0.2.35"
+      sourceRef:
+        kind: HelmRepository
+        name: seaweedfs-csi
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: false
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    seaweedfsFiler: "seaweedfs-filer.seaweedfs.svc.cluster.local:8888"
+    # Empty means the chart creates no StorageClass. The `hdd` class ships from
+    # infrastructure/controllers/staging/seaweedfs-cluster so it can carry
+    # parameters the chart does not expose.
+    storageClassName: ""
+    node:
+      # RollingUpdate would recreate the node plugin under running pods, and
+      # recreating it breaks EVERY pod using a SeaweedFS PVC on that node.
+      # OnDelete makes a chart bump a deliberate, drained operation.
+      updateStrategy:
+        type: OnDelete

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: seaweedfs-s3-config
+    namespace: seaweedfs
+type: Opaque
+stringData:
+    seaweedfs_s3_config: ENC[AES256_GCM,data:EvaFtcCop+lIAlA+0t1EMMkZXQhfdfBdtdhRFd4xQEQWZiH21+q1/ig+mpZDCCJXD1GUJOCmRj76q9nTmTCmSx5u/u3/BX2iwarf8ocaIyK4eBUPO8Vmy4YYXdJrKmSj7atPMCrEaoFf2D1Cg0ZROND58ltvW1GgTLR9/8Jba2yGV8t3D5BQ3SCCWcpBT+RDWmEdn/wjBNUl1a6v5lfYUazfXKVAfKrs8Mcpu8ttYoyCyHiCjqDD1NxO4ldLaGWbfKzWyh0zmu36vPjBWrKsRqoZA+69SnsmWUfToG9FO9rsxhSpI50YCTofpNsJWbxUD0Z64oVEsZ84nP/Nrk6DibCzGagPfwIJOPUt/RmrDL5p5qNL291Lo3UxOlnMIdeVMl6bU/kirxFP86Q+f3TMmNP4S7A6,iv:9gJ3Kb++Y5ocNJeehCffyrBgHTT2A2LirQHYJc0u/ic=,tag:APuIbtVSgGMEbD7m0ogC0Q==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBkUmNkaDQyVkdqWERjOUVI
+            Rnh4ZDZWWTBOb0ZwdGxEQzhNT1JRQUZyR1NVCis2aTYwL1IvejRyaVlsYnRvbC9i
+            RzNFYWx1WmVCUHRMRjZnR3Y2WmdHV1EKLS0tIDV2U1o4R01wSVkyc3NTRXR5elB0
+            cUJPRk1aMzVPWTVRNHArS0prUWtLejAKNB55RGlNWaZwu1ruv6Hp5yc6Y0aIpm4a
+            /PIS/3aDuE/EgMQJ6EDTQcXzYxepM7RXonGP+IUywd8KeT1YXIi5AQ==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-08-23T15:53:47Z"
+    mac: ENC[AES256_GCM,data:WPfYcs+DDyfkTShlaW9q+5BKnIv3JOgvIJd48isINGtucSPjFUzWoCPDRNxe0iBGZtQ5ZqAc8udFyCNV9XXE6xJc+WdCF9mmm2oU92+lR7j4KXytwX4EJPpr8Iv6294CIUfdVASMoHgZ+sFf0QZMkgWvPSzvwgipqyDn5feULYI=,iv:fTVO6DrIZHhapSgKJeE/GNVs/DuCE0uEc8Knf2xBKm0=,tag:Sy5r4ca2UaP7nJ5EhO6iMQ==,type:str]
+    version: 3.13.3

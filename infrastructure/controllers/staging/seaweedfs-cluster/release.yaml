@@ -1,0 +1,139 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: seaweedfs
+  namespace: flux-system
+spec:
+  targetNamespace: seaweedfs
+  # Volume servers use hostPath DirectoryOrCreate. Unsuspending before the
+  # Talos user volumes are mounted creates empty dirs on EPHEMERAL and fills
+  # the install disk with bulk data. documentations/17, phase 4.
+  suspend: true
+  interval: 30m
+  chart:
+    spec:
+      chart: seaweedfs
+      version: "4.44.0"
+      sourceRef:
+        kind: HelmRepository
+        name: seaweedfs
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: false
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    global:
+      seaweedfs:
+        monitoring:
+          enabled: true
+          # Prometheus selects on this label; without it the chart's
+          # ServiceMonitors are applied and then silently ignored.
+          additionalLabels:
+            release: kube-prometheus-stack
+        enableReplication: true
+        # Two copies, always in different racks. rack is set per volume group
+        # below and rack == node, so the copies are always cross-node.
+        replicationPlacement: "010"
+
+    master:
+      replicas: 3
+      data:
+        # NOT hostPath: -mdir holds the raft log and the cluster's topology
+        # UUID, and a rescheduled master on a hostPath comes back as a brand
+        # new cluster. volumeClaimTemplates are immutable -- this must be right
+        # on the FIRST install.
+        type: persistentVolumeClaim
+        storageClass: ssd
+        size: 5Gi
+      logs:
+        # Chart default is hostPath /storage, which is read-only on Talos.
+        type: emptyDir
+
+    # One StatefulSet per HDD node instead of the single default one: rack is a
+    # per-StatefulSet value, and rack == node is what makes 010 cross-node.
+    volume:
+      enabled: false
+      logs:
+        type: emptyDir
+    volumes:
+      node-1:
+        replicas: 1
+        rack: staging-controlplane-1
+        nodeSelector: |
+          kubernetes.io/hostname: staging-controlplane-1
+        dataDirs:
+          # maxVolumes 0 means "auto from free disk space". The chart default of
+          # 8 would cap each disk at 8 x 30GB = 240GB and hide the rest from the
+          # master, which weights placement by free volume SLOTS, not bytes.
+          - name: usb1000
+            type: hostPath
+            hostPathPrefix: /var/mnt/hdd-usb-1000
+            maxVolumes: 0
+          - name: usb500
+            type: hostPath
+            hostPathPrefix: /var/mnt/hdd-usb-500
+            maxVolumes: 0
+          - name: sata640
+            type: hostPath
+            hostPathPrefix: /var/mnt/hdd-sata-640
+            maxVolumes: 0
+      node-2:
+        replicas: 1
+        rack: staging-controlplane-2
+        nodeSelector: |
+          kubernetes.io/hostname: staging-controlplane-2
+        dataDirs:
+          - name: usb2000
+            type: hostPath
+            hostPathPrefix: /var/mnt/hdd-usb-2000
+            maxVolumes: 0
+          - name: usb320
+            type: hostPath
+            hostPathPrefix: /var/mnt/hdd-usb-320
+            maxVolumes: 0
+
+    filer:
+      replicas: 2
+      data:
+        type: emptyDir
+      logs:
+        type: emptyDir
+      extraEnvironmentVars:
+        # Must be explicitly false: the chart default re-enables LevelDB2 and it
+        # wins over the intended store. Two filers on an embedded store are only
+        # EVENTUALLY consistent, which an S3 endpoint cannot tolerate.
+        WEED_LEVELDB2_ENABLED: "false"
+        WEED_POSTGRES2_ENABLED: "true"
+        WEED_POSTGRES2_HOSTNAME: "seaweedfs-db-rw.seaweedfs.svc.cluster.local"
+        WEED_POSTGRES2_PORT: "5432"
+        WEED_POSTGRES2_DATABASE: "seaweedfs"
+        WEED_POSTGRES2_SSLMODE: "disable"
+      secretExtraEnvironmentVars:
+        WEED_POSTGRES2_USERNAME:
+          secretKeyRef:
+            name: seaweedfs-db-app
+            key: username
+        WEED_POSTGRES2_PASSWORD:
+          secretKeyRef:
+            name: seaweedfs-db-app
+            key: password
+
+    s3:
+      enabled: true
+      replicas: 2
+      enableAuth: true
+      existingConfigSecret: seaweedfs-s3-config
+      logs:
+        type: emptyDir
+
+    # Without these, an under-replicated volume stays read-only until someone
+    # runs `volume.fix.replication` by hand. The admin's default 17-minute
+    # maintenance script runs it.
+    admin:
+      enabled: true
+    worker:
+      enabled: true

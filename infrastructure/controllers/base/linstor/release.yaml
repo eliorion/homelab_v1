@@ -1,19 +1,18 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: rook-ceph-operator
+  name: piraeus-operator
   namespace: flux-system
 spec:
-  targetNamespace: rook-ceph
+  targetNamespace: piraeus-datastore
   interval: 30m
   chart:
     spec:
-      chart: rook-ceph
-      # Must match rook-ceph-cluster in infrastructure/controllers/staging/rook-ceph-cluster.
-      version: "v1.20.4"
+      chart: piraeus
+      version: "2.11.0"
       sourceRef:
         kind: HelmRepository
-        name: rook-release
+        name: piraeus
         namespace: flux-system
       interval: 12h
   install:
@@ -24,8 +23,5 @@ spec:
       retries: 3
       strategy: rollback
   values:
-    crds:
-      # Only meaningful on first install. Turning this off later and deleting the
-      # CRDs destroys the cluster.
-      enabled: true
-    enableDiscoveryDaemon: false
+    # Chart default is false; without it the four piraeus.io CRDs never land.
+    installCRDs: true

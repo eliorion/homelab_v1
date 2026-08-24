@@ -1,0 +1,89 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: linstor
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: linstor.rules
+      rules:
+        # UNVERIFIED AGAINST A LIVE ENDPOINT. These metric names come from the
+        # Piraeus monitoring extras, not from this cluster -- confirm each one
+        # against /metrics on the controller and a satellite before trusting
+        # any of them to page. A rule that matches nothing is silent.
+        - alert: LinstorControllerDown
+          expr: up{job=~".*linstor-controller.*"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: LINSTOR controller is not scrapeable
+            description: >-
+              No provisioning, no attach, no `linstor` CLI. Volumes already
+              attached keep serving -- DRBD does not need the controller on the
+              I/O path -- so this is urgent but not an outage on its own.
+
+        - alert: DrbdQuorumLost
+          expr: drbd_device_quorum == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: DRBD resource {{ $labels.drbd_resource }} has lost quorum
+            description: >-
+              on-no-quorum is suspend-io, so I/O on this resource is frozen
+              rather than erroring. The HA controller should be evicting its
+              pods. With placementCount 2 this means two of the three votes are
+              gone.
+
+        - alert: DrbdSplitBrain
+          # StandAlone is what split-brain looks like from the outside, and the
+          # shipped Piraeus rule set has no rule for it.
+          expr: drbd_connection_state{drbd_connection_state="StandAlone"} == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: DRBD connection {{ $labels.drbd_resource }} is StandAlone
+            description: >-
+              Resolution is manual and destructive to one side:
+              `drbdadm secondary <res>` then `drbdadm connect --discard-my-data
+              <res>` on the victim. Pick the victim deliberately.
+
+        - alert: DrbdReplicaDiskless
+          expr: drbd_device_unintentionaldiskless == 1
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: DRBD replica {{ $labels.drbd_resource }} lost its backing disk
+            description: >-
+              Usually the DRBD kernel module is absent after a Talos upgrade onto
+              an image without the drbd extension. Check
+              `talosctl -n <ip> read /proc/modules | grep drbd`.
+
+        - alert: LinstorStoragePoolNearFull
+          expr: >-
+            linstor_storage_pool_capacity_free_bytes
+              / linstor_storage_pool_capacity_total_bytes < 0.15
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: LINSTOR pool {{ $labels.storage_pool }} on {{ $labels.node }} below 15% free
+            description: >-
+              The pools are LVM-thin and over-commit. A full thin pool does not
+              fail a provision, it fails a WRITE on every volume backed by it.
+
+        - alert: LinstorErrorReportsRising
+          expr: increase(linstor_error_reports_count[1h]) > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: LINSTOR is filing error reports ({{ $labels.module }})
+            description: >-
+              Read them with
+              `kubectl -n piraeus-datastore exec deploy/linstor-controller -- linstor error-reports list`.

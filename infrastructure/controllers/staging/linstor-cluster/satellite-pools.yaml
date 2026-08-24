@@ -1,0 +1,41 @@
+apiVersion: piraeus.io/v1
+kind: LinstorSatelliteConfiguration
+metadata:
+  name: ssd-pool
+spec:
+  nodeAffinity:
+    nodeSelectorTerms:
+      - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+              - staging-controlplane-1
+              - staging-controlplane-2
+  storagePools:
+    - name: ssd
+      lvmThinPool: {}
+      source:
+        hostDevices:
+          - /dev/disk/by-partlabel/r-linstor
+---
+apiVersion: piraeus.io/v1
+kind: LinstorSatelliteConfiguration
+metadata:
+  name: ssd-pool-node-3
+spec:
+  nodeAffinity:
+    nodeSelectorTerms:
+      - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+              - staging-controlplane-3
+  storagePools:
+      # Same pool NAME as the other nodes -- the StorageClass selects by name.
+      # Different partition: node-3 reuses the 250GB r-fastpool Ceph left behind
+      # rather than taking an EPHEMERAL wipe. bootstraping/talconfig.yaml owns it.
+    - name: ssd
+      lvmThinPool: {}
+      source:
+        hostDevices:
+          - /dev/disk/by-partlabel/r-fastpool

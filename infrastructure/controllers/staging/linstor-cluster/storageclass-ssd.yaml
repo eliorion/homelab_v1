@@ -1,0 +1,19 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ssd
+  # No is-default-class annotation until the `longhorn` class is gone: two
+  # defaults is an error and every unpinned PVC would fail to bind.
+provisioner: linstor.csi.linbit.com
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+parameters:
+  linstor.csi.linbit.com/placementCount: "2"
+  # Pins diskful replicas to the SSD pool. Without it autoplace may land a
+  # replica on an HDD pool, and DRBD protocol C makes every fsync wait for the
+  # slowest replica -- one USB spindle turns an NVMe database into an HDD one.
+  linstor.csi.linbit.com/storagePool: ssd
+  # Without an explicit group LINSTOR creates a new resource group per PVC.
+  linstor.csi.linbit.com/resourceGroup: ssd
+  csi.storage.k8s.io/fstype: xfs

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: linstor-passphrase
+  namespace: piraeus-datastore
+type: Opaque
+stringData:
+  MASTER_PASSPHRASE: replace-me

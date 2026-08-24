@@ -22,7 +22,8 @@ drills — that span more than one component:
 and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
 `11`/`13` AzuraCast capacity, `12` Garage object storage,
 `14` design decisions, `15` node-1 spare-disk expansion,
-`16` USB disk qualification for Ceph.
+`16` USB disk qualification for Ceph,
+`17` LINSTOR + SeaweedFS migration.
 
 ## Repo layout
 
@@ -84,11 +85,14 @@ and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
   `talosctl apply-config`. Never regenerate `talsecret` (new PKI = dead cluster).
 - CNI is **Cilium** `1.19.4`, kube-proxy-free, with LB-IPAM (`192.168.1.110-130`)
   + L2 announce and Gateway API — `infrastructure/controllers/base/cilium/README.md`.
-- Storage is **Longhorn**, 3 replicas, storage class `longhorn` (the default) —
-  `infrastructure/controllers/base/longhorn/README.md`. A **Rook/Ceph** trial on
-  four USB disks runs beside it, class `ceph-block`, 2 replicas on an `osd`
-  failure domain, dashboard at `https://ceph.<tailnet>.ts.net` —
-  `infrastructure/controllers/base/rook-ceph/README.md`.
+- Storage is mid-migration. **Longhorn** still holds every live volume (class
+  `longhorn`, the default) —
+  `infrastructure/controllers/base/longhorn/README.md`. **Rook/Ceph is gone**,
+  removed 2026-08-24. **LINSTOR/DRBD** (Piraeus) is taking the block tier as
+  class `ssd` and **SeaweedFS** takes bulk plus S3 as class `hdd`.
+  Read `documentations/17-linstor-seaweedfs-migration.md` before touching
+  storage: node-2 still has no LINSTOR pool, both fbref volumes sit there at a
+  single replica, and the SeaweedFS HelmRelease is deliberately `suspend: true`.
 - CI is two ARC scale sets plus a Nexus proxy cache —
   `infrastructure/services/staging/arc-runner-set/README.md`.
 - Backups are CNPG → R2 or Garage and etcd → Garage, age-encrypted with an

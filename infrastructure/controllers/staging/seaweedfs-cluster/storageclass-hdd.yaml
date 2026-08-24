@@ -1,0 +1,14 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hdd
+provisioner: seaweedfs-csi-driver
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+reclaimPolicy: Delete
+parameters:
+  # A misspelled key here is NOT an error -- the driver logs
+  # "VolumeContext '<key>' ignored" and mounts anyway. Verify against the actual
+  # `weed mount` argv in the seaweedfs-mount pod, not against this file.
+  collection: hdd
+  replication: "010"

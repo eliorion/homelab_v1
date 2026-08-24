@@ -26,7 +26,7 @@ nodes:
     ipAddress: 192.168.1.101
     controlPlane: true
     installDisk: /dev/nvme0n1
-    talosImageURL: factory.talos.dev/installer/65cf8364cd0de4cf7b851dc7067a2db83d0ba04f11d8635c6cd3334be6ffb825
+    talosImageURL: factory.talos.dev/installer/11928acc918f7c25902bba02422dd200004f11d29f18ab9410d4863e7c3047e7
     # These must NOT become cluster-wide patches: the sata selector below would
     # match node-2's and node-3's install disks.
     # Adding a kubelet extraMounts bind for /var/mnt/* here re-triggers
@@ -43,17 +43,64 @@ nodes:
           grow: true
         filesystem:
           type: xfs
-      # No UserVolumeConfig for the USB disks: they are raw block devices for
-      # Rook/Ceph. Giving them a filesystem here takes them away from Ceph.
+      # by-path, not WWID: both dock bays report naa.5000000000000001, so a
+      # WWID or size selector cannot tell the two disks apart. LUN 0 is the
+      # 1.0TB, LUN 1 the 500GB. Moving the dock breaks these on purpose.
+      - |-
+        apiVersion: v1alpha1
+        kind: UserVolumeConfig
+        name: hdd-usb-1000
+        provisioning:
+          diskSelector:
+            match: "'/dev/disk/by-path/pci-0000:04:00.4-usb-0:2:1.0-scsi-0:0:0:0' in disk.symlinks"
+          minSize: 100GB
+          grow: true
+        filesystem:
+          type: xfs
+      - |-
+        apiVersion: v1alpha1
+        kind: UserVolumeConfig
+        name: hdd-usb-500
+        provisioning:
+          diskSelector:
+            match: "'/dev/disk/by-path/pci-0000:04:00.4-usb-0:2:1.0-scsi-0:0:0:1' in disk.symlinks"
+          minSize: 100GB
+          grow: true
+        filesystem:
+          type: xfs
+      # LINSTOR's LVM-thin pool. Raw volumes are provisioned BEFORE EPHEMERAL,
+      # which is what lets the two share the disk. Inert until EPHEMERAL is
+      # wiped -- Talos only grows volumes, it never shrinks them in place.
+      - |-
+        apiVersion: v1alpha1
+        kind: RawVolumeConfig
+        name: linstor
+        provisioning:
+          diskSelector:
+            match: system_disk
+          minSize: 240GB
+          maxSize: 240GB
+      # 240 + 240 + ~2GB of system partitions must fit the 500GB NVMe.
+      - |-
+        apiVersion: v1alpha1
+        kind: VolumeConfig
+        name: EPHEMERAL
+        provisioning:
+          diskSelector:
+            match: system_disk
+          maxSize: 240GB
       # Longhorn reads this pair ONLY when it first registers the node, so it
       # is a rebuild path, not a live one. Malformed JSON = node with no disk.
       # The /var/lib/longhorn entry must stay listed or a rebuilt node loses it.
+      # hdd-sata-640 is deliberately NOT listed any more: it belongs to
+      # SeaweedFS now, and a Postgres replica must never land on a 20-IOPS
+      # spindle. Remove this whole patch once Longhorn is uninstalled.
       - |-
         machine:
           nodeLabels:
             node.longhorn.io/create-default-disk: config
           nodeAnnotations:
-            node.longhorn.io/default-disks-config: '[{"path":"/var/lib/longhorn","allowScheduling":true,"storageReserved":74633213952,"tags":[]},{"path":"/var/mnt/hdd-sata-640","allowScheduling":true,"storageReserved":96020254310,"tags":[]}]'
+            node.longhorn.io/default-disks-config: '[{"path":"/var/lib/longhorn","allowScheduling":true,"storageReserved":74633213952,"tags":[]}]'
     nameservers:
       - 192.168.1.1
     networkInterfaces:
@@ -74,7 +121,52 @@ nodes:
     ipAddress: 192.168.1.102
     controlPlane: true
     installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/36cd6536eaec8ba802be2d38974108359069cedba8857302f69792b26b87c010
+    talosImageURL: factory.talos.dev/installer/b86969a5f5abcc3e3be770b80c8cbf963af64f5d6d1000a2a88366943b272671
+    patches:
+      # by-path, not WWID: both dock bays report the same WWID. LUN 0 is the
+      # 2.0TB, LUN 1 the 320GB. The 250GB disk on pci-0000:00:1d.0 is excluded
+      # by construction -- its bridge fakes cache flushes (documentations/16)
+      # and it must never hold data.
+      - |-
+        apiVersion: v1alpha1
+        kind: UserVolumeConfig
+        name: hdd-usb-2000
+        provisioning:
+          diskSelector:
+            match: "'/dev/disk/by-path/pci-0000:00:14.0-usb-0:6:1.0-scsi-0:0:0:0' in disk.symlinks"
+          minSize: 100GB
+          grow: true
+        filesystem:
+          type: xfs
+      - |-
+        apiVersion: v1alpha1
+        kind: UserVolumeConfig
+        name: hdd-usb-320
+        provisioning:
+          diskSelector:
+            match: "'/dev/disk/by-path/pci-0000:00:14.0-usb-0:6:1.0-scsi-0:0:0:1' in disk.symlinks"
+          minSize: 100GB
+          grow: true
+        filesystem:
+          type: xfs
+      # Inert until EPHEMERAL is wiped; see node-1.
+      - |-
+        apiVersion: v1alpha1
+        kind: RawVolumeConfig
+        name: linstor
+        provisioning:
+          diskSelector:
+            match: system_disk
+          minSize: 730GB
+          maxSize: 730GB
+      - |-
+        apiVersion: v1alpha1
+        kind: VolumeConfig
+        name: EPHEMERAL
+        provisioning:
+          diskSelector:
+            match: system_disk
+          maxSize: 250GB
     nameservers:
       - 192.168.1.1
     networkInterfaces:
@@ -95,11 +187,12 @@ nodes:
     ipAddress: 192.168.1.103
     controlPlane: true
     installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/36cd6536eaec8ba802be2d38974108359069cedba8857302f69792b26b87c010
+    talosImageURL: factory.talos.dev/installer/b86969a5f5abcc3e3be770b80c8cbf963af64f5d6d1000a2a88366943b272671
     patches:
-      # Unformatted partition for a Rook/Ceph SSD-class OSD; Rook takes it at
-      # /dev/disk/by-partlabel/r-fastpool. The name must NOT contain "ceph" --
-      # ceph-volume reads that label as ceph-disk's and skips the device.
+      # Unformatted partition, published at /dev/disk/by-partlabel/r-fastpool.
+      # Was a Ceph OSD; becomes LINSTOR's ssd pool on this node, which is why
+      # node-3 needs no EPHEMERAL wipe. Keep the name: renaming it recreates
+      # the partition and evacuating the pool first is the only safe order.
       - |-
         apiVersion: v1alpha1
         kind: RawVolumeConfig
@@ -142,6 +235,18 @@ nodes:
 patches:
   - |-
     machine:
+      # The factory schematic ships the DRBD modules; nothing loads them
+      # without this block -- piraeus-operator#692, "you won't get any volumes
+      # created". usermode_helper=disabled is required because Talos has no
+      # systemd for DRBD to hand off to, and dm-thin-pool is
+      # CONFIG_DM_THIN_PROVISIONING=m, which LVM_THIN storage pools need.
+      kernel:
+        modules:
+          - name: drbd
+            parameters:
+              - usermode_helper=disabled
+          - name: drbd_transport_tcp
+          - name: dm-thin-pool
       kubelet:
         defaultRuntimeSeccompProfileEnabled: true
         disableManifestsDirectory: true

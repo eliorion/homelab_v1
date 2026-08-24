@@ -1,0 +1,43 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: linstor-controller
+  namespace: monitoring
+  labels:
+    # Matches Prometheus serviceMonitorSelector.
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - piraeus-datastore
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: linstor-controller
+  endpoints:
+    - port: api
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: linstor-satellite
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - piraeus-datastore
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: linstor-satellite
+  podMetricsEndpoints:
+    - port: prometheus
+      path: /metrics
+      interval: 30s
+      relabelings:
+        # drbd_* metrics are per-node; without this every series is labelled by
+        # pod name and the node a replica lives on is unrecoverable.
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node

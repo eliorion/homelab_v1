@@ -1,17 +1,17 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: rook-release
+  name: seaweedfs
   namespace: flux-system
 spec:
   interval: 24h
-  url: https://charts.rook.io/release
+  url: https://seaweedfs.github.io/seaweedfs/helm
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: ceph-csi
+  name: seaweedfs-csi
   namespace: flux-system
 spec:
   interval: 24h
-  url: https://ceph.github.io/ceph-csi-operator
+  url: https://seaweedfs.github.io/seaweedfs-csi-driver/helm

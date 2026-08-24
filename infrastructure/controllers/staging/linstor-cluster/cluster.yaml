@@ -1,0 +1,8 @@
+apiVersion: piraeus.io/v1
+kind: LinstorCluster
+metadata:
+  name: linstorcluster
+spec:
+  # Without this Secret `linstor remote create s3` fails: LINSTOR stores remote
+  # credentials encrypted under it. Losing it makes existing remotes unreadable.
+  linstorPassphraseSecret: linstor-passphrase

@@ -24,8 +24,8 @@ directly, one per Flux Kustomization, and only two go through the aggregate
 
 | Path | What it does |
 |---|---|
-| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `longhorn/`, `reflector/`, `rook-ceph/` (operator + the ceph-csi-drivers chart). **There is no `base/kustomization.yaml`** and there should not be one. |
-| `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. Three resources: `cnpg/`, `tailscale-operator/` and `rook-ceph-cluster/`. |
+| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `linstor/` (Piraeus operator), `longhorn/`, `reflector/`, `rook-ceph/` (operator + the ceph-csi-drivers chart), `seaweedfs/` (namespace + CSI driver). **There is no `base/kustomization.yaml`** and there should not be one. |
+| `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. `cnpg/`, `tailscale-operator/`, `rook-ceph-cluster/` and `seaweedfs-cluster/`; `linstor-cluster/` is present but commented out until its partitions exist. |
 | `staging/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/` (the operator only — `base/cnpg/kustomization.yaml` does not include `plugin/`). |
 | `staging/tailscale-operator/` | Staging-only component, no base counterpart. Reconciled through the aggregate above. |
 | `staging/rook-ceph-cluster/` | The `CephCluster`, pool and StorageClass, plus the dashboard `Service` and its tailscale `Ingress`. Separate from `base/rook-ceph/` (the operator) because it names this cluster's PCI/USB device paths. Live &mdash; `suspend: false`. |
@@ -44,6 +44,8 @@ From `clusters/staging/infrastructure.yaml`:
 | `infra-arc-controller` | `base/arc` | `wait: true`, health check on `arc-controller-gha-rs-controller` |
 | `infra-longhorn` | `base/longhorn` | `wait: true`, `timeout: 15m` (first install pulls all Longhorn images on a cold node) |
 | `infra-rook-ceph` | `base/rook-ceph` | `wait: true`, `timeout: 15m`, health check on the `rook-ceph-operator` HelmRelease |
+| `infra-linstor` | `base/linstor` | `wait: true`, `timeout: 15m`, health check on the `piraeus-operator` HelmRelease |
+| `infra-seaweedfs` | `base/seaweedfs` | `wait: true`, `timeout: 15m`, health check on the `seaweedfs-csi-driver` HelmRelease; `dependsOn: infra-linstor` because the masters claim from the `ssd` class |
 | `infra-cilium` | `base/cilium` | `wait: true`, `timeout: 10m` (cold agent/operator/hubble image pull) |
 | `infra-cilium-config` | `base/cilium/config` | `dependsOn: infra-cilium` — needs the CRDs the chart installs |
 | `infra-keda` | `base/keda` | `wait: true`, `timeout: 10m` |
@@ -169,6 +171,8 @@ See [`../../documentations/00-bootstrap-cluster.md`](../../documentations/00-boo
 - [`base/cnpg/README.md`](base/cnpg/README.md) and [`base/cnpg/plugin/README.md`](base/cnpg/plugin/README.md)
 - [`base/keda/README.md`](base/keda/README.md)
 - [`base/keycloak-operator/README.md`](base/keycloak-operator/README.md)
+- [`base/linstor/README.md`](base/linstor/README.md)
 - [`base/longhorn/README.md`](base/longhorn/README.md)
+- [`base/seaweedfs/README.md`](base/seaweedfs/README.md)
 - [`staging/reflector/README.md`](staging/reflector/README.md) (covers `base/reflector/` too)
 - [`staging/tailscale-operator/README.md`](staging/tailscale-operator/README.md)

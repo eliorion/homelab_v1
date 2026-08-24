@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: piraeus-datastore
+  labels:
+    # Satellites load DRBD, open raw devices and use Bidirectional mount
+    # propagation, which Kubernetes only permits to privileged containers.
+    # The Helm chart templates no Namespace, so these labels exist only here.
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
