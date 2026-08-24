@@ -205,7 +205,8 @@ its own config Job (it has `curl`, `jq` and `sh`).
   until it returns — the volume does not follow the pod. And the `ssd` pool is
   LVM-thin and shared with every CNPG database, so a runaway cache can exhaust
   the pool and break the databases on that node; that risk, not the disk size,
-  is why it is 200Gi against ~490 GiB free rather than the old 350Gi.
+  is why it is 150Gi rather than the old 350Gi: LINSTOR places it on node-1,
+  whose pool is only 223 GiB and already carries ~50 GiB of database replicas.
 - **It is not on `hdd` on purpose.** A SeaweedFS PVC's quota counts every
   replica, so `hdd` would have given half the requested size, on spindles
   measured at 26–49 MB/s.

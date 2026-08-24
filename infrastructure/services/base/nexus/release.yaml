@@ -50,15 +50,16 @@ spec:
       # not worth the space and DRBD would double it. The node holding it going
       # down takes Nexus down until it returns.
       #
-      # 200Gi, not more: the `ssd` LVM-thin pool is shared with every database
-      # and only ~490 GiB is free on the largest node. A cache that fills the
-      # thin pool breaks every database on that node, which is far worse than a
-      # cache that evicts early.
+      # 150Gi, not more: LINSTOR places this on node-1, whose SSD pool is only
+      # 223 GiB and already carries ~50 GiB of small database replicas. At 200Gi
+      # the cache alone could exhaust the thin pool and outdate every one of
+      # them; at 150Gi it cannot. node-1 is deliberate -- it is the NVMe box and
+      # the fastest storage in the cluster.
       #
       # storageClass and size are immutable once the StatefulSet exists —
       # changing either means deleting the StatefulSet and the PVC.
       storageClass: ssd-single
-      size: 200Gi
+      size: 150Gi
     # Raise -Xmx and resources.limits.memory together, never one alone.
     install4jAddVmParams: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2048m"
     resources:
