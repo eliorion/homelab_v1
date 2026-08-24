@@ -89,18 +89,6 @@ nodes:
           diskSelector:
             match: system_disk
           maxSize: 240GB
-      # Longhorn reads this pair ONLY when it first registers the node, so it
-      # is a rebuild path, not a live one. Malformed JSON = node with no disk.
-      # The /var/lib/longhorn entry must stay listed or a rebuilt node loses it.
-      # hdd-sata-640 is deliberately NOT listed any more: it belongs to
-      # SeaweedFS now, and a Postgres replica must never land on a 20-IOPS
-      # spindle. Remove this whole patch once Longhorn is uninstalled.
-      - |-
-        machine:
-          nodeLabels:
-            node.longhorn.io/create-default-disk: config
-          nodeAnnotations:
-            node.longhorn.io/default-disks-config: '[{"path":"/var/lib/longhorn","allowScheduling":true,"storageReserved":74633213952,"tags":[]}]'
     nameservers:
       - 192.168.1.1
     networkInterfaces:
@@ -251,14 +239,6 @@ patches:
         disableManifestsDirectory: true
         extraArgs:
           rotate-server-certificates: true
-        extraMounts:
-          - destination: /var/lib/longhorn
-            type: bind
-            source: /var/lib/longhorn
-            options:
-              - bind
-              - rshared
-              - rw
       install:
         wipe: false
         grubUseUKICmdline: true

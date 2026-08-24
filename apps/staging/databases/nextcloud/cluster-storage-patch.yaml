@@ -1,6 +1,6 @@
 - op: add
   path: /spec/storage/storageClass
-  value: longhorn
+  value: ssd
 # Staging sizing; base stays at 5Gi. 5Gi filled with unarchivable WAL and CNPG
 # halted the primary with "Not enough disk space", stalling the whole app tier.
 - op: replace

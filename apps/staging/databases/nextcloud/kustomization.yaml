@@ -19,7 +19,7 @@ patches:
     target:
       kind: Cluster
       name: nextcloud-db
-  # PVCs on Longhorn.
+  # PVCs on the LINSTOR `ssd` class.
   - path: cluster-storage-patch.yaml
     target:
       kind: Cluster

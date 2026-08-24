@@ -1,6 +1,6 @@
 - op: add
   path: /spec/storage/storageClass
-  value: longhorn
+  value: ssd
 # Staging sizing; base stays at 10Gi. A full volume halts the primary with CNPG's
 # "Not enough disk space" and takes the whole fbref stack down with it.
 # Both Longhorn volumes are patched to numberOfReplicas: 1 — the class provisions

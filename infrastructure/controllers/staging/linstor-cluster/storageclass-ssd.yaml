@@ -2,8 +2,10 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: ssd
-  # No is-default-class annotation until the `longhorn` class is gone: two
-  # defaults is an error and every unpinned PVC would fail to bind.
+  annotations:
+    # Longhorn is gone. Two defaults is an error, so this annotation and the
+    # longhorn chart's persistence.defaultClass can never both be set.
+    storageclass.kubernetes.io/is-default-class: "true"
 provisioner: linstor.csi.linbit.com
 allowVolumeExpansion: true
 volumeBindingMode: WaitForFirstConsumer

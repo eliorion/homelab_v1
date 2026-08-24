@@ -7,7 +7,6 @@ resources:
   - etcd-backup-alerts
   - cnpg-alerts
   - n8n-metrics
-  - longhorn-monitoring
   - linstor-monitoring
   - seaweedfs-monitoring
   - node-capacity-alerts

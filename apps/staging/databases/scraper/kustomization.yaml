@@ -8,7 +8,7 @@ resources:
   - serving-metrics-configmap.yaml
 
 patches:
-  # PVCs on Longhorn.
+  # PVCs on the LINSTOR `ssd` class.
   - path: cluster-storage-patch.yaml
     target:
       kind: Cluster
