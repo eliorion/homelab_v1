@@ -2,3 +2,15 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base/azuracast/
+
+# TEMPORARY, remove after the hdd PVCs are recreated: they were provisioned
+# under the shared `hdd` collection and must be replaced before AzuraCast
+# reaches them.
+patches:
+  - target:
+      kind: Deployment
+      name: azuracast
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
