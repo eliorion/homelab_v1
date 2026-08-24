@@ -4,9 +4,7 @@ resources:
   - cnpg/
   # Tailscale operator — exposes the asp/fbref admin UIs on the tailnet.
   - tailscale-operator/
-  # SeaweedFS. Its HelmRelease is suspended — the volume servers use hostPath
-  # DirectoryOrCreate, so starting them before the Talos user volumes are
-  # mounted writes bulk data onto the EPHEMERAL partition instead of the disks.
+  # SeaweedFS — the hdd class and the S3 gateway.
   - seaweedfs-cluster/
   # LINSTOR storage pools. node-2 has no r-linstor partition yet, so its pool
   # simply does not exist until its EPHEMERAL is re-provisioned.

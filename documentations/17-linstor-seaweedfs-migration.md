@@ -1,7 +1,14 @@
 # 17 — retiring Longhorn and Ceph for LINSTOR + SeaweedFS
 
-Status: **planned, not started.** Phase 0 is committed; nothing has touched the
-cluster.
+Status: **phases 0–3 done, phase 4 in progress.** Longhorn and Rook/Ceph are
+both gone, LINSTOR serves `ssd` on all three nodes, and the five `u-hdd-*` Talos
+user volumes are provisioned and mounted. The `seaweedfs` HelmRelease is
+unsuspended as of 2026-08-24; the post-install `fs.configure` and the tier drill
+below are what remains.
+
+The "Verified live state, 2026-08-23" section below is the pre-migration
+snapshot, kept as the record of what the teardown started from. It is not
+current.
 
 Two storage systems leave and two arrive. **Longhorn** (class `longhorn`,
 default, three replicas on the install-disk SSDs, still carrying all eight CNPG
