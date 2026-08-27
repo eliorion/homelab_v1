@@ -68,6 +68,7 @@ Tailscale `Ingress` (HTTPS on 443, no port in the URL):
 | `ceph` | `infrastructure/controllers/staging/rook-ceph-cluster/ingress-tailscale.yaml` |
 | `seaweedfs-s3` | `infrastructure/controllers/staging/seaweedfs-cluster/ingress-tailscale.yaml` |
 | `seaweedfs-admin` | `infrastructure/controllers/staging/seaweedfs-cluster/ingress-tailscale-admin.yaml` — no password; the tailnet is the only gate |
+| `linstor-gui` | `infrastructure/controllers/staging/linstor-cluster/ingress-tailscale.yaml` — the UI is at `/ui/#!/`; the root path is the controller's unauthenticated REST API |
 | `grafana` | `monitoring/controllers/base/kube-prometheus-stack/release.yaml` (`grafana.ingress`) — the only chart-rendered one; the chart owns the object, so there is no `ingress-tailscale.yaml` to find |
 
 ### Egress Services (`egress-proxies.yaml`)

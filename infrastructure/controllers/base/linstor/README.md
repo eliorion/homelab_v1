@@ -19,11 +19,16 @@ narrative and runbook:
 | `namespace.yaml` | Creates `piraeus-datastore` with `pod-security.kubernetes.io/enforce\|audit\|warn: privileged`. |
 | `repository.yaml` | `HelmRepository` `piraeus` in `flux-system`, **`type: oci`**, `oci://ghcr.io/piraeusdatastore/piraeus-operator`. |
 | `release.yaml` | `HelmRelease` `piraeus-operator` (chart `piraeus` `2.11.0`) into `piraeus-datastore`, with `installCRDs: true`. |
+| `monitoring/` | The tier's `ServiceMonitor` and `PrometheusRule`, applied by their own Flux `Kustomization` `infra-linstor-monitoring` -- NOT by `infra-linstor`, whose `wait: true` would deadlock a cold bootstrap on a CRD the monitoring chart has not installed yet. |
 
 Flux drives the directory from `clusters/staging/infrastructure.yaml`
 (`Kustomization` `infra-linstor`, `wait: true`, 15 minute timeout, health check
 on the HelmRelease). `infra-seaweedfs` depends on it, because SeaweedFS's masters
 claim from the `ssd` class this provides.
+
+The overlay adds the `LinstorCluster`, the Talos loader override and the storage
+pools, the two StorageClasses, the SOPS passphrase Secret, and the tailnet
+`Ingress` that publishes the controller's GUI.
 
 The operator deploys, from the `LinstorCluster` CR: the LINSTOR controller, the
 satellite DaemonSet, the CSI controller and node plugin, the **HA controller**,
@@ -113,6 +118,13 @@ keep redundancy intact through a node loss, at 1.5× the space.
 - **The master passphrase is not recoverable.** `linstorPassphraseSecret` is what
   LINSTOR encrypts S3 remote credentials under; losing it makes existing remotes
   unreadable. Treat it like the offline age key for the etcd backups.
+- **The GUI cannot be published without the REST API.** The bundle calls `/v1` on
+  the page's own origin, so the `Ingress` has to front the controller's root path;
+  there is no "expose only `/ui`" variant that still works. Every write verb of the
+  API is on the tailnet unauthenticated as a result, `/metrics` included.
+- **Turning on controller API TLS breaks that Ingress.** With HTTPS configured the
+  controller keeps 3370 only to answer `/v1` and `/ui` with a redirect to
+  `https://<host>:3371`, and nothing publishes 3371 on the tailnet.
 
 ## Operating it
 - **There are two classes, and only one is safe for data.** `ssd` places two
@@ -144,6 +156,27 @@ L resource list-volumes
 L error-reports list
 ```
 
+The GUI is the same control surface with a mouse. `linstor-gui` is a Debian
+package inside `piraeus-server`, so the controller has been serving it since the
+image was pulled; its HTTP server maps the bundle at `/ui`, and a Tailscale
+`Ingress` (`ingress-tailscale.yaml` in the overlay) publishes port 3370 as
+`https://linstor-gui.tail45b0ca.ts.net`. **The address is
+`https://linstor-gui.tail45b0ca.ts.net/ui/#!/`** — the root path is the REST API,
+not the UI, and the trailing slash is load-bearing: `/ui` on its own answers a 301
+whose `Location` is `/`, back onto the API. In-cluster the same thing is
+`http://linstor-controller.piraeus-datastore.svc.cluster.local:3370/ui/#!/`.
+
+It shows nodes, storage pools, resources and volumes, and it creates and deletes
+them — the same verbs as `L resource create`. There is no login: controller
+authentication is not enabled, and the GUI is a static bundle whose requests go to
+`/v1` on its own origin, so putting `/ui` on the tailnet necessarily puts the whole
+REST API there under the same hostname. `curl -X DELETE
+https://linstor-gui.tail45b0ca.ts.net/v1/resource-definitions/<name>` needs no
+credential and destroys a volume Kubernetes still believes it has. That is the
+Longhorn UI's exposure transplanted onto this tier; the tailnet is the only
+authentication plane and the cost is stated in
+[`../../../../documentations/14-design-decisions.md`](../../../../documentations/14-design-decisions.md).
+
 A replica is healthy when it reads `UpToDate`. `TieBreaker` on the third node is
 expected and correct — it is a diskless quorum vote, not a missing replica.
 
@@ -161,3 +194,6 @@ expected and correct — it is a diskless quorum vote, not a missing replica.
 - **Restoring redundancy after a node loss** is manual while auto-eviction is
   off: place a new replica with `L resource create <node> <resource> --storage-pool ssd`,
   then watch it sync with `L resource list-volumes`.
+- **The GUI loads but every panel errors** — the browser has an absolute controller
+  origin pinned in `localStorage.LINSTOR_HOST`, which wins over the same-origin
+  default. Clear site data for `linstor-gui.tail45b0ca.ts.net`.
