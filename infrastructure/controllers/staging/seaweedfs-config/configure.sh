@@ -9,4 +9,5 @@ FILER="seaweedfs-seaweedfs-filer-client.seaweedfs.svc.cluster.local:8888"
 weed shell -master="$MASTER" -filer="$FILER" <<'SHELL'
 fs.configure -locationPrefix=/buckets/ -volumeGrowthCount=1 -apply
 s3.bucket.create -name nextcloud
+s3.bucket.create -name tmp-backup-garage
 SHELL

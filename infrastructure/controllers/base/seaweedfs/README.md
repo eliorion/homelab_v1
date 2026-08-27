@@ -22,8 +22,9 @@ narrative and runbook:
 | `release-csi.yaml` | `HelmRelease` `seaweedfs-csi-driver` (chart `0.2.35`, app `v1.4.29`) pointed at the filer, creating no StorageClass of its own, with `node.updateStrategy.type: OnDelete`. |
 
 The overlay adds the `seaweedfs` HelmRelease (chart `4.44.0`), the `seaweedfs-db`
-CNPG cluster that holds the filer's metadata, the `hdd` StorageClass and the
-SOPS-encrypted S3 identity config. It is reached through
+CNPG cluster that holds the filer's metadata, the `hdd` StorageClass, the
+SOPS-encrypted S3 identity config and the tailnet Ingress for the S3 gateway.
+It is reached through
 `infrastructure/controllers/staging/kustomization.yaml`.
 
 Flux drives this directory from `clusters/staging/infrastructure.yaml`
@@ -179,6 +180,44 @@ as the single highest-value hardware change available to this cluster.
   `monitoring/configs/README.md`.
 - **Erasure coding silently does nothing below four data nodes.** `ec.encode`
   logs one line and returns `nil`. Do not plan around it.
+- **`existingConfigSecret` is read once, at startup.** `weed s3 -config` does not
+  watch the file, so adding an identity to `s3-config.enc.yaml` changes nothing
+  until `kubectl -n seaweedfs rollout restart deploy/seaweedfs-seaweedfs-s3`.
+  Flux reports the HelmRelease and the Kustomization healthy either way.
+- **The Tailscale Ingress serves exactly one hostname.** Virtual-host bucket
+  addressing (`<bucket>.seaweedfs-s3.<tailnet>.ts.net`) has neither a DNS record
+  nor a certificate, so every off-cluster client must force path-style: rclone
+  `force_path_style = true`, aws CLI `s3.addressing_style = path`.
+
+## Reaching S3
+
+In-cluster: `http://seaweedfs-seaweedfs-s3.seaweedfs.svc.cluster.local:8333`.
+
+Off-cluster: a Tailscale `Ingress` (`ingress-tailscale.yaml` in the overlay) puts
+the same gateway on the tailnet as `https://seaweedfs-s3.<tailnet>.ts.net`, TLS
+terminated with the tailnet's own certificate. Nothing is published on the LAN
+and no LB-IPAM address is spent — the tailnet identity is the outer
+authentication layer and S3 SigV4 the inner one, the same shape the Keycloak and
+`ai-gateway` endpoints use.
+
+Auth is on (`s3.enableAuth: true`) and the identity list is the SOPS-encrypted
+`s3-config.enc.yaml`: one identity per consumer, each scoped to its own bucket
+with `Read|Write|List|Tagging:<bucket>`. No shared and no unscoped credentials —
+the rule Garage already follows in
+[`../../../../documentations/12-garage-object-storage.md`](../../../../documentations/12-garage-object-storage.md).
+
+| Identity | Bucket | Purpose |
+| --- | --- | --- |
+| `nextcloud` | `nextcloud` | Nextcloud's primary object store |
+| `tmp-backup-garage` | `tmp-backup-garage` | Landing zone for the Garage cluster rebuild |
+
+`tmp-backup-garage` holds an rclone copy of the Garage buckets while the three
+Garage nodes are re-laid-out, and is deliberately temporary. It is a *second*
+copy at the home site, not an off-site one, so it does not stand in for Garage's
+placement guarantee — the point of Garage is that two of its three nodes are in
+other buildings. Empty it once the rebuilt Garage cluster is verified. Region is
+irrelevant on this endpoint: SeaweedFS does not validate it, unlike Garage, which
+fails `HeadBucket` on a mismatch.
 
 ## Operating it
 

@@ -14,6 +14,13 @@ stringData:
             {"accessKey": "REPLACE_ME", "secretKey": "REPLACE_ME"}
           ],
           "actions": ["Read:nextcloud", "Write:nextcloud", "List:nextcloud", "Tagging:nextcloud"]
+        },
+        {
+          "name": "tmp-backup-garage",
+          "credentials": [
+            {"accessKey": "REPLACE_ME", "secretKey": "REPLACE_ME"}
+          ],
+          "actions": ["Read:tmp-backup-garage", "Write:tmp-backup-garage", "List:tmp-backup-garage", "Tagging:tmp-backup-garage"]
         }
       ]
     }
