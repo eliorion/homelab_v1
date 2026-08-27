@@ -6,3 +6,4 @@ resources:
   - storageclass-hdd.yaml
   - s3-config.enc.yaml
   - ingress-tailscale.yaml
+  - ingress-tailscale-admin.yaml

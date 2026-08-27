@@ -20,10 +20,12 @@ narrative and runbook:
 | `namespace.yaml` | Creates `seaweedfs` with `pod-security.kubernetes.io/enforce\|audit\|warn: privileged`. |
 | `repository.yaml` | Two `HelmRepository`s in `flux-system`: `seaweedfs` (`https://seaweedfs.github.io/seaweedfs/helm`) and `seaweedfs-csi` (`https://seaweedfs.github.io/seaweedfs-csi-driver/helm`). |
 | `release-csi.yaml` | `HelmRelease` `seaweedfs-csi-driver` (chart `0.2.35`, app `v1.4.29`) pointed at the filer, creating no StorageClass of its own, with `node.updateStrategy.type: OnDelete`. |
+| `monitoring/` | The tier's `PrometheusRule`, applied by its own Flux `Kustomization` `infra-seaweedfs-monitoring` -- NOT by `infra-seaweedfs`, whose `wait: true` would deadlock a cold bootstrap on a CRD the monitoring chart has not installed yet. |
 
 The overlay adds the `seaweedfs` HelmRelease (chart `4.44.0`), the `seaweedfs-db`
 CNPG cluster that holds the filer's metadata, the `hdd` StorageClass, the
-SOPS-encrypted S3 identity config and the tailnet Ingress for the S3 gateway.
+SOPS-encrypted S3 identity config and two tailnet Ingresses, one for the S3
+gateway and one for the admin UI.
 It is reached through
 `infrastructure/controllers/staging/kustomization.yaml`.
 
@@ -136,6 +138,9 @@ as the single highest-value hardware change available to this cluster.
   deploy/seaweedfs-seaweedfs-worker` is the fix. Note the admin's own
   `Topology status: … 0 workers` line is a *different* registry and reads 0 even
   when the plugin worker is connected and running tasks — do not trust it.
+  **Anything that rolls the admin re-runs that race** — a chart bump, or adding
+  `admin.secret.*` to give the UI a password — so look for that line again after
+  every admin restart. Publishing the UI does not: an `Ingress` touches no pod spec.
 - **`-minFreeSpacePercent` is 1.** Crossing it marks *all* of that server's
   volumes read-only at once.
 - **`fs.configure` applies at write time only.** Configure a path before creating
@@ -188,6 +193,12 @@ as the single highest-value hardware change available to this cluster.
   addressing (`<bucket>.seaweedfs-s3.<tailnet>.ts.net`) has neither a DNS record
   nor a certificate, so every off-cluster client must force path-style: rclone
   `force_path_style = true`, aws CLI `s3.addressing_style = path`.
+- **The admin UI keeps its own state on an `emptyDir`.** `admin.data.type` defaults
+  to `emptyDir` and the command renders `-dataDir=/data`, which is where the UI
+  writes the maintenance policy and the task history. A rescheduled admin comes
+  back with the chart defaults and an empty task list. Nothing authoritative is
+  there — topology belongs to the masters, metadata to the filer — so it costs
+  settings, not data: treat anything tuned in the maintenance screens as temporary.
 
 ## Reaching S3
 
@@ -240,6 +251,31 @@ volume slots, after which new volumes stop being placed there:
 ```bash
 kubectl -n seaweedfs exec -it deploy/seaweedfs-filer -- weed shell <<< 'volume.list'
 ```
+
+The admin UI is the other control surface, and the one with a mouse. It is the
+`admin` half of the admin/worker pair, so it has been running since the tier was
+installed and was simply unpublished: dashboard, master/filer/volume-server
+topology, per-volume and per-collection sizes, the S3 buckets and identities, a
+file browser over the filer, and the maintenance queue the worker drains. A
+Tailscale `Ingress` (`ingress-tailscale-admin.yaml` in the overlay) puts it on
+`https://seaweedfs-admin.<tailnet>.ts.net` with the dashboard on the root path;
+in-cluster it is
+`http://seaweedfs-seaweedfs-admin.seaweedfs.svc.cluster.local:23646`. The chart's
+own `admin.ingress` stays disabled — its `className` defaults to `nginx`, which
+nothing here serves, and on a non-root `path` it also injects `-urlPrefix` into
+the admin's argv.
+
+**There is no password.** `admin.secret.adminPassword` is left empty, which makes
+`weed admin` register every route as public — including the whole `/api` surface,
+so `DELETE /api/files/delete`, `DELETE /api/s3/buckets/{bucket}` and
+`POST /api/users/{username}/access-keys` answer with no credential — and skip its
+CSRF checks along with the session. The tailnet is the entire authentication plane
+in front of it, the same shape Longhorn's UI had, and the cost is the one already
+written down in
+[`../../../../documentations/14-design-decisions.md`](../../../../documentations/14-design-decisions.md):
+one over-broad ACL grant is full control of this tier. One cosmetic consequence:
+the cluster pages link to `//<volume-server>:8080/ui/index.html`, pod addresses
+that resolve in-cluster and nowhere else.
 
 ## Filer configuration is not in the chart
 
