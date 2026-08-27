@@ -9,7 +9,7 @@ repository (`infrastructure/`, `apps/`, `monitoring/`) is inert YAML until a
 `staging` is the live cluster. `production` is scaffolding: the files exist and are
 internally consistent, but no production cluster is deployed.
 
-The files in `clusters/staging/` declare 18 Flux Kustomizations, 4 `GitRepository`
+The files in `clusters/staging/` declare 22 Flux Kustomizations, 4 `GitRepository`
 sources for the application Helm charts, and the flux-generated bootstrap manifests.
 They carry no workload YAML of their own — only ordering, gating, timeouts and
 decryption.
@@ -35,14 +35,13 @@ rather than hand-editing.
 Every other Kustomization in this directory names `sourceRef: GitRepository/flux-system`,
 so the whole tree reconciles from one clone.
 
-### `staging/infrastructure.yaml` — 12 Kustomizations
+### `staging/infrastructure.yaml` — 16 Kustomizations
 
 | name | path (`./`-relative to repo root) | interval | timeout | dependsOn | gate |
 | --- | --- | --- | --- | --- | --- |
 | `infra-certmanager` | `infrastructure/controllers/base/cert-manager` | 1h | 5m | — | wait + Deployments `cert-manager`, `cert-manager-webhook` (ns `cert-manager`) |
 | `infra-cnpg-plugin` | `infrastructure/controllers/base/cnpg/plugin` | 1h | 10m | `infra-certmanager` | wait + HelmRelease `plugin-barman-cloud` |
 | `infra-arc-controller` | `infrastructure/controllers/base/arc` | 1h | 5m | — | wait + Deployment `arc-controller-gha-rs-controller` (ns `arc-system`) |
-| `infra-longhorn` | `infrastructure/controllers/base/longhorn` | 1h | 15m | — | wait + HelmRelease `longhorn` |
 | `infra-cilium` | `infrastructure/controllers/base/cilium` | 1h | 10m | — | wait + HelmRelease `cilium` |
 | `infra-cilium-config` | `infrastructure/controllers/base/cilium/config` | 1h | 5m | `infra-cilium` | — |
 | `infra-keda` | `infrastructure/controllers/base/keda` | 1h | 10m | — | wait + Deployment `keda-operator` (ns `keda`) |
@@ -51,6 +50,11 @@ so the whole tree reconciles from one clone.
 | `infrastructure-controllers` | `infrastructure/controllers/staging` | 1m0s | 5m | `infra-cnpg-plugin` | sops |
 | `infrastructure-services` | `infrastructure/services/staging` | 1m0s | 5m | `infrastructure-controllers`, `infra-arc-controller`, `infra-keycloak-operator` | sops |
 | `infra-keycloak-realm` | `infrastructure/services/staging/keycloak/realm` | 1h | 10m | `infrastructure-services` | force + wait, sops |
+| `infra-linstor` | `infrastructure/controllers/base/linstor` | 1h | 15m | — | wait + HelmRelease `piraeus-operator` |
+| `infra-seaweedfs` | `infrastructure/controllers/base/seaweedfs` | 1h | 15m | `infra-linstor` | wait + HelmRelease `seaweedfs-csi-driver` |
+| `infra-seaweedfs-config` | `infrastructure/controllers/staging/seaweedfs-config` | 1h | 15m | `infrastructure-controllers` | force |
+| `infra-linstor-monitoring` | `infrastructure/controllers/base/linstor/monitoring` | 1h | 5m | `monitoring-controllers` | — |
+| `infra-seaweedfs-monitoring` | `infrastructure/controllers/base/seaweedfs/monitoring` | 1h | 5m | `monitoring-controllers` | — |
 
 The HelmRelease health checks target namespace `flux-system` because that is where the
 HelmRelease objects live, not where the chart installs.
@@ -189,21 +193,26 @@ flowchart TD
 
     root --> cm["infra-certmanager"]
     root --> arc["infra-arc-controller"]
-    root --> lh["infra-longhorn"]
     root --> cil["infra-cilium"]
     root --> refl["infra-reflector"]
     root --> keda["infra-keda"]
     root --> kco["infra-keycloak-operator"]
-    root --> mon["monitoring-controllers"]
+    root --> lin["infra-linstor"]
     root --> moncfg["monitoring-configs"]
 
     cm --> plugin["infra-cnpg-plugin"]
     cil --> cilcfg["infra-cilium-config"]
+    lin --> sw["infra-seaweedfs"]
     plugin --> ctrl["infrastructure-controllers"]
     ctrl --> svc["infrastructure-services"]
     arc --> svc
     kco --> svc
     svc --> realm["infra-keycloak-realm"]
+    ctrl --> swcfg["infra-seaweedfs-config"]
+
+    ctrl --> mon["monitoring-controllers"]
+    mon --> linmon["infra-linstor-monitoring"]
+    mon --> swmon["infra-seaweedfs-monitoring"]
 
     plugin --> db["databases"]
     refl --> db
@@ -215,6 +224,14 @@ flowchart TD
 
 Nodes with no inbound edge have no `dependsOn` and are applied immediately by the root
 Kustomization.
+
+`infra-linstor-monitoring` and `infra-seaweedfs-monitoring` are the only two edges that
+run backwards, from the monitoring tier into an infrastructure path. Their objects are a
+`ServiceMonitor` and two `PrometheusRule`s that live with their components, but the CRDs
+come from the `kube-prometheus-stack` chart — so they cannot sit inside `infra-linstor`
+or `infra-seaweedfs`, which are `wait: true` and would go NotReady on a cold bootstrap
+and block `monitoring-controllers` from ever installing those CRDs. Splitting them is the
+same move `infra-cilium-config` makes for the Cilium CRs.
 
 Two reconcile cadences: operator tiers run at `interval: 1h` because they only change
 when a human bumps a chart version; application and service tiers run at `1m0s`.
@@ -233,7 +250,7 @@ when a human bumps a chart version; application and service tiers run at `1m0s`.
     `400 {"error":"invalid_input","error_description":"A redirect URI is not a valid URI"}`,
     which reads as a bad realm file rather than as a missing decryption block.
 
-  Eight of the eighteen Kustomizations carry the block: `infrastructure-controllers`,
+  Eight of the twenty-two Kustomizations carry the block: `infrastructure-controllers`,
   `infrastructure-services`, `infra-reflector`, `infra-keycloak-realm`, `databases`,
   `apps`, `monitoring-controllers`, `monitoring-configs`. All point at the same
   `sops-age` Secret, created by hand once per cluster and never committed.
@@ -271,7 +288,7 @@ when a human bumps a chart version; application and service tiers run at `1m0s`.
 ## Operating it
 
 ```bash
-flux get kustomizations                        # the 18 above, plus flux-system
+flux get kustomizations                        # the 22 above, plus flux-system
 flux get sources git                           # flux-system + asp, fbref, lab, scraper
 flux get helmreleases -A
 

@@ -1,9 +1,22 @@
 # monitoring/configs — alert rules and notification wiring
 
 `monitoring/controllers/` installs the `kube-prometheus-stack` HelmRelease.
-`monitoring/configs/` holds everything that *uses* it: the scrape definitions
-(`PodMonitor` / `ServiceMonitor`), the alert rules (`PrometheusRule`) and the
-delivery path to Telegram.
+`monitoring/configs/` holds the cross-cutting things that *use* it: scrape
+definitions (`PodMonitor` / `ServiceMonitor`), alert rules (`PrometheusRule`) and
+the delivery path to Telegram.
+
+It is not the only place those objects live. A component whose monitoring is
+specific to it keeps it in its own directory instead, so the tool is configured in
+one place: the storage tiers own
+[`../../infrastructure/controllers/base/linstor/monitoring`](../../infrastructure/controllers/base/linstor/monitoring)
+and
+[`../../infrastructure/controllers/base/seaweedfs/monitoring`](../../infrastructure/controllers/base/seaweedfs/monitoring),
+each applied by its own Flux Kustomization (`infra-linstor-monitoring`,
+`infra-seaweedfs-monitoring`) rather than by `monitoring-configs`. Those
+Kustomizations `dependsOn: monitoring-controllers` because the CRDs are the
+chart's — see [`../../clusters/README.md`](../../clusters/README.md). Everything
+below still applies to them: same `release: kube-prometheus-stack` label, same
+namespace.
 
 There is a single overlay, `monitoring/configs/staging/`, applied by the Flux
 Kustomization `monitoring-configs`
