@@ -6,6 +6,9 @@
 #
 # Publishes the WHOLE controller, not just /ui: /v1 is its REST API and it has no
 # authentication at all. Rationale: README.
+#
+# The address is /ui/ -- the device ROOT is a dead end: the controller 303s to an
+# absolute `http://<host>:80/ui/`, which this proxy does not serve.
 # 3370 is the PLAIN HTTP port: enabling controller API TLS moves /ui and /v1 to
 # 3371 and turns 3370 into a redirect to a port nothing publishes.
 apiVersion: networking.k8s.io/v1

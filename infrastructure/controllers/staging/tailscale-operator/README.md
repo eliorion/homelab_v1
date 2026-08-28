@@ -64,7 +64,7 @@ Tailscale `Ingress` (HTTPS on 443, no port in the URL):
 | `n8n` | `apps/base/n8n/ingress-tailscale.yaml` |
 | `seaweedfs-s3` | `infrastructure/controllers/staging/seaweedfs-cluster/ingress-tailscale.yaml` |
 | `seaweedfs-admin` | `infrastructure/controllers/staging/seaweedfs-cluster/ingress-tailscale-admin.yaml` — no password; the tailnet is the only gate |
-| `linstor-gui` | `infrastructure/controllers/staging/linstor-cluster/ingress-tailscale.yaml` — use `/ui/#!/`; the device also serves the controller's unauthenticated `/v1` REST API |
+| `linstor-gui` | `infrastructure/controllers/staging/linstor-cluster/ingress-tailscale.yaml` — use `/ui/#!/`; the bare root 303s to an absolute `http://…:80/` the proxy does not serve. Also serves the unauthenticated `/v1` REST API |
 | `grafana` | `monitoring/controllers/base/kube-prometheus-stack/release.yaml` (`grafana.ingress`) — the only chart-rendered one; the chart owns the object, so there is no `ingress-tailscale.yaml` to find |
 
 ### Egress Services (`egress-proxies.yaml`)
