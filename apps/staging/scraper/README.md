@@ -40,6 +40,7 @@ Values set here:
 | `solver.proxyEgressPorts` | `[8888]` |
 | `engine.pools` | `direct` (`residential: true`), `tailscale` (`residential: true`, `http://tailscale-proxy-00.tailscale.svc.cluster.local:8888`), `c` (`http://tailscale-proxy-scrape-c.tailscale.svc.cluster.local:8888`) |
 | `engine.proxyEgressPorts` | `[8888]` |
+| `poolctl.enabled` | `true` — chart default is `false`; see Traps |
 | `poolctl.maxSolvers` | `2` — chart default is 4; see Traps |
 | `adminUi.service.annotations` | `tailscale.com/expose: "true"`, `tailscale.com/hostname: scraper-admin-ui` |
 
@@ -169,6 +170,12 @@ no fixed-replica mode. Every pool and solver is HPA-owned, and an idle namespace
   `poolctl` only drops its copy on the pass *after* the new chart pool list lands, which is after
   the upgrade it just broke. There is no reason to either: a live pool is a full pool. To promote
   anyway, delete the poolctl-managed solver first.
+- **`poolctl.enabled: true` must not land before the backend image carries the module.**
+  The controller is the `scraper-backend` image run as `python -m src.poolctl`, so enabling it
+  while `images.backend.tag` still names an older image CrashLoopBackOffs a pod that
+  helm-controller waits for: the upgrade fails on `timeout: 10m`, `upgrade.remediation` retries
+  three times and rolls back, and the whole release flaps. The chart defaults it off for that
+  reason — flip it here only after the tag has moved.
 - **`poolctl.maxSolvers` is a capacity guard, not a preference.** Each solver requests 2560Mi and
   limits at 6Gi, and `POST /v1/pools` is unauthenticated — the backend's `require_auth` is still a
   no-op scaffold. Raising it raises what a single POST loop can reserve on a three-node cluster
