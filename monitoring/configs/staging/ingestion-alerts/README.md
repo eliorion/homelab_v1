@@ -11,20 +11,35 @@ off, and the switches were invisible.
 
 ## The two switches
 
-They live in different databases, are set by different processes, and are
-**both** required to be clear for work to flow. Nothing ever clears either one:
-auto-pause is automatic, resume is manual.
+They live in different databases and are **both** required to be clear for work
+to flow. Nothing ever clears either one, so resume is manual in both cases — but
+since 2026-08-28 they are no longer thrown by the same kind of thing. Only the
+platform switch is automatic; the tenant switch is an operator's button.
 
 | Switch | Database | Table | Set by | Stops |
 |---|---|---|---|---|
-| tenant | `automarket` (asp) | `worker_control` row `id = 1` | the asp engine's inline monitor, on error rate or `blocked:` rate | asp **submitting** work |
-| platform | `scraper` | `domain_control` per (site, role) | the scraper platform, on block rate | the platform **serving** that site |
+| tenant | `automarket` (asp) | `worker_control` row `id = 1` | **an operator only** — admin-ui `POST /api/scraping/pause` / `/api/crawler/pause` | asp **submitting** work |
+| platform | `scraper` | `domain_control` per (site, role) | the scraper platform, automatically, on block rate | the platform **serving** that site |
+
+**asp no longer has an auto-pause.** Its inline monitor used to run error-rate
+and `blocked:`-rate breakers over `scrape_queue` and write the tenant flag
+itself. Those were deleted: asp only ever saw a block second-hand, reduced to a
+ratio, and its flag was global and one-way across sites that fail independently
+— five autoscout24 failures beside thirteen leboncoin successes read as one
+pooled 27.8% and stopped healthy leboncoin for thirteen days. Judging a block
+belongs beside the fetch, on the platform, which is where the surviving
+automatic breaker (`domain_control`) and the anti-bot escalation ladder already
+live. The consequence for these alerts: a firing `AspIngestionPaused` or
+`AspSearchingPaused` now always means **a human paused it and did not resume**,
+never that the pipeline stopped itself.
 
 In the incident both fired, four minutes apart, from the same DataDome event —
 `19:23:17` platform (`block rate 14.3%`), `19:27:30` tenant (`error rate
 31.3%`). Only the tenant one was known, and resuming it alone would not have
 helped: it would have queued 157k more URLs behind a platform still refusing to
-serve them.
+serve them. That second, tenant-side breaker no longer exists (see above), so
+this exact double-fire cannot recur — but the platform half still can, and the
+tenant flag can still be left set by hand.
 
 The platform switch is the more damaging of the two, and its blast radius is
 much wider than "this site pauses":

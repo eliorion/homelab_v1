@@ -127,7 +127,7 @@ spec:
       #
       # That is why no alert rule may be authored in the Grafana UI today,
       # and it is a prerequisite for ever alerting on SQL-datasource
-      # conditions (asp auto-pause, StallBreaker trips, the blocked: rate)
+      # conditions (operator pause flags, StallBreaker trips, the blocked: rate)
       # instead of shipping each one through the app's release train.
       #
       # ORDERING NOTE, load-bearing on the NEXT rotation: admin.existingSecret
