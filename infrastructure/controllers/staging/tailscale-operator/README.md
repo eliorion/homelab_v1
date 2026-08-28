@@ -81,7 +81,7 @@ and any namespace can consume the local name.
 | `tailscale-proxy-00` | `100.100.98.5` | 8888 (HTTP proxy) | scraper pool `tailscale` — `apps/staging/scraper/release.yaml`, `engine.pools[].url` |
 | `tailscale-proxy-scrape-c` | `100.92.142.13` | 8888 (HTTP proxy) | scraper pool `c`, same file |
 | `garage-node-a` | `100.122.58.119` | 3900 (Garage S3 API) | HAProxy gateway, `infrastructure/services/staging/garage-gateway` |
-| `garage-node-b` | `100.122.210.124` | 3900 | same gateway; host currently offline |
+| `garage-node-b` | `100.122.210.124` | 3900 + 8888 | same gateway, **and** scraper pool `b` |
 | `garage-node-c` | `100.92.142.13` | 3900 | same gateway |
 
 The scraper path:
@@ -176,8 +176,13 @@ into one ClusterIP with health checking so no consumer has to know three
 addresses. A restore deliberately does not retrace that path and goes direct to a
 node's tailnet IP, because the gateway is in-cluster only.
 
-`garage-node-b` is declared while its host is offline so the gateway picks it up
-the moment it joins the tailnet; HAProxy keeps it marked DOWN until then.
+`garage-node-b` was declared while its host was offline so the gateway would pick
+it up the moment it joined. It has since joined, and it now does double duty: the
+operator's egress proxy forwards every TCP port to its target, so this one Service
+reaches Garage's S3 API on 3900 *and* node B's HTTP proxy on 8888 — which is what
+scraper pool `b` dials. That reuse is why there is no `tailscale-proxy-scrape-b`,
+and it is also the trap: pruning this Service when node B leaves the Garage
+cluster silently removes the scraper pool's egress with it.
 
 ### `tailscale-proxy-scrape-c` — the provider half of scraper pool `c`
 
@@ -185,15 +190,16 @@ The scraper HelmRelease has referenced this name since the pool `c` entry landed
 but only the consumer side existed: `engine-pool-c` and `solver-c` rendered and
 sat at 0 replicas while the name itself was NXDOMAIN, so the pool could never
 have served anything. This Service is the provider half. It targets the same host
-as `garage-node-c` (`100.92.142.13`) — that Service proves the host is on the
+as `garage-node-c` (`100.92.142.13`) — that Service proved the host was on the
 tailnet, but it targets Garage's S3 API on 3900, whereas pool `c` needs an HTTP
-proxy listening on 8888, which is unverified.
+proxy listening on 8888.
 
-Declaring it does not start traffic. The platform routes proxy-less requests only
-to pools flagged `residential`, and pool `c` is deliberately not flagged. That
-switch now lives in the scraper's `pools` table (admin UI → Egress pools →
-Routing), because the backend adopts chart pools `ON CONFLICT DO NOTHING` and the
-table wins once the row exists.
+Both have since been verified: pool `c` exits on `37.65.172.70` and is flagged
+`residential` in the scraper's `pools` table (admin UI → Egress pools → Routing),
+which is where that switch lives — the backend adopts chart pools
+`ON CONFLICT DO NOTHING`, so the table wins once the row exists. Node B's proxy on
+`garage-node-b:8888` was verified the same way (`31.39.215.32`) and is pool `b`,
+which has no Service of its own here at all.
 
 ## Traps
 
@@ -215,11 +221,16 @@ table wins once the row exists.
 - `tailscale-proxy-scrape-c` and `garage-node-c` share the tailnet IP
   `100.92.142.13` but expect different services on different ports (8888 HTTP
   proxy vs 3900 Garage S3). One working does not imply the other works.
-- Pool `c`'s `residential` flag is the routing key and now lives in the scraper
-  `pools` table, not in the chart values — the backend adopts chart pools
+- A pool's `residential` flag is the routing key and lives in the scraper `pools`
+  table, not in the chart values — the backend adopts chart pools
   `ON CONFLICT DO NOTHING`, so the table wins once the row exists. Mislabelling a
   datacenter exit as residential puts every site's traffic on an IP anti-bot
   vendors already distrust.
+- Declaring an egress Service here is no longer the second half of adding a pool.
+  A pool is a row (`POST /v1/pools`), and `scraper-poolctl` now creates its
+  FlareSolverr from the chart's own template — so what this file still owns is the
+  tailnet path, and only that. See
+  [../../../../apps/staging/scraper/README.md](../../../../apps/staging/scraper/README.md).
 - Never put both `tailscale.com/expose` and a Tailscale `Ingress` on the same
   workload: that registers two tailnet devices contending for one hostname and
   the loser is silently suffixed. The same happens with a leftover device — a

@@ -73,6 +73,11 @@ spec:
       # Extra egress port for any pool that dials the Tailscale proxy directly
       # from the engine pod (the Cloudflare hop goes via solver.proxyEgressPorts).
       proxyEgressPorts: [8888]
+    poolctl:
+      # Live pools this cluster will run a solver for, on top of the three chart
+      # pools. Each solver requests 2560Mi / limits 6Gi across three nodes, and
+      # POST /v1/pools is unauthenticated. Chart default is 4.
+      maxSolvers: 2
     # NOTE: no `keda:` block. KEDA is a HARD REQUIREMENT of the chart — no enable
     # flag, no fixed-replica mode. The operator comes from infra-keda
     # (infrastructure/controllers/base/keda); without it this release fails to

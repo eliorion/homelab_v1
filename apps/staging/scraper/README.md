@@ -40,6 +40,7 @@ Values set here:
 | `solver.proxyEgressPorts` | `[8888]` |
 | `engine.pools` | `direct` (`residential: true`), `tailscale` (`residential: true`, `http://tailscale-proxy-00.tailscale.svc.cluster.local:8888`), `c` (`http://tailscale-proxy-scrape-c.tailscale.svc.cluster.local:8888`) |
 | `engine.proxyEgressPorts` | `[8888]` |
+| `poolctl.maxSolvers` | `2` — chart default is 4; see Traps |
 | `adminUi.service.annotations` | `tailscale.com/expose: "true"`, `tailscale.com/hostname: scraper-admin-ui` |
 
 Flux applies this through the `apps` Kustomization in
@@ -56,10 +57,14 @@ What this component depends on, and who owns it:
 
 - KEDA — Flux Kustomization `infra-keda`, `path: ./infrastructure/controllers/base/keda`
   ([`../../../clusters/staging/infrastructure.yaml`](../../../clusters/staging/infrastructure.yaml)).
-- The Tailscale egress proxies — `tailscale-proxy-00` (tailnet IP `100.100.98.5`) and
-  `tailscale-proxy-scrape-c` (`100.92.142.13`), declared in
+- The Tailscale egress proxies — `tailscale-proxy-00` (tailnet IP `100.100.98.5`),
+  `tailscale-proxy-scrape-c` (`100.92.142.13`) and, for pool `b`, `garage-node-b`
+  (`100.122.210.124`), all declared in
   `infrastructure/controllers/staging/tailscale-operator/egress-proxies.yaml`. The same
   operator publishes the admin UI on the tailnet.
+- The Kubernetes API, for `scraper-poolctl` — the chart's reconciler that gives a pool added
+  live its own solver. It runs the backend image with `python -m src.poolctl` under a
+  namespace-scoped Role (deployments, services, scaledobjects; get/list/create/delete).
 - `ghcr-pull-secret` — mirrored into `scraper` by the central reflector source,
   [`../../../infrastructure/controllers/staging/reflector/README.md`](../../../infrastructure/controllers/staging/reflector/README.md).
 - `scraper-db` — [`../../base/databases/scraper/README.md`](../../base/databases/scraper/README.md).
@@ -106,19 +111,33 @@ is by pool *capability*, never by site or project name — the platform owns tha
 client cannot pick a lane. Adding another residential exit is +1 lane and roughly linear extra
 throughput with no client or code change.
 
-The three pools:
+**A pool is a row, not a values entry.** `engine.pools` above seeds the `pools` table on
+install (`ON CONFLICT DO NOTHING`, so the table wins once a row exists); after that, adding an
+egress is `POST /v1/pools` or the admin UI, and a worker picks it up on its next lease. The
+`residential` flag is a live toggle in that table, not a commit here.
 
-- `direct` — the cluster's own egress. This cluster is home-hosted, so that is a residential IP
-  (verified distinct from the `tailscale` exit) rather than a datacenter one, hence
+The solver used to be the exception — Helm renders `solver-<pool>` by ranging over
+`engine.pools`, so a live pool had no FlareSolverr and its Cloudflare fetches failed DNS on a
+`solver-<name>` that did not exist. `scraper-poolctl` closes that: it reconciles the `pools`
+table into solver Deployments, Services and ScaledObjects, built from the chart's own rendered
+template, so a live pool gets the same per-pool solver a declared one gets. Declare a pool in
+`engine.pools` only when it must exist before anything can POST it.
+
+The four pools today (three declared, one added live):
+
+- `direct` — the cluster's own egress, `37.65.67.167`. This cluster is home-hosted, so that is a
+  residential IP (verified distinct from the other exits) rather than a datacenter one, hence
   `residential: true`.
-- `tailscale` — the residential exit `rsp-asp`, via the `tailscale-proxy-00` egress Service.
-  FlareSolverr forwards `PROXY_URL` into the solve, so that hop uses `solver.proxyEgressPorts`.
-  Requires the `tailscale-proxy-00` egress pod to be Ready.
-- `c` — node C's exit, deliberately **not** tagged residential yet. Because the flag is the
-  routing key, an untagged pool receives zero traffic, so declaring it only proves that its
-  Deployment, solver and ScaledObjects render and that the pod can reach the proxy. Once
-  scraper-backend carries the `pools` table the flag becomes an admin-UI toggle needing no commit
-  here, but the entry is still what renders the pod.
+- `tailscale` — the residential exit `rsp-asp` (`176.171.110.96`), via the `tailscale-proxy-00`
+  egress Service. FlareSolverr forwards `PROXY_URL` into the solve, so that hop uses
+  `solver.proxyEgressPorts`. Requires the `tailscale-proxy-00` egress pod to be Ready.
+- `c` — node C's exit, `37.65.172.70`, via `tailscale-proxy-scrape-c`. Tagged residential in the
+  `pools` table once its exit was confirmed distinct and non-datacenter.
+- `b` — node B's exit, `31.39.215.32`, added live and **not** in `engine.pools`. It reuses the
+  `garage-node-b` egress Service: the operator's proxy pod forwards every TCP port, so the same
+  tailnet device serves Garage's S3 API on `3900` and node B's HTTP proxy on `8888`. That reuse
+  is the trap — if node B ever leaves the Garage cluster and that Service is pruned, this pool
+  loses its egress with no other warning.
 
 **FlareSolverr is on, and there is one per pool.** Cloudflare-protected pages cannot be cleared
 server-side by Camoufox, so they are fetched through FlareSolverr. Its sessions live in per-pod
@@ -139,12 +158,21 @@ no fixed-replica mode. Every pool and solver is HPA-owned, and an idle namespace
   remediation at the default `retries: 0`, so `strategy: rollback` alone is a no-op.
 - **`timeout: 10m` must stay above the pools' warm-up budget** (readiness `initialDelay 90s` plus
   `minReadySeconds 30`).
-- **Do not tag pool `c` `residential: true` before verifying its exit IP.** Mislabelling a
-  datacenter exit as residential puts every site's traffic on an IP that anti-bot vendors already
-  distrust. Confirm it is a distinct, non-datacenter IP first (command below) and compare it
-  against `tailscale-proxy-00` and the direct egress. `tailscale-proxy-scrape-c` points at the
-  same tailnet host as `garage-node-c` (`100.92.142.13`) but expects an HTTP proxy on `8888`, not
-  Garage's S3 API on `3900`.
+- **Do not tag a pool `residential` before verifying its exit IP.** Mislabelling a datacenter
+  exit as residential puts every site's traffic on an IP that anti-bot vendors already distrust.
+  Confirm it is a distinct, non-datacenter IP first (command below) and compare it against the
+  other three. An egress Service proving a host is on the tailnet does not prove it runs a proxy:
+  `tailscale-proxy-scrape-c` and `garage-node-c` share `100.92.142.13` but expect an HTTP proxy on
+  `8888` and Garage's S3 API on `3900` respectively.
+- **Do not promote a live pool into `engine.pools`.** Helm would try to create a
+  `solver-<pool>` that `poolctl` already owns, and the upgrade fails on ownership metadata —
+  `poolctl` only drops its copy on the pass *after* the new chart pool list lands, which is after
+  the upgrade it just broke. There is no reason to either: a live pool is a full pool. To promote
+  anyway, delete the poolctl-managed solver first.
+- **`poolctl.maxSolvers` is a capacity guard, not a preference.** Each solver requests 2560Mi and
+  limits at 6Gi, and `POST /v1/pools` is unauthenticated — the backend's `require_auth` is still a
+  no-op scaffold. Raising it raises what a single POST loop can reserve on a three-node cluster
+  that already runs three chart solvers.
 - **Scale by adding pools, never replicas.** One pool is one proxy is one IP is one fingerprint;
   KEDA caps each pool at a single pod, and a second pod would share a fingerprint.
 - **Do not add a `keda:` block or expect a fixed-replica fallback.** Without the `infra-keda`
@@ -168,10 +196,28 @@ kubectl kustomize apps/staging/scraper      # render check before commit
 flux get helmreleases -n scraper scraper
 flux reconcile helmrelease scraper -n scraper --with-source
 kubectl -n scraper get pods,scaledobject
-kubectl -n tailscale get pods               # egress proxies for the tailscale/c pools
+kubectl -n tailscale get pods               # egress proxies for the tailscale/b/c pools
+kubectl -n scraper logs deploy/scraper-poolctl --tail=50   # solver_created / solver_cap_reached
 ```
 
-Check what public IP a pool's proxy actually exits from, before tagging it residential:
+Adding an egress — no commit, no rollout. Leave `residential` false until its IP is verified:
+
+```sh
+kubectl -n scraper exec deploy/scraper-backend -- \
+  curl -sX POST http://localhost:8080/v1/pools -H 'content-type: application/json' \
+  -d '{"name":"b","url":"http://garage-node-b.tailscale.svc.cluster.local:8888",
+       "residential":false}'
+```
+
+`poolctl` creates `solver-b` within `poolctl.intervalSeconds`. Confirm before routing to it:
+
+```sh
+kubectl -n scraper get deploy,svc,scaledobject -l app.kubernetes.io/managed-by=scraper-poolctl
+```
+
+Check what public IP a pool's proxy actually exits from, before tagging it residential. Compare
+against the other three — `direct` is `37.65.67.167`, `tailscale` `176.171.110.96`, `c`
+`37.65.172.70`, `b` `31.39.215.32` — a repeat means two pools share one fingerprint:
 
 ```sh
 kubectl -n scraper run ipcheck --rm -it --restart=Never \

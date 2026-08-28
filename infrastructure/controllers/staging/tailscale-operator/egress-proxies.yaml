@@ -45,7 +45,7 @@ metadata:
   name: garage-node-b
   namespace: tailscale
   annotations:
-    # Host offline; declared so the gateway picks it up when it joins.
+    # Also scraper pool `b`'s HTTP proxy on :8888 — pruning this kills that pool.
     tailscale.com/tailnet-ip: "100.122.210.124"
 spec:
   type: ExternalName
