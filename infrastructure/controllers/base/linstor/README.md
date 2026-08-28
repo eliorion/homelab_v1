@@ -125,6 +125,15 @@ keep redundancy intact through a node loss, at 1.5× the space.
 - **Turning on controller API TLS breaks that Ingress.** With HTTPS configured the
   controller keeps 3370 only to answer `/v1` and `/ui` with a redirect to
   `https://<host>:3371`, and nothing publishes 3371 on the tailnet.
+- **The device root is a dead end behind the Tailscale proxy, and it fails as a
+  connection error rather than an HTTP one.** The controller answers `/` with a
+  `303` whose `Location` it builds absolutely from the request Host — measured:
+  `http://linstor-gui.tail45b0ca.ts.net:80/ui/`. Plain `http`, explicit `:80`,
+  and the proxy serves HTTPS on 443 only, so the browser's follow-up is refused
+  and the proxy logs `netstack: could not connect to local backend server at
+  127.0.0.1:80`. `X-Forwarded-Proto: https` does not change it; the controller
+  ignores the header. `/ui` without the trailing slash is a flat `404`. Only
+  `/ui/` is safe, which is why every reference here carries it.
 
 ## Operating it
 - **There are two classes, and only one is safe for data.** `ssd` places two
@@ -160,11 +169,10 @@ The GUI is the same control surface with a mouse. `linstor-gui` is a Debian
 package inside `piraeus-server`, so the controller has been serving it since the
 image was pulled; its HTTP server maps the bundle at `/ui`, and a Tailscale
 `Ingress` (`ingress-tailscale.yaml` in the overlay) publishes port 3370 as
-`https://linstor-gui.tail45b0ca.ts.net`. **Use
-`https://linstor-gui.tail45b0ca.ts.net/ui/#!/`.** Measured against v1.34.2: the
-bare root answers `303` to `/ui/`, so it works too, but `/ui` without the trailing
-slash is a flat `404` — the redirect exists only at `/`. In-cluster the same thing
-is `http://linstor-controller.piraeus-datastore.svc.cluster.local:3370/ui/#!/`.
+`https://linstor-gui.tail45b0ca.ts.net`. **The address is
+`https://linstor-gui.tail45b0ca.ts.net/ui/#!/`, and nothing shorter works.**
+In-cluster it is
+`http://linstor-controller.piraeus-datastore.svc.cluster.local:3370/ui/#!/`.
 
 It shows nodes, storage pools, resources and volumes, and it creates and deletes
 them — the same verbs as `L resource create`. There is no login: controller
