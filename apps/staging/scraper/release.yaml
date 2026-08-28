@@ -84,3 +84,54 @@ spec:
         annotations:
           tailscale.com/expose: "true"
           tailscale.com/hostname: scraper-admin-ui
+    # The LLM tool surface. Reachable on the tailnet, where the DEVICE is already
+    # authenticated — same posture as admin-ui above.
+    #
+    # TO PUBLISH IT ON THE INTERNET (claude.ai, ChatGPT connectors — they connect
+    # from the provider's cloud, so the tailnet is invisible to them) THREE THINGS
+    # CHANGE, and they must change TOGETHER:
+    #   1. auth.enabled: false -> true.       Everything else it needs is already
+    #                                         filled in below.
+    #   2. Add the Cloudflare tunnel route    scraper-mcp.eliorion.fr ->
+    #      in the Zero Trust dashboard        http://scraper-mcp.scraper.svc.cluster.local:8080
+    #      (routes are dashboard-only; there  and record it in
+    #      is no CRD and nothing reconciles   infrastructure/services/staging/cloudflare/README.md
+    #      the drift)                         in the same sitting.
+    #   3. NO Access application in front     — it would break the client's own
+    #                                         OAuth discovery.
+    # Flipping 1 without 2 is safe (the surface just demands tokens nobody can
+    # reach); doing 2 without 1 publishes an unauthenticated surface that can
+    # spend residential bandwidth on any URL a caller names. Never do 2 first.
+    mcp:
+      enabled: true
+      service:
+        annotations:
+          tailscale.com/expose: "true"
+          tailscale.com/hostname: scraper-mcp
+      auth:
+        # THE SWITCH. See the note above before flipping it.
+        enabled: false
+        # No trailing slash: `iss` is compared as an exact string, so one breaks
+        # every token.
+        issuerUrl: https://staging-keycloak.eliorion.fr/realms/mcp
+        # This server's identifier AND the audience every token must carry. It is
+        # what stops a token minted for fbref-mcp — same realm, same user, same
+        # browser flow — from being replayed here.
+        resourceUrl: https://scraper-mcp.eliorion.fr/mcp
+        # Stamped by the audience mapper on the scrape:tools DEFAULT client scope
+        # (infrastructure/services/base/keycloak/realm/realm-mcp.yaml). Keycloak 26
+        # has no RFC 8707, so a DCR client that requests nothing still gets it.
+        requiredScopes:
+          - scrape:tools
+      # allowedHosts is matched EXACTLY. The in-cluster names are listed alongside
+      # the public one because the helm test hook POSTs to http://scraper-mcp:8080
+      # and the e2e drives a port-forward — a hostname-only allowlist turns both
+      # into HTTP 421, which fails the release and rolls it back.
+      allowedHosts:
+        - scraper-mcp.eliorion.fr
+        - scraper-mcp:8080
+        - scraper-mcp.scraper.svc.cluster.local:8080
+        - localhost:*
+      originAllowlist:
+        - https://claude.ai
+        - https://chatgpt.com
