@@ -1,9 +1,22 @@
 # monitoring/configs — alert rules and notification wiring
 
 `monitoring/controllers/` installs the `kube-prometheus-stack` HelmRelease.
-`monitoring/configs/` holds everything that *uses* it: the scrape definitions
-(`PodMonitor` / `ServiceMonitor`), the alert rules (`PrometheusRule`) and the
-delivery path to Telegram.
+`monitoring/configs/` holds the cross-cutting things that *use* it: scrape
+definitions (`PodMonitor` / `ServiceMonitor`), alert rules (`PrometheusRule`) and
+the delivery path to Telegram.
+
+It is not the only place those objects live. A component whose monitoring is
+specific to it keeps it in its own directory instead, so the tool is configured in
+one place: the storage tiers own
+[`../../infrastructure/controllers/base/linstor/monitoring`](../../infrastructure/controllers/base/linstor/monitoring)
+and
+[`../../infrastructure/controllers/base/seaweedfs/monitoring`](../../infrastructure/controllers/base/seaweedfs/monitoring),
+each applied by its own Flux Kustomization (`infra-linstor-monitoring`,
+`infra-seaweedfs-monitoring`) rather than by `monitoring-configs`. Those
+Kustomizations `dependsOn: monitoring-controllers` because the CRDs are the
+chart's — see [`../../clusters/README.md`](../../clusters/README.md). Everything
+below still applies to them: same `release: kube-prometheus-stack` label, same
+namespace.
 
 There is a single overlay, `monitoring/configs/staging/`, applied by the Flux
 Kustomization `monitoring-configs`
@@ -26,11 +39,11 @@ This README documents the four alerting directories:
 The other siblings are outside the scope of this file. `fbref-grafana/`
 (dashboards + datasource) and `n8n-metrics/` are not alerting at all. The
 component-specific alert directories
-— `longhorn-monitoring/`, `ceph-monitoring/`, `node-capacity-alerts/`,
-`control-plane-alerts/`, `ingestion-alerts/` — follow the same wiring as the four
-above and document themselves **inline**: their `PrometheusRule` files carry the
-metric-encoding notes and the reasoning behind each threshold and `for:`, because
-that is where someone editing an expression will actually be looking.
+— `node-capacity-alerts/`, `control-plane-alerts/`, `ingestion-alerts/` — follow
+the same wiring as the four above and document themselves **inline**: their
+`PrometheusRule` files carry the metric-encoding notes and the reasoning behind
+each threshold and `for:`, because that is where someone editing an expression
+will actually be looking.
 
 ## The label that ties everything together
 
@@ -335,7 +348,7 @@ kubectl -n <ns> exec <cluster>-1 -c postgres -- \
 kubectl -n <ns> logs <pod> -c plugin-barman-cloud | grep -i error
 ```
 
-Resizing a CNPG volume means bumping `storage.size` on the Cluster; Longhorn
+Resizing a CNPG volume means bumping `storage.size` on the Cluster; LINSTOR
 expands online.
 
 ---

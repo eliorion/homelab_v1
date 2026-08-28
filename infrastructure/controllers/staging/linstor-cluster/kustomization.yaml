@@ -7,3 +7,4 @@ resources:
   - storageclass-ssd.yaml
   - storageclass-ssd-single.yaml
   - linstor-passphrase.enc.yaml
+  - ingress-tailscale.yaml
