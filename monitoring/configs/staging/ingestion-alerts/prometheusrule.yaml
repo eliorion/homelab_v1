@@ -9,8 +9,12 @@ spec:
   groups:
     - name: ingestion.pause
       rules:
-        # Both pause flags below are ONE-WAY: auto-pause is automatic, resume is
-        # manual. Nothing in either codebase ever clears them.
+        # Both pause flags below are ONE-WAY -- nothing in either codebase ever
+        # clears them -- but they are now SET by different things. The platform
+        # flag is thrown automatically by the scraper's per-site block-rate
+        # breaker; the asp flags are thrown ONLY by an operator, since asp's own
+        # rate breakers were deleted (block handling belongs beside the fetch).
+        # So an asp pause standing for 30m means someone paused and forgot.
         - alert: AspIngestionPaused
           expr: max(cnpg_asp_ingestion_scraping_paused) > 0
           for: 30m
@@ -20,9 +24,11 @@ spec:
             summary: "asp has stopped submitting URLs"
             description: >-
               worker_control.paused is set, so the asp engine submits no new
-              URLs. Resume is manual. Check the platform side too --
-              ScraperSiteServingPaused covers the other switch, and clearing
-              only this one leaves the queue stalled.
+              URLs. Only an operator sets this (admin-ui POST
+              /api/scraping/pause) -- asp has no auto-pause -- and resume is
+              manual. Check the platform side too: ScraperSiteServingPaused
+              covers the other switch, which IS automatic, and clearing only
+              this one leaves the queue stalled.
 
         - alert: AspSearchingPaused
           expr: max(cnpg_asp_ingestion_searching_paused) > 0
@@ -33,8 +39,9 @@ spec:
             summary: "asp has stopped submitting searches"
             description: >-
               worker_control.crawler_paused is set, so no new ads are
-              discovered. Existing queued URLs still drain, so listings keep
-              being written and the staleness alert stays silent.
+              discovered. Operator-set only, like the flag above. Existing
+              queued URLs still drain, so listings keep being written and the
+              staleness alert stays silent.
 
         # The end-to-end check. Independent of both flags on purpose: it also
         # catches a stall neither pause explains.
