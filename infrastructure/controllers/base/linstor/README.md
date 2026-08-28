@@ -160,11 +160,11 @@ The GUI is the same control surface with a mouse. `linstor-gui` is a Debian
 package inside `piraeus-server`, so the controller has been serving it since the
 image was pulled; its HTTP server maps the bundle at `/ui`, and a Tailscale
 `Ingress` (`ingress-tailscale.yaml` in the overlay) publishes port 3370 as
-`https://linstor-gui.tail45b0ca.ts.net`. **The address is
-`https://linstor-gui.tail45b0ca.ts.net/ui/#!/`** — the root path is the REST API,
-not the UI, and the trailing slash is load-bearing: `/ui` on its own answers a 301
-whose `Location` is `/`, back onto the API. In-cluster the same thing is
-`http://linstor-controller.piraeus-datastore.svc.cluster.local:3370/ui/#!/`.
+`https://linstor-gui.tail45b0ca.ts.net`. **Use
+`https://linstor-gui.tail45b0ca.ts.net/ui/#!/`.** Measured against v1.34.2: the
+bare root answers `303` to `/ui/`, so it works too, but `/ui` without the trailing
+slash is a flat `404` — the redirect exists only at `/`. In-cluster the same thing
+is `http://linstor-controller.piraeus-datastore.svc.cluster.local:3370/ui/#!/`.
 
 It shows nodes, storage pools, resources and volumes, and it creates and deletes
 them — the same verbs as `L resource create`. There is no login: controller
