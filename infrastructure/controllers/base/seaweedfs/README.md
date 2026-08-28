@@ -165,7 +165,8 @@ as the single highest-value hardware change available to this cluster.
   `seaweedfsFiler` pointed at the short name and every provision failed with
   `DeadlineExceeded`, which reads like a slow filer rather than a missing one.
   Use the `-client` variant: the plain one sets `publishNotReadyAddresses` and
-  hands out filers that are still starting.
+  hands out filers that are still starting. The workload behind it is a
+  **StatefulSet**, not a Deployment — `kubectl exec deploy/…` fails on both counts.
 - **`upgrade.disableWait: true` is required on the CSI HelmRelease.** Both its
   DaemonSets are `OnDelete`, so updated pods never appear on their own, Helm
   waits the full timeout and then *rolls back* — silently reverting the values
@@ -241,7 +242,7 @@ kubectl -n seaweedfs get pods -o wide
 `weed shell` is the control surface:
 
 ```bash
-W() { kubectl -n seaweedfs exec -it deploy/seaweedfs-filer -- weed shell "$@"; }
+W() { kubectl -n seaweedfs exec -it sts/seaweedfs-seaweedfs-filer -- weed shell "$@"; }
 # inside: cluster.check / volume.list / volume.fix.replication / fs.configure
 ```
 
@@ -249,7 +250,7 @@ Watch the thing that fails silently — node-1 or node-2 running out of free
 volume slots, after which new volumes stop being placed there:
 
 ```bash
-kubectl -n seaweedfs exec -it deploy/seaweedfs-filer -- weed shell <<< 'volume.list'
+kubectl -n seaweedfs exec -it sts/seaweedfs-seaweedfs-filer -- weed shell <<< 'volume.list'
 ```
 
 The admin UI is the other control surface, and the one with a mouse. It is the
