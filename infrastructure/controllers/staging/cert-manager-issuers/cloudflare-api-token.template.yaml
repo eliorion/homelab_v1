@@ -1,0 +1,24 @@
+# TEMPLATE -- not applied. Kustomize ignores it (it is not listed in
+# kustomization.yaml), so it is inert no matter what it contains.
+#
+# Use it to produce cloudflare-api-token.enc.yaml. Do NOT paste the real token
+# into this file and commit it: encrypt to the .enc.yaml path instead, per the
+# commands in README.md ("Filling in the token").
+#
+# Cloudflare token to create:
+#   https://dash.cloudflare.com/profile/api-tokens  (My Profile, not Account)
+#   Create Token -> template "Edit zone DNS"
+#   Permissions    : Zone / DNS / Edit
+#   Zone Resources : Include / Specific zone / eliorion.fr
+# Nothing wider. This token can rewrite the whole zone.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token
+  # MUST be cert-manager: a ClusterIssuer resolves its solver secrets from
+  # --cluster-resource-namespace, which defaults to the cert-manager namespace.
+  # Putting it next to the registry looks right and silently fails to solve.
+  namespace: cert-manager
+type: Opaque
+stringData:
+  api-token: PASTE_CLOUDFLARE_TOKEN_HERE

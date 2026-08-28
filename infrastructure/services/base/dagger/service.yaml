@@ -1,0 +1,16 @@
+# Headless: required by the StatefulSet for stable per-pod DNS. Clients connect
+# with kube-pod:// (through the apiserver), not over this Service -- there is
+# deliberately no TCP listener. Dagger's own docs note tcp:// is plaintext and
+# unauthenticated; kube-pod:// rides the apiserver's TLS and authz instead.
+apiVersion: v1
+kind: Service
+metadata:
+  name: dagger-engine
+  namespace: dagger
+spec:
+  clusterIP: None
+  selector:
+    app: dagger-engine
+  ports:
+    - name: engine
+      port: 8080

@@ -1,0 +1,67 @@
+# RBAC for the kube-pod:// connection scheme.
+#
+# `dagger call` with
+#   _EXPERIMENTAL_DAGGER_RUNNER_HOST=kube-pod://dagger-engine-0?namespace=dagger
+# resolves the pod and then execs a session helper inside it. That needs
+# pods/get + pods/exec.
+#
+# SECURITY, STATED PLAINLY: exec into a privileged pod is node-root-equivalent.
+# Anything holding this Role can run arbitrary code as root on cp2 or cp3. This
+# is inherent to running Dagger on Kubernetes -- it is not a flaw in this
+# manifest -- and it is why:
+#   1. the Role lives in a dedicated namespace and grants nothing cluster-wide;
+#   2. `resourceNames` pins it to exactly the two engine pods, so it cannot be
+#      used to exec into anything else that ever lands in this namespace;
+#   3. fork pull requests MUST NOT run on runners bound to it. Gate on
+#      github.event.pull_request.head.repo.full_name == github.repository.
+#
+# `list` is intentionally NOT granted: resourceNames cannot restrict a list, so
+# granting it would hand over "enumerate everything in the namespace" for no
+# benefit -- the client already knows the pod name it wants.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dagger-engine-exec
+  namespace: dagger
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+    resourceNames:
+      - dagger-engine-0
+      - dagger-engine-1
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+    resourceNames:
+      - dagger-engine-0
+      - dagger-engine-1
+---
+# GitHub ARC runners. Both scale sets use the default ServiceAccount in
+# arc-runners unless the chart is told otherwise; bind both explicitly rather
+# than relying on which one a job happens to land on.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dagger-engine-exec-arc
+  namespace: dagger
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dagger-engine-exec
+subjects:
+  # NOT `default`. The gha-runner-scale-set chart creates one ServiceAccount per
+  # scale set, named <runnerScaleSetName>-gha-rs-no-permission, and the runner
+  # pods use it. Renaming a scale set in
+  # infrastructure/services/staging/arc-runner-set/ renames these too and
+  # silently breaks the binding -- there is no dangling-subject error.
+  - kind: ServiceAccount
+    name: self-hosted-arc-gha-rs-no-permission
+    namespace: arc-runners
+  - kind: ServiceAccount
+    name: self-hosted-arc-xl-gha-rs-no-permission
+    namespace: arc-runners
+# The Forgejo runner binding is added with the runner itself (Phase 5); its
+# ServiceAccount does not exist yet and binding a missing subject is silently
+# inert rather than an error, so it would look configured while granting
+# nothing.

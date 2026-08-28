@@ -7,6 +7,14 @@ resources:
   - cloudflare/
   - arc-runner-set/
   - nexus/
+  # zot: the OCI cache + push target. Serves its own TLS (cert-manager),
+  # so no client needs --insecure-registry or a CA. Ports mirror the Nexus
+  # scheme it replaces: 5000 docker.io, 5001 ghcr.io, 5002 hosted.
+  - zot/
+  # Dagger Engine: the CI build engine. StatefulSet x2 with a node-local
+  # cache volume each -- /var/lib/dagger holds a buildkitd.lock, so two
+  # pods can never share one volume.
+  - dagger/
   - etcd-backup/
   - garage-gateway/
   - radar/

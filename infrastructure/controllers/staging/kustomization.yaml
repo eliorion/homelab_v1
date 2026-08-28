@@ -7,3 +7,6 @@ resources:
   - seaweedfs-cluster/
   # LINSTOR storage pools — one `ssd` pool spanning all three nodes.
   - linstor-cluster/
+  # ACME ClusterIssuers (letsencrypt-staging + -prod) and the Cloudflare
+  # DNS-01 token. Shared infra: the registry and Forgejo both need real certs.
+  - cert-manager-issuers/

@@ -259,6 +259,31 @@ patches:
             - etcd-backup
       nodeLabels:
         node.kubernetes.io/exclude-from-external-load-balancers: ""
+      # In-cluster image pulls go through zot (infrastructure/services/base/zot).
+      # This is what makes every pod benefit from the cache without editing a
+      # single chart's global.imageRegistry.
+      #
+      # DO NOT `talosctl apply-config` this block until BOTH are true:
+      #   1. registry.eliorion.fr resolves and zot is serving, and
+      #   2. its certificate is issued by letsencrypt-PROD, not -staging.
+      # A staging chain is untrusted, and containerd would reject the mirror on
+      # every node at once.
+      #
+      # The upstream is listed as a second endpoint on purpose: Talos tries them
+      # in order and does NOT append the canonical registry automatically. With
+      # it, a zot outage or an expired cert degrades to a slower direct pull
+      # instead of breaking every pull in the cluster -- the same
+      # "no mirror is ever a hard dependency" rule the CI pipeline follows.
+      registries:
+        mirrors:
+          docker.io:
+            endpoints:
+              - https://registry.eliorion.fr:5000
+              - https://registry-1.docker.io
+          ghcr.io:
+            endpoints:
+              - https://registry.eliorion.fr:5001
+              - https://ghcr.io
   # PodSecurity admissionControl + auditPolicy come from talhelper defaults --
   # re-adding them here duplicates the kube-system exemption.
   - |-

@@ -1,0 +1,28 @@
+# Let's Encrypt STAGING issuer -- untrusted chain, effectively no rate limits.
+# Every new Certificate is issued here FIRST. Only once issuance and one forced
+# renewal have been observed does the Certificate switch to letsencrypt-prod.
+# LE production allows 5 duplicate certificates per week; burning that budget on
+# a solver typo leaves the registry without a cert for seven days.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    # Contact for expiry notices. Not verified by ACME -- change freely.
+    email: admin@eliorion.fr
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      # DNS-01, not HTTP-01: issuance must NOT require inbound reachability.
+      # The registry answers on an RFC1918 address; HTTP-01 would force it to be
+      # publicly reachable purely to renew a certificate.
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          dnsZones:
+            - eliorion.fr

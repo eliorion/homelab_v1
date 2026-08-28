@@ -1,0 +1,74 @@
+# In-cluster address. BuildKit/Dagger and containerd both take host:port, which
+# is why each upstream gets its own port rather than a path prefix — a
+# path-prefixed mirror would work for Talos containerd (overridePath) but not
+# for BuildKit, whose mirror value is host-only.
+apiVersion: v1
+kind: Service
+metadata:
+  name: zot
+  namespace: registry
+spec:
+  type: ClusterIP
+  selector:
+    app: zot
+  ports:
+    - name: dockerhub
+      port: 5000
+      targetPort: 5000
+    - name: ghcr
+      port: 5001
+      targetPort: 5001
+    - name: hosted
+      port: 5002
+      targetPort: 5002
+---
+# LAN address. Pinned, because the Cloudflare A record for registry.eliorion.fr
+# points at it and the certificate is issued for that name.
+# Pool lan-pool = 192.168.1.110-130. Taken: .110 nexus-lb, .111 cilium-gw.
+apiVersion: v1
+kind: Service
+metadata:
+  name: zot-lb
+  namespace: registry
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.112
+  selector:
+    app: zot
+  ports:
+    - name: dockerhub
+      port: 5000
+      targetPort: 5000
+    - name: ghcr
+      port: 5001
+      targetPort: 5001
+    - name: hosted
+      port: 5002
+      targetPort: 5002
+---
+# Off-LAN access over the tailnet, matching the house pattern used by the
+# asp/fbref/scraper admin UIs. Tailscale terminates nothing here — zot serves
+# its own TLS on every path, so the same certificate is valid whether you
+# arrive via ClusterIP, the LAN IP, or the tailnet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: zot-ts
+  namespace: registry
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: registry
+spec:
+  type: ClusterIP
+  selector:
+    app: zot
+  ports:
+    - name: dockerhub
+      port: 5000
+      targetPort: 5000
+    - name: ghcr
+      port: 5001
+      targetPort: 5001
+    - name: hosted
+      port: 5002
+      targetPort: 5002

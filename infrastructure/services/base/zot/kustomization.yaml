@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - certificate.yaml
+  - statefulset.yaml
+  - service.yaml
+# Generated (not a plain resource) so the name carries a content hash: editing a
+# config file rolls the pod. zot reads its JSON once at start-up, so without the
+# hash a config change would apply only on the next unrelated restart.
+configMapGenerator:
+  - name: zot-config
+    namespace: registry
+    files:
+      - config/dockerhub.json
+      - config/ghcr.json
+      - config/hosted.json
