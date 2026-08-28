@@ -39,11 +39,11 @@ This README documents the four alerting directories:
 The other siblings are outside the scope of this file. `fbref-grafana/`
 (dashboards + datasource) and `n8n-metrics/` are not alerting at all. The
 component-specific alert directories
-— `longhorn-monitoring/`, `ceph-monitoring/`, `node-capacity-alerts/`,
-`control-plane-alerts/`, `ingestion-alerts/` — follow the same wiring as the four
-above and document themselves **inline**: their `PrometheusRule` files carry the
-metric-encoding notes and the reasoning behind each threshold and `for:`, because
-that is where someone editing an expression will actually be looking.
+— `node-capacity-alerts/`, `control-plane-alerts/`, `ingestion-alerts/` — follow
+the same wiring as the four above and document themselves **inline**: their
+`PrometheusRule` files carry the metric-encoding notes and the reasoning behind
+each threshold and `for:`, because that is where someone editing an expression
+will actually be looking.
 
 ## The label that ties everything together
 
@@ -348,7 +348,7 @@ kubectl -n <ns> exec <cluster>-1 -c postgres -- \
 kubectl -n <ns> logs <pod> -c plugin-barman-cloud | grep -i error
 ```
 
-Resizing a CNPG volume means bumping `storage.size` on the Cluster; Longhorn
+Resizing a CNPG volume means bumping `storage.size` on the Cluster; LINSTOR
 expands online.
 
 ---

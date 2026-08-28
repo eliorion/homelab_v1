@@ -24,11 +24,10 @@ directly, one per Flux Kustomization, and only two go through the aggregate
 
 | Path | What it does |
 |---|---|
-| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `linstor/` (Piraeus operator), `longhorn/`, `reflector/`, `rook-ceph/` (operator + the ceph-csi-drivers chart), `seaweedfs/` (namespace + CSI driver). **There is no `base/kustomization.yaml`** and there should not be one. |
-| `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. `cnpg/`, `tailscale-operator/`, `rook-ceph-cluster/` and `seaweedfs-cluster/`; `linstor-cluster/` is present but commented out until its partitions exist. |
+| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `linstor/` (Piraeus operator, + `linstor/monitoring/`), `reflector/`, `seaweedfs/` (namespace + CSI driver, + `seaweedfs/monitoring/`). **There is no `base/kustomization.yaml`** and there should not be one. |
+| `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. `cnpg/`, `tailscale-operator/`, `seaweedfs-cluster/` and `linstor-cluster/`. |
 | `staging/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/` (the operator only — `base/cnpg/kustomization.yaml` does not include `plugin/`). |
 | `staging/tailscale-operator/` | Staging-only component, no base counterpart. Reconciled through the aggregate above. |
-| `staging/rook-ceph-cluster/` | The `CephCluster`, pool and StorageClass, plus the dashboard `Service` and its tailscale `Ingress`. Separate from `base/rook-ceph/` (the operator) because it names this cluster's PCI/USB device paths. Live &mdash; `suspend: false`. |
 | `staging/reflector/` | Lives under `staging/` but is **not** listed in `staging/kustomization.yaml`. It has its own Flux Kustomization, `infra-reflector`, pointing straight at `./infrastructure/controllers/staging/reflector`. |
 | `production/kustomization.yaml` | The production aggregate. One resource: `cnpg/`. |
 | `production/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/`. |
@@ -42,10 +41,11 @@ From `clusters/staging/infrastructure.yaml`:
 | `infra-certmanager` | `base/cert-manager` | `interval: 1h`, `wait: true`, two Deployment health checks |
 | `infra-cnpg-plugin` | `base/cnpg/plugin` | `dependsOn: infra-certmanager`, `wait: true`, `timeout: 10m` |
 | `infra-arc-controller` | `base/arc` | `wait: true`, health check on `arc-controller-gha-rs-controller` |
-| `infra-longhorn` | `base/longhorn` | `wait: true`, `timeout: 15m` (first install pulls all Longhorn images on a cold node) |
-| `infra-rook-ceph` | `base/rook-ceph` | `wait: true`, `timeout: 15m`, health check on the `rook-ceph-operator` HelmRelease |
 | `infra-linstor` | `base/linstor` | `wait: true`, `timeout: 15m`, health check on the `piraeus-operator` HelmRelease |
 | `infra-seaweedfs` | `base/seaweedfs` | `wait: true`, `timeout: 15m`, health check on the `seaweedfs-csi-driver` HelmRelease; `dependsOn: infra-linstor` because the masters claim from the `ssd` class |
+| `infra-seaweedfs-config` | `staging/seaweedfs-config` | `dependsOn: infrastructure-controllers`, `force: true` so a script change deletes and recreates the Job |
+| `infra-linstor-monitoring` | `base/linstor/monitoring` | `dependsOn: monitoring-controllers` — needs the CRDs kube-prometheus-stack installs |
+| `infra-seaweedfs-monitoring` | `base/seaweedfs/monitoring` | `dependsOn: monitoring-controllers`, same reason |
 | `infra-cilium` | `base/cilium` | `wait: true`, `timeout: 10m` (cold agent/operator/hubble image pull) |
 | `infra-cilium-config` | `base/cilium/config` | `dependsOn: infra-cilium` — needs the CRDs the chart installs |
 | `infra-keda` | `base/keda` | `wait: true`, `timeout: 10m` |
@@ -64,7 +64,7 @@ sits in the directory but is wired separately.
 
 `production/` mirrors the shape with `cnpg/` alone, and `clusters/production/infrastructure.yaml`
 declares only four Kustomizations (`infra-certmanager`, `infra-cnpg-plugin`,
-`infrastructure-controllers`, `infrastructure-services`) — no cilium, longhorn, keda, arc,
+`infrastructure-controllers`, `infrastructure-services`) — no cilium, linstor, seaweedfs, keda, arc,
 reflector or keycloak-operator. It is wired but no production cluster is deployed; treat it
 as scaffolding rather than as a second environment, as recorded in
 [`../../documentations/01-architecture.md`](../../documentations/01-architecture.md#a-note-on-production).
@@ -80,12 +80,14 @@ directory sit under `staging/`. `reflector/` does have a base counterpart:
 
 ## Why it is like this
 
-**No aggregate kustomization at `base/`.** Eight paths under `base/` are named directly by
-their own Flux Kustomization — `cert-manager`, `cnpg/plugin`, `arc`, `longhorn`, `cilium`,
-`cilium/config`, `keda`, `keycloak-operator` — deliberately separate so that cert-manager can
-gate the CNPG plugin, the Cilium chart can gate its IP pool and Gateway objects, and Longhorn
-can have its own 15m cold-pull timeout. The two remaining directories are named by no Flux
-Kustomization at all: `base/cnpg` is reconciled through `staging/cnpg/` inside the aggregate
+**No aggregate kustomization at `base/`.** Eleven paths under `base/` are named directly by
+their own Flux Kustomization — `cert-manager`, `cnpg/plugin`, `arc`, `cilium`,
+`cilium/config`, `keda`, `keycloak-operator`, `linstor`, `linstor/monitoring`,
+`seaweedfs`, `seaweedfs/monitoring` — deliberately separate so that cert-manager can
+gate the CNPG plugin, the Cilium chart can gate its IP pool and Gateway objects, and the
+storage tiers can have their own 15m cold-pull timeouts and their own CRD ordering.
+The two remaining directories are named by no Flux Kustomization at all: `base/cnpg`
+is reconciled through `staging/cnpg/` inside the aggregate
 `infrastructure-controllers`, and `base/reflector` through `staging/reflector` under
 `infra-reflector`. One atomic aggregate is the pattern
 [`01-architecture.md`](../../documentations/01-architecture.md) and
@@ -113,8 +115,9 @@ Kustomization.
 only change when a human bumps a chart. `infrastructure-controllers` uses `1m0s`. Both rely
 on `retryInterval: 1m` to recover from a transient failure faster than the interval.
 
-**The Tailscale operator is in this tier.** The admin surfaces it publishes — the Longhorn
-UI, the asp orchestrator, the fbref BFF — have no authentication of their own, and Tailscale
+**The Tailscale operator is in this tier.** The admin surfaces it publishes — the
+LINSTOR GUI, the SeaweedFS admin UI, the asp orchestrator, the fbref BFF — have no
+authentication of their own, and Tailscale
 authenticates by device identity without touching the internet. A LAN LoadBalancer from the
 Cilium pool and a Cloudflare public hostname were both rejected. The cost is stated sharply
 in [`14-design-decisions.md`](../../documentations/14-design-decisions.md): a single,
@@ -172,7 +175,6 @@ See [`../../documentations/00-bootstrap-cluster.md`](../../documentations/00-boo
 - [`base/keda/README.md`](base/keda/README.md)
 - [`base/keycloak-operator/README.md`](base/keycloak-operator/README.md)
 - [`base/linstor/README.md`](base/linstor/README.md)
-- [`base/longhorn/README.md`](base/longhorn/README.md)
 - [`base/seaweedfs/README.md`](base/seaweedfs/README.md)
 - [`staging/reflector/README.md`](staging/reflector/README.md) (covers `base/reflector/` too)
 - [`staging/tailscale-operator/README.md`](staging/tailscale-operator/README.md)

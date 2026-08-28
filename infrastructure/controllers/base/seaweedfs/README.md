@@ -182,8 +182,8 @@ as the single highest-value hardware change available to this cluster.
   replication restored itself. A third HDD node is what closes this.
 - **`global.seaweedfs.monitoring.additionalLabels` must carry `release:
   kube-prometheus-stack`** or the chart's ServiceMonitors are applied and then
-  silently ignored — the same trap recorded for Ceph and Longhorn in
-  `monitoring/configs/README.md`.
+  silently ignored — the trap the "label that ties everything together" section of
+  `monitoring/configs/README.md` records.
 - **Erasure coding silently does nothing below four data nodes.** `ec.encode`
   logs one line and returns `nil`. Do not plan around it.
 - **`existingConfigSecret` is read once, at startup.** `weed s3 -config` does not

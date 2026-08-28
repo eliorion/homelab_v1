@@ -44,17 +44,14 @@ certificate.
 | `asp-admin-ui` | `apps/staging/asp/release.yaml` (`adminUi.service.annotations`) | 8080 |
 | `fbref-admin-ui` | `apps/staging/fbref/release.yaml` (`adminUi.service.annotations`) | 8080 |
 | `scraper-admin-ui` | `apps/staging/scraper/release.yaml` (`adminUi.service.annotations`) | set by the chart (`k8s/charts/scraper`), not in `release.yaml` |
-| `longhorn` | `infrastructure/controllers/base/longhorn/release.yaml` (`values.service.ui.annotations`) | 80 (Service `longhorn-frontend`) |
 | `radar` | `infrastructure/services/base/radar/release.yaml` (`service.annotations`) | 9280 |
 | `azuracast-stream` | `apps/base/azuracast/service-stream-tailscale.yaml` | 8000 |
 
 The `adminUi.service.annotations` values need that template to exist in the
 chart (asp repo `k8s/charts/{asp,fbref}`, shipped on `main`); the deployed
-HelmRelease must be on a chart revision that has it. Longhorn needs no such
-change: upstream's chart already passes `service.ui.annotations` through to the
-Service it names `longhorn-frontend` — the name to look for in
-`kubectl -n longhorn-system get svc` — so the annotations live in the
-HelmRelease and nothing else moves.
+HelmRelease must be on a chart revision that has it. `radar` and
+`azuracast-stream` need no chart change: their Service objects are in this repo
+or already pass annotations through, so nothing but the annotation moves.
 
 Tailscale `Ingress` (HTTPS on 443, no port in the URL):
 
@@ -65,7 +62,6 @@ Tailscale `Ingress` (HTTPS on 443, no port in the URL):
 | `pgadmin` | `infrastructure/services/staging/databases/dbtools/pgadmin-ingress-tailscale.yaml` |
 | `nao` | `infrastructure/services/staging/databases/dbtools/nao-ingress-tailscale.yaml` |
 | `n8n` | `apps/base/n8n/ingress-tailscale.yaml` |
-| `ceph` | `infrastructure/controllers/staging/rook-ceph-cluster/ingress-tailscale.yaml` |
 | `seaweedfs-s3` | `infrastructure/controllers/staging/seaweedfs-cluster/ingress-tailscale.yaml` |
 | `seaweedfs-admin` | `infrastructure/controllers/staging/seaweedfs-cluster/ingress-tailscale-admin.yaml` — no password; the tailnet is the only gate |
 | `linstor-gui` | `infrastructure/controllers/staging/linstor-cluster/ingress-tailscale.yaml` — the UI is at `/ui/#!/`; the root path is the controller's unauthenticated REST API |
@@ -108,11 +104,11 @@ and [../../../../documentations/09-etcd-backup-dr.md](../../../../documentations
 ### Tailscale rather than a LoadBalancer or a public ingress
 
 The admin UIs front a no-auth control surface: the asp orchestrator has no auth,
-the fbref BFF queries the database directly, and Longhorn's UI has none either
-and can delete volumes. A LAN LoadBalancer (`192.168.1.50:<port>`) would let
-anyone on the home network drive them; a public ingress is worse. Tailscale
-authenticates by tailnet identity and never touches the internet. The cost is
-stated in
+the fbref BFF queries the database directly, the LINSTOR GUI has none and can
+delete a storage pool, and the SeaweedFS admin UI has none and can delete a
+bucket. A LAN LoadBalancer (`192.168.1.50:<port>`) would let anyone on the home
+network drive them; a public ingress is worse. Tailscale authenticates by tailnet
+identity and never touches the internet. The cost is stated in
 [../../../../documentations/14-design-decisions.md](../../../../documentations/14-design-decisions.md):
 this is a single, unbacked authentication plane in front of surfaces with no
 authorization behind them, there is no second factor, and none of the ACL
@@ -279,7 +275,6 @@ push and let Flux reconcile.
 ```
 http://asp-admin-ui.tail45b0ca.ts.net:8080
 http://fbref-admin-ui.tail45b0ca.ts.net:8080
-http://longhorn.tail45b0ca.ts.net          # Service port 80
 ```
 
 `Ingress` devices answer HTTPS on 443, no port in the URL:
@@ -289,6 +284,8 @@ https://keycloak-admin.tail45b0ca.ts.net   # admin console (ns identity)
 https://ai-gateway.tail45b0ca.ts.net       # dashboard + LLM API (ns ai-gateway)
 https://pgadmin.tail45b0ca.ts.net          # SQL client (ns database)
 https://nao.tail45b0ca.ts.net              # analytics agent (ns database)
+https://seaweedfs-admin.tail45b0ca.ts.net  # SeaweedFS admin UI (ns seaweedfs)
+https://linstor-gui.tail45b0ca.ts.net/ui/#!/   # LINSTOR GUI (ns piraeus-datastore)
 ```
 
 ### kubectl over the tailnet
