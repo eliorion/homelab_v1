@@ -13,3 +13,4 @@ configMapGenerator:
     namespace: dagger
     files:
       - config/engine.json
+      - config/engine.toml

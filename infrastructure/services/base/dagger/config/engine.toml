@@ -1,0 +1,11 @@
+# BuildKit's own config file. Deliberately empty -- every setting we care about
+# lives in engine.json, which is Dagger's native schema.
+#
+# It has to EXIST all the same. The image ships both /etc/dagger/engine.json and
+# /etc/dagger/engine.toml, and the entrypoint runs
+#     dagger-engine --config /etc/dagger/engine.toml
+# Mounting the ConfigMap at /etc/dagger REPLACES the whole directory, so shipping
+# engine.json alone deleted engine.toml -- and the engine then fell back to
+# parsing the JSON as TOML and died on its opening brace:
+#     dagger-engine: (1, 1): parsing error: keys cannot contain { character
+#     failed to parse config

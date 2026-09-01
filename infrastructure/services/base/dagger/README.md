@@ -56,6 +56,25 @@ Kubernetes, and it drives three rules:
 3. **Fork pull requests must never run on runners bound to this Role.** Gate on
    `github.event.pull_request.head.repo.full_name == github.repository`.
 
+## Both config files must exist
+
+The image ships **two** files in `/etc/dagger`: `engine.json` (Dagger's own
+schema — GC, security, registries) and `engine.toml` (BuildKit's). The
+entrypoint runs `dagger-engine --config /etc/dagger/engine.toml`.
+
+Mounting the ConfigMap at `/etc/dagger` **replaces the whole directory**, so a
+ConfigMap carrying only `engine.json` deletes `engine.toml`. The engine then
+falls back to parsing the JSON as TOML and CrashLoops on its opening brace:
+
+```
+dagger-engine: (1, 1): parsing error: keys cannot contain { character
+failed to parse config
+```
+
+`config/engine.toml` is therefore committed empty and generated alongside
+`engine.json`. Do not drop it because it looks like it holds nothing — its
+existence is the point.
+
 `security.insecureRootCapabilities: true` in `engine.json` is needed only for
 the e2e leg, which runs k3s nested inside a Dagger container. If that approach
 is abandoned, set it `false` — the engine is meaningfully safer without it.
