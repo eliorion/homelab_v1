@@ -75,6 +75,11 @@ failed to parse config
 `engine.json`. Do not drop it because it looks like it holds nothing — its
 existence is the point.
 
+And the container passes **no `args`**. `--config` is BuildKit's flag and parses
+TOML only, so `--config /etc/dagger/engine.json` appended a second `--config`
+that won and aimed the TOML parser at the JSON. `engine.json` needs no flag at
+all — `/etc/dagger/engine.json` is a hardcoded path inside the engine binary.
+
 `security.insecureRootCapabilities: true` in `engine.json` is needed only for
 the e2e leg, which runs k3s nested inside a Dagger container. If that approach
 is abandoned, set it `false` — the engine is meaningfully safer without it.

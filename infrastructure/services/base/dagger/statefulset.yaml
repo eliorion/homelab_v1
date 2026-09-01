@@ -53,9 +53,16 @@ spec:
       containers:
         - name: engine
           image: registry.dagger.io/engine:v0.21.9
-          args:
-            - --config
-            - /etc/dagger/engine.json
+          # NO args. The entrypoint already ends with
+          #     dagger-engine --config /etc/dagger/engine.toml "$@"
+          # and --config is BuildKit's flag, which parses TOML only (its help
+          # says: path to config file, default /etc/buildkit/buildkitd.toml).
+          # Passing --config /etc/dagger/engine.json appended a SECOND --config
+          # that won, pointing the TOML parser at the JSON file, and both
+          # replicas CrashLooped on its opening brace:
+          #     (1, 1): parsing error: keys cannot contain { character
+          # engine.json needs no flag -- /etc/dagger/engine.json is a hardcoded
+          # path inside the engine binary, read automatically.
           securityContext:
             # Non-negotiable: the engine IS BuildKit. It creates containers,
             # manages snapshots and mounts. It cannot run unprivileged.
