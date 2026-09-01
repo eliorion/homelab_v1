@@ -1,0 +1,30 @@
+# APPLIED. cert-manager reads this to solve the DNS-01 challenge.
+# Ships with a PLACEHOLDER token -- replace it before requesting the first
+# Certificate. See README.md, "Filling in the token"; the plaintext template is
+# cloudflare-api-token.template.yaml.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: cloudflare-api-token
+    # MUST be cert-manager: a ClusterIssuer resolves its solver secrets from
+    # --cluster-resource-namespace, which defaults to the cert-manager namespace.
+    # Putting it next to the registry looks right and silently fails to solve.
+    namespace: cert-manager
+type: Opaque
+stringData:
+    api-token: ENC[AES256_GCM,data:xXC0rd0joZJwDe/yJrEaIrnS1ieFdLHO79PnCzuKxtY6dL12sILq/9Q=,iv:hofjeHxmjpFMPdrprNDMCPoyoq6GOwFVbDmIQ1UcABc=,tag:5mLOvloVZQKlFSIoabCsAQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB2cGxiOFY5aVJteWRZbVAx
+            c2hDeW5MTWk0K0RFSmw4bU8zUnJIR1VXdDJzCnc1a1lwUXB1dVlOZS8wMncxRGp0
+            QklzWnkxYnhqc0FsWDFaK0tNN0dMSzAKLS0tIDNkQVl0MDQzbVhJRncyQ202Q0Uw
+            dktYaTJFSWJhY2w2c0hLYlU2enduUlUKH8U4sOTgPRIUQTcOVczyvbmn/pbKw5Bu
+            X2zlUBOlycqimziuQZa8j8XefJgNgEzvwJHXAFIvfwHQYJWnmL1aFg==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-08-28T16:49:05Z"
+    mac: ENC[AES256_GCM,data:yivuHM/C66guNCSzc7+a9axnM6MUlYSll9UbvpZ/2+XLrFlWOQOflK+R1RUG1zU8xkzfEBUFUoLKYRw+SPzerrrdezRHF5EKYQdkOpfgei75VQNwNhb+DLQVzN4eU8zQIwlyjVP+3L9j+z3uUmKrOWOmuiurh6hjxUneIkmPMhw=,iv:2wetQOi0QbLerZvxtDKtBdprf6y2BnHc+59xbHhASTY=,tag:WSafxHI8CdScrwUTAMwIKQ==,type:str]
+    version: 3.13.3

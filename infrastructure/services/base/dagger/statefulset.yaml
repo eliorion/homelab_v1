@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dagger-engine
+  namespace: dagger
+spec:
+  serviceName: dagger-engine
+  replicas: 2
+  # StatefulSet, not Deployment, for one decisive reason: /var/lib/dagger holds
+  # a buildkitd.lock. Two engine pods on one RWX volume corrupt the cache, so
+  # persistence plus >1 replica FORCES a volume per pod -- which is exactly what
+  # volumeClaimTemplates gives, and a Deployment cannot.
+  #
+  # The stable names are load-bearing too: clients pick their engine with
+  #   IDX=$(( 0x$(printf %s "$SVC" | sha1sum | cut -c1-2) % 2 ))
+  # so a given service always lands on the same warm cache while both replicas
+  # stay in use. A Service round-robin would cold-miss ~50% of the time.
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: dagger-engine
+  template:
+    metadata:
+      labels:
+        app: dagger-engine
+    spec:
+      # An engine restart throws away in-flight builds either way; do not make
+      # CI wait 30s for a graceful shutdown that cannot preserve them.
+      terminationGracePeriodSeconds: 30
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            # One engine per node. Two on one node would contend for the same
+            # page cache and CPU while pretending to be independent capacity.
+            - labelSelector:
+                matchLabels:
+                  app: dagger-engine
+              topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              # cp1 is excluded on purpose: ~210GiB free vs ~460GiB on cp2/cp3,
+              # and it already hosts Nexus. ssd-single is node-local, so this
+              # placement decides where 100Gi of cache actually lives.
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - staging-controlplane-2
+                      - staging-controlplane-3
+      containers:
+        - name: engine
+          image: registry.dagger.io/engine:v0.21.9
+          args:
+            - --config
+            - /etc/dagger/engine.json
+          securityContext:
+            # Non-negotiable: the engine IS BuildKit. It creates containers,
+            # manages snapshots and mounts. It cannot run unprivileged.
+            privileged: true
+          volumeMounts:
+            - name: cache
+              mountPath: /var/lib/dagger
+            - name: config
+              mountPath: /etc/dagger
+              readOnly: true
+          readinessProbe:
+            exec:
+              command: ["buildctl", "debug", "workers"]
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["buildctl", "debug", "workers"]
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              # No CPU limit on purpose: a throttled builder makes every job
+              # slower for no isolation benefit on a dedicated node pair.
+              memory: 8Gi
+      volumes:
+        - name: config
+          configMap:
+            name: dagger-engine-config
+  volumeClaimTemplates:
+    - metadata:
+        name: cache
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        # ssd-single: LINSTOR, one replica, node-local. Replicating a build
+        # cache over DRBD would pay network cost on the hottest write path in
+        # the pipeline for bytes that are by definition disposable.
+        # `hdd` (SeaweedFS) is disqualified -- /var/lib/dagger holds live
+        # container filesystems and a network FS there is a known killer.
+        storageClassName: ssd-single
+        resources:
+          requests:
+            storage: 100Gi

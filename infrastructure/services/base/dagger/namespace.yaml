@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dagger
+  labels:
+    # The engine runs privileged: it is BuildKit, it creates containers. This
+    # label is required, and it is why the namespace is dedicated -- nothing
+    # else should inherit a privileged admission policy.
+    pod-security.kubernetes.io/enforce: privileged

@@ -1,0 +1,24 @@
+# The certificate that makes this registry usable from anywhere with no
+# --insecure-registry, no CA distribution and no insecure_skip_verify.
+#
+# issuerRef is deliberately letsencrypt-STAGING on first apply. Confirm
+# issuance and one forced renewal (`cmctl renew registry-tls -n registry`),
+# THEN flip to letsencrypt-prod. LE prod allows 5 duplicate certs per week; a
+# solver typo caught on prod costs a seven-day outage for this name.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: registry-tls
+  namespace: registry
+spec:
+  secretName: registry-tls
+  dnsNames:
+    - registry.eliorion.fr
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    # Rotate the key on renewal; nothing pins this cert's public key.
+    rotationPolicy: Always

@@ -1,0 +1,26 @@
+{
+  "logLevel": "info",
+  "gc": {
+    "enabled": true,
+    "maxUsedSpace": "70GB",
+    "reservedSpace": "10GB",
+    "minFreeSpace": "20%"
+  },
+  "security": {
+    "insecureRootCapabilities": true
+  },
+  "registries": {
+    "docker.io": {
+      "mirrors": ["registry.eliorion.fr:5000"],
+      "http": false,
+      "insecure": false,
+      "ca": []
+    },
+    "ghcr.io": {
+      "mirrors": ["registry.eliorion.fr:5001"],
+      "http": false,
+      "insecure": false,
+      "ca": []
+    }
+  }
+}

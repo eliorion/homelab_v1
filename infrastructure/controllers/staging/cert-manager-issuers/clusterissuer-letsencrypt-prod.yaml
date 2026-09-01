@@ -1,0 +1,29 @@
+# Let's Encrypt PRODUCTION issuer -- publicly trusted chain.
+#
+# This is what makes the registry usable from anywhere with no
+# --insecure-registry, no CA distribution and no insecure_skip_verify. Every
+# consumer (Talos containerd on all three nodes, the Dagger Engine, dind, a
+# laptop) already trusts this chain, so there is nothing to install.
+#
+# Rate limits are real: 5 duplicate certificates per week, 50 certificates per
+# registered domain per week. Prove a Certificate against letsencrypt-staging
+# before pointing it here.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@eliorion.fr
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          dnsZones:
+            - eliorion.fr

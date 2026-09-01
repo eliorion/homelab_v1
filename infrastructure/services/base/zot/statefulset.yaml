@@ -1,0 +1,205 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zot
+  namespace: registry
+spec:
+  serviceName: zot
+  replicas: 1
+  # Single replica on purpose. zot has no stable HA mode, and every byte here is
+  # reproducible: the proxies re-sync on demand and the hosted repo's releases
+  # also live on GHCR. Losing this volume costs a cold cache, never data.
+  selector:
+    matchLabels:
+      app: zot
+  template:
+    metadata:
+      labels:
+        app: zot
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        # 250Gi volume: only chown when the root is actually wrong, otherwise
+        # every restart walks the whole tree.
+        fsGroupChangePolicy: OnRootMismatch
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            # ssd-single is node-local, so placement decides where the 250Gi
+            # lives. cp1 has ~210GiB free and already hosts Nexus; cp2 is
+            # headroom for a Dagger engine. Prefer cp3 (~462GiB free).
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - staging-controlplane-3
+      containers:
+        # --- docker.io pull-through ---------------------------------------
+        - name: dockerhub
+          image: ghcr.io/project-zot/zot-linux-amd64:v2.1.20
+          args: ["serve", "/etc/zot/dockerhub.json"]
+          ports:
+            - name: dockerhub
+              containerPort: 5000
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/registry
+            - name: config
+              mountPath: /etc/zot
+              readOnly: true
+            - name: certs
+              mountPath: /certs
+              readOnly: true
+            - name: secret
+              mountPath: /secret
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+              # kubelet does not verify the served certificate, so probing the
+              # pod IP against a cert for registry.eliorion.fr is fine.
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 1Gi
+        # --- ghcr.io pull-through -----------------------------------------
+        - name: ghcr
+          image: ghcr.io/project-zot/zot-linux-amd64:v2.1.20
+          args: ["serve", "/etc/zot/ghcr.json"]
+          ports:
+            - name: ghcr
+              containerPort: 5001
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/registry
+            - name: config
+              mountPath: /etc/zot
+              readOnly: true
+            - name: certs
+              mountPath: /certs
+              readOnly: true
+            - name: secret
+              mountPath: /secret
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /v2/
+              port: 5001
+              # kubelet does not verify the served certificate, so probing the
+              # pod IP against a cert for registry.eliorion.fr is fine.
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v2/
+              port: 5001
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 1Gi
+        # --- hosted: our images + Helm OCI charts (the push target) -------
+        - name: hosted
+          image: ghcr.io/project-zot/zot-linux-amd64:v2.1.20
+          args: ["serve", "/etc/zot/hosted.json"]
+          ports:
+            - name: hosted
+              containerPort: 5002
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/registry
+            - name: config
+              mountPath: /etc/zot
+              readOnly: true
+            - name: certs
+              mountPath: /certs
+              readOnly: true
+            - name: secret
+              mountPath: /secret
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /v2/
+              port: 5002
+              # kubelet does not verify the served certificate, so probing the
+              # pod IP against a cert for registry.eliorion.fr is fine.
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v2/
+              port: 5002
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 2Gi
+      volumes:
+        - name: config
+          configMap:
+            name: zot-config
+        - name: certs
+          secret:
+            secretName: registry-tls
+        - name: secret
+          secret:
+            secretName: zot-secrets
+            defaultMode: 0400
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: ssd-single
+        resources:
+          requests:
+            storage: 250Gi

@@ -8,6 +8,13 @@
 # credential is referenced by id/name only). Without this negation a re-exported
 # workflow silently fails to commit. NEVER export n8n credentials themselves.
 !documentations/n8n-workflows/*.json
+# ...and the zot / Dagger Engine config files, which are kustomize
+# configMapGenerator inputs. They carry no secrets (credentials live in the
+# sops-encrypted Secrets beside them). Without these negations the blanket
+# *.json rule drops them from the commit and the Flux build fails on a
+# missing generator input -- silently, at apply time.
+!infrastructure/services/base/zot/config/*.json
+!infrastructure/services/base/dagger/config/*.json
 key.txt
 *.pem
 kubeconfig*
