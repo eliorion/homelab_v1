@@ -8,8 +8,6 @@ kind: Kustomization
 
 resources:
   - ../../base/monica
-  # APP_KEY. Uncomment once the file exists and is sops-encrypted: listing a
-  # missing resource fails `kubectl kustomize`, and an unencrypted one commits a
-  # plaintext secret. Until then the chart has no Secret to read and the pod
-  # will not start -- that is intended, it fails closed. See README.md.
-  # - monica-secrets.enc.yaml
+  # Secret `monica`: APP_KEY, plus smtp-* which stay empty until
+  # monica.mail.enabled is flipped in ../../base/monica/release.yaml.
+  - monica-secrets.enc.yaml
