@@ -142,6 +142,21 @@ DaemonSet above.
 - **The image tag appears twice** — `values.image.tag` and the postRenderer's
   cron container. Bump both together. Renovate manages the chart version but not
   image tags under `apps/`.
+- **Expect three `production.ERROR: Undefined table` lines in the cron log on
+  every restart, and ignore them.** The cron container overrides the image
+  ENTRYPOINT with `cron.sh` so it does not re-run migrations, which means it
+  starts serving `schedule:run` immediately while the app container is still
+  migrating. `UpdateAddressBooks`, `ProcessScheduledContactReminders` and the log
+  pruner hit `addressbook_subscriptions`, `contact_reminder_scheduled` and `logs`
+  before those exist. Observed once at first boot, confined to a two-second
+  window, clean on every run after. The jobs re-query the next minute, so nothing
+  is lost; adding a wait would add a moving part to buy three log lines.
+- **`install.remediation.retries` is as load-bearing as the `upgrade` one.**
+  Leaving it at the default 0 latched this release `Stalled/RetriesExceeded`
+  after one timed-out first install, while the pod underneath was healthy — Flux
+  then applies no further chart or values change at all. `install.replace: true`
+  is what lets a `failed` release record be reused, instead of recovering by
+  uninstalling and taking the `monica-storage` PVC with it.
 - **Keep `replicaCount: 1` and `autoscaling.enabled: false`.** The storage PVC is
   RWO, so a second pod cannot mount it.
 

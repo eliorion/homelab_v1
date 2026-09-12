@@ -10,6 +10,9 @@ spec:
   # Without this Flux names the release `monica-monica`.
   releaseName: monica
   interval: 30m
+  # First boot runs every Laravel migration before the Deployment goes Ready;
+  # the 5m default expired and latched the release Stalled.
+  timeout: 10m
   chart:
     spec:
       chart: monica
@@ -22,6 +25,15 @@ spec:
   install:
     # Belt-and-braces: the monica ns is normally created by the databases tier.
     createNamespace: true
+    # Reuses a release record left in `failed` state instead of demanding a
+    # clean name. Without it, recovering a timed-out first install means
+    # uninstalling -- which deletes the chart-owned monica-storage PVC.
+    replace: true
+    # Same trap as `upgrade` below, on the install path: retries defaults to 0,
+    # so ONE slow first boot latched this release Stalled/RetriesExceeded while
+    # the workload underneath was healthy, and Flux stopped managing it.
+    remediation:
+      retries: 3
   # retries defaults to 0, which latches the release Stalled after ONE failed
   # upgrade and leaves it unremediated. Keep it set (documentations/14).
   upgrade:
