@@ -1,0 +1,30 @@
+# Monica on the tailnet (HTTPS 443, MagicDNS cert), and nowhere else.
+#
+# PRECONDITION: HTTPS Certificates enabled in the Tailscale admin console
+# (DNS -> HTTPS Certificates). Without it the proxy comes up with no certificate
+# and the UI is unreachable.
+#
+# The Service must carry NO tailscale annotations, and the chart's own
+# `ingress.enabled` stays false -- either one would be a second tailnet device
+# contending for this hostname. Rationale: README.md.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monica
+  namespace: monica
+  labels:
+    app: monica
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: monica
+      # Chart Service port is 8080 (targetPort 80), NOT 80.
+      port:
+        number: 8080
+  tls:
+    # Device name -- `monica.host` in release.yaml must be this label plus the
+    # tailnet suffix, because APP_URL is derived from it and the probes send it
+    # as the Host header.
+    - hosts:
+        - monica

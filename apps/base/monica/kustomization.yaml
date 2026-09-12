@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# The `monica` Namespace ships from the databases tier (base/databases/monica).
+resources:
+  - repository.yaml
+  - release.yaml
+  - ingress-tailscale.yaml

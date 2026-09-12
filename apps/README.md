@@ -27,7 +27,7 @@ and depends on `databases` and `infra-reflector`.
 lists its components explicitly:
 
 ```
-asp/  audiobookshelf/  azuracast/  fbref/  glpi/  linkding/  n8n/  scraper/
+asp/  audiobookshelf/  azuracast/  fbref/  glpi/  linkding/  monica/  n8n/  nextcloud/  scraper/
 ```
 
 `databases/` and `lab/` are deliberately absent from that list: each is applied by its own Flux
@@ -53,6 +53,7 @@ component has a base overlay and in its own directory otherwise:
 | databases | one README per cluster under `base/databases/<project>/` |
 | db-migrations | [`staging/databases/db-migrations/README.md`](staging/databases/db-migrations/README.md) — staging-only, own Flux Kustomization |
 | azuracast | [`base/azuracast/README.md`](base/azuracast/README.md) |
+| monica | [`base/monica/README.md`](base/monica/README.md) — official chart, tailnet-only, CalDAV/CardDAV |
 | n8n | [`base/n8n/README.md`](base/n8n/README.md) |
 | audiobookshelf, glpi, linkding | see each component's own directory |
 
