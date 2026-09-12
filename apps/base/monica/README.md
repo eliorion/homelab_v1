@@ -103,8 +103,20 @@ DaemonSet above.
   items sit at indent 8 (`extraInitContainers` on line 224 correctly uses 8), so
   any value produces YAML that will not parse and the release fails to install.
   The cron container goes through `spec.postRenderers` instead.
+- **`appkey` must decode to exactly 32 bytes, and must be random.** Monica pins
+  `cipher => 'AES-256-CBC'` (`config/app.php:102`) and Laravel's
+  `Encrypter::supported()` tests `mb_strlen($key, '8bit') === 32`, so anything
+  else throws `Unsupported cipher or incorrect key length` and the pod never
+  starts. A `base64:` prefix is stripped and decoded
+  (`EncryptionServiceProvider::parseKey()`); without the prefix the literal
+  string bytes are the key. It is the AES key itself, not a passphrase — nothing
+  stretches it, so a memorable 32-character string is a weak key against anyone
+  holding a database dump.
 - **Never rotate `appkey`.** It is the Laravel `APP_KEY` that encrypts columns in
-  `monica-db`; a database restore without that exact value is worthless. The
+  `monica-db`; a database restore without that exact value is worthless. Laravel
+  12 can decrypt with retired keys via `previous_keys` (`config/app.php:106`,
+  env `APP_PREVIOUS_KEYS`), which the chart does not expose — it would need a
+  `monica.extraEnv` entry. That is a recovery path, not a reason to rotate. The
   chart would rotate it on its own if left to: `templates/secrets.yaml` guards a
   `lookup` that does not run during a Flux dry-run, so `randAlphaNum 32` re-rolls
   on every reconcile. `monica.existingSecret.enabled: true` is what prevents it.
@@ -148,7 +160,8 @@ here is `kubectl apply`ed by hand.
 ### First boot
 
 1. Create `apps/staging/monica/monica-secrets.enc.yaml` from the `.example`,
-   generate `appkey` (`openssl rand -hex 16`), `sops -e -i` it, and uncomment it
+   generate `appkey` (`printf 'base64:%s\n' "$(openssl rand -base64 32)"`),
+   `sops -e -i` it, and uncomment it
    in `apps/staging/monica/kustomization.yaml`. Until then the pod has no Secret
    to read and will not start — it fails closed, deliberately.
 2. Push. Once the pod is Ready, open https://monica.tail45b0ca.ts.net and
