@@ -15,11 +15,12 @@ Four clusters are protected:
 | `fbref-db` | `fbref` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-fbref` | fbref scraper data, the largest DB in the cluster |
 | `ai-gateway-db` | `ai-gateway` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-ai-gateway` | Bifrost providers, virtual keys, routing rules |
 
-Three are **not** protected, deliberately or otherwise:
+Four are **not** protected, deliberately or otherwise:
 
 | Cluster | Why |
 |---|---|
 | `n8n-db` | ObjectStore is written and staged but commented out of the kustomization until a Garage key is minted. This is the highest priority gap in the repo: it is the only copy of every workflow and every stored credential. See `10-n8n-automation.md`. |
+| `monica-db` | ObjectStore is written and staged but commented out of the kustomization until an R2 key is minted for `monica-cnpg-staging`. Holds every contact, reminder and journal entry. See `apps/base/databases/monica/README.md`. |
 | `scraper-db` | Queues, config and health only; rebuilt from the platform. |
 | `dbtools-db` | Scratch database for pgAdmin and nao. |
 
@@ -270,6 +271,7 @@ Repeat the pair from the cluster's own `initdb` in every recovery patch:
 | `fbref-db` | `fbref` | `app` |
 | `asp-db` | `automarket` | `app` |
 | `nextcloud-db` | `nextcloud` | `app` |
+| `monica-db` | `monica` | `app` |
 | `n8n-db` | `n8n` | `app` |
 | `scraper-db` | `scraper` | `app` |
 | `dbtools-db` | `nao` | `app` |

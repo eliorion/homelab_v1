@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# NO `namespace:` field here, deliberately. The transformer rewrites every
+# object including the HelmRepository and HelmRelease, which live in
+# flux-system, while leaving spec.chart.spec.sourceRef.namespace alone -- a
+# dangling ref. The base manifests namespace themselves. See ../../base/monica.
+
+resources:
+  - ../../base/monica
+  # APP_KEY. Uncomment once the file exists and is sops-encrypted: listing a
+  # missing resource fails `kubectl kustomize`, and an unencrypted one commits a
+  # plaintext secret. Until then the chart has no Secret to read and the pod
+  # will not start -- that is intended, it fails closed. See README.md.
+  # - monica-secrets.enc.yaml

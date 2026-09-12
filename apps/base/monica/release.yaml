@@ -1,0 +1,197 @@
+# Monica HQ (personal CRM) from the official chart. Rationale, DAV setup and
+# the beta caveat: README.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: monica
+  namespace: flux-system
+spec:
+  targetNamespace: monica
+  # Without this Flux names the release `monica-monica`.
+  releaseName: monica
+  interval: 30m
+  chart:
+    spec:
+      chart: monica
+      version: "1.0.15"
+      sourceRef:
+        kind: HelmRepository
+        name: monicahq
+        namespace: flux-system
+      interval: 12h
+  install:
+    # Belt-and-braces: the monica ns is normally created by the databases tier.
+    createNamespace: true
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  # Adds the cron container to the app pod. It is NOT a chart value because
+  # `monica.extraSidecarContainers` is broken in 1.0.15 (see the note in
+  # `values.monica` below), and it must share the POD -- the storage PVC is RWO,
+  # so the chart's own CronJob/queue templates fail Multi-Attach whenever they
+  # land on another node. Image tag is duplicated from `values.image.tag` --
+  # bump both together. Rationale: README.md.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: monica
+            patch: |
+              - op: add
+                path: /spec/template/spec/containers/-
+                value:
+                  name: cron
+                  image: "monica:5.0.0-beta.5-apache"
+                  imagePullPolicy: IfNotPresent
+                  # busybox crond; the image bakes
+                  # `* * * * * php /var/www/html/artisan schedule:run -v`.
+                  command: ["cron.sh"]
+                  env:
+                    - name: APP_KEY
+                      valueFrom:
+                        secretKeyRef:
+                          name: monica
+                          key: appkey
+                    - name: APP_URL
+                      value: "https://monica.tail45b0ca.ts.net"
+                    - name: APP_ENV
+                      value: production
+                    - name: DB_CONNECTION
+                      value: pgsql
+                    - name: DB_HOST
+                      value: monica-db-rw
+                    - name: DB_DATABASE
+                      value: monica
+                    - name: DB_USERNAME
+                      valueFrom:
+                        secretKeyRef:
+                          name: monica-db-app
+                          key: username
+                    - name: DB_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: monica-db-app
+                          key: password
+                  volumeMounts:
+                    - name: monica-storage
+                      mountPath: /var/www/html/storage
+  values:
+    # Keeps the Deployment, Service, PVC and the APP_KEY Secret all named
+    # `monica`. The Secret name is load-bearing -- see below.
+    fullnameOverride: monica
+
+    image:
+      # The chart defaults to ghcr.io/monicahq/monica-next:main, a FLOATING tag.
+      # Renovate does not manage image tags under apps/ -- bump this by hand,
+      # and the cron sidecar below at the same time.
+      repository: monica
+      tag: "5.0.0-beta.5-apache"
+
+    # KEEP AT 1: the storage PVC is RWO on the LINSTOR `ssd` class.
+    replicaCount: 1
+
+    monica:
+      # Tailnet device name + tailnet suffix. MUST match tls.hosts[0] in
+      # ingress-tailscale.yaml: APP_URL is hardcoded to https://<this>, and all
+      # three probes send it as the Host header.
+      host: monica.tail45b0ca.ts.net
+
+      # MUST stay true. It suppresses templates/secrets.yaml, whose `lookup`
+      # does not run during a Flux dry-run, so the chart would re-roll
+      # `randAlphaNum 32` and ROTATE APP_KEY on every reconcile -- which makes
+      # every Laravel-encrypted column unreadable. The env still reads secret
+      # `monica` key `appkey` (_helpers.tpl hardcodes it and ignores
+      # `secretName`), so the SOPS Secret must carry exactly that name and key.
+      existingSecret:
+        enabled: true
+
+      # Both mount the same RWO PVC as the app pod and neither honours
+      # nodeSelector/affinity, so a pod on another node fails Multi-Attach. The
+      # queue template is a DaemonSet and also mints a cluster-scoped
+      # PriorityClass. Replaced by the cron sidecar below. See README.md.
+      cronjob:
+        enabled: false
+      queue:
+        enabled: false
+
+      mail:
+        enabled: false
+
+      extraEnv:
+        - name: APP_ENV
+          value: production
+        - name: APP_DEBUG
+          value: "false"
+        # The tailscale proxy terminates TLS in front of Apache.
+        - name: APP_TRUSTED_PROXIES
+          value: "*"
+        # No Redis: jobs run inline. `queue.enabled` above must stay false.
+        - name: QUEUE_CONNECTION
+          value: sync
+
+      # DO NOT use `monica.extraSidecarContainers` -- chart 1.0.15 renders it at
+      # `nindent 6` (templates/deployment.yaml:215) while container list items
+      # sit at 8, so any value here produces unparseable YAML and the release
+      # fails to install. The cron container is added by the postRenderer above.
+
+    # MUST be false. The chart's env helper tests internalDatabase FIRST, so
+    # leaving the default true silently runs SQLite and ignores every
+    # externalDatabase value below.
+    internalDatabase:
+      enabled: false
+
+    # Bundled subcharts, all off. The three Bitnami ones would pull images that
+    # were withdrawn in August 2025.
+    mariadb:
+      enabled: false
+    postgresql:
+      enabled: false
+    redis:
+      enabled: false
+    memcached:
+      enabled: false
+    meilisearch:
+      enabled: false
+
+    # External CNPG cluster monica-db (../databases/monica/). No DB_PORT is
+    # emitted by the chart; Laravel defaults pgsql to 5432, which CNPG serves.
+    externalDatabase:
+      enabled: true
+      type: postgresql
+      host: monica-db-rw
+      database: monica
+      existingSecret:
+        # Also suppresses templates/db-secret.yaml, which would otherwise write
+        # the password into a Helm-rendered Secret.
+        enabled: true
+        # Generated by CNPG from the Cluster's bootstrap.initdb.
+        secretName: monica-db-app
+        usernameKey: username
+        passwordKey: password
+
+    persistence:
+      enabled: true
+      # Key is storageClass (singular accessMode too) -- not the core-API
+      # spelling. Empty means "cluster default"; pin it so the class is visible
+      # here and does not silently change when the default flips.
+      storageClass: ssd
+      accessMode: ReadWriteOnce
+      size: 10Gi
+
+    # The chart's own ingress stays off; the tailnet Ingress is its own object.
+    ingress:
+      enabled: false
+
+    service:
+      type: ClusterIP
+      port: 8080
+      # NO `tailscale.com/expose` annotation here: ingress-tailscale.yaml
+      # publishes the tailnet device, and both would contend for the hostname.
+
+    # RWO storage: a second pod cannot mount the PVC.
+    autoscaling:
+      enabled: false

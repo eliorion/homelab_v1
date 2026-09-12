@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: monica-db-daily
+spec:
+  # 6-field CNPG cron, not the 5-field Unix form. 03:20 -- 03:00, 03:10 and
+  # 03:30 are taken, and Garage/R2 uploads must not collide.
+  schedule: "0 20 3 * * *"
+  immediate: true
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  cluster:
+    name: monica-db

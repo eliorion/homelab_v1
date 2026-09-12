@@ -1,0 +1,32 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: monica-db
+  namespace: monica
+spec:
+  instances: 2
+  # Field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg is the
+  # operator image and must never be used here.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      # `required` here would block writes whenever the replica is unavailable.
+      dataDurability: preferred
+    parameters:
+      max_connections: "100"
+      effective_cache_size: "512MB"
+      work_mem: "4MB"
+      maintenance_work_mem: "64MB"
+
+  bootstrap:
+    initdb:
+      database: monica
+      owner: app
+      # No postInit and no db-migrations entry: Monica runs its own Laravel
+      # migrations on boot (`artisan monica:setup --force`). See README.md.
+
+  storage:
+    size: 5Gi

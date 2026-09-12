@@ -1,0 +1,32 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: r2-store
+spec:
+  retentionPolicy: "7d"
+  configuration:
+    destinationPath: "s3://monica-cnpg-staging"
+    endpointURL: "https://07e577de68147de704bb467debe46e21.r2.cloudflarestorage.com"
+    s3Credentials:
+      accessKeyId:
+        name: r2-backup-credentials
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: r2-backup-credentials
+        key: ACCESS_KEY_SECRET
+    wal:
+      compression: gzip
+      encryption: AES256
+    data:
+      compression: gzip
+      encryption: AES256
+      jobs: 2
+  instanceSidecarConfiguration:
+    # Required for Cloudflare R2: without both, backup AND restore fail with
+    # XAmzContentSHA256Mismatch (plugin-barman-cloud #411).
+    # NO AWS_REGION here -- that is the Garage flavour and R2 rejects it.
+    env:
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
