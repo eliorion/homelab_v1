@@ -1,6 +1,6 @@
 # Let's Encrypt STAGING issuer -- untrusted chain, effectively no rate limits.
 # Every new Certificate is issued here FIRST. Only once issuance and one forced
-# renewal have been observed does the Certificate switch to letsencrypt-prod.
+# renewal have been observed would a prod issuer be added; none exists today.
 # LE production allows 5 duplicate certificates per week; burning that budget on
 # a solver typo leaves the registry without a cert for seven days.
 apiVersion: cert-manager.io/v1

@@ -1,7 +1,7 @@
-# letsencrypt-STAGING deliberately. Confirm issuance AND one forced renewal
-# (`cmctl renew registry-tls -n registry`) before flipping to prod: LE prod
-# allows 5 duplicate certs per week, so a solver typo caught there costs a
-# seven-day outage for this name.
+# letsencrypt-STAGING. There is no letsencrypt-prod ClusterIssuer in this
+# cluster -- it was removed deliberately. The chain is UNTRUSTED, so the
+# Talos registry mirror must NOT be applied against it (containerd rejects it
+# on every node at once).
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:

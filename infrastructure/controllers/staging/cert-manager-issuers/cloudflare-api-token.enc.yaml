@@ -1,7 +1,7 @@
 # APPLIED. cert-manager reads this to solve the DNS-01 challenge.
-# Ships with a PLACEHOLDER token -- replace it before requesting the first
-# Certificate. See README.md, "Filling in the token"; the plaintext template is
-# cloudflare-api-token.template.yaml.
+# Namespace MUST be cert-manager: a ClusterIssuer resolves solver secrets from
+# --cluster-resource-namespace, and putting it beside the consumer silently
+# fails to solve.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -12,19 +12,19 @@ metadata:
     namespace: cert-manager
 type: Opaque
 stringData:
-    api-token: ENC[AES256_GCM,data:xXC0rd0joZJwDe/yJrEaIrnS1ieFdLHO79PnCzuKxtY6dL12sILq/9Q=,iv:hofjeHxmjpFMPdrprNDMCPoyoq6GOwFVbDmIQ1UcABc=,tag:5mLOvloVZQKlFSIoabCsAQ==,type:str]
+    api-token: ENC[AES256_GCM,data:l8BTquq0p6L69HWA03pOqJfPh9LFBa0McrliytnqV2qSyAMKgNl9zDD4kUWshU0u6wGfHuU=,iv:DX1+9dmDoGMeWbJMsswEXDO5hGaXSxuwAqMAJ4alP+I=,tag:vqkDnAzdOM/nP/K4Ivhqow==,type:str]
 sops:
     age:
         - enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB2cGxiOFY5aVJteWRZbVAx
-            c2hDeW5MTWk0K0RFSmw4bU8zUnJIR1VXdDJzCnc1a1lwUXB1dVlOZS8wMncxRGp0
-            QklzWnkxYnhqc0FsWDFaK0tNN0dMSzAKLS0tIDNkQVl0MDQzbVhJRncyQ202Q0Uw
-            dktYaTJFSWJhY2w2c0hLYlU2enduUlUKH8U4sOTgPRIUQTcOVczyvbmn/pbKw5Bu
-            X2zlUBOlycqimziuQZa8j8XefJgNgEzvwJHXAFIvfwHQYJWnmL1aFg==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBhR25yWFI0aEpLZmFsbTVZ
+            dndlZWszdXZuSXdrL0lMMGxxck9nbFN0WFIwCi8zL2hsTm5hNk9MOTBhSUJNUFdF
+            RUpiOTF3dS9EckpEbnNJckpGZlZuaE0KLS0tIHovUnF6QVlNcDZiZE9GNmRxUmQx
+            czZDbG5VUnZKYmFwNDZXMjRFL3BsL2sKIdDueSurXKz9Au26+NaLAI/dMiI+J69w
+            3nH2ntQF2TQY21lf8/aBrB4O9X/r9uIe58ss0MSRMivC+3M0HhYe5g==
             -----END AGE ENCRYPTED FILE-----
           recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
     encrypted_regex: ^(data|stringData)$
-    lastmodified: "2026-08-28T16:49:05Z"
-    mac: ENC[AES256_GCM,data:yivuHM/C66guNCSzc7+a9axnM6MUlYSll9UbvpZ/2+XLrFlWOQOflK+R1RUG1zU8xkzfEBUFUoLKYRw+SPzerrrdezRHF5EKYQdkOpfgei75VQNwNhb+DLQVzN4eU8zQIwlyjVP+3L9j+z3uUmKrOWOmuiurh6hjxUneIkmPMhw=,iv:2wetQOi0QbLerZvxtDKtBdprf6y2BnHc+59xbHhASTY=,tag:WSafxHI8CdScrwUTAMwIKQ==,type:str]
+    lastmodified: "2026-09-13T21:29:37Z"
+    mac: ENC[AES256_GCM,data:aWxt9weMiiBNoevO79I2SI07bkW7c1ZC2xUiOwv1VCOGdo93yJSIDXNlKmQOOndMFdP1b+io9ZxlZfmANWzD/D/N0dSY5CGZDmoKcj+LFw3YYPwe9mfJe1t4+QdMycbBzWJmFQ5BBdEBLiuXEUh3Sm1zAl2lzYEuKtl56DrYOak=,iv:AB6kENIHr1D0qnFlUwZ3OxoTJepbi1GoEyYTHi+Y+nE=,tag:ppCCBVEVGYQvt1P1HFR5gQ==,type:str]
     version: 3.13.3

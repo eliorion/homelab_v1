@@ -96,13 +96,23 @@ ClusterIssuer resolves solver secrets from `--cluster-resource-namespace`, which
 defaults to the cert-manager namespace; putting it next to the registry looks
 right and silently fails to solve.
 
-## Staging before prod, always
+## Staging only, for now
 
-`letsencrypt-staging` issues an untrusted chain with effectively no rate limits.
-`letsencrypt-prod` allows **5 duplicate certificates per week**. Point every new
-Certificate at staging first, confirm issuance *and* one forced renewal
-(`cmctl renew <cert>`), then switch `issuerRef` to prod. A solver typo caught on
-prod costs a seven-day outage for that name.
+Only `letsencrypt-staging` is deployed. There is **no `letsencrypt-prod`
+ClusterIssuer** — it was removed deliberately, so nothing in this cluster can
+burn prod rate limits by accident.
+
+The consequence is that every certificate issued here has an **untrusted
+chain**. That is fine for proving the DNS-01 solver and the renewal path, and it
+is why the Harbor registry mirror must not be applied to the Talos nodes yet:
+containerd rejects an untrusted chain, on every node simultaneously.
+
+When a trusted certificate is wanted, add a `letsencrypt-prod` ClusterIssuer
+back (same spec, the ACME prod directory URL, its own account-key secret) and
+repoint `issuerRef`. Do that only after issuance *and* one forced renewal
+(`cmctl renew <cert>`) have been observed on staging: prod allows **5 duplicate
+certificates per week**, so a solver typo caught there costs a seven-day outage
+for that name.
 
 ## Ordering
 

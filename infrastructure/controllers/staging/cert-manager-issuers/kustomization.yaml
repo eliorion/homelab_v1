@@ -3,4 +3,3 @@ kind: Kustomization
 resources:
   - cloudflare-api-token.enc.yaml
   - clusterissuer-letsencrypt-staging.yaml
-  - clusterissuer-letsencrypt-prod.yaml
