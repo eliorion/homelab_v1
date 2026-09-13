@@ -13,7 +13,7 @@ spec:
           containers:
             - name: renovate
               # renovate: datasource=docker depName=renovate/renovate
-              image: renovate/renovate:43.265.3
+              image: renovate/renovate:43.288.0
               args:
                 - eliorion/homelab_v1
 
