@@ -259,31 +259,40 @@ patches:
             - etcd-backup
       nodeLabels:
         node.kubernetes.io/exclude-from-external-load-balancers: ""
-      # In-cluster image pulls go through zot (infrastructure/services/base/zot).
-      # This is what makes every pod benefit from the cache without editing a
-      # single chart's global.imageRegistry.
-      #
-      # DO NOT `talosctl apply-config` this block until BOTH are true:
-      #   1. registry.eliorion.fr resolves and zot is serving, and
-      #   2. its certificate is issued by letsencrypt-PROD, not -staging.
-      # A staging chain is untrusted, and containerd would reject the mirror on
-      # every node at once.
-      #
-      # The upstream is listed as a second endpoint on purpose: Talos tries them
-      # in order and does NOT append the canonical registry automatically. With
-      # it, a zot outage or an expired cert degrades to a slower direct pull
-      # instead of breaking every pull in the cluster -- the same
-      # "no mirror is ever a hard dependency" rule the CI pipeline follows.
-      registries:
-        mirrors:
-          docker.io:
-            endpoints:
-              - https://registry.eliorion.fr:5000
-              - https://registry-1.docker.io
-          ghcr.io:
-            endpoints:
-              - https://registry.eliorion.fr:5001
-              - https://ghcr.io
+  # In-cluster pulls go through Harbor's proxy-cache projects, which is what
+  # lets every pod use the cache without editing a chart's global.imageRegistry.
+  # See infrastructure/services/base/harbor/README.md.
+  #
+  # DO NOT `talosctl apply-config` until BOTH hold:
+  #   1. registry.eliorion.fr resolves and Harbor serves both proxy projects, and
+  #   2. secret/registry-tls is issued by letsencrypt-PROD, not -staging.
+  # containerd rejects an untrusted chain on every node at once.
+  #
+  # Standalone documents, NOT machine.registries.mirrors: there overridePath is a
+  # MIRROR-level bool fanned onto every endpoint, which would strip /v2 from the
+  # upstream fallback too. Here it is per-endpoint. machine.registries is also
+  # deprecated as of v1.13.4.
+  #
+  # Never add skipFallback (it removes the implicit upstream, and Harbor runs
+  # inside the cluster it feeds -> cold-start deadlock) and never add a '*'
+  # mirror (Talos reserves it for the on-node image cache; node images come from
+  # factory.talos.dev).
+  - |-
+    apiVersion: v1alpha1
+    kind: RegistryMirrorConfig
+    name: docker.io
+    endpoints:
+      - url: https://registry.eliorion.fr/v2/dockerhub-proxy
+        overridePath: true
+      - url: https://registry-1.docker.io
+  - |-
+    apiVersion: v1alpha1
+    kind: RegistryMirrorConfig
+    name: ghcr.io
+    endpoints:
+      - url: https://registry.eliorion.fr/v2/ghcr-proxy
+        overridePath: true
+      - url: https://ghcr.io
   # PodSecurity admissionControl + auditPolicy come from talhelper defaults --
   # re-adding them here duplicates the kube-system exemption.
   - |-

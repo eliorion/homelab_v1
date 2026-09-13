@@ -104,14 +104,22 @@ replica covers, and it is why `nodeAffinity` is `required` on cp2/cp3 (cp1 has
 
 ## Registry mirrors
 
-`engine.json` routes base-image pulls through zot. Note the hostname is
-`registry.eliorion.fr:<port>`, **not** `zot.registry.svc` — the certificate is
-issued for the public name, and Let's Encrypt cannot sign an in-cluster DNS
-name. Using one name everywhere keeps TLS valid on every path and avoids any
-`insecure` escape hatch. In-cluster resolution goes out to the LAN VIP and back
-via Cilium; the extra hop is irrelevant next to a layer pull.
+`engine.json` routes base-image pulls through Harbor
+(`../harbor/README.md`). The hostname is `registry.eliorion.fr`, **not**
+`harbor.registry.svc` — the certificate is issued for the public name, and
+Let's Encrypt cannot sign an in-cluster DNS name. Using one name everywhere
+keeps TLS valid on every path and avoids any `insecure` escape hatch.
+In-cluster resolution goes out to the LAN VIP and back via Cilium; the extra
+hop is irrelevant next to a layer pull.
 
-BuildKit falls through to the canonical registry when a mirror fails, so zot
+**The mirror value carries a PATH and no scheme:**
+`registry.eliorion.fr/dockerhub-proxy`. Harbor's proxy cache is project-scoped,
+and BuildKit does `path.Join("/v2", mirrorPath)` itself — writing
+`…/v2/dockerhub-proxy` here yields `/v2/v2/dockerhub-proxy` and 404s every pull.
+Talos spells the same mirror the opposite way (scheme *and* `/v2`, plus
+`overridePath`); see the Harbor README's per-client table.
+
+BuildKit falls through to the canonical registry when a mirror fails, so Harbor
 being down degrades speed, never correctness.
 
 ## Operating

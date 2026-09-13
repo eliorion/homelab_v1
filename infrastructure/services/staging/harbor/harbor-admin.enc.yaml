@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: harbor-admin
+    namespace: registry
+type: Opaque
+stringData:
+    HARBOR_ADMIN_PASSWORD: ENC[AES256_GCM,data:igoI/mM/eANXsyhm8O/L3uSZP3caRWTLD7Xq/g==,iv:1L8y3fc6veSgONXWRpgmPNg3KllUA+O6p047uxhGDl0=,tag:+ihz7OdhTjZPIfO7X+dQYA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB5S3BHWnIwanA0TzcxalZM
+            Vy9nRVEyVU9KUkl0bE5Ya2tuMDNoNHcrWHpRCkVJZnh4YUZzckUvN09MdmxYRDg5
+            T1JYMmU0R0dJODg1cklMMitJTmIyeFEKLS0tICtCaVdDc3U5azErQ0IrYytRUUxj
+            aUN3NXVKU2RzM0pkMUlRVytZQ3lSNG8KMuZ7WEUzqNEUrviZejnQTeWPlKy8HiMj
+            d00dPx+h4/7veXxUj+3tX4up8WXYg2k+6f8Yt4Z8tQYX7biBF8TRLA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-13T19:15:04Z"
+    mac: ENC[AES256_GCM,data:gMiFVKq7XAqKTo9zG5vf5aycPfsMSox95TAhFN8tp2L7NJLfHr9U3AWVia92wgCOKNZ7UjOEtAPSCy/BtpqJA2SMUQqm6OsCDTO5pe0SJhI2+nbtLCglcyJ35KEQ9LwXHA2s3OZ/uYXdUzLZT5pX5BURUqQ08WK3COnYTGV/c0U=,iv:m0KQg+4FaKlwZzz63dKxllnlpwkZbfXkCZUEPtrUwRY=,tag:V8E3Wp+smb7FY8t9olETOg==,type:str]
+    version: 3.13.3

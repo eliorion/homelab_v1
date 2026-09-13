@@ -1,0 +1,83 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: harbor
+  namespace: flux-system
+spec:
+  targetNamespace: registry
+  releaseName: harbor
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: harbor
+      # app 2.15.2. Do not drop to 2.15.0: proxy-cache pulls were broken there
+      # (goharbor/harbor#23025), which is the feature this deployment exists for.
+      version: "1.19.2"
+      sourceRef:
+        kind: HelmRepository
+        name: harbor
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: true
+  # retries defaults to 0, which latches Stalled after ONE failure and stops
+  # retrying entirely.
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    # Must equal the hostname clients use, exactly. A mismatch breaks the
+    # token-auth realm and every portal redirect.
+    externalURL: https://registry.eliorion.fr
+
+    expose:
+      type: loadBalancer
+      tls:
+        enabled: true
+        certSource: secret
+        secret:
+          secretName: registry-tls
+      loadBalancer:
+        name: harbor
+        IP: 192.168.1.112
+        ports:
+          httpPort: 80
+          httpsPort: 443
+        annotations:
+          io.cilium/lb-ipam-ips: 192.168.1.112
+
+    existingSecretAdminPassword: harbor-admin
+    existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
+
+    database:
+      type: external
+      external:
+        host: harbor-db-rw.registry.svc.cluster.local
+        port: "5432"
+        username: harbor
+        # Must match initdb.database in the harbor-db CNPG Cluster.
+        coreDatabase: harbor
+        existingSecret: harbor-db-app
+        sslmode: require
+
+    redis:
+      type: internal
+
+    trivy:
+      enabled: true
+
+    persistence:
+      enabled: true
+      persistentVolumeClaim:
+        registry:
+          storageClass: ssd-single
+          size: 250Gi
+        jobservice:
+          jobLog:
+            storageClass: ssd-single
+            size: 5Gi
+        trivy:
+          storageClass: ssd-single
+          size: 10Gi
