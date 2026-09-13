@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: homepage
+resources:
+  - ../../base/homepage
+  - ingress-tailscale.yaml
+  - homepage-secrets.enc.yaml
+configMapGenerator:
+  - name: homepage-config
+    files:
+      - config/settings.yaml
+      - config/services.yaml
+      - config/widgets.yaml
+      - config/bookmarks.yaml
+      - config/kubernetes.yaml
+  - name: homepage-env
+    literals:
+      # Must match the device name in ingress-tailscale.yaml, or every request 400s.
+      - HOMEPAGE_ALLOWED_HOSTS=home.tail45b0ca.ts.net

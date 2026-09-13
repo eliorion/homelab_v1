@@ -1,0 +1,182 @@
+- Observability:
+    - Grafana:
+        icon: grafana.png
+        href: https://grafana.tail45b0ca.ts.net
+        description: Dashboards and alerting
+        siteMonitor: http://kube-prometheus-stack-grafana.monitoring.svc:80/api/health
+        namespace: monitoring
+        app: grafana
+        podSelector: app.kubernetes.io/name=grafana,app.kubernetes.io/instance=kube-prometheus-stack
+        widget:
+          type: prometheusmetric
+          url: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+          refreshInterval: 60000
+          metrics:
+            - label: Critical
+              query: count(ALERTS{alertstate="firing",severity="critical"}) or vector(0)
+            - label: Warning
+              query: count(ALERTS{alertstate="firing",severity="warning"}) or vector(0)
+    - Radar:
+        icon: mdi-radar
+        href: http://radar.tail45b0ca.ts.net:9280
+        description: Cluster explorer
+        siteMonitor: http://radar.radar.svc:9280
+        namespace: radar
+        app: radar
+        podSelector: ""
+
+- Platform:
+    - Keycloak:
+        icon: keycloak.png
+        href: https://keycloak-admin.tail45b0ca.ts.net
+        description: Identity admin console
+        namespace: identity
+        app: keycloak
+        podSelector: app=keycloak,app.kubernetes.io/component=server
+    - AI gateway:
+        icon: mdi-robot-outline
+        href: https://ai-gateway.tail45b0ca.ts.net
+        description: LLM gateway dashboard
+        siteMonitor: http://ai-gateway.ai-gateway.svc:8080
+        namespace: ai-gateway
+        app: ai-gateway
+        podSelector: app.kubernetes.io/name=ai-gateway,app.kubernetes.io/component=server
+    - pgAdmin:
+        icon: pgadmin.png
+        href: https://pgadmin.tail45b0ca.ts.net
+        description: SQL client
+        siteMonitor: http://pgadmin.database.svc:80/misc/ping
+        namespace: database
+        app: pgadmin
+        podSelector: app=pgadmin
+    - nao:
+        icon: mdi-chart-box-outline
+        href: https://nao.tail45b0ca.ts.net
+        description: Analytics agent
+        siteMonitor: http://nao.database.svc:5005
+        namespace: database
+        app: nao
+        podSelector: app=nao
+    - Nexus:
+        icon: mdi-package-variant-closed
+        href: http://192.168.1.110:8081
+        description: Package cache (LAN only)
+        siteMonitor: http://nexus.nexus.svc:8081/service/rest/v1/status
+        namespace: nexus
+        app: nexus3
+        podSelector: app.kubernetes.io/name=nexus3,app.kubernetes.io/instance=nexus
+
+- Storage:
+    - LINSTOR:
+        icon: mdi-harddisk
+        href: https://linstor-gui.tail45b0ca.ts.net/ui/#!/
+        description: Block tier (class ssd)
+        siteMonitor: http://linstor-controller.piraeus-datastore.svc:3370/ui/
+        namespace: piraeus-datastore
+        app: linstor
+        podSelector: ""
+    - SeaweedFS:
+        icon: mdi-database-outline
+        href: https://seaweedfs-admin.tail45b0ca.ts.net
+        description: Bulk and S3 tier (class hdd)
+        siteMonitor: http://seaweedfs-seaweedfs-admin.seaweedfs.svc:23646/health
+        namespace: seaweedfs
+        app: seaweedfs
+        podSelector: ""
+
+- Apps:
+    - n8n:
+        icon: n8n.png
+        href: https://n8n.tail45b0ca.ts.net
+        description: Automation
+        siteMonitor: http://n8n.n8n.svc:5678/healthz
+        namespace: n8n
+        app: n8n
+        podSelector: app=n8n
+    - Monica:
+        icon: mdi-account-heart-outline
+        href: https://monica.tail45b0ca.ts.net
+        description: Personal CRM
+        siteMonitor: http://monica.monica.svc:8080/up
+        namespace: monica
+        app: monica
+        podSelector: ""
+    - asp admin:
+        icon: mdi-soccer
+        href: http://asp-admin-ui.tail45b0ca.ts.net:8080
+        siteMonitor: http://admin-ui.asp.svc:8080/api/health
+        namespace: asp
+        app: admin-ui
+        podSelector: app=admin-ui
+    - fbref admin:
+        icon: mdi-soccer-field
+        href: http://fbref-admin-ui.tail45b0ca.ts.net:8080
+        siteMonitor: http://admin-ui.fbref.svc:8080/api/health
+        namespace: fbref
+        app: admin-ui
+        podSelector: app=admin-ui
+    - scraper admin:
+        icon: mdi-spider-web
+        href: http://scraper-admin-ui.tail45b0ca.ts.net:8080
+        siteMonitor: http://admin-ui.scraper.svc:8080/
+        namespace: scraper
+        app: admin-ui
+        podSelector: app=admin-ui
+
+- Cloudflare tunnel:
+    - Tunnel:
+        icon: cloudflare.png
+        href: https://one.dash.cloudflare.com/{{HOMEPAGE_VAR_CF_ACCOUNT_ID}}/networks/tunnels
+        description: cloudflared, the only public entry
+        namespace: cloudflare
+        app: cloudflared
+        podSelector: infrastructure=cloudflared
+        widget:
+          type: cloudflared
+          accountid: "{{HOMEPAGE_VAR_CF_ACCOUNT_ID}}"
+          tunnelid: "{{HOMEPAGE_VAR_CF_TUNNEL_ID}}"
+          key: "{{HOMEPAGE_VAR_CF_API_TOKEN}}"
+    - AzuraCast:
+        icon: azuracast.png
+        href: https://mve-azuracast.eliorion.fr
+        description: Radio, UI and stream
+        siteMonitor: https://mve-azuracast.eliorion.fr
+        namespace: azuracast
+        app: azuracast
+        podSelector: app=azuracast
+    - nao (public):
+        icon: mdi-chart-box-outline
+        href: https://nao.eliorion.fr
+        description: Behind Cloudflare Access
+        siteMonitor: https://nao.eliorion.fr
+    - fbref MCP:
+        icon: mdi-api
+        href: https://fbref-mcp.eliorion.fr/healthz
+        description: MCP server, OAuth via Keycloak
+        siteMonitor: https://fbref-mcp.eliorion.fr/healthz
+    - Keycloak (public):
+        icon: keycloak.png
+        href: https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration
+        description: Realm endpoints only, no console
+        siteMonitor: https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration
+
+- Tailnet:
+    - Devices:
+        icon: tailscale.png
+        href: https://login.tailscale.com/admin/machines
+        widget:
+          type: customapi
+          url: https://api.tailscale.com/api/v2/tailnet/-/devices
+          refreshInterval: 60000
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_TAILSCALE_API_KEY}}"
+          display: dynamic-list
+          mappings:
+            items: devices
+            name: hostname
+            label: connectedToControl
+            remap:
+              - value: true
+                to: online
+              - value: false
+                to: offline
