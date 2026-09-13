@@ -72,6 +72,34 @@ clientScopes:
           id.token.claim: "false"
           introspection.token.claim: "true"
 
+  - name: scrape:tools
+    description: Fetch web pages through the scraper platform
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: "true"
+      display.on.consent.screen: "true"
+      # A SEPARATE scope rather than a second mapper on mcp:tools, and the
+      # consent text is the reason. mcp:tools tells the person approving it
+      # "Read football data from the fbref database"; a scraper audience added
+      # there would grant arbitrary web fetching through the platform's
+      # residential egress while the screen described reading football stats.
+      # Consent that misdescribes what it grants is worse than no consent.
+      consent.screen.text: Fetch pages from the open web through your scraping platform, using its egress IPs
+    protocolMappers:
+      # Same audience binding as above, same reason: Keycloak 26 does not
+      # implement RFC 8707, so `aud` is stamped by a mapper. scraper-mcp REQUIRES
+      # it, which is what stops a token minted for fbref-mcp — the same realm,
+      # the same user, the same browser flow — from being replayed here to spend
+      # residential bandwidth on any URL the holder names.
+      - name: scraper-mcp-audience
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config:
+          included.custom.audience: https://scraper-mcp.eliorion.fr/mcp
+          access.token.claim: "true"
+          id.token.claim: "false"
+          introspection.token.claim: "true"
+
 # mcp:tools is a DEFAULT scope, not an optional one. This single line is what
 # makes the audience mapper reach dynamically-registered clients: claude.ai and
 # ChatGPT register themselves and request whatever they please. On an OPTIONAL
@@ -79,6 +107,7 @@ clientScopes:
 # refuses it, and every call fails with no obvious cause.
 defaultDefaultClientScopes:
   - mcp:tools
+  - scrape:tools
   - email
   - profile
   - roles
