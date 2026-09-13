@@ -6,3 +6,4 @@ resources:
   - repository.yaml
   - release.yaml
   - nginx-cert-reload.yaml
+  - ingress-tailscale.yaml

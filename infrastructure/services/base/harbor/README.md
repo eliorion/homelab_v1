@@ -24,6 +24,31 @@ Exposed on the Cilium LB-IPAM address **192.168.1.112** (the address zot held), 
 The Cloudflare A record for `registry.eliorion.fr` is grey-cloud (unproxied): the name resolves
 publicly, the address stays RFC1918, and DNS-01 issuance needs no inbound reachability.
 
+## Two front doors, on purpose
+
+Harbor supports exactly one `externalURL`, but it has two audiences with
+different needs, so it gets two paths to the same pods.
+
+| path | who | TLS |
+|---|---|---|
+| `registry.eliorion.fr` (LB `192.168.1.112`) | **data only** — node containerd, the Dagger engine, CI | Harbor's own cert (currently untrusted staging) |
+| `harbor.tail45b0ca.ts.net` (tailscale Ingress) | **the UI**, humans | a real Tailscale-issued certificate |
+
+The LoadBalancer is restricted with `sourceRanges` to the three nodes and the
+pod CIDR. It is **not** removed, and it cannot be: containerd pulls happen on
+the NODE, and the nodes are LAN-only (`192.168.1.101-103`) — they are not on the
+tailnet. Dropping the LB would make node-level mirroring impossible.
+
+The Ingress deliberately does NOT point at the `harbor` Service. Its nginx
+answers `:80` with `return 301 https://$host$request_uri`, and `$host` is the
+tailnet name, so that redirect would loop straight back into this Ingress. The
+path rules there are harbor-nginx's own routing table with the redirect removed.
+
+**Caveat, from the one-hostname limit:** the registry token realm is pinned to
+`externalURL`, so a `docker login`/`docker pull` against the *tailnet* name gets
+a 401 pointing at `registry.eliorion.fr`. Browsing and logging into the UI work
+over the tailnet; pulling images does not. Pull over the LAN name.
+
 ## Transparent pull-through — the whole point
 
 Requirement: `docker.io/library/nginx` must hit the local cache **without rewriting the image
