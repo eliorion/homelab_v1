@@ -47,16 +47,9 @@ spec:
           httpsPort: 443
         annotations:
           io.cilium/lb-ipam-ips: 192.168.1.112
-        # DATA PATH ONLY -- the UI is on the tailnet (ingress-tailscale.yaml).
-        # Nodes need this: containerd pulls happen on the NODE, which is
-        # LAN-only and not on the tailnet, so removing it would make node-level
-        # mirroring impossible. Pods need the 10.244.0.0/16 entry (the Dagger
-        # engine and CI resolve registry.eliorion.fr to this address).
-        sourceRanges:
-          - 192.168.1.101/32
-          - 192.168.1.102/32
-          - 192.168.1.103/32
-          - 10.244.0.0/16
+        # No sourceRanges: node and pod addresses are site-specific, and a new
+        # node would silently stop pulling. The restriction is expressed with
+        # Cilium entities instead -- see networkpolicy.yaml.
 
     existingSecretAdminPassword: harbor-admin
     existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD

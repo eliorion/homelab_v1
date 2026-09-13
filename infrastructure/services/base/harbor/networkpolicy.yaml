@@ -1,0 +1,23 @@
+# Restricts the LoadBalancer data path to the cluster and its nodes, so the UI
+# is reachable only over the tailnet Ingress.
+#
+# Entities, not CIDRs, ON PURPOSE: node and pod addresses are site-specific, so
+# a CIDR list would have to be re-derived per cluster and would silently stop a
+# newly added node from pulling. `remote-node` + `host` cover containerd on any
+# node, present or future; `cluster` covers every pod (the Dagger engine, CI,
+# and the tailscale proxy).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-nginx-ingress
+  namespace: registry
+spec:
+  endpointSelector:
+    matchLabels:
+      app: harbor
+      component: nginx
+  ingress:
+    - fromEntities:
+        - cluster
+        - host
+        - remote-node
