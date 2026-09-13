@@ -36,6 +36,7 @@ Base — the shape of the cluster, environment-independent:
 | --- | --- |
 | `keycloak/cluster.yaml` | `Cluster keycloak-db`, `instances: 2`, `initdb` database/owner `keycloak`, `storage.size: 10Gi` |
 | `ai-gateway/cluster.yaml` | `Cluster ai-gateway-db` in namespace `ai-gateway`, `instances: 2`, `initdb` database/owner `bifrost` with `encoding: UTF8`, `storage.size: 20Gi` |
+| `harbor/cluster.yaml` | `Cluster harbor-db`, `instances: 2`, `initdb` database/owner `harbor`, `storage.size: 20Gi`. Namespace `registry` comes from the staging overlay. No backup wiring yet — see `../harbor/README.md`. |
 | `*/kustomization.yaml` | one resource each, `cluster.yaml` |
 
 Staging — everything environment-specific (bucket, endpoint, credential,

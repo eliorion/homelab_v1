@@ -11,13 +11,17 @@
   },
   "registries": {
     "docker.io": {
-      "mirrors": ["registry.eliorion.fr:5000"],
+      "mirrors": [
+        "registry.eliorion.fr/dockerhub-proxy"
+      ],
       "http": false,
       "insecure": false,
       "ca": []
     },
     "ghcr.io": {
-      "mirrors": ["registry.eliorion.fr:5001"],
+      "mirrors": [
+        "registry.eliorion.fr/ghcr-proxy"
+      ],
       "http": false,
       "insecure": false,
       "ca": []

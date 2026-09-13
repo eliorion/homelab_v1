@@ -1,0 +1,168 @@
+# harbor
+
+The cluster's OCI registry: a pull-through cache for `docker.io` and `ghcr.io`, a push
+target for CI, and the registry UI. Replaces the Nexus docker proxies (ports 5000/5001/5002)
+and the zot deployment that briefly preceded it.
+
+Serves a publicly-trusted Let's Encrypt certificate on `registry.eliorion.fr`, so **no client
+needs `--insecure-registry`, a CA file, or `insecure_skip_verify`** — on the LAN, on the
+tailnet, or from a laptop on hotel wifi.
+
+## How it is wired
+
+| file | what it declares |
+|---|---|
+| `namespace.yaml` | namespace `registry` |
+| `repository.yaml` | `HelmRepository harbor` → `https://helm.goharbor.io` |
+| `release.yaml` | `HelmRelease harbor`, chart `1.19.2` (app 2.15.2), `targetNamespace: registry` |
+| `certificate.yaml` | `Certificate registry-tls` for `registry.eliorion.fr` |
+| `nginx-cert-reload.yaml` | hourly CronJob + scoped RBAC that rolls `harbor-nginx` when the cert changes |
+| `../databases/harbor/cluster.yaml` | CNPG `Cluster harbor-db`, 2 instances, 20Gi |
+| `../../staging/harbor/harbor-admin.enc.yaml` | SOPS admin password |
+
+Exposed on the Cilium LB-IPAM address **192.168.1.112** (the address zot held), ports 80/443.
+The Cloudflare A record for `registry.eliorion.fr` is grey-cloud (unproxied): the name resolves
+publicly, the address stays RFC1918, and DNS-01 issuance needs no inbound reachability.
+
+## Transparent pull-through — the whole point
+
+Requirement: `docker.io/library/nginx` must hit the local cache **without rewriting the image
+reference** in any chart, Dockerfile or pod spec.
+
+Harbor's proxy cache is **project-scoped** — its real path is
+`/v2/dockerhub-proxy/library/nginx`. So the rewrite happens in each client's *mirror* config,
+never in the image reference. On Talos that is `overridePath`, which is Sidero's own documented
+Harbor shape (Talos ships a unit test named `TestGenerateHostsWithHarbor`).
+
+A pull of `docker.io/library/nginx:latest` goes out as:
+
+```
+HEAD https://registry.eliorion.fr/v2/dockerhub-proxy/library/nginx/manifests/latest?ns=docker.io
+```
+
+### The path is spelled DIFFERENTLY per client. This is the trap.
+
+| client | value | why |
+|---|---|---|
+| Talos | `https://registry.eliorion.fr/v2/dockerhub-proxy` + `overridePath: true` | scheme **and** `/v2`; `overridePath` stops containerd appending a second `/v2` |
+| Dagger engine (`../dagger/config/engine.json`) | `registry.eliorion.fr/dockerhub-proxy` | **no scheme, no `/v2`** — BuildKit does `path.Join("/v2", mirrorPath)` itself. Adding `/v2` yields `/v2/v2/…` and 404s every pull |
+| k3s / k3d (asp `e2e_common.py`) | full URL with `/v2/<project>` | generated `registries.yaml` |
+| Docker daemon | **cannot** be transparent | Docker's `registry-mirrors` is Docker-Hub-only and accepts no path. Pull by full name instead |
+
+### Both proxy projects MUST be Public
+
+A public Harbor project grants `repository:pull` to the anonymous user. That is what makes
+pulls work with **no `imagePullSecrets` and no node credentials** — it is the mechanism for
+"any container, no configuration", not a cosmetic setting. Private projects break the
+requirement.
+
+## Talos mirror config
+
+Lives in `bootstraping/talconfig.yaml` as standalone `RegistryMirrorConfig` documents, **not**
+`machine.registries.mirrors`. That matters: in the legacy block `overridePath` is a
+*mirror-level* bool fanned onto every endpoint, which would strip `/v2` from the upstream
+fallback too and break it. In document form it is per-endpoint. (`machine.registries` is also
+deprecated in Talos v1.13.4.)
+
+Three absolutes:
+
+- **Never set `skipFallback`.** It promotes the last endpoint to containerd's `server =` root
+  and removes the implicit upstream. Harbor runs *inside* the cluster it feeds, so that turns a
+  Harbor outage into a cold-start deadlock on all three control planes at once.
+- **Never define a `*` mirror.** Talos reserves it for the on-node image cache, and node images
+  come from `factory.talos.dev` — a host with no Harbor project.
+- Mirrors carry `capabilities = ['pull','resolve']`; **push never traverses a mirror.** CI
+  pushes to `registry.eliorion.fr/<project>/…` by real name.
+
+Apply it **last**, and only once `openssl x509` on the `registry-tls` Secret shows an **ISRG**
+issuer — containerd rejects an untrusted (staging) chain on every node simultaneously. One node
+at a time, verifying a real pull between each:
+
+```bash
+talosctl -n 192.168.1.101 read /etc/cri/conf.d/hosts/docker.io/hosts.toml
+# expect: override_path = true under the Harbor host, and NO `server =` line
+```
+
+## Certificate renewal — the one regression versus zot
+
+zot watched its certificate with fsnotify and reloaded in place. **Harbor's nginx does not.**
+Its image is stock `nginx -g 'daemon off;'`, and the chart emits no `checksum/secret` under
+`certSource: secret`. Left alone, a cert-manager renewal is not picked up and the registry
+serves an expired certificate — a scheduled ~60-day total CI outage.
+
+`nginx-cert-reload.yaml` closes it: hourly, it sha256s the live `tls.crt`, compares it to an
+annotation on the `harbor-nginx` Deployment, and patches the annotation (rolling the pod) only
+when they differ. Its RBAC is scoped by `resourceNames` to that one Secret and that one
+Deployment.
+
+Prove it before trusting prod:
+
+```bash
+cmctl renew registry-tls -n registry
+# within the hour: harbor-nginx rolls, and the new leaf is served
+openssl s_client -connect registry.eliorion.fr:443 </dev/null 2>/dev/null | openssl x509 -noout -dates
+```
+
+## Proxy projects are runtime state, not manifests
+
+A chart cannot express them. After Harbor is up, create one registry endpoint and one **public**
+proxy-cache project per upstream:
+
+```bash
+# dockerhub-proxy  → https://hub.docker.com   (type: docker-hub)
+# ghcr-proxy       → https://ghcr.io          (type: github-ghcr)
+```
+
+Attach upstream credentials to the Docker Hub endpoint — an authenticated cache raises the
+anonymous rate limit considerably.
+
+Verify each before touching any client config:
+
+```bash
+curl -sI https://registry.eliorion.fr/v2/dockerhub-proxy/library/nginx/manifests/latest
+```
+
+## Why it is like this
+
+**External CNPG, not the bundled Postgres.** Harbor's database holds project config, RBAC,
+robot accounts and scan history — none of it reproducible. The house pattern is CNPG (nine
+clusters already), so it gets backups and failover the way everything else does. Redis stays
+bundled: it is a pure cache.
+
+**`externalURL` must equal the hostname clients actually use, exactly.** It pins the token-auth
+realm, portal redirects, webhook payload URLs and scanner callbacks. A mismatch produces
+authentication failures that look like a broken registry.
+
+**Blobs on `ssd-single`, not `hdd`.** `hdd` is SeaweedFS, a network filesystem. Registry content
+is reproducible, so a single node-local replica is the right trade; `ssd` would replicate every
+layer over DRBD on the hottest write path.
+
+**Chart pinned, and do not drop to app 2.15.0** — proxy-cache pulls were broken there
+(`goharbor/harbor#23025`, fixed 2026-04-13). Proxy cache is the feature this deployment exists
+for, so treat a working pull through each project as a release gate, not an assumption.
+
+## Rejected
+
+**Per-upstream hostnames** (`dockerhub.eliorion.fr`, `ghcr.eliorion.fr`). Harbor supports
+exactly one hostname (`goharbor/harbor#8243`, still open — one `externalURL`, one ingress host).
+It would need an external L7 proxy per hostname that prepends `/v2/<project>/` *and* relays
+Harbor's `Www-Authenticate: Bearer realm=…` challenge — more moving parts for an identical
+outcome, since every path-capable client handles paths natively. There is also no external-dns,
+so each hostname is a manual Cloudflare record.
+
+**zot**, which this replaces. It satisfied transparent pull-through *structurally* — one
+upstream per port, so containerd needed no path rewriting — in ~380Mi across one pod, with no
+database. Harbor costs roughly 5× the requests, ~9× the pods, a database in the critical path,
+and makes transparency conditional on per-client config rather than automatic. It was chosen
+anyway for the UI, projects/RBAC/robot accounts/quotas/retention, built-in Trivy scanning,
+replication, and Keycloak OIDC — none of which zot has.
+
+## Known gaps
+
+- **No backup wiring yet.** `harbor-db` has no ObjectStore or ScheduledBackup, unlike
+  `keycloak-db` and `ai-gateway-db`. Scan history and robot accounts would be lost on a cluster
+  rebuild; projects are cheap to recreate. Follow the `keycloak/` pattern in
+  `../databases/README.md` to add it.
+- **OIDC is not enabled.** Login is the local admin account from `harbor-admin.enc.yaml`.
+  Keycloak wiring is additive and independent; it was deferred so the registry could be proven
+  working first.

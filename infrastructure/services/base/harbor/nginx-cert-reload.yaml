@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: harbor-nginx-cert-reload
+  namespace: registry
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: harbor-nginx-cert-reload
+  namespace: registry
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+    resourceNames: ["registry-tls"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch"]
+    resourceNames: ["harbor-nginx"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: harbor-nginx-cert-reload
+  namespace: registry
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: harbor-nginx-cert-reload
+subjects:
+  - kind: ServiceAccount
+    name: harbor-nginx-cert-reload
+    namespace: registry
+---
+# Harbor's nginx does not watch its certificate file and the chart emits no
+# checksum/secret under certSource: secret, so a cert-manager renewal is NOT
+# picked up. Without this, every renewal is a total registry outage. See README.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: harbor-nginx-cert-reload
+  namespace: registry
+spec:
+  schedule: "17 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app: harbor-nginx-cert-reload
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: harbor-nginx-cert-reload
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: reload
+              image: docker.io/alpine/k8s:1.31.2
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  live=$(kubectl -n registry get secret registry-tls \
+                           -o jsonpath='{.data.tls\.crt}' \
+                         | base64 -d | sha256sum | cut -c1-16)
+                  seen=$(kubectl -n registry get deploy harbor-nginx \
+                           -o jsonpath='{.spec.template.metadata.annotations.harbor\.eliorion\.fr/tls-sha}' \
+                         2>/dev/null || true)
+                  if [ "$live" = "$seen" ]; then
+                    echo "cert unchanged ($live); nothing to do"
+                    exit 0
+                  fi
+                  echo "cert changed: '$seen' -> '$live'; rolling harbor-nginx"
+                  kubectl -n registry patch deploy harbor-nginx --type=merge \
+                    -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"harbor.eliorion.fr/tls-sha\":\"$live\"}}}}}"
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 128Mi
