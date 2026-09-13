@@ -7,3 +7,4 @@ resources:
   - release.yaml
   - nginx-cert-reload.yaml
   - ingress-tailscale.yaml
+  - networkpolicy.yaml

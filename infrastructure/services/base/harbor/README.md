@@ -139,7 +139,21 @@ proxy-cache project per upstream:
 ```
 
 Attach upstream credentials to the Docker Hub endpoint — an authenticated cache raises the
-anonymous rate limit considerably.
+anonymous rate limit considerably. `ghcr-proxy` **requires** them: the eliorion packages are
+private, and without credentials Harbor answers
+`404 repository ghcr-proxy/... not found`. The PAT comes from the central
+`ghcr-pull-secret`, which reflector mirrors into this namespace.
+
+**API trap:** *creating* a registry endpoint takes a nested `credential` object, but
+*updating* one takes **flat** `credential_type` / `access_key` / `access_secret`. A PUT with
+the nested form returns **200 and silently stores nothing**, and
+`POST /registries/ping` then still returns 200 because ghcr.io answers anonymously for public
+repos. Always read the endpoint back and check `credential.access_key` is non-null.
+
+`ghcr-proxy` is **private** (unlike `dockerhub-proxy`): it holds private images, and a public
+project would let anything that can reach Harbor pull them anonymously. Pulling from it
+therefore needs credentials — which is why the node-level mirror for `ghcr.io` also needs
+`machine.registries.config` auth in the Talos config, not just a mirror entry.
 
 Verify each before touching any client config:
 
