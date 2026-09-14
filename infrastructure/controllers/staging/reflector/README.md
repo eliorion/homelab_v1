@@ -50,8 +50,10 @@ encrypted secret.
   namespaces, so consuming namespaces need no annotation of their own. Workloads simply
   reference `imagePullSecrets: [{name: ghcr-pull-secret}]` (for example
   `apps/staging/scraper/release.yaml`), or, for the lab chart, set
-  `imagePullSecretReflect.source: "reflector/ghcr-pull-secret"` and let the chart generate
-  the stub (`apps/staging/lab/release.yaml`).
+  `imagePullSecretReflect.enabled: true`, which adds that same name and nothing else
+  (`apps/staging/lab/release.yaml`). **No manifest may declare this Secret's `data`** — a
+  stub whose `data` Helm owns is re-applied over the mirrored credential on every upgrade,
+  and reflector's version check then refuses to heal it (`apps/staging/lab/README.md`).
 - DB credentials, explicit stubs: each CNPG cluster permits reflection through
   `apps/staging/databases/<project>/cluster-reflector-patch.yaml` (`reflection-allowed` /
   `reflection-allowed-namespaces` via CNPG `inheritedMetadata`). The permit list is not the

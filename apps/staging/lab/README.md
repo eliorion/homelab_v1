@@ -46,8 +46,7 @@ Values set in `release.yaml`:
 | `projects` | `asp`, `fbref` |
 | `tailscale.expose` | `true` |
 | `auth.disableToken` | `true` |
-| `imagePullSecretReflect.enabled` | `true` |
-| `imagePullSecretReflect.source` | `reflector/ghcr-pull-secret` |
+| `imagePullSecretReflect.enabled` | `true` — adds `ghcr-pull-secret` to the pods' `imagePullSecrets`; the Secret itself is reflector's |
 
 Each lab is reached on the tailnet at `http://lab-asp.<tailnet>.ts.net:8888` and
 `http://lab-fbref.<tailnet>.ts.net:8888`.
@@ -75,12 +74,12 @@ token, the same model the admin UIs use: the lab is only reachable through the T
 operator, so being on the tailnet is the authentication. The consequence is explicit — anyone on
 the tailnet gets that lab's read-only database access.
 
-**The private image is pulled without a public package.** `imagePullSecretReflect` makes the
-chart generate a stub Secret in the `lab` namespace and adds it to the pods' `imagePullSecrets`;
-the reflector controller fills that stub from the canonical `reflector/ghcr-pull-secret`. The
-source secret already permits reflection into `lab` (its
-`reflection-allowed-namespaces` lists `asp,fbref,lab,scraper`), so no per-namespace annotation
-is needed here. See
+**The private image is pulled without a public package.** `imagePullSecretReflect` adds
+`ghcr-pull-secret` to the pods' `imagePullSecrets` and nothing else — the Secret itself is
+created and owned by the reflector controller, which auto-mirrors the canonical
+`reflector/ghcr-pull-secret` into every namespace its `reflection-auto-namespaces` lists
+(`asp,fbref,lab,scraper,registry`), so no per-namespace annotation and no stub are needed here.
+The chart deliberately does not template that Secret: see the trap below. See
 [`../../../infrastructure/controllers/staging/reflector/README.md`](../../../infrastructure/controllers/staging/reflector/README.md).
 
 **The namespace needs no PodSecurity exemption.** The lab pods run non-root with a read-only
@@ -102,9 +101,11 @@ leaves the project namespace — see
   (`apps/staging/databases/<project>/cluster-reflector-patch.yaml`). With only the first, the
   chart-generated stub Secret in `lab` stays empty and the pod cannot reach its database. Note
   that `scraper` deliberately does not permit `lab`.
-- **`imagePullSecretReflect.source` is `namespace/name` of the central secret**, i.e.
-  `reflector/ghcr-pull-secret`. Point it anywhere else and the stub is never filled, so the pod
-  cannot pull the private GHCR image.
+- **Nothing here may declare `ghcr-pull-secret`'s `data`.** It is referenced by name only,
+  because reflector owns it. The pod's access to the private GHCR image therefore rests on one
+  thing: `lab` staying in `reflection-auto-namespaces` on `reflector/ghcr-pull-secret`. Drop it
+  from that list and the Secret silently disappears — there is no placeholder and no error, just
+  `ImagePullBackOff`.
 - **`auth.disableToken: true` means there is no second factor.** The tailnet is the only auth
   boundary; do not expose these Services any other way.
 - **Do not add reflect-stub Secrets to `kustomization.yaml`.** The chart generates them; a
@@ -119,20 +120,31 @@ leaves the project namespace — see
   `reconcileStrategy: Revision` means a new commit to that path rolls the labs. The
   GitRepository `ignore` block is what keeps unrelated `asp` commits from doing so.
 
-- **A Helm re-apply empties the reflected pull Secret, and reflector will not refill it.** The
-  chart owns `ghcr-pull-secret` and re-applies it as `{}` while leaving the
-  `reflected-version` annotation intact, so reflector compares versions, decides the copy is
-  current, and logs `Validated 4` — leaving an empty Secret and `401 Unauthorized` on every image
-  pull. Hit on 2026-08-24 resuming the suspended release. Fix:
+- **A Helm re-apply used to empty the reflected pull Secret — FIXED, and this is why.** The
+  chart templated `ghcr-pull-secret` with a hardcoded `data: .dockerconfigjson: e30=`
+  placeholder, so the field sat in Helm's stored manifest and every upgrade *or rollback*
+  three-way-merged `{}` back over what reflector had written. Reflector left its
+  `reflected-version` annotation intact, compared it against an unchanged source, decided the
+  copy was current and logged `Validated 4` — an empty Secret and `401 Unauthorized` on every
+  image pull. That is a re-break on every release, not only on lab ones. Hit 2026-08-24
+  resuming the suspended release, and again 2026-09-14, which is when the chart stopped
+  templating the Secret at all (`eliorion/asp`, `k8s/charts/lab`). The four other namespaces
+  the source auto-reflects into (`asp`, `fbref`, `scraper`, `registry`) were never affected —
+  no release ships the object there, which is exactly the shape `lab` now has too.
+
+  If the symptom ever returns, the Secret is empty and its `reflected-version` is stale:
   ```bash
+  kubectl -n lab get secret ghcr-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d
+  # "{}" means blank. Who wrote it last:
+  kubectl -n lab get secret ghcr-pull-secret --show-managed-fields -o json | grep -A3 dockerconfigjson
+  # Refill:
   kubectl -n lab annotate secret ghcr-pull-secret \
     reflector.v1.k8s.emberstack.com/reflected-version- --overwrite
   kubectl -n reflector annotate secret ghcr-pull-secret refresh-trigger="$(date -u +%s)" --overwrite
   kubectl -n lab delete pod --all
   ```
-  Check the other three namespaces the source permits (`asp`, `fbref`, `scraper`) with
-  `kubectl -n <ns> get secret ghcr-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d`
-  — an empty `{}` is the symptom, and only a namespace whose release was re-applied is affected.
+  A `helm-controller` entry owning `f:data.f:.dockerconfigjson` means some manifest has started
+  declaring that Secret again — fix that, not the symptom.
 ## Operating it
 
 Park or wake a single lab, and reach it without the tailnet:
