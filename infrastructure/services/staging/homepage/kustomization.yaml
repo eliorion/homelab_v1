@@ -16,4 +16,4 @@ configMapGenerator:
   - name: homepage-env
     literals:
       # Must match the device name in ingress-tailscale.yaml, or every request 400s.
-      - HOMEPAGE_ALLOWED_HOSTS=home.tail45b0ca.ts.net
+      - HOMEPAGE_ALLOWED_HOSTS=homepage.tail45b0ca.ts.net

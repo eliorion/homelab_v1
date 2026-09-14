@@ -13,4 +13,4 @@ spec:
   tls:
     # Device name; must match HOMEPAGE_ALLOWED_HOSTS in kustomization.yaml.
     - hosts:
-        - home
+        - homepage

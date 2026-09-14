@@ -19,7 +19,10 @@ layout:
   Cloudflare tunnel:
     style: row
     columns: 3
-  Tailnet:
+  Tailnet connections:
+    style: row
+    columns: 3
+  Tailnet devices:
     style: column
   Cloudflare:
     style: row
