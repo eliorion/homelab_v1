@@ -1,0 +1,89 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: dagger
+  namespace: flux-system
+spec:
+  targetNamespace: dagger
+  releaseName: dagger
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: dagger-helm
+      # Also the engine image tag (engine:v<chart version>). Must stay CLI-compatible. See README.
+      version: "1.0.0-beta.13"
+      sourceRef:
+        kind: HelmRepository
+        name: dagger
+        namespace: flux-system
+      interval: 12h
+  # Install retries too: the first install races the prune of the old StatefulSet. See README.
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    # Yields pod dagger-engine-0: must match DAGGER_RUNNER_HOST and rbac.yaml resourceNames.
+    fullnameOverride: dagger
+    engine:
+      kind: StatefulSet
+      labels:
+        # PodMonitor selector, monitoring/configs/staging/dagger-ci.
+        app: dagger-engine
+      statefulSet:
+        persistentVolumeClaim:
+          enabled: true
+          # Node-local, one replica; never `hdd`. See README.
+          storageClassName: ssd-single
+          resources:
+            requests:
+              storage: 100Gi
+      # Do not enable: dataVolume shadows the PVC with a node hostPath.
+      hostPath:
+        dataVolume:
+          enabled: false
+        runVolume:
+          enabled: false
+      # Filled from config/engine.json by the replacement in kustomization.yaml.
+      configJson: ""
+      env:
+        # Undocumented, experimental; scraped by monitoring/configs/staging/dagger-ci.
+        - name: _EXPERIMENTAL_DAGGER_METRICS_ADDR
+          value: 0.0.0.0:9090
+      # Never set engine.port: it opens the engine API on plaintext TCP.
+      containerPorts:
+        - name: metrics
+          containerPort: 9090
+      volumes:
+        - name: harbor-ca
+          configMap:
+            name: dagger-harbor-ca
+      volumeMounts:
+        # engine.json `ca` path; a missing file is a total pull outage. See README.
+        - name: harbor-ca
+          mountPath: /etc/dagger/harbor-ca.pem
+          subPath: harbor-ca.pem
+          readOnly: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              # cp1 excluded on purpose; ssd-single is node-local, so this decides where the cache lives. See README.
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - staging-controlplane-2
+                      - staging-controlplane-3
+      resources:
+        requests:
+          cpu: 500m
+          memory: 2Gi
+        limits:
+          # No CPU limit on purpose. See README.
+          memory: 8Gi
+      terminationGracePeriodSeconds: 30

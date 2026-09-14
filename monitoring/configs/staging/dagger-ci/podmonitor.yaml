@@ -14,5 +14,5 @@ spec:
     matchLabels:
       app: dagger-engine
   podMetricsEndpoints:
-    # Named in infrastructure/services/base/dagger/statefulset.yaml.
+    # Named in infrastructure/services/base/dagger/release.yaml.
     - port: metrics

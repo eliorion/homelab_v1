@@ -4,47 +4,76 @@ The build engine for the CI pipeline. Runners hold no Docker daemon: they run
 `dagger call`, which connects here and executes the whole pipeline as containers
 inside this engine.
 
-## Why StatefulSet and not Deployment
+## Deployed with the upstream Helm chart
 
-`/var/lib/dagger` contains a **`buildkitd.lock`**. Two engine processes cannot
-share one volume — this is a documented blocker, not a theoretical one. So
-persistence *plus* more than one replica **forces** a volume per pod, and
-`volumeClaimTemplates` is the only thing that provides it. A Deployment can
-only offer either one shared volume (corruption) or `emptyDir` (a cache that
-dies on every restart, reschedule, drain and version bump).
+| File | What it does |
+|---|---|
+| `repository.yaml` | `HelmRepository/dagger` in `flux-system`, `type: oci`, `oci://registry.dagger.io`. |
+| `release.yaml` | `HelmRelease/dagger` → chart `dagger-helm`, `targetNamespace: dagger`. |
+| `kustomization.yaml` | Namespace + RBAC, the Harbor CA ConfigMap, and the replacement that feeds `config/engine.json` into the release. |
+| `config/engine.json` | The engine's own config (GC, security, registries). Content, not annotation. |
+| `config/harbor-ca.pem` | The LE staging roots `engine.json` pins for Harbor. |
 
-The stable pod names are the second reason. Clients pick their engine
-deterministically:
+The chart replaced a hand-written StatefulSet (two replicas, headless Service). Its values
+keep every property that one had:
+
+- **`engine.kind: StatefulSet` + `persistentVolumeClaim`.** `/var/lib/dagger` holds a
+  **`buildkitd.lock`**, so a persistent cache needs one volume per engine, which only
+  `volumeClaimTemplates` gives. The chart's default `DaemonSet` would put the cache on a
+  node `hostPath` (the Talos EPHEMERAL partition) instead of a sized LINSTOR volume.
+- **`hostPath.dataVolume.enabled: false`.** The chart defaults it on even for a
+  StatefulSet, and it declares a second `data` volume that shadows the PVC.
+- **`fullnameOverride: dagger`.** The chart names the StatefulSet `<fullname>-engine`,
+  so the pod stays `dagger-engine-0` — the name in the `DAGGER_RUNNER_HOST` repo
+  variable and in `rbac.yaml` `resourceNames`. The release name alone would give
+  `dagger-dagger-helm-engine-0` and silently break both.
+- **`engine.labels.app: dagger-engine`** keeps the PodMonitor selector matching; the
+  chart's own selector label is `name: dagger-engine`.
+
+**One replica.** The chart hardcodes `replicas: 1` for a StatefulSet. That loses nothing
+in practice: `DAGGER_RUNNER_HOST` pinned every CI run to `dagger-engine-0`, and
+`dagger-engine-1` sat idle. The hash-based client spread
+(`IDX=$(( 0x$(printf %s "$SERVICE" | sha1sum | cut -c1-2) % 2 ))`) was never wired.
+Getting a second engine back means a `postRenderers` patch on `replicas` plus an
+anti-affinity rule and a second `resourceNames` entry.
+
+**Chart version = engine version.** The chart's image defaults to
+`registry.dagger.io/engine:v<chart version>`, so `engine.image.ref` is left unset and
+there is a single pin. See [Version pin](#version-pin).
+
+### Cutover from the hand-written StatefulSet
+
+The HelmRelease creates a StatefulSet with the **same name** the Kustomization is
+pruning. If helm-controller installs before the prune lands, Helm refuses to adopt it
+(`invalid ownership metadata`); `install.remediation.retries: 3` retries until the
+old object is gone. The selector changed (`app` → `name`), so the new StatefulSet
+never adopts the old pods.
+
+The volume claim template is named `data`, not `cache`, so the new engine starts
+with an empty cache on `data-dagger-engine-0`. The old claims are **retained** — a
+StatefulSet deletion never removes PVCs — and hold 200Gi of `ssd-single` until
+deleted by hand:
 
 ```bash
-IDX=$(( 0x$(printf %s "$SERVICE" | sha1sum | cut -c1-2) % 2 ))
-export _EXPERIMENTAL_DAGGER_RUNNER_HOST="kube-pod://dagger-engine-$IDX?namespace=dagger"
+kubectl -n dagger delete pvc cache-dagger-engine-0 cache-dagger-engine-1
 ```
-
-so a given service always lands on the same warm cache while both replicas stay
-in use. A round-robin Service would cold-miss roughly half the time, which
-defeats the point of persisting the cache at all.
-
-| | Deployment ×2 emptyDir | **StatefulSet ×2 PVC** | DaemonSet + host disk |
-|---|---|---|---|
-| lock safety | safe | safe | safe |
-| cache across restart | lost | **survives** | survives until node loss |
-| cache hit rate | ~50% | ~100% | ~100%, 3 caches |
-| addressing | `tcp://` — plaintext, unauthenticated | `kube-pod://` — apiserver TLS + authz | `kube-pod://$(hostname)` |
-| Talos fit | fine | fine | poor: read-only rootfs needs a user volume |
 
 ## Connection: kube-pod://, never tcp://
 
 Dagger's own documentation states that `tcp://` sends every query and response
 in plaintext with no authentication. `kube-pod://` execs a session helper
 through the apiserver instead, so the transport is the apiserver's TLS and the
-authorization is Kubernetes RBAC. There is deliberately **no TCP listener** and
-the Service is headless — it exists only because a StatefulSet requires one.
+authorization is Kubernetes RBAC. There is deliberately **no TCP listener**:
+`engine.port` stays unset, because the chart turns it into
+`--addr tcp://0.0.0.0:<port>`.
+
+The chart does render a ClusterIP Service, `dagger`, because `engine.containerPorts`
+is set. It carries only the `metrics` port (see [Metrics](#metrics)), which is
+already reachable at the pod IP.
 
 ## Security
 
-`rbac.yaml` grants `pods/get` + `pods/exec` on exactly `dagger-engine-0` and
-`dagger-engine-1`.
+`rbac.yaml` grants `pods/get` + `pods/exec` on exactly `dagger-engine-0`.
 
 **Exec into a privileged pod is node-root-equivalent.** Anything holding that
 Role can run code as root on cp2 or cp3. That is inherent to Dagger on
@@ -56,29 +85,42 @@ Kubernetes, and it drives three rules:
 3. **Fork pull requests must never run on runners bound to this Role.** Gate on
    `github.event.pull_request.head.repo.full_name == github.repository`.
 
-## Both config files must exist
+## Engine config
 
-The image ships **two** files in `/etc/dagger`: `engine.json` (Dagger's own
-schema — GC, security, registries) and `engine.toml` (BuildKit's). The
-entrypoint runs `dagger-engine --config /etc/dagger/engine.toml`.
+`config/engine.json` stays a plain JSON file. A kustomize `replacement` copies it into
+the release's `engine.configJson` at build time; the carrier ConfigMap is marked
+`config.kubernetes.io/local-config` so it never reaches the cluster. The chart then
+renders its own `dagger-engine-config` ConfigMap and stamps a `checksum/config`
+annotation, so an `engine.json` change rolls the engine.
 
-Mounting the ConfigMap at `/etc/dagger` **replaces the whole directory**, so a
-ConfigMap carrying only `engine.json` deletes `engine.toml`. The engine then
-falls back to parsing the JSON as TOML and CrashLoops on its opening brace:
+The rejected alternatives: Flux `valuesFrom` with `targetPath` parses the value with
+Helm's `--set` grammar, which splits on commas and mangles any JSON object; inlining
+the JSON in `release.yaml` would bury the config inside YAML.
+
+The chart mounts `engine.json` with a **`subPath`**, so the image's own
+`/etc/dagger/engine.toml` (empty) stays in place. The old StatefulSet mounted a
+ConfigMap over the whole `/etc/dagger` directory, which deleted `engine.toml` and
+CrashLooped the engine on its entrypoint's `--config /etc/dagger/engine.toml`:
 
 ```
 dagger-engine: (1, 1): parsing error: keys cannot contain { character
 failed to parse config
 ```
 
-`config/engine.toml` is therefore committed empty and generated alongside
-`engine.json`. Do not drop it because it looks like it holds nothing — its
-existence is the point.
+That trap is why a comment-only `engine.toml` used to be committed. Setting
+`engine.config` would bring a TOML file back; nothing needs one.
 
-And the container passes **no `args`**. `--config` is BuildKit's flag and parses
-TOML only, so `--config /etc/dagger/engine.json` appended a second `--config`
-that won and aimed the TOML parser at the JSON. `engine.json` needs no flag at
-all — `/etc/dagger/engine.json` is a hardcoded path inside the engine binary.
+**No `engine.args`.** `--config` is BuildKit's flag and parses TOML only, so
+`--config /etc/dagger/engine.json` appends a second `--config` that wins and aims the
+TOML parser at the JSON. `engine.json` needs no flag at all —
+`/etc/dagger/engine.json` is a hardcoded path inside the engine binary.
+
+**The Harbor CA ConfigMap has a fixed name** (`disableNameSuffixHash`). It is
+referenced from HelmRelease values in `flux-system`, and kustomize's name-reference
+rewrite only matches objects in the same namespace, so a hash suffix would never
+reach the volume. A `subPath` mount never picks up an update either: after changing
+`harbor-ca.pem`, run `kubectl -n dagger rollout restart statefulset dagger-engine`.
+The file pins the LE staging roots, so a certificate renewal does not change it.
 
 `security.insecureRootCapabilities: true` in `engine.json` is needed only for
 the e2e leg, which runs k3s nested inside a Dagger container. If that approach
@@ -86,7 +128,7 @@ is abandoned, set it `false` — the engine is meaningfully safer without it.
 
 ## Cache sizing
 
-100Gi `ssd-single` per pod, with `engine.json` GC set to `maxUsedSpace: 70GB`,
+100Gi `ssd-single` (`data-dagger-engine-0`), with `engine.json` GC set to `maxUsedSpace: 70GB`,
 `reservedSpace: 10GB`, `minFreeSpace: 20%`. The GC ceiling is deliberately well
 under the volume size: BuildKit measures its own store, not the filesystem, and
 a full volume fails builds in confusing ways rather than evicting.
@@ -97,22 +139,26 @@ pipeline for bytes that are disposable by definition. `hdd` (SeaweedFS) is
 disqualified outright: `/var/lib/dagger` holds live container filesystems, and a
 network filesystem there is a known performance killer.
 
-**Accepted trade-off:** a node-local volume means that if cp2 dies,
-`dagger-engine-0` stays `Pending` until it returns. That is what the second
-replica covers, and it is why `nodeAffinity` is `required` on cp2/cp3 (cp1 has
-~210GiB free and hosts Nexus) with `podAntiAffinity` keeping one engine per node.
-Two engines on one node would contend for the same page cache and CPU while
-pretending to be independent capacity.
+**Accepted trade-off:** a node-local volume means that if the node holding
+`data-dagger-engine-0` dies, the engine stays `Pending` until it returns, and CI
+has no engine — the same outcome as before, since every run was already pinned to
+`dagger-engine-0`. Deleting the PVC lets it reschedule onto the other node with a
+cold cache. `nodeAffinity` is `required` on cp2/cp3 because cp1 has ~210GiB free and
+hosts Nexus; `WaitForFirstConsumer` binds the volume wherever the pod first lands.
 
 ## Pod spec choices
 
 - **`privileged: true` is non-negotiable.** The engine is BuildKit: it creates
-  containers, manages snapshots and mounts.
+  containers, manages snapshots and mounts. The chart hardcodes it, plus
+  `capabilities: ALL`, `runAsUser: 0` and `fsGroup: 1001`.
 - **No CPU limit, memory limit 8Gi.** A throttled builder makes every job slower
   for no isolation benefit on a dedicated node pair.
-- **`terminationGracePeriodSeconds: 30`.** An engine restart throws away in-flight
-  builds either way; CI should not wait for a graceful shutdown that cannot
-  preserve them.
+- **`terminationGracePeriodSeconds: 30`**, down from the chart's 300. An engine
+  restart throws away in-flight builds either way; CI should not wait for a
+  graceful shutdown that cannot preserve them.
+- **Probes are the chart's** (`dagger core version`), replacing
+  `buildctl debug workers`. `dagger core` prints a deprecation notice in 1.0 but
+  still answers; re-check the probe after an engine bump.
 
 ## Metrics
 
@@ -194,8 +240,19 @@ wrong, the cause is a cache *key* that is too coarse, not a stale entry.
 
 ## Version pin
 
-`registry.dagger.io/engine:v0.21.9`, pinned in `statefulset.yaml`.
+Chart `dagger-helm` `1.0.0-beta.13` in `release.yaml`, which deploys
+`registry.dagger.io/engine:v1.0.0-beta.13`.
 
-**The engine and the `dagger` CLI must be version-compatible.** The CLI version
-used by CI lives in `asp/.github/versions.env` as `DAGGER_VERSION`; bump both in
-the same change or sessions fail with a protocol mismatch.
+**The engine and the `dagger` CLI must be version-compatible.** Two CLIs talk to it:
+
+- the local CLI, `http:dagger` in `asp/mise.toml` (1.0 betas are published on
+  dl.dagger.io only, never as GitHub releases, so mise's default aqua backend 404s);
+- the CI CLI, `DAGGER_VERSION` in `asp/.github/versions.env`, installed by
+  `ensure-tool.sh` from GitHub release assets.
+
+Measured 2026-09-14 against a local `engine:v1.0.0-beta.13`: a `0.21.9` CLI and a
+`1.0.0-beta.13` CLI both connect and load the asp module (`dagger.json`
+`engineVersion: v0.21.9`) with `dagger functions`. A 1.0 CLI suggests
+`dagger workspace migrate`; that rewrites the module's config and is a separate
+change. Check the `dagger-ci` dashboard after every bump: the metrics variable is
+experimental.
