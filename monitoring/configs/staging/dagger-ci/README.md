@@ -59,9 +59,12 @@ excludes `dagger-*` services (unbounded span names, see
 TraceQL metrics read the stored blocks directly and only ever group by `status`,
 so they cost no Prometheus series.
 
-**Step output is queried by `service_name=~"dagger-.+"`.** Step stdout/stderr is
-emitted under the engine's resource (`dagger-engine`), while the CLI's own messages
-come from `dagger-cli`; module runtimes add `dagger-go-sdk`. The regex keeps all of
+**Step output is queried by `service_name=~"dagger-.+"`.** Verified on the first run
+(2026-09-14): step stdout/stderr arrives in Loki as `service_name="dagger-engine"`,
+the CLI's own messages as `dagger-cli`; module runtimes can add `dagger-go-sdk`.
+Tempo names the same engine spans `unknown_service:dagger-engine` — the forwarded
+span resource lacks `service.name` — which is why the trace-to-logs link matches on
+`trace_id`/`span_id` instead of the service. The regex keeps all of
 them for one trace. Each OTLP record is one *write*, not one line, and keeps ANSI
 colour codes — Grafana's logs panel renders those.
 
