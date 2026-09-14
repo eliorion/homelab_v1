@@ -1,0 +1,32 @@
+title: Homelab
+theme: dark
+color: slate
+headerStyle: boxed
+statusStyle: dot
+layout:
+  Observability:
+    style: row
+    columns: 2
+  Platform:
+    style: row
+    columns: 3
+  Storage:
+    style: row
+    columns: 2
+  Apps:
+    style: row
+    columns: 5
+  Cloudflare tunnel:
+    style: row
+    columns: 3
+  Tailnet:
+    style: column
+  Cloudflare:
+    style: row
+    columns: 4
+  Tailscale:
+    style: row
+    columns: 4
+  GitHub:
+    style: row
+    columns: 3

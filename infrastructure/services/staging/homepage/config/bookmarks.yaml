@@ -1,0 +1,38 @@
+- Cloudflare:
+    - Tunnels:
+        - icon: si-cloudflare
+          href: https://one.dash.cloudflare.com/{{HOMEPAGE_VAR_CF_ACCOUNT_ID}}/networks/tunnels
+    - DNS eliorion.fr:
+        - icon: si-cloudflare
+          href: https://dash.cloudflare.com/{{HOMEPAGE_VAR_CF_ACCOUNT_ID}}/eliorion.fr/dns/records
+    - R2:
+        - icon: si-cloudflare
+          href: https://dash.cloudflare.com/{{HOMEPAGE_VAR_CF_ACCOUNT_ID}}/r2/overview
+    - API tokens:
+        - icon: si-cloudflare
+          href: https://dash.cloudflare.com/profile/api-tokens
+
+- Tailscale:
+    - Machines:
+        - icon: si-tailscale
+          href: https://login.tailscale.com/admin/machines
+    - Access controls:
+        - icon: si-tailscale
+          href: https://login.tailscale.com/admin/acls
+    - DNS:
+        - icon: si-tailscale
+          href: https://login.tailscale.com/admin/dns
+    - Keys:
+        - icon: si-tailscale
+          href: https://login.tailscale.com/admin/settings/keys
+
+- GitHub:
+    - homelab_v1:
+        - icon: si-github
+          href: https://github.com/eliorion/homelab_v1
+    - Pull requests:
+        - icon: si-github
+          href: https://github.com/eliorion/homelab_v1/pulls
+    - Actions:
+        - icon: si-github
+          href: https://github.com/eliorion/homelab_v1/actions
