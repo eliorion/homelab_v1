@@ -1,10 +1,11 @@
 # homepage
 
 One page with every admin UI a click away, the cluster's CPU and memory, pod
-status next to each UI, the Cloudflare tunnel's health, and which tailnet
-devices are online. It runs [Homepage](https://gethomepage.dev) as a plain
-Deployment in the `homepage` namespace and is published on the tailnet at
-`https://home.tail45b0ca.ts.net` and nowhere else.
+status next to each UI, the Cloudflare tunnel's health, whether the cluster can
+reach each tailnet device it depends on, and which tailnet devices are online.
+It runs [Homepage](https://gethomepage.dev) as a plain Deployment in the
+`homepage` namespace and is published on the tailnet at
+`https://homepage.tail45b0ca.ts.net` and nowhere else.
 
 ## How it is wired
 
@@ -23,7 +24,7 @@ Staging — `infrastructure/services/staging/homepage/`: what this cluster's pag
 | File | What it does |
 |---|---|
 | `kustomization.yaml` | The base, the Ingress and the Secret, plus two generators: `homepage-config` from `config/*.yaml`, and `homepage-env` carrying `HOMEPAGE_ALLOWED_HOSTS`. |
-| `ingress-tailscale.yaml` | `Ingress` with `ingressClassName: tailscale`, `defaultBackend` → `homepage:3000`, `tls.hosts: [home]`. HTTPS on 443 with a MagicDNS certificate. |
+| `ingress-tailscale.yaml` | `Ingress` with `ingressClassName: tailscale`, `defaultBackend` → `homepage:3000`, `tls.hosts: [homepage]`. HTTPS on 443 with a MagicDNS certificate. |
 | `homepage-secrets.enc.yaml` | SOPS Secret: Cloudflare account ID, tunnel ID and API token, and the Tailscale API token, as `HOMEPAGE_VAR_*` env vars. |
 | `homepage-secrets.enc.yaml.example` | Its plaintext template. |
 | `config/settings.yaml` | Title, theme, and the group order and column layout. |
@@ -54,11 +55,31 @@ memory from `metrics.k8s.io`. metrics-server is installed by Talos
 
 - *Cloudflare tunnel* — the `cloudflared` widget: tunnel status and origin IP,
   from the Cloudflare API.
-- *Tailnet* — a `customapi` widget in `dynamic-list` mode over
+- *Tailnet devices* — a `customapi` widget in `dynamic-list` mode over
   `GET https://api.tailscale.com/api/v2/tailnet/-/devices`, one row per device,
   `connectedToControl` remapped to online/offline. It covers the whole tailnet
   with one token and no device IDs, which the built-in `tailscale` widget (one
   device per widget, by ID) cannot.
+
+**Tailnet connections** — one tile per egress Service in
+`infrastructure/controllers/staging/tailscale-operator/egress-proxies.yaml`, the
+paths the cluster itself dials into the tailnet. These answer a different
+question from the device list: not "is the device logged in to Tailscale" but
+"can the cluster reach it right now, on the port that matters". Each tile has two
+signals, so a failure says which half broke:
+
+- pod status of the operator's egress proxy pod
+  (`tailscale.com/parent-resource=<service>,tailscale.com/parent-resource-type=svc`)
+  — the cluster side;
+- for the three Garage nodes, a `siteMonitor` on
+  `http://garage-node-<x>.tailscale.svc.cluster.local:3900` — the same name and
+  port the HAProxy gateway health-checks, so it crosses the egress proxy and the
+  tailnet to the node. An unauthenticated S3 request returns `403`, which counts
+  as up; a node that is off or unreachable is a connection error.
+
+The *Garage gateway* tile checks `garage-s3.garage-gw.svc:3900`, up while at
+least one node answers. Per-node backend state beyond that is on HAProxy's
+`/stats` page (`../garage-gateway/README.md`).
 
 **Bookmarks** — Cloudflare (tunnels, DNS, R2, API tokens), Tailscale (machines,
 ACL, DNS, keys), GitHub (repo, PRs, Actions). The Cloudflare links are built from
@@ -128,15 +149,27 @@ itself and so cannot take an `emptyDir`. `/app/config` must also be writable
 ## Traps
 
 - **`HOMEPAGE_ALLOWED_HOSTS` must equal the tailnet hostname**, exactly as the
-  proxy sends it: `home.tail45b0ca.ts.net`, no port. Rename the device in
+  proxy sends it: `homepage.tail45b0ca.ts.net`, no port. Rename the device in
   `ingress-tailscale.yaml` without changing the literal in `kustomization.yaml`
-  and every request returns `400 Host validation failed`.
+  and every request returns `400 Host validation failed`. After a rename, check
+  `kubectl -n homepage get ingress homepage` shows the new name without a `-1`
+  suffix — a leftover device holding the name makes MagicDNS suffix the newcomer,
+  and the suffixed Host then fails the same check. The device was renamed from
+  `home` on 2026-09-14.
 - **The probes send `Host: localhost:3000`.** The host check covers
   `/api/healthcheck` too, and a kubelet probe's default Host is the pod IP, which
   is not in the list. `localhost:3000` is always allowed.
 - **`siteMonitor` must name an in-cluster URL.** The pod is not a tailnet member
   (only the operator's proxy pods are), so a `siteMonitor` on a `*.ts.net` URL
-  never resolves and the tile shows down forever while `href` works fine.
+  never resolves and the tile shows down forever while `href` works fine. To
+  check a tailnet device, go through its egress Service in the `tailscale`
+  namespace, as the Tailnet connections tiles do.
+- **The two scraper exit tiles have no `siteMonitor`, on purpose.**
+  `tailscale-proxy-00` and `tailscale-proxy-scrape-c` are HTTP forward proxies on
+  8888; a direct request (not proxy-form) gets `500`, which Homepage renders as
+  down even when the exit works. Only the egress pod is shown. `garage-node-c`
+  shares its tailnet IP with `scrape-c`, so a green Garage node c says the
+  device is up but not that its proxy is.
 - **The Keycloak tile has no `siteMonitor`, on purpose.** Keycloak's
   NetworkPolicy (`keycloak.yaml`, `networkPolicy`) admits plain HTTP on 8080
   only from the `tailscale` namespace and HTTPS on 8443 only from `cloudflare`
@@ -152,10 +185,12 @@ itself and so cannot take an `emptyDir`. `/app/config` must also be writable
   staging `kustomization.yaml`, and a `subPath` mount in `deployment.yaml`. A file
   only in the ConfigMap is ignored; Homepage copies its skeleton instead.
 - **The Tailscale API token expires** after at most 90 days. When it does, the
-  Tailnet tile shows an API error and nothing else breaks. The widget cannot use
-  an OAuth client — it sends one static bearer token.
+  Tailnet devices tile shows an API error and nothing else breaks — the Tailnet
+  connections tiles use no token. The widget cannot use an OAuth client — it
+  sends one static bearer token.
 - **The Secret ships with two `REPLACE_ME` tokens.** Until they are filled, the
-  Cloudflare and Tailnet tiles show an API error; the rest of the page works.
+  Cloudflare tunnel and Tailnet devices tiles show an API error; the rest of the
+  page works.
 
 ## Operating it
 
@@ -194,4 +229,4 @@ kubectl -n homepage get pods,ingress
 kubectl -n homepage logs deploy/homepage --tail=50   # widget and host-check errors land here
 ```
 
-Then open `https://home.tail45b0ca.ts.net`.
+Then open `https://homepage.tail45b0ca.ts.net`.
