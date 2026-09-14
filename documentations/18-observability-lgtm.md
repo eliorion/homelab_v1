@@ -177,6 +177,27 @@ In Grafana: **Explore → Loki** `{job="talos", service="etcd"}`; **Explore → 
 search by service; **Dashboards → Dagger CI**; Prometheus targets for
 `kube-etcd`, `cilium-agent` and `dagger-engine`.
 
+### What the rollout showed (2026-09-14)
+
+- All five monitoring releases reached Ready in about three minutes after the merge;
+  Loki, Tempo and Alloy waited on kube-prometheus-stack through `dependsOn` as intended.
+- Every new scrape target came up: etcd, controller-manager and scheduler on all three
+  nodes, Cilium agent, Hubble, Envoy and operator, both Dagger engines, Loki, Tempo and
+  the Alloy pods. 301 rules loaded, none unhealthy.
+- Loki received all four file and API sources within a minute (`kubernetes-pods`,
+  `talos`, `kube-apiserver-audit`, `kubernetes-events`). Index labels stayed at
+  nine; every `dagger.io/*` attribute landed as structured metadata.
+- A `dagger-ci` run dispatched by hand produced 178 spans (all accepted by Tempo, none
+  discarded), 21 step-output log records and 46 metric points, with no exporter
+  failures. The dashboard's root-span query found the run (`ci --source=.`), both
+  TraceQL metrics panels returned series, and Prometheus gained per-step Dagger metrics
+  (`dagger_io_metrics_*`: CPU, memory, IO, network) on top of the engine's own.
+- **One bug, fixed in a follow-up:** Tempo names the engine's forwarded spans
+  `unknown_service:dagger-engine` while Loki labels the same engine's logs
+  `dagger-engine`, so the default `service.name` → `service_name` trace-to-logs
+  mapping found nothing for engine steps. The link now filters on `trace_id` and
+  `span_id` instead.
+
 ## 5. Gap analysis: is this a production-grade monitoring stack?
 
 Measured against what a production Kubernetes platform is normally expected to

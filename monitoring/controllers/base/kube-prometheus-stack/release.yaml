@@ -93,14 +93,13 @@ spec:
           access: proxy
           url: http://tempo.monitoring.svc.cluster.local:3200
           jsonData:
+            # Custom query, not a service.name tag map: Dagger engine spans report unknown_service:dagger-engine while its logs say dagger-engine.
             tracesToLogsV2:
               datasourceUid: loki
-              filterByTraceID: true
               spanStartTimeShift: "-5m"
               spanEndTimeShift: "5m"
-              tags:
-                - key: service.name
-                  value: service_name
+              customQuery: true
+              query: '{service_name=~".+"} | trace_id="$${__trace.traceId}" | span_id="$${__span.spanId}"'
             tracesToMetrics:
               datasourceUid: prometheus
             serviceMap:

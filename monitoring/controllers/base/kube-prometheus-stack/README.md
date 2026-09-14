@@ -73,9 +73,19 @@ them. The datasources are linked in every direction Grafana supports:
 | From | To | How |
 |---|---|---|
 | Loki log line | Tempo trace | `derivedFields` on the `trace_id` structured-metadata label (OTLP logs carry it) |
-| Tempo span | Loki logs | `tracesToLogsV2`: `service.name` → `service_name`, filtered by trace ID, ±5m |
+| Tempo span | Loki logs | `tracesToLogsV2` custom query: any stream, filtered by the span's `trace_id` and `span_id` structured metadata, ±5m |
 | Tempo span | Prometheus | `tracesToMetrics`, `serviceMap` (the `traces_service_graph_*` series) |
 | Prometheus exemplar | Tempo trace | `exemplarTraceIdDestinations`, label `trace_id` |
+
+**Why a custom query rather than mapping `service.name` to `service_name`.** The
+mapping is the documented default, and it broke on the first real Dagger run
+(2026-09-14): spans the engine forwards through the CLI carry
+`service.name=unknown_service:dagger-engine` in Tempo, while the same engine's log
+records carry `service_name="dagger-engine"` in Loki, so "Logs for this span" on any
+engine step queried a stream that does not exist. Matching on `trace_id` and
+`span_id` — which every OTLP log record carries — works whatever the two sides call
+the service. The `{service_name=~".+"}` selector matches every stream, which is
+affordable only because the query is bounded to the span's time window ±5m.
 
 The uids are load-bearing: the datasources reference each other by uid, and so does
 the `dagger-ci` dashboard. `url: "$${__value.raw}"` is escaped with `$$` because
