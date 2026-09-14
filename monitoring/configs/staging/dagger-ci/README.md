@@ -19,7 +19,7 @@ The full data path:
 ARC runner pod ── dagger CLI ──OTLP/HTTP──▶ alloy-receiver:4318 ─┬─ traces ──▶ Tempo
    (OTEL_EXPORTER_OTLP_*_ENDPOINT)                                ├─ logs ────▶ Loki  (service_name="dagger-engine" | "dagger-cli")
                                                                   └─ metrics ─▶ Prometheus (OTLP receiver)
-dagger-engine-{0,1} :9090/metrics ◀── PodMonitor ── Prometheus
+dagger-engine-0 :9090/metrics ◀──── PodMonitor ── Prometheus
 ```
 
 The pieces live in four places:

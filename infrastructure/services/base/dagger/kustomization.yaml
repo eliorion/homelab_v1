@@ -3,15 +3,32 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - rbac.yaml
-  - service.yaml
-  - statefulset.yaml
-# Generated so the name carries a content hash: the engine reads engine.json
-# once at start-up, so without the hash a config change would apply only on the
-# next unrelated restart.
+  - repository.yaml
+  - release.yaml
 configMapGenerator:
-  - name: dagger-engine-config
+  # Fixed name, referenced from release.yaml values: a CA change needs a rollout restart. See README.
+  - name: dagger-harbor-ca
     namespace: dagger
     files:
-      - config/engine.json
-      - config/engine.toml
       - config/harbor-ca.pem
+    options:
+      disableNameSuffixHash: true
+  # Build-time only: copied into the release's engine.configJson, then dropped (local-config).
+  - name: dagger-engine-json
+    namespace: flux-system
+    files:
+      - config/engine.json
+    options:
+      annotations:
+        config.kubernetes.io/local-config: "true"
+replacements:
+  - source:
+      kind: ConfigMap
+      name: dagger-engine-json
+      fieldPath: data.[engine.json]
+    targets:
+      - select:
+          kind: HelmRelease
+          name: dagger
+        fieldPaths:
+          - spec.values.engine.configJson

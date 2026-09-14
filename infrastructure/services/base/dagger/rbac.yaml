@@ -10,7 +10,7 @@
 # is inherent to running Dagger on Kubernetes -- it is not a flaw in this
 # manifest -- and it is why:
 #   1. the Role lives in a dedicated namespace and grants nothing cluster-wide;
-#   2. `resourceNames` pins it to exactly the two engine pods, so it cannot be
+#   2. `resourceNames` pins it to exactly the engine pod, so it cannot be
 #      used to exec into anything else that ever lands in this namespace;
 #   3. fork pull requests MUST NOT run on runners bound to it. Gate on
 #      github.event.pull_request.head.repo.full_name == github.repository.
@@ -29,13 +29,11 @@ rules:
     verbs: ["get"]
     resourceNames:
       - dagger-engine-0
-      - dagger-engine-1
   - apiGroups: [""]
     resources: ["pods/exec"]
     verbs: ["create"]
     resourceNames:
       - dagger-engine-0
-      - dagger-engine-1
 ---
 # GitHub ARC runners. Both scale sets use the default ServiceAccount in
 # arc-runners unless the chart is told otherwise; bind both explicitly rather
