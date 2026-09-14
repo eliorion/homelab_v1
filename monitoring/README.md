@@ -65,7 +65,7 @@ so its components hard-code their staging values.
 
 | Path | What it does |
 |---|---|
-| `controllers/base/kube-prometheus-stack/` | `namespace.yaml` (namespace `monitoring`, PSA `privileged`), `repository.yaml` (`HelmRepository` → `https://prometheus-community.github.io/helm-charts`), `release.yaml` (`HelmRelease`, chart `kube-prometheus-stack` pinned to `66.2.2`). |
+| `controllers/base/kube-prometheus-stack/` | `namespace.yaml` (namespace `monitoring`, PSA `privileged`), `repository.yaml` (`HelmRepository` → `https://prometheus-community.github.io/helm-charts`), `release.yaml` (`HelmRelease`, chart `kube-prometheus-stack` pinned to `91.2.1`). |
 | `controllers/staging/kube-prometheus-stack/` | `namespace: monitoring`, the base above, plus `grafana-admin.enc.yaml`. No patches. |
 | `controllers/production/kube-prometheus-stack/` | The same two resources, plus a JSON 6902 patch setting `/spec/values/grafana/ingress/enabled` to `false`. |
 

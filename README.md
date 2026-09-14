@@ -181,7 +181,7 @@ Details: [documentations/07-talos-ha-expansion.md](documentations/07-talos-ha-ex
 | Identity | Keycloak on the official operator | operator `26.7.0` | OAuth 2.1 with dynamic client registration, which hosted AI clients require | a hand written StatefulSet |
 | Certificates | cert-manager | `v1.16.2` | Issues one private namespaced CA for a single internal hop | |
 | CI | Actions Runner Controller plus Nexus | ARC `0.14.2` | Ephemeral one job per pod runners, plus a local proxy cache for PyPI, Docker Hub and GHCR | GitHub hosted runners |
-| Observability | kube-prometheus-stack | `66.2.2` | 10 hand written alert rules on top of the defaults, all routed to Telegram | |
+| Observability | kube-prometheus-stack | `91.2.1` | 10 hand written alert rules on top of the defaults, all routed to Telegram | |
 | Secrets | SOPS with age | | Only the values are ciphertext, so manifests stay reviewable in a diff | |
 | Automation | Renovate, self hosted | hourly | Keeps every pinned chart current inside the cluster | hosted GitHub App |
 
