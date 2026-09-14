@@ -141,10 +141,17 @@ Order matters in two places.
 
 1. **kube-prometheus-stack `91.2.1`** (PR #162) — merged and verified alone: all
    targets up, 249 rules loaded and healthy, Grafana 13 serving every dashboard.
-2. **Talos control-plane patch before the monitoring change reconciles.** Apply
-   one node at a time; no reboot, etcd restarts on each. The first dry-run also
-   revealed leftover Longhorn kubelet mounts and node labels that the repository
-   had already dropped; the same apply removes them.
+2. **Talos control-plane patch before the monitoring change reconciles.** The
+   dry-run of a full `apply-config` showed it would also push the Harbor registry
+   mirrors, which `talconfig.yaml` forbids while Harbor serves a letsencrypt-staging
+   chain, and remove Longhorn leftovers. So the three args went on with
+   `talosctl patch machineconfig`, node-3 → node-2 → node-1. controller-manager and
+   scheduler switched live (kube-apiserver restarted with them). etcd did not: Talos
+   stores the new spec but never restarts etcd for it, and refuses
+   `service etcd restart`. Each node was rebooted in turn after switching its CNPG
+   primaries away and draining it; between nodes, etcd `:2381` answered, DRBD
+   returned to `UpToDate` and CNPG to healthy. Only the single-instance `dbtools-db`
+   was briefly down.
 3. **Merge the observability change.** Flux applies, in dependency order:
    kube-prometheus-stack values (receivers, datasources, control-plane jobs) →
    Loki, Tempo, Alloy (`dependsOn: kube-prometheus-stack`); Cilium rolls its agents

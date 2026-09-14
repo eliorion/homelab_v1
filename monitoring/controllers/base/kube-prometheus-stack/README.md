@@ -229,9 +229,11 @@ scheduler rules now evaluate real series. etcd on control planes that also run
 every workload — including DRBD replication — is the most likely place for disk
 latency to hurt first.
 
-**Order of operations:** apply the Talos config *before* this values change
-reconciles, or the three `*Down` alerts fire until it is applied. `talosctl
-apply-config` applies these without a reboot; etcd restarts on each node in turn.
+**Order of operations:** the Talos change must be live *before* this values change
+reconciles, or `KubeControllerManagerDown`, `KubeSchedulerDown` and `etcdMembersDown`
+fire until it is. controller-manager and scheduler pick it up without a reboot; **etcd
+only after a node reboot** — Talos does not restart etcd on an `extraArgs` change. The
+procedure used is in `bootstraping/README.md` ("The control-plane metrics patch").
 
 **`KubeHpaMaxedOut` is replaced, not dropped.** The chart's rule is
 `current == max`, with no test for whether the HPA can scale at all. All three

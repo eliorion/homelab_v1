@@ -180,14 +180,42 @@ The why, the security trade and the scrape side are in
 ("Control-plane metrics"). The node IPs are repeated as `kubeEtcd.endpoints` in
 `monitoring/controllers/staging/kube-prometheus-stack/kustomization.yaml`; a node
 readdressed here must be readdressed there. Apply this patch **before** the monitoring
-change that scrapes it reconciles. It applies without a reboot; etcd restarts on each node,
-so apply one node at a time and check `talosctl -n <ip> etcd status` between nodes.
+change that scrapes it reconciles.
+
+**How it was rolled out, and why not with `apply-config`** (2026-09-14). A full
+`talosctl apply-config` of this file would also push the Harbor `RegistryMirrorConfig`
+documents, which the patch above them forbids while `registry-tls` is issued by
+letsencrypt-staging — it still is. So the three args went on as a targeted patch, one node
+at a time, touching nothing else:
+
+```bash
+cat > /tmp/cp-metrics.yaml <<'YAML'
+cluster:
+  controllerManager: {extraArgs: {bind-address: 0.0.0.0}}
+  scheduler: {extraArgs: {bind-address: 0.0.0.0}}
+  etcd: {extraArgs: {listen-metrics-urls: http://0.0.0.0:2381}}
+YAML
+talosctl -n <ip> patch machineconfig --patch @/tmp/cp-metrics.yaml --dry-run
+talosctl -n <ip> patch machineconfig --patch @/tmp/cp-metrics.yaml
+```
+
+The patch applies without a reboot, and Talos restarts kube-controller-manager,
+kube-scheduler **and kube-apiserver** on that node (the API through the VIP was unready for
+~30s on node-1). **etcd does not pick up `extraArgs` until the node reboots**: the new
+`EtcdSpec` is stored, but Talos does not restart etcd on a spec change, and
+`talosctl service etcd restart` is refused (`doesn't support restart operation via API`).
+Each node was then rebooted in turn: CNPG primaries switched over first by setting
+`status.targetPrimary`, `kubectl drain` excluding the single-instance `dbtools-db`,
+`talosctl reboot --wait`, then uncordon and wait for etcd, DRBD `UpToDate` and CNPG before
+the next node.
 
 **Live nodes carried config the repository no longer declared** (found 2026-09-14 in a
 dry-run, left over from Longhorn): a `kubelet.extraMounts` bind of `/var/lib/longhorn` on
 all three nodes, and the `node.longhorn.io/create-default-disk` label plus
-`node.longhorn.io/default-disks-config` annotation on node-1. The first `apply-config` from
-this repository removes them, restarting the kubelet. Always read
+`node.longhorn.io/default-disks-config` annotation on node-1. They are still there: the
+targeted patch above left them alone. The first full `apply-config` from this repository —
+once the Harbor condition allows one — removes them and adds the registry mirrors, restarting
+the kubelet. Always read
 `talosctl apply-config --dry-run` output before applying — but pipe it through a filter:
 the diff prints secret material from the machine config verbatim.
 
