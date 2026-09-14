@@ -16,6 +16,13 @@
 !infrastructure/services/base/dagger/config/*.json
 key.txt
 *.pem
+# ...except the Harbor CA bundle, also a configMapGenerator input. It is a PUBLIC
+# root certificate, no secret. This negation MUST come after *.pem.
+#
+# Losing it is not a soft failure: the Dagger engine returns the os.ReadFile
+# error for a missing `ca` path out of its whole registry-host builder, so
+# EVERY docker.io and ghcr.io pull fails with no upstream attempt at all.
+!infrastructure/services/base/dagger/config/harbor-ca.pem
 kubeconfig*
 *.agekey
 tls.*

@@ -20,11 +20,18 @@
     },
     "ghcr.io": {
       "mirrors": [
-        "registry.eliorion.fr/ghcr-proxy"
+        "registry.eliorion.fr/ghcr-public"
       ],
       "http": false,
       "insecure": false,
       "ca": []
+    },
+    "registry.eliorion.fr": {
+      "http": false,
+      "insecure": false,
+      "ca": [
+        "/etc/dagger/harbor-ca.pem"
+      ]
     }
   }
 }

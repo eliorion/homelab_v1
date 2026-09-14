@@ -112,6 +112,26 @@ keeps TLS valid on every path and avoids any `insecure` escape hatch.
 In-cluster resolution goes out to the LAN VIP and back via Cilium; the extra
 hop is irrelevant next to a layer pull.
 
+Harbor serves a letsencrypt-STAGING chain (there is no prod ClusterIssuer), which the
+engine's system trust store rejects — measured as
+`x509: certificate signed by unknown authority`, then `trying next host`, so every pull
+silently fell through to upstream and Harbor was never used. The dedicated
+`registry.eliorion.fr` entry pins the two LE staging ROOTS via `ca`, so a renewal needs no
+engine change. It is a separate host entry on purpose: an `insecure`/`ca` inside the
+`docker.io` block would apply to the UPSTREAM fallback host, weakening the safety net rather
+than the mirror.
+
+**NEVER break the `ca` path as a way to "turn Harbor off".** A missing or unreadable file
+makes the engine return that error out of its whole registry-host builder, so docker.io AND
+ghcr.io fail with no upstream attempt at all — a total outage, not a degraded mirror. The
+kill switch is removing the `mirrors` arrays, or unsetting `DAGGER_RUNNER_HOST`.
+
+`ghcr.io` points at **`ghcr-public`**, not `ghcr-proxy`. `engine.json` has no credentials
+field at all, and `ghcr-proxy` is private, so that mirror could only ever 401. Every ghcr
+image this module pulls is public (`astral-sh/uv`, `aquasecurity/trivy`); private
+`eliorion/*` images 404 at Harbor and fall through to ghcr.io, where the pod's pull secret
+applies.
+
 **The mirror value carries a PATH and no scheme:**
 `registry.eliorion.fr/dockerhub-proxy`. Harbor's proxy cache is project-scoped,
 and BuildKit does `path.Join("/v2", mirrorPath)` itself — writing
