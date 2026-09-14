@@ -13,17 +13,15 @@ layout:
   Storage:
     style: row
     columns: 2
+  Garage S3:
+    style: row
+    columns: 4
   Apps:
     style: row
     columns: 5
-  Cloudflare tunnel:
+  Public apps:
     style: row
     columns: 3
-  Tailnet connections:
-    style: row
-    columns: 3
-  Tailnet devices:
-    style: column
   Cloudflare:
     style: row
     columns: 4
