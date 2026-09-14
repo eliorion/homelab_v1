@@ -24,7 +24,7 @@ Base — `monitoring/controllers/base/kube-prometheus-stack/`:
 | `kustomization.yaml` | Lists `namespace.yaml`, `repository.yaml`, `release.yaml`, `hpa-maxedout-rule.yaml`. |
 | `namespace.yaml` | Namespace `monitoring`, carrying `pod-security.kubernetes.io/enforce`, `/audit` and `/warn` all set to `privileged`. |
 | `repository.yaml` | `HelmRepository/kube-prometheus-stack` in namespace `monitoring`, `https://prometheus-community.github.io/helm-charts`, `interval: 24h`. |
-| `release.yaml` | `HelmRelease/kube-prometheus-stack` in namespace `monitoring`, chart `kube-prometheus-stack` pinned to `66.2.2`, `interval: 30m` with a `12h` chart interval, `install.crds: Create`, `upgrade.crds: CreateReplace`, drift detection enabled, plus the values described below. |
+| `release.yaml` | `HelmRelease/kube-prometheus-stack` in namespace `monitoring`, chart `kube-prometheus-stack` pinned to `91.2.1`, `interval: 30m` with a `12h` chart interval, `install.crds: Create`, `upgrade.crds: CreateReplace`, drift detection enabled, plus the values described below. |
 
 The `HelmRelease` sets no `targetNamespace` and no `releaseName`: the object,
 the Helm release and every workload it creates all land in `monitoring`.
@@ -65,35 +65,51 @@ decryption. `monitoring-configs` has no `dependsOn` and reconciles straight off
 the root Kustomization. `monitoring-controllers` gained one on 2026-08-22 — see
 Storage below.
 
-### Storage: 30Gi TSDB + 10Gi grafana.db on `ceph-block`
+### Storage: 30Gi TSDB + 10Gi grafana.db on `ssd`
 
-Both claim from `ceph-block` (Rook/Ceph, HDD pool). Until 2026-08-22 they used a
-dedicated two-replica `longhorn-monitoring` class that shipped from this very
-directory, because node-1 had 17.9 GiB of schedulable headroom and a 30Gi volume
-on the three-replica default could not place its node-1 replica — Longhorn would
-bring the volume up DEGRADED rather than fail loudly. Ceph replicates at the pool
-(`size: 2`), so there is no per-volume replica count and that whole class of
-problem is gone. The class was deleted with the move.
+Both claim from `ssd` — LINSTOR/DRBD, two replicas plus a diskless tiebreaker —
+defined in `infrastructure/controllers/staging/linstor-cluster/`. The history is
+`longhorn-monitoring` (a two-replica class shipped from this directory because
+node-1 could not place a third replica), then `ceph-block` on 2026-08-22, then
+`ssd` with the storage migration in
+[17-linstor-seaweedfs-migration.md](../../../../documentations/17-linstor-seaweedfs-migration.md).
+No volume contents survived either move, deliberately: the TSDB is bounded by
+`retention: 10d`, and every dashboard is sidecar-provisioned from git.
 
-**That deletion moved the StorageClass to a different owner, and the ordering
-matters.** `longhorn-monitoring` shipped in the same Kustomization as the
-HelmRelease deliberately: a class owned elsewhere is a cross-Kustomization race
-where the PVC sits Pending, the pod with it, and the HelmRelease fails its 5m
-timeout and rolls back. `ceph-block` comes from the `rook-ceph-cluster`
-HelmRelease under `infrastructure-controllers`, so `monitoring-controllers` now
-declares `dependsOn: infrastructure-controllers`.
+**The StorageClass has a different owner, and the ordering matters.** A class
+owned by another Kustomization is a race where the PVC sits Pending, the pod with
+it, and the HelmRelease fails its 5m timeout and rolls back. `ssd` comes from
+`infrastructure-controllers`, so `monitoring-controllers` declares
+`dependsOn: infrastructure-controllers`. That is **weaker than shipping the class
+here**: `infrastructure-controllers` carries no `wait: true`, so it reports Ready
+once applied, not once LINSTOR serves volumes. On a cold bootstrap the race can
+still be lost; `retryInterval: 1m` retries it.
 
-This is **weaker than the old arrangement**, and worth knowing on a cold
-bootstrap: `infrastructure-controllers` carries no `wait: true`, so it reports
-Ready once applied rather than once the HelmRelease has reconciled. The race can
-still be lost; the difference is that `retryInterval: 1m` retries it instead of
-the class being guaranteed present.
+**Both volumes used to be `emptyDir`, and that was a bug, not a simplification.**
 
-Neither volume's contents survived the move, deliberately. The TSDB is bounded by
-`retention: 10d` and is reconstructible by definition. `grafana.db` was 265 MB
-holding exactly one user (`admin`) — every dashboard is sidecar-provisioned from
-ConfigMaps in git, so nothing in git was lost. Discarding it also re-inits the
-admin credentials from `grafana-admin`, which is the documented rotation path.
+- The TSDB on an `emptyDir` lost the whole retention window on every chart
+  upgrade, node drain and reschedule. That is why alert `activeAt` timestamps
+  across this cluster could not be trusted as onset times: "firing for N days"
+  repeatedly meant "the series was recreated N days ago". 30Gi against a measured
+  8.7 GiB is roughly 3× headroom.
+- `grafana.db` on an `emptyDir` destroyed every UI-created dashboard, user, API
+  key, annotation and unified-alerting rule on each restart. Persistence is the
+  prerequisite for ever alerting on SQL-datasource conditions from Grafana.
+
+**`deploymentStrategy: Recreate` on Grafana.** An RWO volume cannot attach to two
+pods, so the default RollingUpdate deadlocks: the new pod waits for the volume the
+old pod holds, and the HelmRelease fails on timeout. The brief outage is
+acceptable — nothing alerts through Grafana.
+
+**Rotating the Grafana admin password.** `admin.existingSecret` is only consumed
+at Grafana's *first* init against an empty database. With the PVC, editing the
+Secret alone silently does not apply. Change the Secret, then either reset it in
+place or delete the PVC to force a re-init:
+
+```sh
+kubectl -n monitoring exec deploy/kube-prometheus-stack-grafana -c grafana -- \
+  grafana cli admin reset-admin-password '<new password>'
+```
 
 ### Overlays
 
@@ -147,6 +163,92 @@ node metrics.
 `prometheus-operator-validated` onto every `PrometheusRule` after admission. It
 is not present in the rendered manifest, so with drift detection enabled Flux
 would see a permanent diff and fight the operator on every reconcile.
+
+**`kubeProxy`, `kubeControllerManager` and `kubeScheduler` are disabled.** Talos
+binds kube-controller-manager and kube-scheduler to `127.0.0.1`, and Cilium runs
+`kubeProxyReplacement: true` with `cluster.proxy.disabled: true`, so there is no
+kube-proxy at all. The chart still creates a Service and ServiceMonitor for each,
+which scrape nothing forever and hold `KubeProxyDown`,
+`KubeControllerManagerDown` and `KubeSchedulerDown` permanently firing at
+`critical`, plus two `TargetDown` warnings — three of the cluster's six firing
+criticals at the time. A permanently firing critical trains the operator to ignore
+the Telegram channel where the real `EtcdBackupStale` and CNPG alerts land.
+Disabling the jobs removed no coverage: there was never data behind them.
+
+**`kubeEtcd` is disabled: a deliberate blind spot, not an oversight.** Talos binds
+etcd's metrics listener to localhost. Making it scrapeable means setting
+`etcd.extraArgs.listen-metrics-urls` in `bootstraping/talconfig.yaml` and rolling
+all three control planes, which publishes unauthenticated plaintext etcd metrics
+on a subnet that also carries the LB-IPAM pool and the Tailscale gateway. Until
+that trade is made deliberately, the chart's 15 etcd rules are structurally
+inert — each thresholds on a series that is never ingested, with no `absent()`
+guard — so leaving them loaded advertises coverage that does not exist. Disabling
+the job removes the whole group and makes the gap greppable. The failure this
+cluster actually cares about, losing recoverable control-plane state, is covered
+by the 6-hourly etcd backup and `EtcdBackupStale`.
+
+**`KubeHpaMaxedOut` is replaced, not dropped.** The chart's rule is
+`current == max`, with no test for whether the HPA can scale at all. All three
+FlareSolverr HPAs are `minReplicas: 1` / `maxReplicas: 1` by design — FlareSolverr
+keeps sessions in per-pod memory, so a second replica is a correctness bug — which
+made `current == max` their permanent healthy state and the alert fire on all
+three continuously. It was misleading, not merely noisy: three "maxed out" HPAs
+read as saturation while the one autoscaler that can scale
+(`keda-hpa-engine-worker`, max 6) sat idle at 1. `hpa-maxedout-rule.yaml` restates
+the shipped rule verbatim — expression, `for:`, severity, annotations, runbook —
+plus one clause, `and (spec_max_replicas > spec_min_replicas)`. The disable in
+`release.yaml` and the replacement must move together, or the cluster ends up with
+neither.
+
+**kube-state-metrics has requests and no memory limit.** It declared neither and
+ran BestEffort — the first class the kubelet evicts under memory pressure — on a
+node at 193% memory-limit overcommit. Nearly every alert here derives from it, and
+each restart recreates every derived alert with a fresh `activeAt`: the pod went
+from 18 to 37 restarts between 29 July and 7 August 2026. This is not a proven fix
+for those restarts (the last one was exit 2 with no OOMKill signature), but
+BestEffort is indefensible for it either way. No memory limit, because its memory
+scales with the number of cluster objects and a fixed ceiling turns growth into an
+OOMKill loop in the component needed to see it. Measured 27Mi / 3m; 128Mi is ~5×
+headroom.
+
+## Upgrade 66.2.2 → 91.2.1 (2026-09)
+
+Twenty-five chart majors in one step, done in isolation so that a failed reconcile
+points at the chart and nothing else. What moved:
+
+| Component | Before | After |
+|---|---|---|
+| prometheus-operator (and the CRDs) | v0.78.2 | v0.94.0 |
+| Prometheus | v2.55.1 | v3.14.0, distroless |
+| Alertmanager | v0.27.0 | v0.34.0 |
+| Grafana (subchart) | 11.3.1, `grafana/grafana` 8.6.1 | 13.2.1 distroless, `grafana-community/grafana` 13.2.4 |
+| node-exporter | v1.8.2 | v1.12.1, distroless |
+| kube-state-metrics | v2.14.0 | v2.20.0 |
+
+Checked before merging, and what to re-check on the next major:
+
+- **Every `PrometheusRule` in the repository parses under Prometheus 3**
+  (`promtool check rules --lint=all`, promtool 3.14.0). No rule matches on
+  `le="…"`, whose float formatting changed in 3.0.
+- **Prometheus 3 fails a scrape whose `Content-Type` is missing or invalid**
+  instead of guessing. Every custom target sent a valid `text/plain; version=0.0.4`
+  header except `ai-gateway`, which needs basic auth and was checked after the
+  rollout instead.
+- **The Grafana subchart now comes from `grafana-community`,** but it is vendored
+  inside the kube-prometheus-stack package, so `repository.yaml` is unchanged.
+  Grafana 13 runs with `readOnlyRootFilesystem: true`; `GF_INSTALL_PLUGINS` and
+  `GF_*__FILE` no longer work. Grafana 12 removed Angular panels; the only
+  repository dashboards (`fbref-grafana`) use none.
+- **CRDs still ship inside the chart** (`charts/crds`), so Flux's
+  `install.crds: Create` / `upgrade.crds: CreateReplace` remains the mechanism.
+- **Chart 90 moved control-plane scrape auth to a Secret.** The chart now creates
+  a long-lived `<prometheus-sa>-token` Secret and the `bearerTokenFile`,
+  `insecureSkipVerify` and etcd-certificate values are gone. None were set here.
+- **The values in `release.yaml` render unchanged** on 91.2.1 (`helm template
+  --kube-version 1.36.1`), and each block was confirmed to land: node-exporter
+  security context, kube-state-metrics requests, Grafana `Recreate`, `ssd` PVCs,
+  the Alertmanager Secret mount, the host-less tailnet Ingress, and
+  `KubeHpaMaxedOut` absent from the default rules.
 
 ## Grafana, on the tailnet
 
@@ -230,7 +332,7 @@ directory (`monitoring/configs/staging/kube-prometheus-stack/`) went with it.
   404s while the Ingress, the device and the certificate all look healthy. Empty
   renders a host-less rule, which matches any Host. The tailnet name belongs in
   `tls.hosts`, and only there.
-- **The chart version is pinned and Renovate bumps it.** `66.2.2` here. A major
+- **The chart version is pinned and Renovate bumps it.** `91.2.1` here. A major
   bump of this chart moves the bundled Prometheus, Alertmanager and Grafana
   versions and can change the CRD schemas that the rest of the repository is
   written against.

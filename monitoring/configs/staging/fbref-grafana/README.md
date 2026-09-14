@@ -34,7 +34,7 @@ Flux applies this directory through the `monitoring-configs` Kustomization
 sops`), via the resource list in `../kustomization.yaml`.
 
 Grafana itself is the chart's, installed by the `kube-prometheus-stack`
-HelmRelease (chart `66.2.2`,
+HelmRelease (chart `91.2.1`,
 [`../../../controllers/base/kube-prometheus-stack/release.yaml`](../../../controllers/base/kube-prometheus-stack/release.yaml),
 UI at `https://grafana.<tailnet>.ts.net`). That HelmRelease sets no
 `grafana.sidecar` values, so the chart defaults apply: the sidecars watch the
