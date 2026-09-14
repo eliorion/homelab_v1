@@ -142,11 +142,12 @@ itself and so cannot take an `emptyDir`. `/app/config` must also be writable
   only from the `tailscale` namespace and HTTPS on 8443 only from `cloudflare`
   and `identity`; the rest is TLS signed by a private CA that Homepage does not
   trust. Pod status still works — it goes through the API server, not the pod.
-- **Pod selectors were read from the manifests, not from a live cluster.**
-  Charts whose labels are not in git (Radar, Monica, LINSTOR, SeaweedFS) use
-  `podSelector: ""`, which counts every pod in the namespace (a `Succeeded` Job
-  pod counts as healthy). A tile reading "not found" means its selector matches
-  nothing: check with `kubectl -n <ns> get pods --show-labels`.
+- **Pod selectors are copied, not derived.** Every one was checked against the
+  live cluster on 2026-09-14; a chart upgrade that renames labels breaks the tile
+  silently. Radar, LINSTOR and SeaweedFS use `podSelector: ""`, which counts every
+  pod in the namespace (a `Succeeded` Job pod counts as healthy) — for the two
+  storage tiers that is the point. A tile reading "not found" means its selector
+  matches nothing: check with `kubectl -n <ns> get pods --show-labels`.
 - **Mounting a new config file needs two edits**: the generator list in the
   staging `kustomization.yaml`, and a `subPath` mount in `deployment.yaml`. A file
   only in the ConfigMap is ignored; Homepage copies its skeleton instead.

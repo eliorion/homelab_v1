@@ -65,6 +65,14 @@
         namespace: nexus
         app: nexus3
         podSelector: app.kubernetes.io/name=nexus3,app.kubernetes.io/instance=nexus
+    - Harbor:
+        icon: harbor.png
+        href: https://harbor.tail45b0ca.ts.net/harbor/projects
+        description: Registry and pull-through cache
+        siteMonitor: http://harbor-core.registry.svc:80/api/v2.0/ping
+        namespace: registry
+        app: harbor
+        podSelector: app.kubernetes.io/part-of=harbor
 
 - Storage:
     - LINSTOR:
@@ -100,7 +108,6 @@
         siteMonitor: http://monica.monica.svc:8080/up
         namespace: monica
         app: monica
-        podSelector: ""
     - asp admin:
         icon: mdi-soccer
         href: http://asp-admin-ui.tail45b0ca.ts.net:8080
@@ -144,6 +151,14 @@
         namespace: azuracast
         app: azuracast
         podSelector: app=azuracast
+    - Nextcloud:
+        icon: nextcloud.png
+        href: https://staging-nextcloud.eliorion.fr/
+        description: File sync and share
+        siteMonitor: https://staging-nextcloud.eliorion.fr/status.php
+        namespace: nextcloud
+        app: nextcloud
+        podSelector: app=nextcloud
     - nao (public):
         icon: mdi-chart-box-outline
         href: https://nao.eliorion.fr
