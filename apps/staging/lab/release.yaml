@@ -41,7 +41,7 @@ spec:
     # No Jupyter token — the tailnet is the only auth boundary.
     auth:
       disableToken: true
-    # Reflect the central pull secret into the lab ns; source is `namespace/name`.
+    # Reference the central pull secret, which reflector auto-mirrors into the lab
+    # ns. Nothing here may declare that Secret's `data` — see the trap below.
     imagePullSecretReflect:
       enabled: true
-      source: "reflector/ghcr-pull-secret" # pragma: allowlist secret
