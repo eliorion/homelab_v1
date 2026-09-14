@@ -54,6 +54,36 @@ Values in `release.yaml`, block by block:
 - **`prometheus-node-exporter.containerSecurityContext`** —
   `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`,
   `capabilities.drop: ["ALL"]`.
+- **`prometheus.prometheusSpec.enableRemoteWriteReceiver`, `enableOTLPReceiver`,
+  `enableFeatures: [exemplar-storage]`** — Prometheus accepts pushes as well as
+  scrapes: Tempo's metrics-generator remote-writes span metrics and service graphs
+  to `/api/v1/write` (with exemplars), and `alloy-receiver` forwards OTLP metrics to
+  `/api/v1/otlp/v1/metrics`. See "Traces and logs datasources" below.
+- **`grafana.additionalDataSources`** — `Loki` (uid `loki`) and `Tempo` (uid
+  `tempo`), plus `grafana.sidecar.datasources.exemplarTraceIdDestinations` on the
+  chart's own Prometheus datasource.
+
+### Traces and logs datasources
+
+Loki, Tempo and Alloy are separate releases next to this one
+([`../loki`](../loki/README.md), [`../tempo`](../tempo/README.md),
+[`../alloy`](../alloy/README.md)); this release only wires Grafana and Prometheus to
+them. The datasources are linked in every direction Grafana supports:
+
+| From | To | How |
+|---|---|---|
+| Loki log line | Tempo trace | `derivedFields` on the `trace_id` structured-metadata label (OTLP logs carry it) |
+| Tempo span | Loki logs | `tracesToLogsV2`: `service.name` → `service_name`, filtered by trace ID, ±5m |
+| Tempo span | Prometheus | `tracesToMetrics`, `serviceMap` (the `traces_service_graph_*` series) |
+| Prometheus exemplar | Tempo trace | `exemplarTraceIdDestinations`, label `trace_id` |
+
+The uids are load-bearing: the datasources reference each other by uid, and so does
+the `dagger-ci` dashboard. `url: "$${__value.raw}"` is escaped with `$$` because
+Grafana expands `${…}` in provisioning files as environment variables.
+
+**The push receivers are unauthenticated.** Anything in the cluster that can reach
+`kube-prometheus-stack-prometheus:9090` can write series. There is no network
+policy in this cluster; the Service is not exposed outside it.
 
 Flux side. `clusters/staging/monitoring.yaml` and
 `clusters/production/monitoring.yaml` declare a `monitoring-controllers`
@@ -115,7 +145,9 @@ kubectl -n monitoring exec deploy/kube-prometheus-stack-grafana -c grafana -- \
 
 - **staging** — `monitoring/controllers/staging/kube-prometheus-stack/kustomization.yaml`
   sets `namespace: monitoring` and pulls in `../../base/kube-prometheus-stack/`
-  plus `grafana-admin.enc.yaml`. No patches; the base values apply as written.
+  plus `grafana-admin.enc.yaml`, and one JSON 6902 patch replacing
+  `/spec/values/kubeEtcd` with `enabled: true` and the three control-plane IPs as
+  `endpoints` — environment-specific, so not in `base/`.
   It is referenced from `monitoring/controllers/staging/kustomization.yaml`.
 - **production** — the same two resources, plus one JSON 6902 patch on the
   `HelmRelease` that replaces `/spec/values/grafana/ingress/enabled` with
@@ -164,28 +196,42 @@ node metrics.
 is not present in the rendered manifest, so with drift detection enabled Flux
 would see a permanent diff and fight the operator on every reconcile.
 
-**`kubeProxy`, `kubeControllerManager` and `kubeScheduler` are disabled.** Talos
-binds kube-controller-manager and kube-scheduler to `127.0.0.1`, and Cilium runs
-`kubeProxyReplacement: true` with `cluster.proxy.disabled: true`, so there is no
-kube-proxy at all. The chart still creates a Service and ServiceMonitor for each,
-which scrape nothing forever and hold `KubeProxyDown`,
-`KubeControllerManagerDown` and `KubeSchedulerDown` permanently firing at
-`critical`, plus two `TargetDown` warnings — three of the cluster's six firing
-criticals at the time. A permanently firing critical trains the operator to ignore
-the Telegram channel where the real `EtcdBackupStale` and CNPG alerts land.
-Disabling the jobs removed no coverage: there was never data behind them.
+**`kubeProxy` is disabled.** Cilium runs `kubeProxyReplacement: true` with
+`cluster.proxy.disabled: true`, so there is no kube-proxy at all. The chart would
+still create a Service and ServiceMonitor that scrape nothing and hold
+`KubeProxyDown` permanently firing at `critical`. A permanently firing critical
+trains the operator to ignore the Telegram channel where real alerts land.
 
-**`kubeEtcd` is disabled: a deliberate blind spot, not an oversight.** Talos binds
-etcd's metrics listener to localhost. Making it scrapeable means setting
-`etcd.extraArgs.listen-metrics-urls` in `bootstraping/talconfig.yaml` and rolling
-all three control planes, which publishes unauthenticated plaintext etcd metrics
-on a subnet that also carries the LB-IPAM pool and the Tailscale gateway. Until
-that trade is made deliberately, the chart's 15 etcd rules are structurally
-inert — each thresholds on a series that is never ingested, with no `absent()`
-guard — so leaving them loaded advertises coverage that does not exist. Disabling
-the job removes the whole group and makes the gap greppable. The failure this
-cluster actually cares about, losing recoverable control-plane state, is covered
-by the 6-hourly etcd backup and `EtcdBackupStale`.
+### Control-plane metrics: controller-manager, scheduler, etcd
+
+Until 2026-09 all three jobs were disabled. Talos binds kube-controller-manager and
+kube-scheduler to `127.0.0.1` and etcd's metrics listener to localhost, so the
+chart's scrapes reached nothing and `KubeControllerManagerDown`,
+`KubeSchedulerDown` and the whole etcd rule group were either permanently firing
+or structurally inert. They are now scraped, which took a node-config change and
+a trade:
+
+| Job | Talos change (`bootstraping/talconfig.yaml`) | Scrape |
+|---|---|---|
+| kube-controller-manager | `cluster.controllerManager.extraArgs.bind-address: 0.0.0.0` | HTTPS `:10257`, Prometheus SA bearer token, `insecureSkipVerify` (self-signed serving cert); Service selects the static pods by `component` |
+| kube-scheduler | `cluster.scheduler.extraArgs.bind-address: 0.0.0.0` | HTTPS `:10259`, same |
+| etcd | `cluster.etcd.extraArgs.listen-metrics-urls: http://0.0.0.0:2381` | HTTP `:2381`; etcd is a Talos host service, not a pod, so the staging overlay lists the node IPs as `kubeEtcd.endpoints` |
+
+**The trade, accepted deliberately:** `:2381` serves etcd's metrics and `/health`
+**unauthenticated and in plaintext** on every node's LAN address, a subnet that also
+carries the LB-IPAM pool and the Tailscale gateway. Metrics reveal sizes, latencies
+and member IDs, not keys or values. controller-manager and scheduler stay
+authenticated and authorised behind their HTTPS ports.
+
+What it buys: the chart's etcd group (`etcdNoLeader`, `etcdHighFsyncDurations`,
+`etcdMembersDown`, `etcdDatabaseQuotaLowSpace`, …) and the controller-manager and
+scheduler rules now evaluate real series. etcd on control planes that also run
+every workload — including DRBD replication — is the most likely place for disk
+latency to hurt first.
+
+**Order of operations:** apply the Talos config *before* this values change
+reconciles, or the three `*Down` alerts fire until it is applied. `talosctl
+apply-config` applies these without a reboot; etcd restarts on each node in turn.
 
 **`KubeHpaMaxedOut` is replaced, not dropped.** The chart's rule is
 `current == max`, with no test for whether the HPA can scale at all. All three

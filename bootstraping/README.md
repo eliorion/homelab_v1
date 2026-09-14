@@ -149,7 +149,6 @@ Hostnames are hyphenated because Kubernetes rejects underscores in node names.
 | `kubelet.defaultRuntimeSeccompProfileEnabled: true` | Pods with no seccomp profile get `RuntimeDefault` instead of unconfined. |
 | `kubelet.disableManifestsDirectory: true` | Turns off the static-pod directory, so the only way to run something on a node is through the API. |
 | `kubelet.extraArgs.rotate-server-certificates: true` | The kubelet requests its serving certificate from the cluster CA by CSR. Paired with the `kubelet-serving-cert-approver` manifest below. |
-| `kubelet.extraMounts` → `/var/lib/longhorn` (`bind`, `rshared`, `rw`) | Longhorn's data path has to be visible inside the kubelet mount namespace with shared propagation. |
 | `install.wipe: false` | Applying a config does not wipe the install disk. |
 | `install.grubUseUKICmdline: true` | GRUB boots with the kernel command line carried in the UKI. |
 | `features.diskQuotaSupport: true` | XFS project quotas for ephemeral storage limits. |
@@ -167,6 +166,30 @@ Hostnames are hyphenated because Kubernetes rejects underscores in node names.
 | `extraManifests` → `kubelet-serving-cert-approver` | Approves the kubelet serving CSRs produced by `rotate-server-certificates`. Nothing in core Kubernetes approves them. |
 | `extraManifests` → `metrics-server` | The cluster's only metrics-server. It is a Talos manifest, not a Flux HelmRelease — `kubectl top` depends on this layer. |
 | `extraManifests` → gateway-api `v1.4.1` `standard-install.yaml` + experimental `tlsroutes.yaml` | The Gateway API CRDs Cilium 1.19 needs. Plain CRDs with no secret material in them, so fetching them by URL at boot is safe. TLSRoute is included only so the Cilium operator stops logging a missing CRD. |
+
+### The control-plane metrics patch
+
+| Setting | What it is for |
+|---|---|
+| `controllerManager.extraArgs.bind-address: 0.0.0.0` | Talos binds kube-controller-manager to `127.0.0.1`; Prometheus scrapes `:10257` over HTTPS with a bearer token. |
+| `scheduler.extraArgs.bind-address: 0.0.0.0` | Same for kube-scheduler, `:10259`. |
+| `etcd.extraArgs.listen-metrics-urls: http://0.0.0.0:2381` | etcd metrics on every node address — **plaintext and unauthenticated**, a trade accepted deliberately. |
+
+The why, the security trade and the scrape side are in
+[`../monitoring/controllers/base/kube-prometheus-stack/README.md`](../monitoring/controllers/base/kube-prometheus-stack/README.md)
+("Control-plane metrics"). The node IPs are repeated as `kubeEtcd.endpoints` in
+`monitoring/controllers/staging/kube-prometheus-stack/kustomization.yaml`; a node
+readdressed here must be readdressed there. Apply this patch **before** the monitoring
+change that scrapes it reconciles. It applies without a reboot; etcd restarts on each node,
+so apply one node at a time and check `talosctl -n <ip> etcd status` between nodes.
+
+**Live nodes carried config the repository no longer declared** (found 2026-09-14 in a
+dry-run, left over from Longhorn): a `kubelet.extraMounts` bind of `/var/lib/longhorn` on
+all three nodes, and the `node.longhorn.io/create-default-disk` label plus
+`node.longhorn.io/default-disks-config` annotation on node-1. The first `apply-config` from
+this repository removes them, restarting the kubelet. Always read
+`talosctl apply-config --dry-run` output before applying — but pipe it through a filter:
+the diff prints secret material from the machine config verbatim.
 
 ## Why it is like this
 

@@ -1,0 +1,154 @@
+// alloy-node: one per node. Reads files only, so it needs no Kubernetes API access.
+
+loki.write "default" {
+	endpoint {
+		url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+	}
+}
+
+// Pod logs. Path layout: /var/log/pods/<namespace>_<pod>_<uid>/<container>/<restart>.log
+local.file_match "pods" {
+	path_targets = [{
+		"__path__" = "/var/log/pods/*/*/*.log",
+		"job"      = "kubernetes-pods",
+		"node"     = sys.env("K8S_NODE_NAME"),
+	}]
+}
+
+loki.source.file "pods" {
+	targets       = local.file_match.pods.targets
+	tail_from_end = true
+	forward_to    = [loki.process.pods.receiver]
+}
+
+loki.process "pods" {
+	stage.cri { }
+
+	stage.regex {
+		source     = "filename"
+		expression = "^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>[^_]+)_[^/]+/(?P<container>[^/]+)/"
+	}
+
+	stage.labels {
+		values = {
+			namespace = "",
+			pod       = "",
+			container = "",
+		}
+	}
+
+	// The restart counter in the file name would open a new stream per container restart.
+	stage.label_drop {
+		values = ["filename"]
+	}
+
+	forward_to = [loki.write.default.receiver]
+}
+
+// Talos service and kernel logs, which Talos writes to /var/log/<service>.log.
+local.file_match "talos" {
+	path_targets = [{
+		"__path__"         = "/var/log/*.log",
+		"__path_exclude__" = "/var/log/auditd.log",
+		"job"              = "talos",
+		"node"             = sys.env("K8S_NODE_NAME"),
+	}]
+}
+
+loki.source.file "talos" {
+	targets       = local.file_match.talos.targets
+	tail_from_end = true
+	forward_to    = [loki.process.talos.receiver]
+}
+
+loki.process "talos" {
+	stage.regex {
+		source     = "filename"
+		expression = "^/var/log/(?P<service>[^/]+)\\.log$"
+	}
+
+	stage.labels {
+		values = {
+			service = "",
+		}
+	}
+
+	stage.label_drop {
+		values = ["filename"]
+	}
+
+	// machined logs every successful Talos API call; the Homepage widgets poll it.
+	stage.match {
+		selector            = "{service=\"machined\"} |= \" OK [/\""
+		action              = "drop"
+		drop_counter_reason = "machined_api_ok"
+	}
+
+	forward_to = [loki.write.default.receiver]
+}
+
+// kube-apiserver audit log: ~100MB every 25 minutes per node before filtering. See README.
+local.file_match "audit" {
+	path_targets = [{
+		"__path__" = "/var/log/audit/kube/kube-apiserver.log",
+		"job"      = "kube-apiserver-audit",
+		"node"     = sys.env("K8S_NODE_NAME"),
+	}]
+}
+
+loki.source.file "audit" {
+	targets       = local.file_match.audit.targets
+	tail_from_end = true
+	forward_to    = [loki.process.audit.receiver]
+}
+
+loki.process "audit" {
+	stage.json {
+		expressions = {
+			stage    = "stage",
+			verb     = "verb",
+			username = "user.username",
+			resource = "objectRef.resource",
+			code     = "responseStatus.code",
+			ts       = "requestReceivedTimestamp",
+		}
+	}
+
+	stage.drop {
+		source              = "stage"
+		expression          = "^(RequestReceived|ResponseStarted)$"
+		drop_counter_reason = "audit_non_final_stage"
+	}
+
+	stage.drop {
+		source              = "verb,username,code"
+		separator           = ";"
+		expression          = "^(get|list|watch);system:[^;]*;[23][0-9][0-9]$"
+		drop_counter_reason = "audit_system_read"
+	}
+
+	stage.drop {
+		source              = "verb,resource"
+		separator           = ";"
+		expression          = "^(create|update|patch);(leases|subjectaccessreviews|tokenreviews)$"
+		drop_counter_reason = "audit_heartbeat"
+	}
+
+	stage.drop {
+		source              = "username,verb"
+		separator           = ";"
+		expression          = "^system:serviceaccount:flux-system:(kustomize|helm)-controller;patch$"
+		drop_counter_reason = "audit_flux_apply"
+	}
+
+	stage.timestamp {
+		source = "ts"
+		format = "RFC3339Nano"
+	}
+
+	stage.label_drop {
+		values = ["filename"]
+	}
+
+	forward_to = [loki.write.default.receiver]
+}

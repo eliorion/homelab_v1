@@ -6,15 +6,8 @@ metadata:
 spec:
   serviceName: dagger-engine
   replicas: 2
-  # StatefulSet, not Deployment, for one decisive reason: /var/lib/dagger holds
-  # a buildkitd.lock. Two engine pods on one RWX volume corrupt the cache, so
-  # persistence plus >1 replica FORCES a volume per pod -- which is exactly what
-  # volumeClaimTemplates gives, and a Deployment cannot.
-  #
-  # The stable names are load-bearing too: clients pick their engine with
-  #   IDX=$(( 0x$(printf %s "$SVC" | sha1sum | cut -c1-2) % 2 ))
-  # so a given service always lands on the same warm cache while both replicas
-  # stay in use. A Service round-robin would cold-miss ~50% of the time.
+  # StatefulSet, not Deployment: buildkitd.lock forces one volume per pod, and clients
+  # address dagger-engine-N by stable name. See README.
   podManagementPolicy: Parallel
   updateStrategy:
     type: RollingUpdate
@@ -26,14 +19,10 @@ spec:
       labels:
         app: dagger-engine
     spec:
-      # An engine restart throws away in-flight builds either way; do not make
-      # CI wait 30s for a graceful shutdown that cannot preserve them.
       terminationGracePeriodSeconds: 30
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            # One engine per node. Two on one node would contend for the same
-            # page cache and CPU while pretending to be independent capacity.
             - labelSelector:
                 matchLabels:
                   app: dagger-engine
@@ -41,9 +30,7 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-              # cp1 is excluded on purpose: ~210GiB free vs ~460GiB on cp2/cp3,
-              # and it already hosts Nexus. ssd-single is node-local, so this
-              # placement decides where 100Gi of cache actually lives.
+              # cp1 excluded on purpose; ssd-single is node-local, so this decides where the cache lives. See README.
               - matchExpressions:
                   - key: kubernetes.io/hostname
                     operator: In
@@ -53,20 +40,17 @@ spec:
       containers:
         - name: engine
           image: registry.dagger.io/engine:v0.21.9
-          # NO args. The entrypoint already ends with
-          #     dagger-engine --config /etc/dagger/engine.toml "$@"
-          # and --config is BuildKit's flag, which parses TOML only (its help
-          # says: path to config file, default /etc/buildkit/buildkitd.toml).
-          # Passing --config /etc/dagger/engine.json appended a SECOND --config
-          # that won, pointing the TOML parser at the JSON file, and both
-          # replicas CrashLooped on its opening brace:
-          #     (1, 1): parsing error: keys cannot contain { character
-          # engine.json needs no flag -- /etc/dagger/engine.json is a hardcoded
-          # path inside the engine binary, read automatically.
+          # NO args: --config is BuildKit's TOML-only flag and a second one CrashLoops the engine. See README.
           securityContext:
-            # Non-negotiable: the engine IS BuildKit. It creates containers,
-            # manages snapshots and mounts. It cannot run unprivileged.
+            # The engine IS BuildKit; it cannot run unprivileged.
             privileged: true
+          env:
+            # Undocumented, experimental; scraped by monitoring/configs/staging/dagger-ci.
+            - name: _EXPERIMENTAL_DAGGER_METRICS_ADDR
+              value: 0.0.0.0:9090
+          ports:
+            - name: metrics
+              containerPort: 9090
           volumeMounts:
             - name: cache
               mountPath: /var/lib/dagger
@@ -91,8 +75,7 @@ spec:
               cpu: 500m
               memory: 2Gi
             limits:
-              # No CPU limit on purpose: a throttled builder makes every job
-              # slower for no isolation benefit on a dedicated node pair.
+              # No CPU limit on purpose. See README.
               memory: 8Gi
       volumes:
         - name: config
@@ -104,11 +87,7 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
-        # ssd-single: LINSTOR, one replica, node-local. Replicating a build
-        # cache over DRBD would pay network cost on the hottest write path in
-        # the pipeline for bytes that are by definition disposable.
-        # `hdd` (SeaweedFS) is disqualified -- /var/lib/dagger holds live
-        # container filesystems and a network FS there is a known killer.
+        # Node-local, one replica; never `hdd`. See README.
         storageClassName: ssd-single
         resources:
           requests:

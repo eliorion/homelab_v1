@@ -101,6 +101,38 @@ network filesystem there is a known performance killer.
 `dagger-engine-0` stays `Pending` until it returns. That is what the second
 replica covers, and it is why `nodeAffinity` is `required` on cp2/cp3 (cp1 has
 ~210GiB free and hosts Nexus) with `podAntiAffinity` keeping one engine per node.
+Two engines on one node would contend for the same page cache and CPU while
+pretending to be independent capacity.
+
+## Pod spec choices
+
+- **`privileged: true` is non-negotiable.** The engine is BuildKit: it creates
+  containers, manages snapshots and mounts.
+- **No CPU limit, memory limit 8Gi.** A throttled builder makes every job slower
+  for no isolation benefit on a dedicated node pair.
+- **`terminationGracePeriodSeconds: 30`.** An engine restart throws away in-flight
+  builds either way; CI should not wait for a graceful shutdown that cannot
+  preserve them.
+
+## Metrics
+
+`_EXPERIMENTAL_DAGGER_METRICS_ADDR=0.0.0.0:9090` makes the engine serve Prometheus
+metrics on the `metrics` port: `dagger_connected_clients`,
+`dagger_dagql_cache_entries`, `dagger_local_cache_total_disk_size_bytes`,
+`dagger_local_cache_entries` and friends. The disk figures refresh every five
+minutes. The variable is undocumented and experimental (dagger/dagger#10555), so a
+version bump may rename or drop it — check the `dagger-ci` Grafana dashboard after
+every engine bump. The PodMonitor and the dashboard live in
+[`monitoring/configs/staging/dagger-ci/`](../../../../monitoring/configs/staging/dagger-ci/README.md).
+
+This is a **metrics** listener, not the engine API: it serves read-only
+Prometheus text, unauthenticated, to anything that can reach the pod IP. The rule
+above — no TCP listener for the engine itself, clients go through `kube-pod://` —
+is unchanged.
+
+Traces and step logs do **not** come from the engine. The `dagger` CLI in the
+runner pod pulls them over the session and exports them over OTLP; that wiring is
+in [`../../staging/arc-runner-set/README.md`](../../staging/arc-runner-set/README.md).
 
 ## Registry mirrors
 

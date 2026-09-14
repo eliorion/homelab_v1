@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - repository.yaml
+  - release-node.yaml
+  - release-receiver.yaml
+  - rbac.yaml
+# Fixed names: each HelmRelease references the ConfigMap by name, and the chart's
+# config-reloader sidecar hot-reloads a changed file without a pod restart.
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: alloy-node
+    namespace: monitoring
+    files:
+      - config.alloy=config/node.alloy
+  - name: alloy-receiver
+    namespace: monitoring
+    files:
+      - config.alloy=config/receiver.alloy

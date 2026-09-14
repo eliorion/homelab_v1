@@ -1,0 +1,75 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy-node
+  namespace: monitoring
+spec:
+  interval: 30m
+  # The chart renders a ServiceMonitor; its CRD comes from this release.
+  dependsOn:
+    - name: kube-prometheus-stack
+  chart:
+    spec:
+      chart: alloy
+      version: "1.12.1"
+      sourceRef:
+        kind: HelmRepository
+        name: alloy
+        namespace: monitoring
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    crds:
+      create: false
+    controller:
+      type: daemonset
+      volumes:
+        extra:
+          # Tail positions survive a pod restart; without them every restart re-reads or skips lines.
+          - name: positions
+            hostPath:
+              path: /var/lib/alloy-node
+              type: DirectoryOrCreate
+    alloy:
+      configMap:
+        create: false
+        # Generated in kustomization.yaml; must match its name and key.
+        name: alloy-node
+        key: config.alloy
+      storagePath: /var/lib/alloy
+      mounts:
+        varlog: true
+        extra:
+          - name: positions
+            mountPath: /var/lib/alloy
+      # Root + DAC_READ_SEARCH: the audit log is mode 0600, owned by uid 65534.
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+          add: ["DAC_READ_SEARCH"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+    # Reads files only: no Kubernetes API access. The chart default grants cluster-wide Secret reads.
+    rbac:
+      create: false
+    serviceAccount:
+      automountServiceAccountToken: false
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        release: kube-prometheus-stack

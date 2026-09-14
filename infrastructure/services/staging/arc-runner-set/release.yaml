@@ -94,6 +94,15 @@ spec:
                 value: unix:///var/run/docker.sock
               - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
                 value: "120"
+              # Dagger CLI telemetry to the in-cluster collector. LOGS needs its own full URL: the base endpoint alone does not enable logs.
+              - name: OTEL_EXPORTER_OTLP_PROTOCOL
+                value: http/protobuf
+              - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+                value: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/traces
+              - name: OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
+                value: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/logs
+              - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+                value: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/metrics
             resources:
               requests:
                 memory: 2Gi

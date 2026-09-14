@@ -103,6 +103,20 @@ concurrent e2e runs never share a node on this cluster. The label is set by the
 template itself rather than reusing the chart's auto-generated labels, so the
 selector does not depend on chart internals.
 
+**Both pools export Dagger telemetry to the in-cluster collector, not to Dagger
+Cloud.** The runner container carries `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`
+and one endpoint per signal on `alloy-receiver.monitoring.svc.cluster.local:4318`
+(see [`monitoring/controllers/base/alloy`](../../../../monitoring/controllers/base/alloy/README.md)).
+The `dagger` CLI is the exporter: it pulls the engine's spans, step logs and
+metrics over the session and forwards them, so only the runner pod needs to reach
+the collector and the engine StatefulSet carries no `OTEL_*` variable. Traces land
+in Tempo, step stdout/stderr in Loki (`service_name="dagger-engine"`, correlated by
+`trace_id`), CLI metrics in Prometheus. The `dagger-ci` Grafana dashboard reads all
+three — [`monitoring/configs/staging/dagger-ci`](../../../../monitoring/configs/staging/dagger-ci/README.md).
+Setting it on the runner rather than in each workflow of the `asp` repository
+covers every job without touching that repository; a job on a GitHub-hosted
+fallback runner simply exports nothing.
+
 **The two pools share one PAT secret.** `arc-github-pat` lives in `arc-runners`
 and both releases reference it; there is one credential for the one repository
 they both serve.
@@ -114,6 +128,22 @@ bumps them separately and nothing enforces the rule but a comment and a human.
 
 ## Traps
 
+- **`OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` must be set explicitly, with the full
+  `/v1/logs` path.** Dagger (`dagger/otel-go`) deliberately ignores the base
+  `OTEL_EXPORTER_OTLP_ENDPOINT` for logs, and the Go exporter uses the path as
+  written. Collapse the three variables into the base endpoint and traces keep
+  flowing while every step's output silently disappears. Keep `http/protobuf`:
+  Dagger's gRPC log path is unfinished (`FIXME` in source) and gRPC's 4MiB message
+  cap is smaller than a large Dagger span batch.
+- **Every OTel SDK in a job inherits these variables.** A test suite or tool
+  instrumented with OpenTelemetry will also export to the collector. That is
+  harmless, but it is where unexpected `service_name` values in Loki and Tempo
+  come from. Do not set `OTEL_EXPORTER_OTLP_TRACES_LIVE`: it sends every span
+  twice.
+- **An unreachable collector can slow or hang the CLI** (dagger/dagger#8605,
+  `failed to emit telemetry … deadline exceeded`). `alloy-receiver` is therefore a
+  plain Deployment behind a ClusterIP Service; if CI suddenly stalls at the end of
+  a `dagger call`, check that pod before the engine.
 - **The two ARC chart versions must match.** `gha-runner-scale-set` `0.14.2` in
   both files here and `gha-runner-scale-set-controller` `0.14.2` in
   `infrastructure/controllers/base/arc/release.yaml`. Align them in the same
