@@ -1,0 +1,58 @@
+// alloy-receiver: the cluster's single OTLP endpoint, plus Kubernetes events.
+
+loki.write "default" {
+	endpoint {
+		url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+	}
+}
+
+// Must stay a single replica: two instances would each ship every event.
+loki.source.kubernetes_events "cluster" {
+	job_name   = "kubernetes-events"
+	log_format = "logfmt"
+	forward_to = [loki.write.default.receiver]
+}
+
+otelcol.receiver.otlp "default" {
+	grpc {
+		endpoint = "0.0.0.0:4317"
+	}
+
+	http {
+		endpoint = "0.0.0.0:4318"
+	}
+
+	output {
+		metrics = [otelcol.processor.batch.default.input]
+		logs    = [otelcol.processor.batch.default.input]
+		traces  = [otelcol.processor.batch.default.input]
+	}
+}
+
+otelcol.processor.batch "default" {
+	output {
+		metrics = [otelcol.exporter.otlphttp.prometheus.input]
+		logs    = [otelcol.exporter.otlphttp.loki.input]
+		traces  = [otelcol.exporter.otlphttp.tempo.input]
+	}
+}
+
+// HTTP, not gRPC: Dagger span batches exceed gRPC's 4MiB default message size.
+otelcol.exporter.otlphttp "tempo" {
+	client {
+		endpoint = "http://tempo.monitoring.svc.cluster.local:4318"
+	}
+}
+
+otelcol.exporter.otlphttp "loki" {
+	client {
+		endpoint = "http://loki.monitoring.svc.cluster.local:3100/otlp"
+	}
+}
+
+// Needs prometheusSpec.enableOTLPReceiver in the kube-prometheus-stack release.
+otelcol.exporter.otlphttp "prometheus" {
+	client {
+		endpoint = "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/otlp"
+	}
+}

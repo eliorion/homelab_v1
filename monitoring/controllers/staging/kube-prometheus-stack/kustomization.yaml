@@ -4,3 +4,17 @@ namespace: monitoring
 resources:
   - ../../base/kube-prometheus-stack/
   - grafana-admin.enc.yaml
+patches:
+  # Must match the control-plane IPs in bootstraping/talconfig.yaml, whose etcd listen-metrics-urls opens :2381.
+  - target:
+      kind: HelmRelease
+      name: kube-prometheus-stack
+    patch: |-
+      - op: replace
+        path: /spec/values/kubeEtcd
+        value:
+          enabled: true
+          endpoints:
+            - 192.168.1.101
+            - 192.168.1.102
+            - 192.168.1.103

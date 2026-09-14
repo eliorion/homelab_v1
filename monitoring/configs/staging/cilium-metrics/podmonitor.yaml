@@ -1,0 +1,71 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cilium-agent
+  namespace: monitoring
+  labels:
+    # Matches Prometheus podMonitorSelector.
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      k8s-app: cilium
+  # The chart's dashboards filter on k8s_app="cilium".
+  podTargetLabels:
+    - k8s-app
+  podMetricsEndpoints:
+    - port: prometheus
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+    - port: hubble-metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cilium-operator
+  namespace: monitoring
+  labels:
+    # Matches Prometheus podMonitorSelector.
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      io.cilium/app: operator
+  # The chart's operator dashboard filters on io_cilium_app="operator".
+  podTargetLabels:
+    - io.cilium/app
+  podMetricsEndpoints:
+    - port: prometheus
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cilium-envoy
+  namespace: monitoring
+  labels:
+    # Matches Prometheus podMonitorSelector.
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      k8s-app: cilium-envoy
+  podTargetLabels:
+    - k8s-app
+  podMetricsEndpoints:
+    - port: envoy-metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node

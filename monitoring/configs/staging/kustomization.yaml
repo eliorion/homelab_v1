@@ -10,3 +10,5 @@ resources:
   - node-capacity-alerts
   - control-plane-alerts
   - ingestion-alerts
+  - cilium-metrics
+  - dagger-ci

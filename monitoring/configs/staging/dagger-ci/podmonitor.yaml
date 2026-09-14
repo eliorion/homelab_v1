@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: dagger-engine
+  namespace: monitoring
+  labels:
+    # Matches Prometheus podMonitorSelector.
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - dagger
+  selector:
+    matchLabels:
+      app: dagger-engine
+  podMetricsEndpoints:
+    # Named in infrastructure/services/base/dagger/statefulset.yaml.
+    - port: metrics

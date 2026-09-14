@@ -6,7 +6,10 @@ understand before anything else:
 - `monitoring/controllers/` installs the `kube-prometheus-stack` HelmRelease —
   Prometheus, Alertmanager, Grafana, prometheus-operator, node-exporter,
   kube-state-metrics, and the CRDs (`PodMonitor`, `ServiceMonitor`,
-  `PrometheusRule`, …) that the rest of the repository is written against.
+  `PrometheusRule`, …) that the rest of the repository is written against — plus
+  Loki (logs), Tempo (traces) and Alloy (log collection and the OTLP endpoint).
+  How the four fit together:
+  [`../documentations/18-observability-lgtm.md`](../documentations/18-observability-lgtm.md).
 - `monitoring/configs/` holds everything that *uses* that stack: scrape
   definitions, alert rules, Grafana dashboards and datasources, and the Telegram
   delivery wiring.
@@ -51,22 +54,26 @@ kustomization below is not deployed at all.
 | Path | What it does |
 |---|---|
 | `monitoring/` | Container only. **There is no `monitoring/kustomization.yaml`** and there should not be one — Flux names the overlay directories directly, so a kustomization here would be reconciled by nobody. |
-| `controllers/base/` | Holds `kube-prometheus-stack/` and nothing else. **No `controllers/base/kustomization.yaml`**, same convention as `infrastructure/controllers/base/`: overlays reference the component directory, not the tier. |
-| `controllers/staging/kustomization.yaml` | The aggregate Flux reconciles as `monitoring-controllers` in staging. One resource: `kube-prometheus-stack`. |
-| `controllers/production/kustomization.yaml` | The production aggregate. One resource: `kube-prometheus-stack`. |
-| `configs/staging/kustomization.yaml` | The aggregate Flux reconciles as `monitoring-configs`. Seven resources, listed below. No namespace transformer — every component names its own namespace. |
+| `controllers/base/` | Holds `kube-prometheus-stack/`, `loki/`, `tempo/` and `alloy/`. **No `controllers/base/kustomization.yaml`**, same convention as `infrastructure/controllers/base/`: overlays reference the component directory, not the tier. |
+| `controllers/staging/kustomization.yaml` | The aggregate Flux reconciles as `monitoring-controllers` in staging. Four resources: `kube-prometheus-stack`, `loki`, `tempo`, `alloy`. |
+| `controllers/production/kustomization.yaml` | The production aggregate. One resource: `kube-prometheus-stack` — Loki, Tempo and Alloy are staging-only, like everything else production does not deploy. |
+| `configs/staging/kustomization.yaml` | The aggregate Flux reconciles as `monitoring-configs`. Eleven resources, listed below. No namespace transformer — every component names its own namespace. |
 
 `configs/` has no `base/` and no `production/`: `staging/` is the only overlay,
 so its components hard-code their staging values.
 
 ### What the aggregates pull in
 
-`controllers/<env>/kustomization.yaml` → `kube-prometheus-stack`:
+`controllers/<env>/kustomization.yaml` → `kube-prometheus-stack` (both envs), `loki`, `tempo`, `alloy` (staging):
 
 | Path | What it does |
 |---|---|
 | `controllers/base/kube-prometheus-stack/` | `namespace.yaml` (namespace `monitoring`, PSA `privileged`), `repository.yaml` (`HelmRepository` → `https://prometheus-community.github.io/helm-charts`), `release.yaml` (`HelmRelease`, chart `kube-prometheus-stack` pinned to `91.2.1`). |
-| `controllers/staging/kube-prometheus-stack/` | `namespace: monitoring`, the base above, plus `grafana-admin.enc.yaml`. No patches. |
+| `controllers/staging/kube-prometheus-stack/` | `namespace: monitoring`, the base above, plus `grafana-admin.enc.yaml` and a patch enabling `kubeEtcd` with the node IPs. |
+| `controllers/base/loki/` | `HelmRelease` `loki` (`grafana-community/loki` `18.13.0`), Monolithic, 50Gi `ssd`, 14 days — [`controllers/base/loki/README.md`](controllers/base/loki/README.md). |
+| `controllers/base/tempo/` | `HelmRelease` `tempo` (`grafana-community/tempo` `3.0.0`), monolithic, 30Gi `ssd`, 7 days, metrics-generator → Prometheus — [`controllers/base/tempo/README.md`](controllers/base/tempo/README.md). |
+| `controllers/base/alloy/` | `HelmRelease`s `alloy-node` (DaemonSet: pod, Talos and audit log files → Loki) and `alloy-receiver` (OTLP endpoint + events) — [`controllers/base/alloy/README.md`](controllers/base/alloy/README.md). |
+| `controllers/staging/{loki,tempo,alloy}/` | Reference the base, nothing else. |
 | `controllers/production/kube-prometheus-stack/` | The same two resources, plus a JSON 6902 patch setting `/spec/values/grafana/ingress/enabled` to `false`. |
 
 `configs/staging/kustomization.yaml`, in list order:
@@ -79,6 +86,9 @@ so its components hard-code their staging values.
 | `etcd-backup-alerts/` | `PrometheusRule` `etcd-backup` — job failure and snapshot staleness. |
 | `cnpg-alerts/` | `PodMonitor` `cnpg-instances` (every CNPG pod in the cluster) and `PrometheusRule` `cnpg-alerts` (WAL archiving + volume usage). |
 | `n8n-metrics/` | `ServiceMonitor` `n8n` (created in `monitoring`, selecting namespace `n8n`, port `http`, `/metrics`, `interval: 60s`) and a `PrometheusRule` with `N8nDown` and `N8nMetricsMissing`. |
+| `node-capacity-alerts/`, `control-plane-alerts/`, `ingestion-alerts/` | `PrometheusRule`s, documented inline. |
+| `cilium-metrics/` | `PodMonitor`s for the Cilium agent, Hubble, operator and Envoy — [`configs/staging/cilium-metrics/README.md`](configs/staging/cilium-metrics/README.md). |
+| `dagger-ci/` | `PodMonitor` for the Dagger engines and the **Dagger CI** dashboard (runs from Tempo, step output from Loki) — [`configs/staging/dagger-ci/README.md`](configs/staging/dagger-ci/README.md). |
 
 The four alerting directories are documented in
 [`configs/README.md`](configs/README.md); `fbref-grafana/` and `n8n-metrics/`

@@ -312,3 +312,16 @@ patches:
         # Cilium 1.19 requires the gateway-api v1.4.1 standard channel.
         - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
         - https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.4.1/config/crd/experimental/gateway.networking.k8s.io_tlsroutes.yaml
+  # Control-plane metrics for kube-prometheus-stack (monitoring/controllers). etcd's
+  # listener is plaintext and unauthenticated: see monitoring/controllers/base/kube-prometheus-stack/README.md.
+  - |-
+    cluster:
+      controllerManager:
+        extraArgs:
+          bind-address: 0.0.0.0
+      scheduler:
+        extraArgs:
+          bind-address: 0.0.0.0
+      etcd:
+        extraArgs:
+          listen-metrics-urls: http://0.0.0.0:2381

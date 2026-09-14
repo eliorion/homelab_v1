@@ -126,7 +126,30 @@ the agent against the apiserver.
 `192.168.1.100` (announced by Talos' own ARP) and the node addresses
 `192.168.1.101`–`192.168.1.103`, and it has to sit outside the router's DHCP range.
 
+**Why metrics are on but the chart's ServiceMonitors are off.** `prometheus.enabled`
+opens the agent's metrics port (9962), `hubble.metrics.enabled` opens Hubble's (9965) with
+DNS, drop, TCP, flow, ICMP and port-distribution metrics, and the operator (9963) and Envoy
+(9964) listeners are chart defaults. The scrapes are `PodMonitor`s in
+[`monitoring/configs/staging/cilium-metrics`](../../../../monitoring/configs/staging/cilium-metrics/README.md),
+not the chart's `serviceMonitor.enabled`: this release is the CNI and installs before
+kube-prometheus-stack exists, and the chart refuses to render a ServiceMonitor without the
+prometheus-operator CRDs (`Service Monitor requires monitoring.coreos.com/v1 CRDs`). The
+Hubble metrics carry `labelsContext=source_namespace,destination_namespace` because the
+chart's namespace dashboards filter on those labels. `dashboards.enabled` (agent, operator,
+Hubble) renders six Grafana dashboard ConfigMaps into `kube-system`, which the Grafana
+sidecar picks up from every namespace.
+
 ## Traps
+
+- **Never enable `prometheus.serviceMonitor`, `operator.prometheus.serviceMonitor`,
+  `hubble.metrics.serviceMonitor` or `envoy.prometheus.serviceMonitor` here, and never set
+  `dashboards.namespace: monitoring`.** Both make the CNI install depend on something the
+  monitoring tier creates. On a cold bootstrap that is a deadlock: no CNI, so no
+  kube-prometheus-stack, so no CRDs or namespace, so no CNI. `trustCRDsExist: true` only
+  moves the failure from render time to apply time.
+- **Changing `hubble.metrics.enabled` restarts every agent** (`rollOutCiliumPods: true`).
+  Established connections survive an agent restart; expect a few seconds of policy and
+  service-map churn per node.
 
 - **`k8sServiceHost: localhost` / `k8sServicePort: 7445` must match
   `machine.features.kubePrism.port` in `bootstraping/talconfig.yaml`.** Without them,

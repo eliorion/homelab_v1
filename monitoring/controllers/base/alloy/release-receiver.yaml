@@ -1,0 +1,64 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy-receiver
+  namespace: monitoring
+spec:
+  interval: 30m
+  # The chart renders a ServiceMonitor; its CRD comes from this release.
+  dependsOn:
+    - name: kube-prometheus-stack
+  chart:
+    spec:
+      chart: alloy
+      version: "1.12.1"
+      sourceRef:
+        kind: HelmRepository
+        name: alloy
+        namespace: monitoring
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    crds:
+      create: false
+    controller:
+      type: deployment
+      # Must stay 1: loki.source.kubernetes_events has no clustering, so a second replica duplicates every event.
+      replicas: 1
+    alloy:
+      configMap:
+        create: false
+        # Generated in kustomization.yaml; must match its name and key.
+        name: alloy-receiver
+        key: config.alloy
+      # The Dagger CLI in the ARC runner pods sends here; see infrastructure/services/staging/arc-runner-set.
+      extraPorts:
+        - name: otlp-grpc
+          port: 4317
+          targetPort: 4317
+          protocol: TCP
+        - name: otlp-http
+          port: 4318
+          targetPort: 4318
+          protocol: TCP
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 1Gi
+    # Chart RBAC grants cluster-wide Secret reads; rbac.yaml grants events only.
+    rbac:
+      create: false
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        release: kube-prometheus-stack

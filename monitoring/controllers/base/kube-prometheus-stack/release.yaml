@@ -35,14 +35,10 @@ spec:
       disabled:
         # Replaced, not dropped: hpa-maxedout-rule.yaml re-adds it. The two move together.
         KubeHpaMaxedOut: true
-    # Talos binds these to 127.0.0.1 and Cilium replaces kube-proxy: enabled, they only fire *Down. See README.
+    # Cilium replaces kube-proxy: there is nothing to scrape, and the job would only fire KubeProxyDown.
     kubeProxy:
       enabled: false
-    kubeControllerManager:
-      enabled: false
-    kubeScheduler:
-      enabled: false
-    # Deliberate, documented blind spot. See README before enabling.
+    # Talos runs etcd as a host service, not a pod: the staging overlay supplies the node IPs.
     kubeEtcd:
       enabled: false
     grafana:
@@ -70,8 +66,57 @@ spec:
       # RWO volume: RollingUpdate deadlocks on the volume the old pod still holds.
       deploymentStrategy:
         type: Recreate
+      sidecar:
+        datasources:
+          exemplarTraceIdDestinations:
+            datasourceUid: tempo
+            traceIdLabelName: trace_id
+      # uids are referenced across datasources and by the dagger-ci dashboard; do not rename them.
+      additionalDataSources:
+        - name: Loki
+          uid: loki
+          type: loki
+          access: proxy
+          url: http://loki.monitoring.svc.cluster.local:3100
+          jsonData:
+            derivedFields:
+              - name: trace_id
+                matcherType: label
+                matcherRegex: trace_id
+                datasourceUid: tempo
+                # $$ escapes Grafana's provisioning env-var expansion.
+                url: "$${__value.raw}"
+                urlDisplayLabel: View trace
+        - name: Tempo
+          uid: tempo
+          type: tempo
+          access: proxy
+          url: http://tempo.monitoring.svc.cluster.local:3200
+          jsonData:
+            tracesToLogsV2:
+              datasourceUid: loki
+              filterByTraceID: true
+              spanStartTimeShift: "-5m"
+              spanEndTimeShift: "5m"
+              tags:
+                - key: service.name
+                  value: service_name
+            tracesToMetrics:
+              datasourceUid: prometheus
+            serviceMap:
+              datasourceUid: prometheus
+            nodeGraph:
+              enabled: true
+            lokiSearch:
+              datasourceUid: loki
     prometheus:
       prometheusSpec:
+        # Tempo's metrics-generator remote-writes span metrics and service graphs here.
+        enableRemoteWriteReceiver: true
+        # alloy-receiver forwards OTLP metrics here.
+        enableOTLPReceiver: true
+        enableFeatures:
+          - exemplar-storage
         storageSpec:
           volumeClaimTemplate:
             spec:

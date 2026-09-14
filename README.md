@@ -181,7 +181,7 @@ Details: [documentations/07-talos-ha-expansion.md](documentations/07-talos-ha-ex
 | Identity | Keycloak on the official operator | operator `26.7.0` | OAuth 2.1 with dynamic client registration, which hosted AI clients require | a hand written StatefulSet |
 | Certificates | cert-manager | `v1.16.2` | Issues one private namespaced CA for a single internal hop | |
 | CI | Actions Runner Controller plus Nexus | ARC `0.14.2` | Ephemeral one job per pod runners, plus a local proxy cache for PyPI, Docker Hub and GHCR | GitHub hosted runners |
-| Observability | kube-prometheus-stack | `91.2.1` | 10 hand written alert rules on top of the defaults, all routed to Telegram | |
+| Observability | kube-prometheus-stack, Loki, Tempo, Alloy | `91.2.1`, Loki `3.7.7`, Tempo `3.0.3`, Alloy `v1.19.2` | Metrics, logs (pods, Talos, filtered apiserver audit) and traces in one Grafana, alert rules routed to Telegram, Dagger CI runs traced without Dagger Cloud | Dagger Cloud, k8s-monitoring chart |
 | Secrets | SOPS with age | | Only the values are ciphertext, so manifests stay reviewable in a diff | |
 | Automation | Renovate, self hosted | hourly | Keeps every pinned chart current inside the cluster | hosted GitHub App |
 
@@ -530,3 +530,4 @@ sections are the parts worth reading.
 | 11 | [AzuraCast public relay](documentations/11-azuracast-public-relay.md) | Measuring a home uplink over the real internet, and a wrong verdict corrected |
 | 12 | [Garage object storage](documentations/12-garage-object-storage.md) | Self hosted S3, and the postmortem of the outage it caused |
 | 13 | [AzuraCast load test](documentations/13-azuracast-load-test.md) | What a listener actually costs, and the two measurement traps avoided |
+| 18 | [Observability: logs, traces, CI](documentations/18-observability-lgtm.md) | Loki, Tempo and Alloy beside kube-prometheus-stack, Dagger CI in Grafana, and the gap analysis against a production-grade setup |

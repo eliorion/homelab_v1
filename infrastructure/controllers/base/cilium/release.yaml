@@ -66,9 +66,27 @@ spec:
         enabled: true
       ui:
         enabled: true
+      # labelsContext feeds the namespace variables of the hubble-*-namespace dashboards.
+      metrics:
+        enabled:
+          - dns:labelsContext=source_namespace,destination_namespace
+          - drop:labelsContext=source_namespace,destination_namespace
+          - tcp:labelsContext=source_namespace,destination_namespace
+          - flow:labelsContext=source_namespace,destination_namespace
+          - icmp:labelsContext=source_namespace,destination_namespace
+          - port-distribution
+        dashboards:
+          enabled: true
+    # Metrics ports only. NEVER enable the chart ServiceMonitors: see README (cold-bootstrap deadlock).
+    prometheus:
+      enabled: true
+    dashboards:
+      enabled: true
     operator:
       replicas: 2
       rollOutPods: true
+      dashboards:
+        enabled: true
     rollOutCiliumPods: true
     # apiserver headroom for the l2announcements leases.
     k8sClientRateLimit:

@@ -1,0 +1,106 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  interval: 30m
+  # The chart renders a ServiceMonitor and a PrometheusRule; their CRDs come from this release.
+  dependsOn:
+    - name: kube-prometheus-stack
+  chart:
+    spec:
+      chart: loki
+      version: "18.13.0"
+      sourceRef:
+        kind: HelmRepository
+        name: loki
+        namespace: monitoring
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    deploymentMode: Monolithic
+    loki:
+      auth_enabled: false
+      commonConfig:
+        replication_factor: 1
+      schemaConfig:
+        configs:
+          - from: "2026-09-01"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: index_
+              period: 24h
+      storage:
+        type: filesystem
+      limits_config:
+        # Required by OTLP ingestion: resource and log attributes land as structured metadata.
+        allow_structured_metadata: true
+        volume_enabled: true
+        retention_period: 336h
+        ingestion_rate_mb: 16
+        ingestion_burst_size_mb: 32
+      compactor:
+        retention_enabled: true
+        delete_request_store: filesystem
+      pattern_ingester:
+        enabled: true
+    singleBinary:
+      replicas: 1
+      persistence:
+        storageClass: ssd
+        size: 50Gi
+      extraEnv:
+        - name: GOMEMLIMIT
+          value: 1800MiB
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          memory: 2Gi
+    # Every scalable target defaults to 3 replicas; non-zero here fails the Monolithic render.
+    read:
+      replicas: 0
+    write:
+      replicas: 0
+    backend:
+      replicas: 0
+    # Default chunks cache requests ~9.8Gi of memory.
+    chunksCache:
+      enabled: false
+    resultsCache:
+      enabled: false
+    gateway:
+      enabled: false
+    lokiCanary:
+      enabled: false
+    # Must follow lokiCanary: the chart test needs the canary.
+    test:
+      enabled: false
+    sidecar:
+      rules:
+        enabled: false
+    monitoring:
+      serviceMonitor:
+        enabled: true
+        labels:
+          release: kube-prometheus-stack
+      rules:
+        enabled: true
+        labels:
+          release: kube-prometheus-stack
+      alerts:
+        enabled: true
+        labels:
+          release: kube-prometheus-stack

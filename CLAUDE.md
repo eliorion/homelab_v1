@@ -23,7 +23,8 @@ and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
 `11`/`13` AzuraCast capacity, `12` Garage object storage,
 `14` design decisions, `15` node-1 spare-disk expansion,
 `16` USB disk qualification for Ceph,
-`17` LINSTOR + SeaweedFS migration.
+`17` LINSTOR + SeaweedFS migration, `18` observability (Loki, Tempo, Alloy,
+Dagger CI telemetry).
 
 ## Repo layout
 
