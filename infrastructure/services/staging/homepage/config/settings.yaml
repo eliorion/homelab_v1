@@ -3,25 +3,21 @@ theme: dark
 color: slate
 headerStyle: boxed
 statusStyle: dot
+fullWidth: true
+maxGroupColumns: 6
 layout:
   Observability:
-    style: row
-    columns: 2
+    style: column
   Platform:
-    style: row
-    columns: 3
+    style: column
   Storage:
-    style: row
-    columns: 2
+    style: column
   Garage S3:
-    style: row
-    columns: 4
+    style: column
   Apps:
-    style: row
-    columns: 5
+    style: column
   Public apps:
-    style: row
-    columns: 3
+    style: column
   Cloudflare:
     style: row
     columns: 4
