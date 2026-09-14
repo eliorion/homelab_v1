@@ -81,6 +81,10 @@ colour codes — Grafana's logs panel renders those.
   `TargetDown` fires for `dagger`.
 - **Runs on a GitHub-hosted runner never appear.** The OTLP variables are set on
   the ARC runner pods only.
+- **The "Trace" panel uses `queryType: traceId`, not `traceql`.** A bare trace ID sent
+  as TraceQL is a search, and Tempo answers `400 Bad Request` — measured on the first
+  test pass. With no trace selected the panel shows "trace id is required"; that is
+  expected until a run is clicked.
 - **`nestedSetParent < 0` is Tempo's root-span test.** A run whose root span was
   dropped (for example `TRACE_TOO_LARGE`) is missing from the table even though
   its steps are searchable.

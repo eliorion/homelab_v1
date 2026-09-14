@@ -102,8 +102,8 @@ near the limit instead of being OOM-killed at it.
   `volumeClaimTemplates` are immutable; grow `storage-loki-0` directly (LINSTOR
   expands online) and then update the value so a rebuild matches.
 - **`auth_enabled: false` means one tenant, `fake`, and no authentication.**
-  Anything in the cluster that can reach port 3100 can push and query. There is no
-  network policy in this cluster (documentations/14); Loki is not exposed outside it.
+  Anything in the cluster that can reach port 3100 can push and query. App namespaces (`asp`, `fbref`, `scraper`, `database`, `lab`, `identity`, `n8n`, `flux-system`) carry NetworkPolicies, but `monitoring` has none, so nothing restricts who reaches it.
+  Loki is not exposed outside the cluster.
 - **Retention is enforced by the compactor, not by the ingester.** `retention_period`
   does nothing unless `compactor.retention_enabled` is true and
   `delete_request_store` is set; with either missing, the volume fills.

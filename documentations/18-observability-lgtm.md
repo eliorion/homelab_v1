@@ -209,7 +209,7 @@ observe. "Covered" means data flows and something alerts or can be queried;
 | Node and container metrics | Covered | node-exporter, kubelet/cAdvisor, kube-state-metrics |
 | Control plane: apiserver, controller-manager, scheduler, etcd | Covered | etcd via the plaintext `:2381` trade above |
 | CoreDNS | Covered | chart ServiceMonitor |
-| CNI / network flows | Covered | Cilium agent, operator, Envoy; Hubble drops, DNS, TCP, flows per namespace. No L7 HTTP metrics — they need L7 policies, and there is no network policy |
+| CNI / network flows | Covered | Cilium agent, operator, Envoy; Hubble drops, DNS, TCP, flows per namespace. No L7 HTTP or DNS metrics — Hubble only sees those through L7 rules in a `CiliumNetworkPolicy`, and the app NetworkPolicies are L3/L4 |
 | Storage | Covered | LINSTOR and SeaweedFS rules; CNPG WAL archiving and volume fill |
 | GitOps | Covered | Flux reconcile failures on two Telegram paths |
 | Backups | Covered | etcd backup staleness; CNPG archiving |
@@ -228,7 +228,7 @@ observe. "Covered" means data flows and something alerts or can be queried;
 | Logs and traces HA | Accepted | Single-process Loki and Tempo: a restart pauses ingestion (collectors retry) and queries fail |
 | SLOs / error budgets | Not planned | Pyrra or Sloth once applications emit request metrics or traces |
 | Runtime security detection | Not planned | Tetragon (Cilium's) or Falco |
-| Access control on the stack | Partial | Grafana is tailnet-only with a local admin; no SSO via the existing Keycloak. Loki, Tempo and Prometheus push endpoints are unauthenticated in-cluster, with no network policy |
+| Access control on the stack | Partial | Grafana is tailnet-only with a local admin; no SSO via the existing Keycloak. Loki, Tempo and Prometheus push endpoints are unauthenticated in-cluster; `monitoring` has no NetworkPolicy. An app whose namespace restricts egress must allow `alloy-receiver:4318` before it can send traces |
 
 **Verdict.** With this change the cluster collects all three core signals — metrics,
 logs, traces — plus events, audit and CI, which is the substance of a
