@@ -92,6 +92,28 @@
         app: seaweedfs
         podSelector: ""
 
+- Garage S3:
+    - Node a S3:
+        icon: mdi-bucket-outline
+        description: Home site, 100.122.58.119:3900
+        siteMonitor: http://garage-node-a.tailscale.svc.cluster.local:3900
+        statusStyle: basic
+    - Node b S3:
+        icon: mdi-bucket-outline
+        description: Off site, 100.122.210.124:3900
+        siteMonitor: http://garage-node-b.tailscale.svc.cluster.local:3900
+        statusStyle: basic
+    - Node c S3:
+        icon: mdi-bucket-outline
+        description: Off site, 100.92.142.13:3900
+        siteMonitor: http://garage-node-c.tailscale.svc.cluster.local:3900
+        statusStyle: basic
+    - Gateway S3:
+        icon: mdi-scale-balance
+        description: garage-s3.garage-gw:3900, what backups use
+        siteMonitor: http://garage-s3.garage-gw.svc.cluster.local:3900
+        statusStyle: basic
+
 - Apps:
     - n8n:
         icon: n8n.png
@@ -130,19 +152,7 @@
         app: admin-ui
         podSelector: app=admin-ui
 
-- Cloudflare tunnel:
-    - Tunnel:
-        icon: cloudflare.png
-        href: https://one.dash.cloudflare.com/{{HOMEPAGE_VAR_CF_ACCOUNT_ID}}/networks/tunnels
-        description: cloudflared, the only public entry
-        namespace: cloudflare
-        app: cloudflared
-        podSelector: infrastructure=cloudflared
-        widget:
-          type: cloudflared
-          accountid: "{{HOMEPAGE_VAR_CF_ACCOUNT_ID}}"
-          tunnelid: "{{HOMEPAGE_VAR_CF_TUNNEL_ID}}"
-          key: "{{HOMEPAGE_VAR_CF_API_TOKEN}}"
+- Public apps:
     - AzuraCast:
         icon: azuracast.png
         href: https://mve-azuracast.eliorion.fr
@@ -174,71 +184,3 @@
         href: https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration
         description: Realm endpoints only, no console
         siteMonitor: https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration
-
-- Tailnet connections:
-    - Garage node a:
-        icon: mdi-bucket-outline
-        href: https://login.tailscale.com/admin/machines/100.122.58.119
-        description: Home site, S3 over the tailnet
-        siteMonitor: http://garage-node-a.tailscale.svc.cluster.local:3900
-        namespace: tailscale
-        app: garage-node-a
-        podSelector: tailscale.com/parent-resource=garage-node-a,tailscale.com/parent-resource-type=svc
-    - Garage node b:
-        icon: mdi-bucket-outline
-        href: https://login.tailscale.com/admin/machines/100.122.210.124
-        description: Off site, S3 over the tailnet
-        siteMonitor: http://garage-node-b.tailscale.svc.cluster.local:3900
-        namespace: tailscale
-        app: garage-node-b
-        podSelector: tailscale.com/parent-resource=garage-node-b,tailscale.com/parent-resource-type=svc
-    - Garage node c:
-        icon: mdi-bucket-outline
-        href: https://login.tailscale.com/admin/machines/100.92.142.13
-        description: Off site, S3 over the tailnet
-        siteMonitor: http://garage-node-c.tailscale.svc.cluster.local:3900
-        namespace: tailscale
-        app: garage-node-c
-        podSelector: tailscale.com/parent-resource=garage-node-c,tailscale.com/parent-resource-type=svc
-    - Garage gateway:
-        icon: mdi-scale-balance
-        description: HAProxy over nodes a, b and c
-        siteMonitor: http://garage-s3.garage-gw.svc.cluster.local:3900
-        namespace: garage-gw
-        app: garage-gateway
-        podSelector: app=garage-gateway
-    - rsp-asp exit:
-        icon: mdi-home-export-outline
-        href: https://login.tailscale.com/admin/machines/100.100.98.5
-        description: Scraper HTTP proxy (egress pod only)
-        namespace: tailscale
-        app: tailscale-proxy-00
-        podSelector: tailscale.com/parent-resource=tailscale-proxy-00,tailscale.com/parent-resource-type=svc
-    - scrape-c exit:
-        icon: mdi-home-export-outline
-        href: https://login.tailscale.com/admin/machines/100.92.142.13
-        description: Scraper HTTP proxy (egress pod only)
-        namespace: tailscale
-        app: tailscale-proxy-scrape-c
-        podSelector: tailscale.com/parent-resource=tailscale-proxy-scrape-c,tailscale.com/parent-resource-type=svc
-
-- Tailnet devices:
-    - Devices:
-        icon: tailscale.png
-        href: https://login.tailscale.com/admin/machines
-        widget:
-          type: customapi
-          url: https://api.tailscale.com/api/v2/tailnet/-/devices
-          refreshInterval: 60000
-          headers:
-            Authorization: "Bearer {{HOMEPAGE_VAR_TAILSCALE_API_KEY}}"
-          display: dynamic-list
-          mappings:
-            items: devices
-            name: hostname
-            label: connectedToControl
-            remap:
-              - value: true
-                to: online
-              - value: false
-                to: offline

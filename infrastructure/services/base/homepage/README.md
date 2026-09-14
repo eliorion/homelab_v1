@@ -1,9 +1,8 @@
 # homepage
 
 One page with every admin UI a click away, the cluster's CPU and memory, pod
-status next to each UI, the Cloudflare tunnel's health, whether the cluster can
-reach each tailnet device it depends on, and which tailnet devices are online.
-It runs [Homepage](https://gethomepage.dev) as a plain Deployment in the
+status next to each UI, the public applications checked end to end, and whether
+each Garage node's S3 API is reachable from the cluster. It runs [Homepage](https://gethomepage.dev) as a plain Deployment in the
 `homepage` namespace and is published on the tailnet at
 `https://homepage.tail45b0ca.ts.net` and nowhere else.
 
@@ -25,10 +24,10 @@ Staging — `infrastructure/services/staging/homepage/`: what this cluster's pag
 |---|---|
 | `kustomization.yaml` | The base, the Ingress and the Secret, plus two generators: `homepage-config` from `config/*.yaml`, and `homepage-env` carrying `HOMEPAGE_ALLOWED_HOSTS`. |
 | `ingress-tailscale.yaml` | `Ingress` with `ingressClassName: tailscale`, `defaultBackend` → `homepage:3000`, `tls.hosts: [homepage]`. HTTPS on 443 with a MagicDNS certificate. |
-| `homepage-secrets.enc.yaml` | SOPS Secret: Cloudflare account ID, tunnel ID and API token, and the Tailscale API token, as `HOMEPAGE_VAR_*` env vars. |
+| `homepage-secrets.enc.yaml` | SOPS Secret: the Cloudflare account ID as `HOMEPAGE_VAR_CF_ACCOUNT_ID`, used by the bookmarks. No API tokens. |
 | `homepage-secrets.enc.yaml.example` | Its plaintext template. |
 | `config/settings.yaml` | Title, theme, and the group order and column layout. |
-| `config/services.yaml` | Every tile: link, in-cluster health check, pod status, and the service widgets. |
+| `config/services.yaml` | Every tile: link, health check, pod status, and the Grafana tile's alert counts. |
 | `config/widgets.yaml` | The header: cluster and per-node CPU and memory. |
 | `config/bookmarks.yaml` | Cloudflare, Tailscale and GitHub dashboard links. |
 | `config/kubernetes.yaml` | `mode: cluster` (the ServiceAccount), every discovery source off. |
@@ -51,35 +50,51 @@ memory from `metrics.k8s.io`. metrics-server is installed by Talos
 - `namespace` + `app` or `podSelector`: pod status, CPU and memory, read through
   the ClusterRole.
 
-**Network tiles** — two service widgets:
+**Public apps** — the applications behind the Cloudflare tunnel (AzuraCast,
+Nextcloud, nao, the fbref MCP, Keycloak's realm endpoints). Each `siteMonitor`
+is the **public** URL, so a green tile means DNS, the Cloudflare edge, the tunnel
+and the pod all worked. The tunnel itself has no tile.
 
-- *Cloudflare tunnel* — the `cloudflared` widget: tunnel status and origin IP,
-  from the Cloudflare API.
-- *Tailnet devices* — a `customapi` widget in `dynamic-list` mode over
-  `GET https://api.tailscale.com/api/v2/tailnet/-/devices`, one row per device,
-  `connectedToControl` remapped to online/offline. It covers the whole tailnet
-  with one token and no device IDs, which the built-in `tailscale` widget (one
-  device per widget, by ID) cannot.
+**Garage S3** — one tile per Garage node plus the gateway, each showing `UP` or
+`DOWN` (`statusStyle: basic`) for one question: does that node's S3 API answer
+the cluster right now?
 
-**Tailnet connections** — one tile per egress Service in
+| Tile | `siteMonitor` | Path |
+|---|---|---|
+| Node a S3 | `http://garage-node-a.tailscale.svc.cluster.local:3900` | egress proxy → tailnet → `100.122.58.119:3900` (home site) |
+| Node b S3 | `http://garage-node-b.tailscale.svc.cluster.local:3900` | … → `100.122.210.124:3900` (off site) |
+| Node c S3 | `http://garage-node-c.tailscale.svc.cluster.local:3900` | … → `100.92.142.13:3900` (off site) |
+| Gateway S3 | `http://garage-s3.garage-gw.svc.cluster.local:3900` | HAProxy, round-robin over the three above |
+
+The node URLs are the egress Services from
 `infrastructure/controllers/staging/tailscale-operator/egress-proxies.yaml`, the
-paths the cluster itself dials into the tailnet. These answer a different
-question from the device list: not "is the device logged in to Tailscale" but
-"can the cluster reach it right now, on the port that matters". Each tile has two
-signals, so a failure says which half broke:
+same names and port the HAProxy gateway health-checks. The request is unsigned,
+and Garage answers it with `403` and the body `AccessDenied: Garage does not
+support anonymous access yet` — Homepage counts `≤ 403` as up, so `UP` means
+Garage's S3 API itself replied, not merely that a port was open. A node that is
+off, off the tailnet, or not listening gives a connection error, shown `DOWN`.
+The gateway is `UP` while at least one node answers; HAProxy's `/stats` page has
+the per-backend view (`../garage-gateway/README.md`).
 
-- pod status of the operator's egress proxy pod
-  (`tailscale.com/parent-resource=<service>,tailscale.com/parent-resource-type=svc`)
-  — the cluster side;
-- for the three Garage nodes, a `siteMonitor` on
-  `http://garage-node-<x>.tailscale.svc.cluster.local:3900` — the same name and
-  port the HAProxy gateway health-checks, so it crosses the egress proxy and the
-  tailnet to the node. An unauthenticated S3 request returns `403`, which counts
-  as up; a node that is off or unreachable is a connection error.
+**Bookmarks** — Cloudflare (tunnels, DNS, R2, API tokens), Tailscale (machines,
+ACL, DNS, keys), GitHub (repo, PRs, Actions). The Cloudflare links are built from
+`{{HOMEPAGE_VAR_CF_ACCOUNT_ID}}`.
 
-The *Garage gateway* tile checks `garage-s3.garage-gw.svc:3900`, up while at
-least one node answers. Per-node backend state beyond that is on HAProxy's
-`/stats` page (`../garage-gateway/README.md`).
+### Removed on purpose
+
+The page shows whether **services** are available, not infrastructure
+inventories:
+
+- the Cloudflare tunnel tile (`cloudflared` widget, tunnel status and origin IP
+  from the Cloudflare API) — the public apps' end-to-end checks already fail if
+  the tunnel does;
+- the tailnet device list (`customapi` over the Tailscale devices API) — "is a
+  device logged in to Tailscale" is not "is its service reachable";
+- the scraper exit tiles (`tailscale-proxy-00`, `tailscale-proxy-scrape-c`) —
+  see Traps; the only honest signal was egress pod status, which does not answer
+  whether the exit works.
+
+Both API tokens went with them, so the Secret holds no credential.
 
 **Bookmarks** — Cloudflare (tunnels, DNS, R2, API tokens), Tailscale (machines,
 ACL, DNS, keys), GitHub (repo, PRs, Actions). The Cloudflare links are built from
@@ -131,7 +146,7 @@ Discovery (`gethomepage.dev/*` annotations) cannot see half the UIs:
 - Grafana's Ingress is rendered by its chart.
 
 One file beats annotations spread across a dozen components, and it also holds
-what is not in Kubernetes at all (the Cloudflare and Tailscale tiles).
+what is not a Kubernetes object at all (the public URLs, the Garage nodes).
 `config/kubernetes.yaml` turns `ingress`, `traefik` and `gateway` off
 explicitly: `ingress` defaults to on and would log a 403 on every refresh
 against this ClusterRole.
@@ -163,13 +178,16 @@ itself and so cannot take an `emptyDir`. `/app/config` must also be writable
   (only the operator's proxy pods are), so a `siteMonitor` on a `*.ts.net` URL
   never resolves and the tile shows down forever while `href` works fine. To
   check a tailnet device, go through its egress Service in the `tailscale`
-  namespace, as the Tailnet connections tiles do.
-- **The two scraper exit tiles have no `siteMonitor`, on purpose.**
-  `tailscale-proxy-00` and `tailscale-proxy-scrape-c` are HTTP forward proxies on
-  8888; a direct request (not proxy-form) gets `500`, which Homepage renders as
-  down even when the exit works. Only the egress pod is shown. `garage-node-c`
-  shares its tailnet IP with `scrape-c`, so a green Garage node c says the
-  device is up but not that its proxy is.
+  namespace, as the Garage S3 tiles do.
+- **Garage `UP` is reachability, not usability.** The check is unsigned, so it
+  proves the S3 API answers — not that the credentials, the bucket, or the
+  region are right. Doc 12's postmortem is exactly that case: everything healthy
+  until `HeadBucket`. Backup health lives in the CNPG and etcd-backup alerts.
+- **Do not add a `siteMonitor` for the scraper exits.** `tailscale-proxy-00` and
+  `tailscale-proxy-scrape-c` are HTTP forward proxies on 8888; a direct request
+  (not proxy-form) gets `500`, which Homepage renders as down even when the exit
+  works. `garage-node-c` shares its tailnet IP with `scrape-c`, so Node c S3
+  `UP` says nothing about that proxy.
 - **The Keycloak tile has no `siteMonitor`, on purpose.** Keycloak's
   NetworkPolicy (`keycloak.yaml`, `networkPolicy`) admits plain HTTP on 8080
   only from the `tailscale` namespace and HTTPS on 8443 only from `cloudflare`
@@ -184,35 +202,11 @@ itself and so cannot take an `emptyDir`. `/app/config` must also be writable
 - **Mounting a new config file needs two edits**: the generator list in the
   staging `kustomization.yaml`, and a `subPath` mount in `deployment.yaml`. A file
   only in the ConfigMap is ignored; Homepage copies its skeleton instead.
-- **The Tailscale API token expires** after at most 90 days. When it does, the
-  Tailnet devices tile shows an API error and nothing else breaks — the Tailnet
-  connections tiles use no token. The widget cannot use an OAuth client — it
-  sends one static bearer token.
-- **The Secret ships with two `REPLACE_ME` tokens.** Until they are filled, the
-  Cloudflare tunnel and Tailnet devices tiles show an API error; the rest of the
-  page works.
+- **A Secret change does not roll the pod.** `envFrom` is read at start; after
+  editing `homepage-secrets.enc.yaml` and letting Flux apply it, run
+  `kubectl -n homepage rollout restart deploy/homepage`.
 
 ## Operating it
-
-### Filling the Secret
-
-1. Cloudflare → My Profile → API Tokens → Create Token → Custom: permission
-   **Account › Cloudflare Tunnel › Read**, scoped to the one account.
-2. Tailscale admin → Settings → Keys → **Generate access token**. Set the expiry
-   and put the date in a calendar.
-3. Edit the values in place (account and tunnel IDs are already filled):
-
-   ```bash
-   SOPS_AGE_KEY_FILE=clusters/staging/age.agekey \
-     sops infrastructure/services/staging/homepage/homepage-secrets.enc.yaml
-   ```
-
-4. Commit, push. A Secret change does not roll the pod — `envFrom` is read at
-   start — so after Flux applies it:
-
-   ```bash
-   kubectl -n homepage rollout restart deploy/homepage
-   ```
 
 ### Adding a tile
 
