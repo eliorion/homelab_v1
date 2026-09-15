@@ -185,7 +185,7 @@ change that scrapes it reconciles.
 **How it was rolled out, and why not with `apply-config`** (2026-09-14). A full
 `talosctl apply-config` of this file would also push the Harbor `RegistryMirrorConfig`
 documents, which the patch above them forbids while `registry-tls` is issued by
-letsencrypt-staging — it still is. So the three args went on as a targeted patch, one node
+letsencrypt-staging — as it was until 2026-09-15. So the three args went on as a targeted patch, one node
 at a time, touching nothing else:
 
 ```bash

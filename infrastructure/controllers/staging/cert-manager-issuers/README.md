@@ -96,23 +96,39 @@ ClusterIssuer resolves solver secrets from `--cluster-resource-namespace`, which
 defaults to the cert-manager namespace; putting it next to the registry looks
 right and silently fails to solve.
 
-## Staging only, for now
+## Staging first, then prod
 
-Only `letsencrypt-staging` is deployed. There is **no `letsencrypt-prod`
-ClusterIssuer** — it was removed deliberately, so nothing in this cluster can
-burn prod rate limits by accident.
+Two issuers with the same spec, differing only in ACME directory and account-key
+secret:
 
-The consequence is that every certificate issued here has an **untrusted
-chain**. That is fine for proving the DNS-01 solver and the renewal path, and it
-is why the Harbor registry mirror must not be applied to the Talos nodes yet:
-containerd rejects an untrusted chain, on every node simultaneously.
+| issuer | chain | rate limits | use |
+|---|---|---|---|
+| `letsencrypt-staging` | **untrusted** (`(STAGING)` intermediates) | effectively none | prove every new Certificate |
+| `letsencrypt-prod` | publicly trusted | **5 duplicate certificates per week** | what consumers serve |
 
-When a trusted certificate is wanted, add a `letsencrypt-prod` ClusterIssuer
-back (same spec, the ACME prod directory URL, its own account-key secret) and
-repoint `issuerRef`. Do that only after issuance *and* one forced renewal
-(`cmctl renew <cert>`) have been observed on staging: prod allows **5 duplicate
-certificates per week**, so a solver typo caught there costs a seven-day outage
-for that name.
+Every new Certificate — and every `dnsNames` change on an existing one — points
+at `letsencrypt-staging` first. Repoint `issuerRef` to `letsencrypt-prod` only
+after issuance *and* one forced renewal (`cmctl renew <cert>`) have been observed
+there. A solver typo caught on prod burns the duplicate budget and costs a
+seven-day outage for that name.
+
+`email` is only the contact for expiry notices; ACME does not verify it, so it
+can change freely.
+
+`letsencrypt-prod` was deliberately absent until 2026-09-15, so nothing could
+burn prod limits by accident. It came back when `registry-tls` had been issued
+on staging (2026-09-13) and force-renewed there (2026-09-15, revision 2, order
+`valid`). Every staging certificate is untrusted: browsers, `curl`, BuildKit's
+system trust store and containerd all reject it.
+
+A prod leaf's issuer is a Let's Encrypt intermediate (e.g.
+`O=Let's Encrypt, CN=YE1`), not ISRG — ISRG is the root above it. The quick
+staging-vs-prod tell is the `(STAGING)` prefix in the issuer CN:
+
+```bash
+kubectl -n <ns> get secret <secret> -o jsonpath='{.data.tls\.crt}' \
+  | base64 -d | openssl x509 -noout -issuer
+```
 
 ## Ordering
 

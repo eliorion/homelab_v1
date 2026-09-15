@@ -31,7 +31,7 @@ different needs, so it gets two paths to the same pods.
 
 | path | who | TLS |
 |---|---|---|
-| `registry.eliorion.fr` (LB `192.168.1.112`) | **data only** — node containerd, the Dagger engine, CI | Harbor's own cert (currently untrusted staging) |
+| `registry.eliorion.fr` (LB `192.168.1.112`) | **data only** — node containerd, the Dagger engine, CI | Harbor's own cert, `letsencrypt-prod` |
 | `harbor.tail45b0ca.ts.net` (tailscale Ingress) | **the UI**, humans | a real Tailscale-issued certificate |
 
 The LoadBalancer is restricted with `sourceRanges` to the three nodes and the
@@ -43,6 +43,13 @@ The Ingress deliberately does NOT point at the `harbor` Service. Its nginx
 answers `:80` with `return 301 https://$host$request_uri`, and `$host` is the
 tailnet name, so that redirect would loop straight back into this Ingress. The
 path rules there are harbor-nginx's own routing table with the redirect removed.
+
+Nor is it the `tailscale.com/expose` annotation. Expose is an L3 forward, so the
+browser would get Harbor's own certificate — issued for `registry.eliorion.fr`,
+not the tailnet name, so it fails hostname verification. The Ingress terminates
+TLS with a Tailscale certificate for `harbor.tail45b0ca.ts.net` instead, which
+requires **HTTPS Certificates** enabled in the Tailscale admin console
+(DNS → HTTPS Certificates); without it the proxy comes up with no certificate.
 
 **Caveat, from the one-hostname limit:** the registry token realm is pinned to
 `externalURL`, so a `docker login`/`docker pull` against the *tailnet* name gets
@@ -99,9 +106,10 @@ Three absolutes:
 - Mirrors carry `capabilities = ['pull','resolve']`; **push never traverses a mirror.** CI
   pushes to `registry.eliorion.fr/<project>/…` by real name.
 
-Apply it **last**, and only once `openssl x509` on the `registry-tls` Secret shows an **ISRG**
-issuer — containerd rejects an untrusted (staging) chain on every node simultaneously. One node
-at a time, verifying a real pull between each:
+Apply it **last**, and only once `registry.eliorion.fr` serves a chain that verifies against the
+system trust store (`curl -sI https://registry.eliorion.fr/v2/` from a pod succeeds, and the
+leaf issuer has no `(STAGING)` prefix) — containerd rejects an untrusted chain on every node
+simultaneously. One node at a time, verifying a real pull between each:
 
 ```bash
 talosctl -n 192.168.1.101 read /etc/cri/conf.d/hosts/docker.io/hosts.toml
@@ -120,13 +128,22 @@ annotation on the `harbor-nginx` Deployment, and patches the annotation (rolling
 when they differ. Its RBAC is scoped by `resourceNames` to that one Secret and that one
 Deployment.
 
-Prove it before trusting prod:
+Prove it after any change to the reload job:
 
 ```bash
 cmctl renew registry-tls -n registry
 # within the hour: harbor-nginx rolls, and the new leaf is served
 openssl s_client -connect registry.eliorion.fr:443 </dev/null 2>/dev/null | openssl x509 -noout -dates
 ```
+
+`registry-tls` issues from `letsencrypt-prod` (5 duplicate certificates per week), so do not
+loop that renew. It was proven on staging first — issued 2026-09-13, force-renewed 2026-09-15 —
+per `../../../controllers/staging/cert-manager-issuers/README.md`. A `dnsNames` change goes
+back through staging the same way.
+
+`privateKey.rotationPolicy: Always` gives a fresh key on every renewal. That is safe only
+because nothing pins this certificate's public key; a client that did would break at each
+renewal.
 
 ## Proxy projects are runtime state, not manifests
 
