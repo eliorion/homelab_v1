@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: loki-ruler
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: loki-ruler.rules
+      rules:
+        - alert: LokiRuleEvaluationFailing
+          expr: sum by (rule_group) (increase(loki_prometheus_rule_evaluation_failures_total[10m])) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki cannot evaluate log alert group {{ $labels.rule_group }}"
+            description: "Every evaluation of these rules is failing, so the log-based alerts in monitoring/controllers/base/loki/rules are blind."
+        - alert: LokiRulerCannotNotify
+          expr: sum(increase(loki_prometheus_notifications_errors_total[10m])) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki's ruler cannot deliver alerts to Alertmanager"
+            description: "Log-based alerts fire but never reach Alertmanager or Telegram."

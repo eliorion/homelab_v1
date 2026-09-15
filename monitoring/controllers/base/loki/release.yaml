@@ -55,6 +55,15 @@ spec:
         delete_request_store: filesystem
       pattern_ingester:
         enabled: true
+      rulerConfig:
+        storage:
+          type: local
+          local:
+            # Rules live in <directory>/<tenant>/; the tenant is "fake" because auth_enabled is false.
+            directory: /etc/loki/rules
+        alertmanager_url: http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093
+        enable_alertmanager_v2: true
+        enable_api: true
     singleBinary:
       replicas: 1
       persistence:
@@ -63,6 +72,15 @@ spec:
       extraEnv:
         - name: GOMEMLIMIT
           value: 1800MiB
+      # ConfigMap generated in kustomization.yaml. No subPath: a subPath mount never sees ConfigMap updates.
+      extraVolumes:
+        - name: rules
+          configMap:
+            name: loki-rules
+      extraVolumeMounts:
+        - name: rules
+          mountPath: /etc/loki/rules/fake
+          readOnly: true
       resources:
         requests:
           cpu: 100m
