@@ -36,6 +36,9 @@ Values set here:
 | `ingest.enabled` | `false` — the asp-ingest results bridge is off |
 | `adminUi.enabled` | `true`, with the Tailscale operator annotations `tailscale.com/expose: "true"` and `tailscale.com/hostname: asp-admin-ui` |
 | `webapp.enable` | `true` |
+| `otel.enabled` | `true` |
+| `otel.endpoint` | `http://alloy-receiver.monitoring.svc.cluster.local:4318` |
+| `otel.environment` | `staging` |
 
 Flux applies this through the `apps` Kustomization in
 [`../../../clusters/staging/apps.yaml`](../../../clusters/staging/apps.yaml): `path: ./apps/staging`,
@@ -101,6 +104,12 @@ it; `fbref` is the platform's sole first client. With no producer, asp-ingest (t
 bridge) has nothing to consume, so it is turned off rather than left crash-looping on an empty
 queue. See [`../scraper/README.md`](../scraper/README.md).
 
+**Tracing is switched on here.** `otel.enabled` gives the engine, the analyzer, the webapp
+and the admin UI the `OTEL_*` environment, and the engine, webapp and admin UI
+NetworkPolicies one egress rule to `monitoring` on TCP 4318 (the analyzer has no policy).
+The services send traces to `alloy-receiver`, which forwards them to Tempo. fbref was the
+pilot; the full rationale is in [`../fbref/README.md`](../fbref/README.md).
+
 ## Traps
 
 - **Never set image tags in `release.yaml`.** They belong to the chart's `values.yaml`, which the
@@ -130,4 +139,12 @@ flux get kustomizations | grep -E 'apps|db-migrations|databases'
 flux get helmreleases -n asp
 flux reconcile helmrelease asp -n asp --with-source
 kubectl -n asp get pods
+```
+
+Traces in Grafana (Explore → Tempo, TraceQL):
+
+```
+{resource.service.namespace="asp"}
+{name="asp-engine.tick"}
+{resource.service.name="asp-webapp" && kind=server}
 ```

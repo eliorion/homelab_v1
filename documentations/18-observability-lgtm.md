@@ -217,7 +217,7 @@ observe. "Covered" means data flows and something alerts or can be queried;
 | Node / OS logs | Covered | Talos services and kernel |
 | Audit log | Covered, filtered | Successful system reads are not in Loki; the full log stays on each node for its rotation window |
 | Kubernetes events | Covered | kept past the apiserver's 1h event TTL |
-| Traces | Partial | Store and pipeline ready; **only Dagger emits them**. The applications (`asp`, `fbref`, `scraper`) are not instrumented. Beyla (eBPF auto-instrumentation, available in Alloy) is the no-code option |
+| Traces | Covered | Dagger CI plus the applications: `asp`, `fbref` and `scraper` export OTLP traces through the OpenTelemetry SDK (switched on per release with `otel.enabled`); JSON log lines carry `trace_id`/`span_id` and link to them. Not traced: the scraper admin UI, and the `scrape_requests` queue hop between asp and the scraper platform, which starts a new trace |
 | CI/CD | Covered | Every Dagger run: span tree, step output, duration and failure trend, engine cache. GitHub workflow-level spans (queue time, non-Dagger steps) are not captured |
 | Log-based alerting | Covered | Loki's ruler sends six rules to Alertmanager: disk I/O errors, hung tasks, OOM kills and filesystem errors from the kernel log, sustained volume-mount failures from events, and unexpected pod exec from the audit log |
 | Dead man's switch | **Gap** | `Watchdog` is still routed to a blackhole — a dead Prometheus or Alertmanager is silent. Tracked in [14](14-design-decisions.md) |
