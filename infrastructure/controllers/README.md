@@ -2,11 +2,11 @@
 
 The operator tier: the controllers that have to exist before any workload can be
 declared — the CNI, the certificate issuer, the storage provisioner, the Postgres
-operator, the runner controller, the autoscaler, the Keycloak operator, the secret
-mirror and the Tailscale operator. Each one is a component directory with its own
-README. This file documents only the tier itself: which directory Flux points at,
-which components are aggregated by a kustomization here and which ones deliberately
-are not.
+operator, the runner controller, the autoscaler, the admission policy engine, the
+Keycloak operator, the secret mirror and the Tailscale operator. Each one is a
+component directory with its own README. This file documents only the tier itself:
+which directory Flux points at, which components are aggregated by a kustomization
+here and which ones deliberately are not.
 
 The repository-wide picture is in
 [`../../documentations/01-architecture.md`](../../documentations/01-architecture.md);
@@ -24,7 +24,7 @@ directly, one per Flux Kustomization, and only two go through the aggregate
 
 | Path | What it does |
 |---|---|
-| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `linstor/` (Piraeus operator, + `linstor/monitoring/`), `reflector/`, `seaweedfs/` (namespace + CSI driver, + `seaweedfs/monitoring/`). **There is no `base/kustomization.yaml`** and there should not be one. |
+| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `kyverno/`, `linstor/` (Piraeus operator, + `linstor/monitoring/`), `reflector/`, `seaweedfs/` (namespace + CSI driver, + `seaweedfs/monitoring/`). **There is no `base/kustomization.yaml`** and there should not be one. |
 | `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. `cnpg/`, `tailscale-operator/`, `seaweedfs-cluster/` and `linstor-cluster/`. |
 | `staging/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/` (the operator only — `base/cnpg/kustomization.yaml` does not include `plugin/`). |
 | `staging/tailscale-operator/` | Staging-only component, no base counterpart. Reconciled through the aggregate above. |
@@ -47,6 +47,7 @@ From `clusters/staging/infrastructure.yaml`:
 | `infra-cilium` | `base/cilium` | `wait: true`, `timeout: 10m` (cold agent/operator/hubble image pull) |
 | `infra-cilium-config` | `base/cilium/config` | `dependsOn: infra-cilium` — needs the CRDs the chart installs |
 | `infra-keda` | `base/keda` | `wait: true`, `timeout: 10m` |
+| `infra-kyverno` | `base/kyverno` | `wait: true`, `timeout: 10m`, health checks on `kyverno-admission-controller` and `kyverno-background-controller` |
 | `infra-keycloak-operator` | `base/keycloak-operator` | `wait: true`, health check on `keycloak-operator` in `identity` |
 | `infra-reflector` | `staging/reflector` | `wait: true`, sops `decryption`, health check on the `reflector` Deployment |
 | `infrastructure-controllers` | `staging` | `interval: 1m0s`, `dependsOn: infra-cnpg-plugin`, sops `decryption`, **no `wait: true`** |
@@ -73,9 +74,9 @@ directory sit under `staging/`. `reflector/` does have a base counterpart:
 
 ## Why it is like this
 
-**No aggregate kustomization at `base/`.** Eleven paths under `base/` are named directly by
+**No aggregate kustomization at `base/`.** Twelve paths under `base/` are named directly by
 their own Flux Kustomization — `cert-manager`, `cnpg/plugin`, `arc`, `cilium`,
-`cilium/config`, `keda`, `keycloak-operator`, `linstor`, `linstor/monitoring`,
+`cilium/config`, `keda`, `keycloak-operator`, `kyverno`, `linstor`, `linstor/monitoring`,
 `seaweedfs`, `seaweedfs/monitoring` — deliberately separate so that cert-manager can
 gate the CNPG plugin, the Cilium chart can gate its IP pool and Gateway objects, and the
 storage tiers can have their own 15m cold-pull timeouts and their own CRD ordering.
@@ -166,6 +167,7 @@ See [`../../documentations/00-bootstrap-cluster.md`](../../documentations/00-boo
 - [`base/cnpg/README.md`](base/cnpg/README.md) and [`base/cnpg/plugin/README.md`](base/cnpg/plugin/README.md)
 - [`base/keda/README.md`](base/keda/README.md)
 - [`base/keycloak-operator/README.md`](base/keycloak-operator/README.md)
+- [`base/kyverno/README.md`](base/kyverno/README.md)
 - [`base/linstor/README.md`](base/linstor/README.md)
 - [`base/seaweedfs/README.md`](base/seaweedfs/README.md)
 - [`staging/reflector/README.md`](staging/reflector/README.md) (covers `base/reflector/` too)

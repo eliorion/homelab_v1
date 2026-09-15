@@ -130,6 +130,32 @@ machine PKI.
 
 **Reference.** [09-etcd-backup-dr.md](09-etcd-backup-dr.md)
 
+### Kyverno with CEL policy types only for the preview guardrails
+
+**Why.** The `dev` tier's preview namespaces need an admission engine that can do three
+things: validate what lands in a preview namespace, *generate* that namespace's
+ResourceQuota, LimitRange, RoleBinding and NetworkPolicy the moment it is created, and in
+Phase 6 verify image signatures. Kyverno's `policies.kyverno.io/v1` types
+(`ValidatingPolicy`, `GeneratingPolicy`, `MutatingPolicy`, later `ImageValidatingPolicy`)
+do all three in CEL, the same expression language as the native API, and they are the
+only Kyverno types with a future: `ClusterPolicy` and `Policy` are deprecated in v1.19 and
+removed in v1.20. So the rule is CEL types only, and no `ClusterPolicy` is ever added.
+
+**Rejected.** Native `ValidatingAdmissionPolicy` alone: no operator to run, but it only
+validates — it cannot generate per-namespace quotas or RBAC, and it cannot verify image
+signatures, so it would need a second mechanism beside it for the two harder jobs.
+
+**Cost.** A second admission webhook fleet (four Deployments, 900m CPU and 768Mi
+requested) that every matched request round-trips through, and a `Fail` policy turns a
+Kyverno outage into an admission outage for what it matches — contained by excluding
+`kube-system`, `kyverno` and `flux-system` at the webhook, and by keeping `Fail` to
+preview-scoped policies. Kyverno's compatibility matrix lists Kubernetes 1.33–1.35 for
+v1.19 while this cluster runs 1.36: the 1.36 support is in the code and in two conformance
+jobs, not yet on paper. The CRDs are part of the Helm release, so uninstalling it deletes
+every policy, and the release record sits at ~92% of the 1 MiB Secret cap.
+
+**Reference.** [`infrastructure/controllers/base/kyverno/README.md`](../infrastructure/controllers/base/kyverno/README.md)
+
 ---
 
 ## 2. Networking and exposure
