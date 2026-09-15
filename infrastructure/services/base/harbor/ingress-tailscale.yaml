@@ -1,16 +1,4 @@
-# The Harbor UI, published on the tailnet and nowhere else, over HTTPS.
-#
-# Do NOT swap this for the `tailscale.com/expose` annotation: expose is an L3
-# forward, so the browser would get Harbor's OWN certificate -- currently a
-# letsencrypt-STAGING chain, which is untrusted.
-#
-# Do NOT point this at the `harbor` Service either. Its nginx answers :80 with
-# `return 301 https://$host$request_uri`, and since $host is the tailnet name
-# that redirects to this same Ingress -- an infinite loop. These path rules are
-# harbor-nginx's own routing table, minus the redirect.
-#
-# PRECONDITION: HTTPS Certificates enabled in the Tailscale admin console
-# (DNS -> HTTPS Certificates), or the proxy comes up with no certificate.
+# Do NOT point at the `harbor` Service: its :80 redirects to $host, looping back here. See README.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

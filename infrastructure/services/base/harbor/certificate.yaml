@@ -1,7 +1,3 @@
-# letsencrypt-STAGING. There is no letsencrypt-prod ClusterIssuer in this
-# cluster -- it was removed deliberately. The chain is UNTRUSTED, so the
-# Talos registry mirror must NOT be applied against it (containerd rejects it
-# on every node at once).
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -11,11 +7,11 @@ spec:
   secretName: registry-tls
   dnsNames:
     - registry.eliorion.fr
+  # Prod rate limit: 5 duplicate certs/week. Test dnsNames changes on letsencrypt-staging first.
   issuerRef:
-    name: letsencrypt-staging
+    name: letsencrypt-prod
     kind: ClusterIssuer
   privateKey:
     algorithm: ECDSA
     size: 256
-    # Rotate the key on renewal; nothing pins this cert's public key.
     rotationPolicy: Always

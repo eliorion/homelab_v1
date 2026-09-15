@@ -190,7 +190,7 @@ keeps TLS valid on every path and avoids any `insecure` escape hatch.
 In-cluster resolution goes out to the LAN VIP and back via Cilium; the extra
 hop is irrelevant next to a layer pull.
 
-Harbor serves a letsencrypt-STAGING chain (there is no prod ClusterIssuer), which the
+Until 2026-09-15 Harbor served a letsencrypt-STAGING chain, which the
 engine's system trust store rejects — measured as
 `x509: certificate signed by unknown authority`, then `trying next host`, so every pull
 silently fell through to upstream and Harbor was never used. The dedicated
@@ -198,6 +198,11 @@ silently fell through to upstream and Harbor was never used. The dedicated
 engine change. It is a separate host entry on purpose: an `insecure`/`ca` inside the
 `docker.io` block would apply to the UPSTREAM fallback host, weakening the safety net rather
 than the mirror.
+
+Harbor now serves a `letsencrypt-prod` chain, and the pin does not get in its way: BuildKit's
+`loadTLSConfig` starts from `x509.SystemCertPool()` and *appends* the `ca` files, so the prod
+chain verifies through the system roots. The pin is redundant, not harmful. Removing it means
+removing the `ca` entry, the mount and the file together — see the warning below.
 
 **NEVER break the `ca` path as a way to "turn Harbor off".** A missing or unreadable file
 makes the engine return that error out of its whole registry-host builder, so docker.io AND
