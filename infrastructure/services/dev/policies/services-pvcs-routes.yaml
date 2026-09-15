@@ -52,6 +52,10 @@ metadata:
 spec:
   validationActions: ["Deny"]
   failurePolicy: Fail
+  # Admission only: the reports controller has no read on httproutes, and routes are only ever created at admission.
+  evaluation:
+    background:
+      enabled: false
   matchConstraints:
     resourceRules:
       - apiGroups: ["gateway.networking.k8s.io"]

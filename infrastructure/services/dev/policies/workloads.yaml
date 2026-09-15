@@ -5,6 +5,10 @@ metadata:
 spec:
   validationActions: ["Deny"]
   failurePolicy: Fail
+  # Admission only: background reports would need list/watch on pods/ephemeralcontainers, which no API serves.
+  evaluation:
+    background:
+      enabled: false
   # Empty list = no rules generated for Deployments/StatefulSets; the vcluster syncer creates bare Pods.
   autogen:
     podControllers:
