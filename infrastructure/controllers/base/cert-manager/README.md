@@ -1,13 +1,15 @@
 # cert-manager
 
 The certificate controller for the cluster, installed from the upstream Jetstack
-chart as a Flux `HelmRelease`. It exists for exactly two consumers: the private
-CA and server certificate that protect the `cloudflared` hop to Keycloak in the
-`identity` namespace, and the TLS certificate the CNPG barman-cloud plugin
-presents on its gRPC endpoint to the CNPG operator. Nothing here issues public
-certificates — there is no ACME issuer and no `ClusterIssuer` anywhere in this
-repository. This directory contains only the controller install; the `Issuer`
-and `Certificate` objects live with the workloads that need them.
+chart as a Flux `HelmRelease`. It has three consumers: the private CA and server
+certificate that protect the `cloudflared` hop to Keycloak in the `identity`
+namespace, the TLS certificate the CNPG barman-cloud plugin presents on its gRPC
+endpoint to the CNPG operator, and the publicly-trusted Let's Encrypt
+certificate Harbor serves on `registry.eliorion.fr`. The ACME `ClusterIssuers`
+for the last one live in
+[`../../staging/cert-manager-issuers/`](../../staging/cert-manager-issuers/README.md).
+This directory contains only the controller install; the `Issuer`,
+`ClusterIssuer` and `Certificate` objects live with the workloads that need them.
 
 Deep detail lives in
 [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md)
@@ -24,7 +26,7 @@ Deep detail lives in
 | `kustomization.yaml` | Lists the three resources below, in order: `namespace.yaml`, `repository.yaml`, `release.yaml`. |
 | `namespace.yaml` | The `cert-manager` Namespace object. |
 | `repository.yaml` | `HelmRepository` `jetstack` in `flux-system`, `https://charts.jetstack.io`, polled every `24h`. |
-| `release.yaml` | `HelmRelease` `cert-manager` in `flux-system`, `targetNamespace: cert-manager`, chart `cert-manager` pinned to `v1.16.2`, reconcile `interval: 30m`, chart revision check `interval: 12h`, `install.createNamespace: true`, `values.crds.enabled: true`. |
+| `release.yaml` | `HelmRelease` `cert-manager` in `flux-system`, `targetNamespace: cert-manager`, chart `cert-manager` pinned to `v1.16.5`, reconcile `interval: 30m`, chart revision check `interval: 12h`, `install.createNamespace: true`, `values.crds.enabled: true`. |
 
 Flux applies this directory through its own Kustomization, `infra-certmanager`,
 declared identically in `clusters/staging/infrastructure.yaml` and
@@ -49,6 +51,11 @@ Consumers:
   `Issuer` built from it, and the 90-day server certificate `keycloak-tls`
   consumed by the `Keycloak` CR as `spec.http.tlsSecret`. All namespaced to
   `identity` (doc 02).
+- `infrastructure/controllers/staging/cert-manager-issuers/` declares the
+  `letsencrypt-staging` and `letsencrypt-prod` ACME `ClusterIssuers` (DNS-01 via
+  Cloudflare), and `infrastructure/services/base/harbor/certificate.yaml`
+  requests `registry-tls` from the prod one. Both are applied by Kustomizations
+  downstream of `infra-certmanager`.
 
 ### Overlays
 
@@ -61,7 +68,7 @@ values.
 
 ## Why it is like this
 
-**One private CA, no ACME.** The only certificate that matters internally
+**A private CA for Keycloak, not ACME.** The only certificate that matters internally
 protects the `cloudflared` hop to Keycloak. A public CA would buy nothing: the
 name it protects (`keycloak-service.identity.svc`) is not resolvable from the
 internet and no browser ever sees it. The alternative considered and rejected
@@ -71,10 +78,13 @@ because Cilium runs without transparent encryption. The accepted cost is that a
 dashboard-managed Cloudflare tunnel cannot be taught to trust a private CA, so
 the origin configuration sets "No TLS Verify" — the hop is encrypted but not
 authenticated, and that is named rather than papered over (doc 14, doc 02).
+ACME came later, and only for names that clients outside the cluster's control
+must trust — the Harbor registry.
 
-**Issuers, not ClusterIssuers.** The Keycloak CA is a namespaced `Issuer` so it
-can sign for `identity` and nothing else. That is why this directory installs
-the controller and stops there.
+**A namespaced Issuer for the private CA.** The Keycloak CA is an `Issuer` so it
+can sign for `identity` and nothing else. The only `ClusterIssuers` are the two
+ACME ones, which can sign only names in the `eliorion.fr` zone they prove over
+DNS-01. This directory installs the controller and stops there.
 
 **`crds.enabled: true`.** The chart installs and upgrades cert-manager's CRDs,
 so the CRD version always tracks the controller version in the same
@@ -108,11 +118,18 @@ natively — no annotation comment is required in the file.
   `infra-certmanager`.** Applying a `Certificate` or `Issuer` in a Kustomization
   that does not (transitively) `dependsOn` it fails with `no matches for kind`
   when the CRDs are not registered yet.
-- **The chart version string carries a leading `v` (`"v1.16.2"`).** The Jetstack
+- **The chart version string carries a leading `v` (`"v1.16.5"`).** The Jetstack
   chart uses v-prefixed versions; dropping the prefix does not resolve.
-- **There is no `ClusterIssuer`.** A new namespace that needs a certificate has
-  to declare its own `Issuer`; the `keycloak-ca` `Issuer` cannot sign outside
-  `identity`.
+- **Never go below `v1.16.4` while an issuer solves DNS-01 on Cloudflare.**
+  Cloudflare removed `zone_id` from its DNS-record API responses
+  (cert-manager/cert-manager#7540). Older controllers still issue, but challenge
+  cleanup sends `DELETE /zones//dns_records/<id>`, logs `CleanUpError`, and
+  leaves the `_acme-challenge` TXT record in the zone. Seen on `v1.16.2` on
+  2026-09-15; the leftovers were deleted by hand.
+- **The `keycloak-ca` `Issuer` cannot sign outside `identity`.** A new private
+  certificate needs its own namespaced `Issuer`. A public name in `eliorion.fr`
+  uses the ACME `ClusterIssuers` — staging first, see
+  `../../staging/cert-manager-issuers/README.md`.
 - **The webhook is health-checked on purpose.** `cert-manager-webhook` validates
   every `cert-manager.io` object, so a Ready controller alone is not enough for
   downstream Kustomizations. Both Deployments stay in the `healthChecks` list.
