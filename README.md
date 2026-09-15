@@ -212,6 +212,7 @@ flowchart LR
     root --> cil["infra-cilium"]
     root --> refl["infra-reflector"]
     root --> keda["infra-keda"]
+    root --> kyv["infra-kyverno"]
     root --> kco["infra-keycloak-operator"]
     root --> mon["monitoring"]
 
@@ -232,7 +233,7 @@ flowchart LR
     refl --> lab
 
     classDef gate fill:#1f6feb22,stroke:#1f6feb,stroke-width:2px
-    class cm,plugin,arc,lh,cil,refl,keda,kco,lab gate
+    class cm,plugin,arc,lh,cil,refl,keda,kyv,kco,lab gate
 ```
 
 The root Kustomization tracks branch `main` at a one minute interval and points at

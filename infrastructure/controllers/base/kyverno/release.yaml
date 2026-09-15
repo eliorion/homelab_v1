@@ -1,0 +1,63 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kyverno
+  namespace: flux-system
+spec:
+  targetNamespace: kyverno
+  releaseName: kyverno
+  interval: 30m
+  chart:
+    spec:
+      chart: kyverno
+      # Kyverno v1.19.1. Before bumping read README "Upgrading": release Secret is at ~92% of its size cap.
+      version: "3.9.1"
+      sourceRef:
+        kind: HelmRepository
+        name: kyverno
+        namespace: flux-system
+      interval: 12h
+  install:
+    # Helm must NOT create it: namespace.yaml carries the restricted PSA labels.
+    createNamespace: false
+    crds: Create
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+    crds: CreateReplace
+  values:
+    admissionController:
+      replicas: 3
+      podDisruptionBudget:
+        enabled: true
+      # NEVER enable the chart ServiceMonitors: their CRD comes from the monitoring tier (README).
+      serviceMonitor:
+        enabled: false
+    backgroundController:
+      replicas: 2
+      serviceMonitor:
+        enabled: false
+    cleanupController:
+      replicas: 2
+      serviceMonitor:
+        enabled: false
+    reportsController:
+      replicas: 2
+      serviceMonitor:
+        enabled: false
+    config:
+      # API-server-side skip: no AdmissionReview is ever sent for objects in these namespaces.
+      webhooks:
+        namespaceSelector:
+          matchExpressions:
+            - key: kubernetes.io/metadata.name
+              operator: NotIn
+              values: [kube-system, kyverno, flux-system]
+      # In-engine skip for the same set. NOT resourceFiltersExcludeNamespaces, which REMOVES filters.
+      resourceFiltersIncludeNamespaces:
+        - flux-system

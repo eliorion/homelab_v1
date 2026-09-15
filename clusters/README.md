@@ -35,7 +35,7 @@ rather than hand-editing.
 Every other Kustomization in this directory names `sourceRef: GitRepository/flux-system`,
 so the whole tree reconciles from one clone.
 
-### `staging/infrastructure.yaml` — 16 Kustomizations
+### `staging/infrastructure.yaml` — 17 Kustomizations
 
 | name | path (`./`-relative to repo root) | interval | timeout | dependsOn | gate |
 | --- | --- | --- | --- | --- | --- |
@@ -45,6 +45,7 @@ so the whole tree reconciles from one clone.
 | `infra-cilium` | `infrastructure/controllers/base/cilium` | 1h | 10m | — | wait + HelmRelease `cilium` |
 | `infra-cilium-config` | `infrastructure/controllers/base/cilium/config` | 1h | 5m | `infra-cilium` | — |
 | `infra-keda` | `infrastructure/controllers/base/keda` | 1h | 10m | — | wait + Deployment `keda-operator` (ns `keda`) |
+| `infra-kyverno` | `infrastructure/controllers/base/kyverno` | 1h | 10m | — | wait + Deployments `kyverno-admission-controller`, `kyverno-background-controller` (ns `kyverno`) |
 | `infra-reflector` | `infrastructure/controllers/staging/reflector` | 1h | 5m | — | wait + Deployment `reflector` (ns `reflector`), sops |
 | `infra-keycloak-operator` | `infrastructure/controllers/base/keycloak-operator` | 1h | 5m | — | wait + Deployment `keycloak-operator` (ns `identity`) |
 | `infrastructure-controllers` | `infrastructure/controllers/staging` | 1m0s | 5m | `infra-cnpg-plugin` | sops |
@@ -84,7 +85,8 @@ resources inside it:
 - **`infra-keycloak-realm` runs last**, after `infrastructure-services`, because the
   keycloak-config-cli Job authenticates with the `keycloak-initial-admin` Secret that
   the operator generates once Keycloak is up.
-- The longer timeouts (`infra-longhorn` 15m, `infra-cilium` 10m, `infra-keda` 10m)
+- The longer timeouts (`infra-longhorn` 15m, `infra-cilium` 10m, `infra-keda` 10m,
+  `infra-kyverno` 10m)
   exist because a first install on a cold node pulls the full image set before the
   health check can pass.
 
@@ -196,6 +198,7 @@ flowchart TD
     root --> cil["infra-cilium"]
     root --> refl["infra-reflector"]
     root --> keda["infra-keda"]
+    root --> kyv["infra-kyverno"]
     root --> kco["infra-keycloak-operator"]
     root --> lin["infra-linstor"]
     root --> moncfg["monitoring-configs"]

@@ -196,6 +196,31 @@ spec:
       name: keda-operator
       namespace: keda
 ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-kyverno
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/base/kyverno
+  prune: true
+  wait: true
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: kyverno-admission-controller
+      namespace: kyverno
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: kyverno-background-controller
+      namespace: kyverno
+---
 # Vendored Keycloak operator manifests (CRDs + RBAC + Deployment) + the `identity` namespace.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
