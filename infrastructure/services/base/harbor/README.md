@@ -76,7 +76,7 @@ HEAD https://registry.eliorion.fr/v2/dockerhub-proxy/library/nginx/manifests/lat
 
 | client | value | why |
 |---|---|---|
-| Talos | `https://registry.eliorion.fr/v2/dockerhub-proxy` + `overridePath: true` | scheme **and** `/v2`; `overridePath` stops containerd appending a second `/v2` |
+| Talos | `https://registry.eliorion.fr/v2/dockerhub-proxy` (and `/v2/ghcr-public`) + `overridePath: true` | scheme **and** `/v2`; `overridePath` stops containerd appending a second `/v2` |
 | Dagger engine (`../dagger/config/engine.json`) | `registry.eliorion.fr/dockerhub-proxy` | **no scheme, no `/v2`** — BuildKit does `path.Join("/v2", mirrorPath)` itself. Adding `/v2` yields `/v2/v2/…` and 404s every pull |
 | k3s / k3d (asp `e2e_common.py`) | full URL with `/v2/<project>` | generated `registries.yaml` |
 | Docker daemon | **cannot** be transparent | Docker's `registry-mirrors` is Docker-Hub-only and accepts no path. Pull by full name instead |
@@ -106,10 +106,11 @@ Three absolutes:
 - Mirrors carry `capabilities = ['pull','resolve']`; **push never traverses a mirror.** CI
   pushes to `registry.eliorion.fr/<project>/…` by real name.
 
-Apply it **last**, and only once `registry.eliorion.fr` serves a chain that verifies against the
-system trust store (`curl -sI https://registry.eliorion.fr/v2/` from a pod succeeds, and the
-leaf issuer has no `(STAGING)` prefix) — containerd rejects an untrusted chain on every node
-simultaneously. One node at a time, verifying a real pull between each:
+It must only ever be applied while `registry.eliorion.fr` serves a chain that verifies against
+the system trust store — containerd rejects an untrusted chain on every node simultaneously.
+The `internal-endpoints` blackbox probe (`monitoring/configs/staging/blackbox-probes`) checks
+exactly that, with TLS verification, every minute. Applied 2026-09-15, one node at a time,
+verifying a real pull between each:
 
 ```bash
 talosctl -n 192.168.1.101 read /etc/cri/conf.d/hosts/docker.io/hosts.toml
@@ -147,12 +148,13 @@ renewal.
 
 ## Proxy projects are runtime state, not manifests
 
-A chart cannot express them. After Harbor is up, create one registry endpoint and one **public**
-proxy-cache project per upstream:
+A chart cannot express them. After Harbor is up, create the registry endpoints and proxy-cache
+projects (live on 2026-09-15):
 
 ```bash
-# dockerhub-proxy  → https://hub.docker.com   (type: docker-hub)
-# ghcr-proxy       → https://ghcr.io          (type: github-ghcr)
+# dockerhub-proxy  → https://hub.docker.com   (type: docker-hub)   public   Talos, Dagger
+# ghcr-public      → https://ghcr.io          (type: github-ghcr)  public   Talos, Dagger
+# ghcr-proxy       → https://ghcr.io          (type: github-ghcr)  private  credentialed clients only
 ```
 
 Attach upstream credentials to the Docker Hub endpoint — an authenticated cache raises the
@@ -169,8 +171,19 @@ repos. Always read the endpoint back and check `credential.access_key` is non-nu
 
 `ghcr-proxy` is **private** (unlike `dockerhub-proxy`): it holds private images, and a public
 project would let anything that can reach Harbor pull them anonymously. Pulling from it
-therefore needs credentials — which is why the node-level mirror for `ghcr.io` also needs
-`machine.registries.config` auth in the Talos config, not just a mirror entry.
+therefore needs Harbor credentials.
+
+**The Talos `ghcr.io` mirror uses `ghcr-public`, not `ghcr-proxy`** (decided 2026-09-15). The
+nodes hold no Harbor credentials, and containerd cannot use a pod's GitHub pull secret against
+Harbor, so a `ghcr-proxy` mirror answered every pull with `401` and fell back to `ghcr.io`
+— working, never cached. With `ghcr-public`, measured on each node:
+
+- a public ghcr image (`astral-sh/uv`): `401` → anonymous token → `200` from Harbor, cached;
+- a private `ghcr.io/eliorion/*` image with the namespace's `ghcr-pull-secret`: Harbor `401`
+  → `404`, containerd falls back to `ghcr.io` with the pod's credentials, pull succeeds.
+
+Rejected: a pull-only Harbor robot account for `ghcr-proxy` in the Talos config. It would cache
+the private images too, at the cost of a credential on every node able to pull all of them.
 
 Verify each before touching any client config:
 
