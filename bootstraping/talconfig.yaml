@@ -259,24 +259,10 @@ patches:
             - etcd-backup
       nodeLabels:
         node.kubernetes.io/exclude-from-external-load-balancers: ""
-  # In-cluster pulls go through Harbor's proxy-cache projects, which is what
-  # lets every pod use the cache without editing a chart's global.imageRegistry.
-  # See infrastructure/services/base/harbor/README.md.
-  #
-  # DO NOT `talosctl apply-config` until BOTH hold:
-  #   1. registry.eliorion.fr resolves and Harbor serves both proxy projects, and
-  #   2. secret/registry-tls is issued by letsencrypt-PROD, not -staging.
-  # containerd rejects an untrusted chain on every node at once.
-  #
-  # Standalone documents, NOT machine.registries.mirrors: there overridePath is a
-  # MIRROR-level bool fanned onto every endpoint, which would strip /v2 from the
-  # upstream fallback too. Here it is per-endpoint. machine.registries is also
-  # deprecated as of v1.13.4.
-  #
-  # Never add skipFallback (it removes the implicit upstream, and Harbor runs
-  # inside the cluster it feeds -> cold-start deadlock) and never add a '*'
-  # mirror (Talos reserves it for the on-node image cache; node images come from
-  # factory.talos.dev).
+  # Harbor proxy-cache mirrors. See infrastructure/services/base/harbor/README.md.
+  # registry-tls must verify against the system trust store, or containerd rejects every pull on every node.
+  # Standalone documents, NOT machine.registries.mirrors: there overridePath also strips /v2 from the fallback.
+  # Never add skipFallback (Harbor runs inside this cluster: cold-start deadlock) and never a '*' mirror.
   - |-
     apiVersion: v1alpha1
     kind: RegistryMirrorConfig
@@ -290,7 +276,8 @@ patches:
     kind: RegistryMirrorConfig
     name: ghcr.io
     endpoints:
-      - url: https://registry.eliorion.fr/v2/ghcr-proxy
+      # ghcr-public, NOT ghcr-proxy: ghcr-proxy is private and the nodes hold no Harbor credentials.
+      - url: https://registry.eliorion.fr/v2/ghcr-public
         overridePath: true
       - url: https://ghcr.io
   # PodSecurity admissionControl + auditPolicy come from talhelper defaults --

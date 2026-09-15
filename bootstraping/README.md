@@ -209,15 +209,18 @@ Each node was then rebooted in turn: CNPG primaries switched over first by setti
 `talosctl reboot --wait`, then uncordon and wait for etcd, DRBD `UpToDate` and CNPG before
 the next node.
 
-**Live nodes carried config the repository no longer declared** (found 2026-09-14 in a
-dry-run, left over from Longhorn): a `kubelet.extraMounts` bind of `/var/lib/longhorn` on
-all three nodes, and the `node.longhorn.io/create-default-disk` label plus
-`node.longhorn.io/default-disks-config` annotation on node-1. They are still there: the
-targeted patch above left them alone. The first full `apply-config` from this repository —
-once the Harbor condition allows one — removes them and adds the registry mirrors, restarting
-the kubelet. Always read
-`talosctl apply-config --dry-run` output before applying — but pipe it through a filter:
-the diff prints secret material from the machine config verbatim.
+**Live nodes and this file matched again on 2026-09-15.** Until then the nodes still carried
+a `kubelet.extraMounts` bind of `/var/lib/longhorn` (all three) and the Longhorn disk label
+and annotation (node-1), and lacked the Harbor `RegistryMirrorConfig` documents — the full
+`apply-config` had been held back while `registry-tls` came from letsencrypt-staging. Once it
+was letsencrypt-prod, `talosctl apply-config --mode=no-reboot` went node-3 → node-2 → node-1:
+no reboot, the kubelet back Ready within seconds, a real Docker Hub and ghcr pull through Harbor
+on each node before the next, and a final dry-run empty on all three.
+
+Always read `talosctl apply-config --dry-run` before applying, but print only its `+`/`-`
+lines and filter out `crt`/`key`/`secret`/`token`: the diff's context lines include secret
+material from the machine config verbatim. Use `--mode=no-reboot`, which fails instead of
+silently rebooting when a change needs one.
 
 ## Why it is like this
 
