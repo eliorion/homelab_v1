@@ -140,15 +140,17 @@ Raised from 100Gi / 70GB on 2026-09-15: the engine metrics showed the volume 81%
 Kubernetes refuses to change, so editing `storage` alone fails the Helm upgrade. In order:
 
 ```bash
-kubectl -n flux-system patch helmrelease dagger --type=merge -p '{"spec":{"suspend":true}}'
 kubectl -n dagger patch pvc data-dagger-engine-0 --type=merge \
   -p '{"spec":{"resources":{"requests":{"storage":"<new size>"}}}}'   # online, keeps the cache
 kubectl -n dagger delete statefulset dagger-engine --cascade=orphan  # the pod keeps running
-# merge the storage edit, let infrastructure-services apply it, then:
-kubectl -n flux-system patch helmrelease dagger --type=merge -p '{"spec":{"suspend":false}}'
+# now merge the storage edit and reconcile infrastructure-services + the HelmRelease
 ```
 
-Helm then creates the StatefulSet with the new template and adopts the pod.
+Helm then creates the StatefulSet with the new template and adopts the pod. Do not rely on
+`flux suspend` to hold the release in between: `infrastructure-services` owns the HelmRelease
+and clears a hand-set `spec.suspend` the moment it applies the edit (seen on the 2026-09-15
+resize). Keep the orphan delete and the merge close together; if the release reconciles
+first, it recreates the old StatefulSet and the upgrade fails — orphan-delete it again.
 
 `ssd-single` is LINSTOR with one replica and node-local placement. Replicating a
 build cache over DRBD would pay network cost on the hottest write path in the
