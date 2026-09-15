@@ -1,0 +1,40 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. The secrets of the two robots of Harbor project `e2e`,
+# which the harbor-config Job creates and keeps in sync (infrastructure/services/base/harbor/README.md,
+# "Harbor objects as code"). YOU choose both secrets; Harbor never generates them.
+#
+#   cp e2e-robots.enc.yaml.exemple e2e-robots.enc.yaml
+#   # replace both <...> with a secret of 8-128 chars holding an upper, a lower and a digit, e.g.
+#   #   printf 'Aa1%s\n' "$(openssl rand -hex 24)"
+#   sops -e -i e2e-robots.enc.yaml
+#
+# Then give the ci secret to GitHub (asp repository), never to the cluster:
+#   gh secret set HARBOR_E2E_PUSH_TOKEN      # the <robot$e2e+ci secret> value
+#   gh variable set HARBOR_E2E_ROBOT -b 'robot$e2e+ci'
+#
+# Rotate a robot: change its value here, re-encrypt, push. The Job sets the new secret and the old
+# one stops working; update the GitHub secret in the same change for e2e+ci.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: harbor-robot-e2e-ci
+  namespace: registry
+type: Opaque
+stringData:
+  secret: "<robot$e2e+ci secret>"
+---
+# Also the image pull secret for e2e run pods: reflector mirrors it into dev-platform, where
+# Kyverno policy dev-pods injects it. The Job reads the pull robot's secret from here too, so the
+# value exists once.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: harbor-e2e-pull
+  namespace: registry
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: dev-platform
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: dev-platform
+type: kubernetes.io/dockerconfigjson
+stringData:
+  .dockerconfigjson: '{"auths":{"registry.eliorion.fr":{"username":"robot$e2e+pull","password":"<robot$e2e+pull secret>"}}}'

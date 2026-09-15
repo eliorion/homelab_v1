@@ -146,22 +146,37 @@ back through staging the same way.
 because nothing pins this certificate's public key; a client that did would break at each
 renewal.
 
-## The e2e project
+## Harbor objects as code
 
-A normal (not proxy-cache) **private** project for the asp dev platform: proxy-cache projects
-refuse pushes. Created by hand, like the proxy projects:
+The e2e project and its robots are not clicked in the UI: the Job in `config/` (Flux Kustomization
+`infra-harbor-config`, path `infrastructure/services/staging/harbor/config`) calls the Harbor API
+with the `harbor-admin` Secret and converges, idempotently, on every run:
 
-- project `e2e`, private, quota 50Gi;
-- tag retention: keep images pushed in the last 7 days **or** the 5 most recent per repository,
-  plus a garbage-collection schedule (retention alone frees no disk);
-- robot `e2e+ci`: push + pull on `e2e` only, with an expiry — stored in GitHub as
-  `HARBOR_E2E_ROBOT` / `HARBOR_E2E_PUSH_TOKEN`;
-- robot `e2e+pull`: pull on `e2e` only — sops-encrypted into
-  `infrastructure/services/dev/dev-platform/harbor-e2e-pull.enc.yaml`.
+- project `e2e`: a normal (not proxy-cache) **private** project, quota 50Gi — proxy-cache
+  projects refuse pushes;
+- tag retention on it: keep images pushed in the last 7 days **or** the 5 most recent per
+  repository, daily at 03:00;
+- a weekly garbage-collection schedule, created only if Harbor has none (retention untags; only
+  GC frees the disk). An existing schedule is left alone;
+- robot `robot$e2e+ci`: push + pull on `e2e`, for the asp `build-scan` job (a push checks for
+  existing blobs first, hence pull);
+- robot `robot$e2e+pull`: pull on `e2e`, for the dev platform's run pods.
 
-`e2e+ci` needs pull as well as push: a push checks for existing blobs first.
-[`infrastructure/services/dev/dev-platform/README.md`](../../dev/dev-platform/README.md#registry)
-explains what goes into the project.
+**You choose the robot secrets, Harbor does not.** The API takes a caller-supplied secret on
+create and on `PATCH /robots/{id}`, so both live in `staging/harbor/config/e2e-robots.enc.yaml`
+(template: `e2e-robots.enc.yaml.exemple`): Secret `harbor-robot-e2e-ci` and Secret
+`harbor-e2e-pull`, which is also the dockerconfigjson reflector mirrors into `dev-platform`. Each
+run sets the secret from Git, so rotating a robot is an edit of that file; update the GitHub
+secret `HARBOR_E2E_PUSH_TOKEN` in the same change for `e2e+ci`.
+
+A secret must be 8-128 characters with an upper, a lower and a digit; the Job refuses anything
+else before calling Harbor. The Job is re-created after `ttlSecondsAfterFinished` (a day), so a
+change made in the UI to these objects is reverted within a day. Objects not listed here —
+the proxy projects below — are untouched.
+
+Proven against Harbor 2.15.2 on a scratch project (since deleted): create, a second idempotent
+run, a secret rotation (the old secret's token grants no actions), GC schedule creation, and the
+two robots' token scopes (`push,pull` and `pull`).
 
 ## Proxy projects are runtime state, not manifests
 

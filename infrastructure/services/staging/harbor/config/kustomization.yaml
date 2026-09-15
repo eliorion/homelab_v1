@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: registry
+resources:
+  - ../../../base/harbor/config
+  # sops-encrypt e2e-robots.enc.yaml.exemple into this file first (README.md, Harbor objects as code).
+  - e2e-robots.enc.yaml

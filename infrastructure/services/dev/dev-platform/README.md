@@ -118,14 +118,13 @@ project, `registry.eliorion.fr/e2e`:
   per tag (skipped when present). GHCR packages are private and the nodes hold no GHCR
   credential; copying keeps one pull secret instead of two.
 
-Pull credential: `harbor-e2e-pull.enc.yaml`, a sops-encrypted `kubernetes.io/dockerconfigjson`
-for robot `robot$e2e+pull` (pull only), injected by `dev-pods`. The push robot `robot$e2e+ci`
-lives in GitHub only (`HARBOR_E2E_ROBOT` / `HARBOR_E2E_PUSH_TOKEN`). Project setup: Harbor
-README, "The e2e project". Create the Secret from `harbor-e2e-pull.enc.yaml.exemple`: copy it to
-`harbor-e2e-pull.enc.yaml`, put the robot token in, `sops -e -i` it (the `.sops.yaml` rule for
-`infrastructure/services/dev/` picks the staging key and encrypts `stringData` only), and
-uncomment its line in `kustomization.yaml`. Until it exists, run pods referencing a private image
-fail with `ImagePullBackOff`; public images still pull.
+Pull credential: Secret `harbor-e2e-pull` (`kubernetes.io/dockerconfigjson`, robot
+`robot$e2e+pull`, pull only), mirrored into this namespace by reflector from `registry` and
+injected by `dev-pods`. The project, both robots and that Secret are declared as code with Harbor:
+[`../../base/harbor/README.md`](../../base/harbor/README.md#harbor-objects-as-code). The push robot
+`robot$e2e+ci` reaches only GitHub (`HARBOR_E2E_ROBOT` / `HARBOR_E2E_PUSH_TOKEN`). Until the
+Secret exists, run pods referencing a private image fail with `ImagePullBackOff`; public images
+still pull.
 
 ## Quota
 
