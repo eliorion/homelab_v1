@@ -10,7 +10,7 @@ spec:
     spec:
       chart: cert-manager
       # >= v1.16.4: below it, Cloudflare DNS-01 cleanup leaves _acme-challenge TXT records behind.
-      version: "v1.16.5"
+      version: "v1.21.2"
       sourceRef:
         kind: HelmRepository
         name: jetstack

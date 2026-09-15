@@ -26,7 +26,7 @@ Deep detail lives in
 | `kustomization.yaml` | Lists the three resources below, in order: `namespace.yaml`, `repository.yaml`, `release.yaml`. |
 | `namespace.yaml` | The `cert-manager` Namespace object. |
 | `repository.yaml` | `HelmRepository` `jetstack` in `flux-system`, `https://charts.jetstack.io`, polled every `24h`. |
-| `release.yaml` | `HelmRelease` `cert-manager` in `flux-system`, `targetNamespace: cert-manager`, chart `cert-manager` pinned to `v1.16.5`, reconcile `interval: 30m`, chart revision check `interval: 12h`, `install.createNamespace: true`, `values.crds.enabled: true`. |
+| `release.yaml` | `HelmRelease` `cert-manager` in `flux-system`, `targetNamespace: cert-manager`, chart `cert-manager` pinned to `v1.21.2`, reconcile `interval: 30m`, chart revision check `interval: 12h`, `install.createNamespace: true`, `values.crds.enabled: true`. |
 
 Flux applies this directory through its own Kustomization, `infra-certmanager`,
 declared identically in `clusters/staging/infrastructure.yaml` and
@@ -105,6 +105,33 @@ cluster rather than moved (doc 06).
 `release.yaml` and bumped by Renovate, which reads Flux `HelmRelease` charts
 natively — no annotation comment is required in the file.
 
+**Kubernetes support gates the version.** cert-manager `1.21` supports
+Kubernetes `1.33`–`1.36`. The cluster sat on `1.16` (supports up to `1.32`) while
+running Kubernetes `1.36.1` until 2026-09-15, when it jumped straight to
+`v1.21.2`. Upstream recommends one minor at a time; the jump was taken because
+none of the breaking changes from `1.17` to `1.21` touch this cluster (below).
+Check the supported-releases table before a Kubernetes bump past `1.36`.
+
+## Defaults that changed under this install (1.16 → 1.21)
+
+These change behaviour without any edit to a manifest here:
+
+- **`Certificate.spec.privateKey.rotationPolicy` defaults to `Always`** (1.18,
+  GA and non-disableable since 1.20). Every Certificate here already set
+  `Always` except `keycloak-ca`, which now rotates its CA key at its next
+  renewal (2036).
+- **`Certificate.spec.revisionHistoryLimit` defaults to `1`** (1.18). Only the
+  latest `CertificateRequest` per Certificate is kept; older ones are garbage
+  collected, so issuance history lives in events and logs, not in old CRs.
+- **Controller metrics port renamed to `http-metrics`**, and the
+  `prometheus.servicemonitor.targetPort`/`path` and `prometheus.podmonitor.path`
+  values are gone (1.21) — the chart's values schema rejects them. Nothing
+  scrapes cert-manager today.
+- **No default `serviceaccounts/token` RBAC for the controller** (1.21). Only an
+  issuer using `serviceAccountRef` to the controller's own ServiceAccount would
+  need it; none does.
+- **Containers run as UID/GID `65532`** (1.20), previously `1000`/`0`.
+
 ## Traps
 
 - **`prune: true` plus `crds.enabled: true` means deleting this directory
@@ -118,8 +145,11 @@ natively — no annotation comment is required in the file.
   `infra-certmanager`.** Applying a `Certificate` or `Issuer` in a Kustomization
   that does not (transitively) `dependsOn` it fails with `no matches for kind`
   when the CRDs are not registered yet.
-- **The chart version string carries a leading `v` (`"v1.16.5"`).** The Jetstack
+- **The chart version string carries a leading `v` (`"v1.21.2"`).** The Jetstack
   chart uses v-prefixed versions; dropping the prefix does not resolve.
+- **Never pin a `1.19` below `v1.19.1`.** `v1.19.0` re-issues certificates
+  unnecessarily; against `letsencrypt-prod` that burns the 5-per-week duplicate
+  limit.
 - **Never go below `v1.16.4` while an issuer solves DNS-01 on Cloudflare.**
   Cloudflare removed `zone_id` from its DNS-record API responses
   (cert-manager/cert-manager#7540). Older controllers still issue, but challenge
