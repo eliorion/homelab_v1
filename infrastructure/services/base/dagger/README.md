@@ -128,10 +128,27 @@ is abandoned, set it `false` — the engine is meaningfully safer without it.
 
 ## Cache sizing
 
-100Gi `ssd-single` (`data-dagger-engine-0`), with `engine.json` GC set to `maxUsedSpace: 70GB`,
-`reservedSpace: 10GB`, `minFreeSpace: 20%`. The GC ceiling is deliberately well
+200Gi `ssd-single` (`data-dagger-engine-0`), with `engine.json` GC set to `maxUsedSpace: 150GB`,
+`reservedSpace: 10GB`, `minFreeSpace: 15%`. The GC ceiling is deliberately well
 under the volume size: BuildKit measures its own store, not the filesystem, and
 a full volume fails builds in confusing ways rather than evicting.
+
+Raised from 100Gi / 70GB on 2026-09-15: the engine metrics showed the volume 81% used
+(86 of 107GB) during full PR pipelines, with GC holding at its ceiling.
+
+**Resizing.** The chart renders the claim as a StatefulSet `volumeClaimTemplate`, which
+Kubernetes refuses to change, so editing `storage` alone fails the Helm upgrade. In order:
+
+```bash
+kubectl -n flux-system patch helmrelease dagger --type=merge -p '{"spec":{"suspend":true}}'
+kubectl -n dagger patch pvc data-dagger-engine-0 --type=merge \
+  -p '{"spec":{"resources":{"requests":{"storage":"<new size>"}}}}'   # online, keeps the cache
+kubectl -n dagger delete statefulset dagger-engine --cascade=orphan  # the pod keeps running
+# merge the storage edit, let infrastructure-services apply it, then:
+kubectl -n flux-system patch helmrelease dagger --type=merge -p '{"spec":{"suspend":false}}'
+```
+
+Helm then creates the StatefulSet with the new template and adopts the pod.
 
 `ssd-single` is LINSTOR with one replica and node-local placement. Replicating a
 build cache over DRBD would pay network cost on the hottest write path in the
@@ -151,8 +168,10 @@ hosts Nexus; `WaitForFirstConsumer` binds the volume wherever the pod first land
 - **`privileged: true` is non-negotiable.** The engine is BuildKit: it creates
   containers, manages snapshots and mounts. The chart hardcodes it, plus
   `capabilities: ALL`, `runAsUser: 0` and `fsGroup: 1001`.
-- **No CPU limit, memory limit 8Gi.** A throttled builder makes every job slower
-  for no isolation benefit on a dedicated node pair.
+- **No CPU limit, memory limit 16Gi.** A throttled builder makes every job slower
+  for no isolation benefit on a dedicated node pair. The limit was 8Gi until the engine
+  was OOMKilled at 8.2GiB RSS during a full PR pipeline (2026-09-15): the kill aborts every
+  running CI session and left the cache at 3GB afterwards.
 - **`terminationGracePeriodSeconds: 30`**, down from the chart's 300. An engine
   restart throws away in-flight builds either way; CI should not wait for a
   graceful shutdown that cannot preserve them.

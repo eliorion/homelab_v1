@@ -41,7 +41,8 @@ spec:
           storageClassName: ssd-single
           resources:
             requests:
-              storage: 100Gi
+              # The claim template is immutable: resize procedure in README, Cache sizing.
+              storage: 200Gi
       # Do not enable: dataVolume shadows the PVC with a node hostPath.
       hostPath:
         dataVolume:
@@ -85,5 +86,5 @@ spec:
           memory: 2Gi
         limits:
           # No CPU limit on purpose. See README.
-          memory: 8Gi
+          memory: 16Gi
       terminationGracePeriodSeconds: 30

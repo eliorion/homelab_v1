@@ -2,9 +2,9 @@
   "logLevel": "info",
   "gc": {
     "enabled": true,
-    "maxUsedSpace": "70GB",
+    "maxUsedSpace": "150GB",
     "reservedSpace": "10GB",
-    "minFreeSpace": "20%"
+    "minFreeSpace": "15%"
   },
   "security": {
     "insecureRootCapabilities": true
