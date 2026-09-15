@@ -130,12 +130,11 @@ machine PKI.
 
 **Reference.** [09-etcd-backup-dr.md](09-etcd-backup-dr.md)
 
-### Kyverno with CEL policy types only for the preview guardrails
+### Kyverno with CEL policy types only for the e2e platform guardrails
 
-**Why.** The `dev` tier's preview namespaces need an admission engine that can do three
-things: validate what lands in a preview namespace, *generate* that namespace's
-ResourceQuota, LimitRange, RoleBinding and NetworkPolicy the moment it is created, and in
-Phase 6 verify image signatures. Kyverno's `policies.kyverno.io/v1` types
+**Why.** The `dev` tier needs an admission engine that can validate what lands in the e2e
+platform namespace, mutate its run pods (priority, host pull secrets), and in Phase 6 verify
+image signatures. (It was chosen when per-PR previews also needed per-namespace generation.) Kyverno's `policies.kyverno.io/v1` types
 (`ValidatingPolicy`, `GeneratingPolicy`, `MutatingPolicy`, later `ImageValidatingPolicy`)
 do all three in CEL, the same expression language as the native API, and they are the
 only Kyverno types with a future: `ClusterPolicy` and `Policy` are deprecated in v1.19 and
@@ -149,37 +148,12 @@ signatures, so it would need a second mechanism beside it for the two harder job
 requested) that every matched request round-trips through, and a `Fail` policy turns a
 Kyverno outage into an admission outage for what it matches — contained by excluding
 `kube-system`, `kyverno` and `flux-system` at the webhook, and by keeping `Fail` to
-preview-scoped policies. Kyverno's compatibility matrix lists Kubernetes 1.33–1.35 for
+e2e-platform-scoped policies. Kyverno's compatibility matrix lists Kubernetes 1.33–1.35 for
 v1.19 while this cluster runs 1.36: the 1.36 support is in the code and in two conformance
 jobs, not yet on paper. The CRDs are part of the Helm release, so uninstalling it deletes
 every policy, and the release record sits at ~92% of the 1 MiB Secret cap.
 
 **Reference.** [`infrastructure/controllers/base/kyverno/README.md`](../infrastructure/controllers/base/kyverno/README.md)
-
-### A `dev` tier of per-PR previews, fenced by generated guardrails
-
-**Why.** Each pull request gets a disposable namespace `preview-pr-<n>` holding a vcluster,
-at most three at once, running unreviewed code on the real cluster. Kyverno clones a
-ResourceQuota, a LimitRange and default-deny network policy (plus Cilium exceptions for
-DNS, Harbor and the vcluster API) from a template namespace, generates the namespace's
-RoleBindings, keeps both synchronized, and validates what lands there: no host access or
-node pinning, one tailnet LoadBalancer, `ssd-single` volumes, HTTPRoutes only for the PR's
-own hostname, and a priority that yields to everything else. It is the first default deny
-in the cluster.
-
-**Rejected.** Letting the vcluster chart own its RBAC: the driver would need RBAC write,
-which is escalation. A cluster-wide namespace delete for the driver, guarded by a Kyverno
-policy: Kyverno's webhook never sees `kube-system`, `kyverno` or `flux-system`, so patch and
-delete are granted per preview namespace instead, and the only cluster-wide write is create.
-
-**Cost.** Everything depends on Kyverno. Validation is `Fail` and scoped to previews, so an
-outage blocks preview writes; generation is always `Ignore`, so a pod rule refuses pods
-until the guardrails exist. The vcluster Role is a hand-copied chart render to redo on every
-bump, and the syncer runs as root, so previews run at PSA `baseline`.
-
-**Superseded** by the e2e platform below; the preview machinery is removed once the platform is live.
-
-**Reference.** [`infrastructure/services/dev/README.md`](../infrastructure/services/dev/README.md)
 
 ### One long-lived e2e platform vcluster, not a vcluster per PR
 
@@ -838,25 +812,20 @@ an entire downstream branch.
 
 **Reference.** `clusters/staging/infrastructure.yaml`
 
-### Previews are created by the Dagger pipeline, not reconciled by Flux
+### e2e runs are created by the Dagger pipeline inside a Flux-owned vcluster
 
-**Why.** A preview follows a PR's pushes and closes with it. The pipeline mints a
-short-lived token for one ServiceAccount, creates the namespace and installs the vcluster;
-Flux owns only the fence around it — policies, templates, RBAC — and a reaper that deletes
-previews after 24h or above the cap.
+**Why.** A run follows a PR's pushes and ends with its checks. Flux owns the platform — the
+vcluster, KEDA and CNPG inside it, the host fence — and the pipeline owns only the
+`e2e-<pr>-*` namespaces it creates, upgrades and deletes inside the vcluster.
 
-**Rejected.** Committing a Flux object per PR to this repository.
+**Rejected.** Committing a Flux object per PR to this repository. Creating a namespace and a
+vcluster per PR on the host, which needs a host credential in CI that can create namespaces.
 
-**Cost.** Git does not list the previews that exist; the cluster does
-(`kubectl get ns -l preview.eliorion.fr/tier=preview`). A pipeline that dies mid-deploy
-leaves a preview until the reaper runs, and any workflow on the default runner scale set
-can mint the driver token.
+**Cost.** Git does not list the runs that exist; the vcluster does
+(`kubectl get ns -l e2e.eliorion.fr/run`). A run that dies mid-deploy leaves its namespaces
+until the next run for that PR or the in-vcluster reaper deletes them.
 
-**Superseded**: the e2e platform is a Flux object and only run namespaces come from the
-pipeline, inside the vcluster; a cancelled run is cleaned by the next run for that PR or by the
-in-vcluster reaper.
-
-**Reference.** [`infrastructure/services/dev/README.md`](../infrastructure/services/dev/README.md)
+**Reference.** [`infrastructure/services/dev/e2e-platform/README.md`](../infrastructure/services/dev/e2e-platform/README.md)
 
 ### `wait: true` on the narrow operator tiers and deliberately not on the wide ones
 
@@ -1011,6 +980,6 @@ Tracked, not hidden.
 | CI on this repository | No render check, no schema validation, no lint, no secret leak check on a pull request that Flux will apply within ten minutes | Not started |
 | Backups for the automation database | It is the only copy of every workflow and every stored credential | Unblocked: the Garage key is minted and encrypted, and the object store now sets the region that caused the 2026-08-10 outage. Enabling it is uncommenting four lines in `apps/staging/databases/n8n/kustomization.yaml` and confirming the bucket exists |
 | A dead man's switch | The watchdog alert is blackholed, so a dead monitoring stack is indistinguishable from a healthy cluster | Not started |
-| Network policy | Cilium is used as a datapath, not as a policy engine, outside the preview namespaces; default deny exists only in `preview-*` (the `dev` tier) | Previews only |
+| Network policy | Cilium is used as a datapath, not as a policy engine, outside the e2e platform; deny rules exist only in `e2e-platform` (the `dev` tier) | e2e platform only |
 | Decide the fate of the second environment | It was wired but never deployed, had not been touched since June 2026, and still encoded a bucket layout that staging deliberately moved away from | Resolved 2026-09-15: the `production/` tree was deleted. The cluster is single-environment; non-production workloads go to an in-cluster `dev` tier (Phase 4). Rotating credentials shared with the deleted Secrets and archiving the production age key offline remain manual, see [§8](#one-repository-one-branch-one-cluster) |
 | Replicate snapshots to a second provider | A second offsite copy of the etcd snapshots, using the object storage account that already exists | Named as a deliberate future step |

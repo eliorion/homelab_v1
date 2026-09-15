@@ -1,9 +1,8 @@
 # kyverno
 
-Kyverno is the cluster's admission policy engine. It exists for one consumer that
-does not exist yet: the guardrails of the upcoming `dev` tier, where preview
-namespaces get per-namespace quotas, RBAC and admission limits generated and
-enforced automatically, and later (Phase 6) image signature verification. This
+Kyverno is the cluster's admission policy engine. Its consumer is the e2e platform
+(`infrastructure/services/dev/e2e-platform`), whose host namespace gets admission limits
+and pod mutations, and later (Phase 6) image signature verification. This
 directory installs **the controller and its CRDs only** — there is no policy here,
 and the `kyverno-policies` chart is deliberately not installed.
 
@@ -18,7 +17,7 @@ into the `kyverno` namespace.
 `ClusterPolicy` or `Policy`.** Upstream deprecated them in v1.19 and removes them
 in v1.20, together with `CleanupPolicy`/`ClusterCleanupPolicy` and the legacy
 `kyverno.io` `PolicyException`. The decision record is in
-[`documentations/14-design-decisions.md`](../../../../documentations/14-design-decisions.md#kyverno-with-cel-policy-types-only-for-the-preview-guardrails).
+[`documentations/14-design-decisions.md`](../../../../documentations/14-design-decisions.md#kyverno-with-cel-policy-types-only-for-the-e2e-platform-guardrails).
 
 ## How it is wired
 
@@ -73,10 +72,11 @@ production one lists `kyverno/`; `infra-kyverno` points at the base, and
 
 ## Why it is like this
 
-**Why Kyverno, and why CEL types only.** The dev tier needs three things from an
-admission engine: validate objects in preview namespaces, *generate* per-namespace
+**Why Kyverno, and why CEL types only.** The dev tier was designed around three things
+from an admission engine: validate objects in preview namespaces, *generate* per-namespace
 objects (ResourceQuota, LimitRange, RoleBinding, NetworkPolicy) when a preview
-namespace appears, and later verify image signatures. Native
+namespace appears, and later verify image signatures. The per-PR previews were replaced
+by the e2e platform, which uses validation and mutation only. Native
 `ValidatingAdmissionPolicy` covers the first only. Kyverno's CEL types cover all
 three with the same CEL expression language VAP uses, and they are the only types
 upstream will still ship after v1.20. The `policies.kyverno.io` types have served
@@ -186,8 +186,8 @@ is only Kyverno's own CRs. Each policy added later widens it by its own match:
 
 - **CEL policy types default to `failurePolicy: Fail`** (observed: a
   `ValidatingPolicy` with no `failurePolicy` registered `vpol.validate.kyverno.svc-fail`).
-  Preview policies are meant to fail closed and must say so explicitly *and* scope
-  themselves with a `namespaceSelector` to the preview namespaces. Anything
+  e2e platform policies are meant to fail closed and must say so explicitly *and* scope
+  themselves with a `namespaceSelector` to the `eliorion.fr/tier: e2e` namespace. Anything
   broader sets `failurePolicy: Ignore`.
 - **`namespaceSelector` cannot exclude cluster-scoped objects** other than
   `Namespace` itself. A `Fail` policy matching ClusterRoles, CRDs, Nodes or CSRs is

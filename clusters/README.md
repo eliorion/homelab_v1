@@ -9,7 +9,7 @@ repository (`infrastructure/`, `apps/`, `monitoring/`) is inert YAML until a
 `staging` is the live cluster and the only one. A `production/` entrypoint for a cluster
 that was never bootstrapped was deleted on 2026-09-15.
 
-The files in `clusters/staging/` declare 24 Flux Kustomizations, 4 `GitRepository`
+The files in `clusters/staging/` declare 23 Flux Kustomizations, 4 `GitRepository`
 sources for the application Helm charts, and the flux-generated bootstrap manifests.
 They carry no workload YAML of their own — only ordering, gating, timeouts and
 decryption.
@@ -134,32 +134,26 @@ project's read-only database replica. The labs are always on (`replicas: 1`), so
 reachable on the tailnet without scaling it up first; the scale and port-forward commands
 are in [`../apps/staging/lab/README.md`](../apps/staging/lab/README.md).
 
-### `staging/dev.yaml` — 2 Kustomizations
+### `staging/dev.yaml` — 1 Kustomization
 
-`dev-platform` → `infrastructure/services/dev`, `interval: 10m`, `retryInterval: 1m`,
-`timeout: 10m`, `prune: true`, `wait: true`, sops decryption. It depends on
-`infrastructure-services`, `infra-kyverno`, `infra-cilium-config` and `infra-reflector`.
+`e2e-platform` → `infrastructure/services/dev/e2e-platform`, `interval: 10m`,
+`retryInterval: 1m`, `timeout: 20m`, `prune: true`, `wait: true`, sops decryption. It depends
+on `infrastructure-controllers` (the CNPG HelmRepository), `infra-keda` (the KEDA
+HelmRepository), `infra-kyverno`, `infra-cilium-config` and `infra-reflector`.
 
 - **`infra-kyverno`** registers the `policies.kyverno.io` CRDs and runs the admission
   controller whose `Fail` webhook validates policy objects; applying the policies earlier
   is a reconcile error.
 - **`infra-cilium-config`** sits after `infra-cilium`, whose release brings the
-  `CiliumNetworkPolicy` CRD the templates use, and after the `cilium` Gateway it applies.
-  (The Gateway API CRDs themselves come from Talos `cluster.extraManifests`.)
-- **`infra-reflector`** is for the Harbor pull-secret reflection the tier adds next.
+  `CiliumNetworkPolicy` CRD the platform's network boundary uses.
+- **`infra-reflector`** is for the Harbor and GHCR pull-secret reflection the platform uses.
 - **`decryption` with no sops file in the path yet**, on purpose: see the first Trap.
 
-The previews the tier guards are created by the Dagger pipeline, not by Flux. Details in
-[`../infrastructure/services/dev/README.md`](../infrastructure/services/dev/README.md).
-
-`e2e-platform` → `infrastructure/services/dev/e2e-platform`, `interval: 10m`,
-`retryInterval: 1m`, `timeout: 20m`, `prune: true`, `wait: true`, sops decryption. It depends
-on `infrastructure-controllers` (the CNPG HelmRepository), `infra-keda` (the KEDA
-HelmRepository), `infra-kyverno`, `infra-cilium-config` and `infra-reflector`. The 20m covers
-the vcluster, then KEDA and CNPG installed into it, then the nested Kustomization
-`e2e-platform/e2e-platform-virtual`, which applies `virtual/` inside the vcluster through
-`spec.kubeConfig` and is not counted above because it lives outside `clusters/staging/`.
-Details in
+The 20m covers the vcluster, then KEDA and CNPG installed into it, then the nested
+Kustomization `e2e-platform/e2e-platform-virtual`, which applies `virtual/` inside the
+vcluster through `spec.kubeConfig` and is not counted above because it lives outside
+`clusters/staging/`. Runs are created by the Dagger pipeline inside the vcluster, not by
+Flux. Details in
 [`../infrastructure/services/dev/e2e-platform/README.md`](../infrastructure/services/dev/e2e-platform/README.md).
 
 ### `staging/monitoring.yaml` — 2 Kustomizations
@@ -252,11 +246,6 @@ flowchart TD
     db --> lab["lab"]
     refl --> lab
 
-    svc --> devp["dev-platform"]
-    kyv --> devp
-    cilcfg --> devp
-    refl --> devp
-
     ctrl --> e2e["e2e-platform"]
     keda --> e2e
     kyv --> e2e
@@ -277,8 +266,7 @@ same move `infra-cilium-config` makes for the Cilium CRs.
 
 Two reconcile cadences: operator tiers run at `interval: 1h` because they only change
 when a human bumps a chart version; application and service tiers run at `1m0s`.
-`dev-platform` sits between, at `10m`: it changes only with policy edits, and drift in a
-generated object is Kyverno's to revert, not Flux's.
+`e2e-platform` sits between, at `10m`: it changes only with platform edits.
 
 ## Traps
 
@@ -294,10 +282,10 @@ generated object is Kyverno's to revert, not Flux's.
     `400 {"error":"invalid_input","error_description":"A redirect URI is not a valid URI"}`,
     which reads as a bad realm file rather than as a missing decryption block.
 
-  Ten of the twenty-four Kustomizations carry the block: `infrastructure-controllers`,
+  Nine of the twenty-three Kustomizations carry the block: `infrastructure-controllers`,
   `infrastructure-services`, `infra-reflector`, `infra-keycloak-realm`, `databases`,
-  `apps`, `monitoring-controllers`, `monitoring-configs`, `dev-platform` and
-  `e2e-platform` — the two that carry it before their path holds any sops file. All point at the same
+  `apps`, `monitoring-controllers`, `monitoring-configs`, and `e2e-platform` — the one
+  that carries it before its path holds any sops file. All point at the same
   `sops-age` Secret, created by hand once per cluster and never committed.
 
 - **`force: true` on exactly two Kustomizations, and both need it.** A Job is
