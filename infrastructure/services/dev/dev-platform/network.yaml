@@ -5,8 +5,8 @@
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: e2e-host-boundary
-  namespace: e2e-platform
+  name: dev-host-boundary
+  namespace: dev-platform
 spec:
   # Synced pods only; the control plane pod has its own policy below.
   endpointSelector:
@@ -18,26 +18,27 @@ spec:
     ingress: false
     egress: false
   egressDeny:
-    - toEntities: [world, host, remote-node, kube-apiserver, ingress, health, unmanaged]
+    - toEntities:
+        [world, host, remote-node, kube-apiserver, ingress, health, unmanaged]
     - toEndpoints:
         - matchExpressions:
             - key: k8s:io.kubernetes.pod.namespace
               operator: NotIn
-              values: [e2e-platform]
+              values: [dev-platform]
   ingressDeny:
     - fromEndpoints:
         - matchExpressions:
             - key: k8s:io.kubernetes.pod.namespace
               operator: NotIn
-              values: [e2e-platform]
+              values: [dev-platform]
 ---
 # Chart NetworkPolicies allow DNS on 53 and the API on 443/6443. Inside the vcluster, CoreDNS
 # listens on 1053 and the virtual API on 8443, and Cilium matches the port after DNAT.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: e2e-platform-dns-api
-  namespace: e2e-platform
+  name: dev-platform-dns-api
+  namespace: dev-platform
 spec:
   endpointSelector:
     matchExpressions:
@@ -68,8 +69,8 @@ spec:
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: e2e-vcluster-api
-  namespace: e2e-platform
+  name: dev-vcluster-api
+  namespace: dev-platform
 spec:
   endpointSelector:
     matchLabels:
