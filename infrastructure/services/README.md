@@ -14,7 +14,7 @@ covers the tier root.
 
 The tier follows the repo-wide `base/` plus overlay pattern:
 `base/<component>/` holds what does not change between environments, and
-`staging/<component>/` (or `production/<component>/`) holds the differences plus
+`staging/<component>/` holds the differences plus
 anything encrypted. Encrypted files never live in `base/`, so a base
 kustomization is always safe to render without an age key.
 
@@ -23,7 +23,6 @@ kustomization is always safe to render without an age key.
 | `base/<component>/` | The shared manifests for one component. There is **no** kustomization at `base/` itself — nothing aggregates the components, so `base/` is never a Flux path. |
 | `staging/kustomization.yaml` | The tier root that Flux actually reconciles. It lists the component directories, one line each. |
 | `staging/<component>/kustomization.yaml` | Pulls in `../../base/<component>` and adds the overlay's own resources and patches. |
-| `production/kustomization.yaml` | The same entry point for a production cluster that does not exist. See "Overlays". |
 
 Flux reconciles this tier through the Kustomization `infrastructure-services` in
 `clusters/staging/infrastructure.yaml`: `path: ./infrastructure/services/staging`,
@@ -43,12 +42,9 @@ graph as a whole is described in
 `staging/` — it has no `base/` half, so its manifests live entirely in the
 overlay.
 
-`production/` exists and is wired but no production cluster is deployed; the
-tree still encodes a shared bucket layout that staging deliberately moved away
-from. Treat it as scaffolding rather than as a second environment — see the
-note at the end of
-[`../../documentations/01-architecture.md`](../../documentations/01-architecture.md)
-and the open-work section of
+There is no `production/` overlay. The unused one, never deployed and still
+encoding a shared bucket layout that staging deliberately moved away from, was
+deleted on 2026-09-15 — see the open-work section of
 [`../../documentations/14-design-decisions.md`](../../documentations/14-design-decisions.md).
 
 ## Traps

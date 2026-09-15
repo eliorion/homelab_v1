@@ -24,7 +24,6 @@ clusters/
     apps.yaml                databases, db-migrations, apps
     lab.yaml                 the lab tier
     monitoring.yaml          monitoring controllers and configs
-  production/                wired but not deployed, see the note at the end
 
 infrastructure/
   controllers/               operators: cilium, cert-manager, cnpg, longhorn,
@@ -35,9 +34,8 @@ infrastructure/
     staging/
 
 apps/
-  base/                      application manifests shared across environments
+  base/                      application manifests, overlay-independent
   staging/                   the environment overlay Flux actually reconciles
-  production/
 
 monitoring/
   controllers/               kube-prometheus-stack
@@ -48,7 +46,7 @@ scripts/                     helper scripts, including the etcd restore drill
 ```
 
 Every tier follows the same `base/` plus overlay pattern: `base/` holds what does not
-change between environments, and `staging/` (or `production/`) holds the differences plus
+change between environments, and `staging/` holds the differences plus
 anything encrypted. **Encrypted files never live in `base/`**, so a base kustomization is
 always safe to render without a key.
 
@@ -160,8 +158,7 @@ application code churn.
 
 ## A note on `production/`
 
-`clusters/production/`, `apps/production/` and the `production/` overlays exist and are
-wired, but no production cluster is deployed. The tree has not been touched since June 2026
-and still encodes a shared bucket layout that staging deliberately moved away from. Treat
-it as scaffolding rather than as a second environment. This is tracked in
-[14-design-decisions.md](14-design-decisions.md#10-open-work).
+There is none. A `production/` entrypoint and overlays, wired to a cluster that was never
+bootstrapped and untouched since June 2026, were deleted on 2026-09-15. The repository now
+describes one cluster and one environment; see
+[14-design-decisions.md](14-design-decisions.md#one-repository-one-branch-one-cluster).

@@ -273,4 +273,3 @@ serves them, so no extra tunnel entry is needed.
 ### Overlays
 
 - `apps/staging/nextcloud/` — hostname config + the admin Secret.
-- No production overlay.

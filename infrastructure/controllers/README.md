@@ -16,7 +16,7 @@ the reasoning behind the individual choices is in
 ## How it is wired
 
 Nothing in this tree runs because it is here. It runs because a Kustomization in
-`clusters/<env>/infrastructure.yaml` names its path. Most components are named
+`clusters/staging/infrastructure.yaml` names its path. Most components are named
 directly, one per Flux Kustomization, and only two go through the aggregate
 `staging/kustomization.yaml`.
 
@@ -29,8 +29,6 @@ directly, one per Flux Kustomization, and only two go through the aggregate
 | `staging/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/` (the operator only — `base/cnpg/kustomization.yaml` does not include `plugin/`). |
 | `staging/tailscale-operator/` | Staging-only component, no base counterpart. Reconciled through the aggregate above. |
 | `staging/reflector/` | Lives under `staging/` but is **not** listed in `staging/kustomization.yaml`. It has its own Flux Kustomization, `infra-reflector`, pointing straight at `./infrastructure/controllers/staging/reflector`. |
-| `production/kustomization.yaml` | The production aggregate. One resource: `cnpg/`. |
-| `production/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/`. |
 
 ### Which Flux Kustomization owns which path (staging)
 
@@ -58,15 +56,10 @@ and `infra-keycloak-operator`; `databases` and `lab` depend on `infra-reflector`
 
 ### Overlays
 
-`staging/` is the only overlay a live cluster reconciles. It carries the two components
+`staging/` is the only overlay. It carries the two components
 that do not need their own gate (`cnpg`, `tailscale-operator`) plus `reflector/`, which
-sits in the directory but is wired separately.
-
-`production/` mirrors the shape with `cnpg/` alone, and `clusters/production/infrastructure.yaml`
-declares only four Kustomizations (`infra-certmanager`, `infra-cnpg-plugin`,
-`infrastructure-controllers`, `infrastructure-services`) — no cilium, linstor, seaweedfs, keda, arc,
-reflector or keycloak-operator. It is wired but no production cluster is deployed; treat it
-as scaffolding rather than as a second environment, as recorded in
+sits in the directory but is wired separately. The unused `production/` overlay was
+deleted on 2026-09-15, as recorded in
 [`../../documentations/01-architecture.md`](../../documentations/01-architecture.md#a-note-on-production).
 
 Encrypted files never live in `base/`. That is a convention, not a rendering requirement:
@@ -147,11 +140,10 @@ unbacked authentication plane in front of surfaces with no authorization behind 
 
 ## Operating it
 
-Render the two aggregates before committing a change here:
+Render the aggregate before committing a change here:
 
 ```bash
 kubectl kustomize infrastructure/controllers/staging
-kubectl kustomize infrastructure/controllers/production
 ```
 
 Then check the graph after Flux has had a cycle:

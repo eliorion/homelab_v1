@@ -130,8 +130,7 @@ flux get kustomizations
 
 ### Overlays
 
-Only a `staging` overlay exists (`apps/staging/databases/scraper/`);
-`apps/production/databases/kustomization.yaml` lists `asp/` only. Base on its
+Only a `staging` overlay exists (`apps/staging/databases/scraper/`). Base on its
 own gives the Namespace and a Cluster with the default storage class and `5Gi`,
 no backups and no Secrets. Staging adds the `longhorn` storage class and the
 reflector permit annotations, and nothing else.

@@ -37,10 +37,9 @@ job in `arc-runners` and is then deleted.
 
 ### Overlays
 
-There is no staging or production overlay for this component.
+There is no staging overlay for this component.
 `infrastructure/controllers/staging/kustomization.yaml` lists only `cnpg/` and
-`tailscale-operator/`, and the production tree lists only `cnpg/`; neither
-references `arc/`. The base is applied verbatim by `infra-arc-controller`, which
+`tailscale-operator/`; it does not reference `arc/`. The base is applied verbatim by `infra-arc-controller`, which
 is declared only for staging. The CI stack as a whole is staging-only.
 
 ## Why it is like this

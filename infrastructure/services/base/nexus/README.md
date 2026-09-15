@@ -64,8 +64,7 @@ ports (5000-5002, TCP) stay on the `nexus-lb` LoadBalancer directly. See
 `../../base/nexus` and adds `nexus-root-password.enc.yaml`, the SOPS-encrypted
 Secret named `nexus-root-password` with key `password`. The HelmRelease's
 `rootPassword.secret` / `rootPassword.key` point at it, and the compaction
-CronJob reads the same Secret for its `NEXUS_PW` env var. There is no production
-overlay: the CI stack is staging-only. Both are reconciled by the
+CronJob reads the same Secret for its `NEXUS_PW` env var. Both are reconciled by the
 `infrastructure-services` Flux Kustomization (SOPS-enabled).
 
 ## Why it is like this

@@ -205,8 +205,7 @@ kubectl -n fbref exec fbref-db-1 -c postgres -- psql -U postgres -d fbref \
 
 ## Overlays
 
-`staging/` only. There is no `base/` and no `production/` for this directory,
-and `clusters/production/` deploys no monitoring-configs Kustomization at all,
+`staging/` only. There is no `base/` for this directory,
 so the dashboards hard-code their staging values (datasource uid, namespace,
 schema names). A second environment means splitting a `base/` out first.
 

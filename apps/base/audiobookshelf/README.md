@@ -5,7 +5,7 @@ as a single replica in the `audiobookshelf` namespace, image
 `advplyr/audiobookshelf:2.31.0`, with three separate `ReadWriteOnce` PVCs —
 configuration, scraped metadata and the media library itself. The base renders
 seven objects, but **no overlay currently deploys it** —
-`apps/staging/audiobookshelf/` and `apps/production/audiobookshelf/` both carry
+`apps/staging/audiobookshelf/` carries
 `resources: []`. It is scaffolding carried over from the k3s cluster and never
 migrated; see
 [`documentations/06-k3s-retirement.md`](../../../documentations/06-k3s-retirement.md).
@@ -16,11 +16,7 @@ The Flux `apps` Kustomization (`clusters/staging/apps.yaml`, `path:
 ./apps/staging`, `prune: true`, `dependsOn: db-migrations`, SOPS decryption)
 builds `apps/staging/kustomization.yaml`, which lists `audiobookshelf/`
 explicitly. That overlay renders nothing today, so Flux applies no
-audiobookshelf object. `clusters/production/apps.yaml` points a single `apps`
-Kustomization at `./apps/production` (`dependsOn: infra-cnpg-plugin`, no
-`databases` / `db-migrations` split), but that cluster does not exist and
-`apps/production/` has no `kustomization.yaml` of its own — see
-[`clusters/production/README.md`](../../../clusters/production/README.md).
+audiobookshelf object.
 
 Base (`apps/base/audiobookshelf/kustomization.yaml` → `namespace.yaml`,
 `deployment.yaml`, `storage.yaml`, `service.yaml`, `configmap.yaml`):
@@ -114,13 +110,8 @@ resources:
   - ../../base/audiobookshelf/
 ```
 
-`apps/production/audiobookshelf/kustomization.yaml` takes the same entry.
-
 ### Overlays
 
 - `apps/staging/audiobookshelf/kustomization.yaml` — `namespace:
   audiobookshelf`, `resources: []`. No secret, no ingress, no patch: the
   overlay's only job is the namespace.
-- `apps/production/audiobookshelf/kustomization.yaml` — byte-for-byte
-  identical to the staging one. There is no staging/production divergence in
-  this component.

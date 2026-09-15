@@ -161,4 +161,3 @@ kubectl -n nextcloud logs nextcloud-db-1 -c plugin-barman-cloud
 
 - `apps/staging/databases/nextcloud/` — Longhorn storage class + the full Garage
   backup wiring described above.
-- No production overlay.

@@ -46,7 +46,7 @@ component has a base overlay and in its own directory otherwise:
 
 | Component | README |
 |---|---|
-| asp | [`staging/asp/README.md`](staging/asp/README.md) — staging-only; `production/asp/` holds just an encrypted pull secret |
+| asp | [`staging/asp/README.md`](staging/asp/README.md) — staging-only |
 | fbref | [`staging/fbref/README.md`](staging/fbref/README.md) — staging-only |
 | scraper | [`staging/scraper/README.md`](staging/scraper/README.md) — staging-only |
 | lab | [`staging/lab/README.md`](staging/lab/README.md) — staging-only, own Flux Kustomization |
@@ -76,18 +76,16 @@ the other three are the release alone — so their whole definition is the stagi
 Because encrypted files never live in `base/`, anything that carries a SOPS secret ends up in an
 overlay regardless.
 
-**`production/` is scaffolding.** It has directories for `asp`, `audiobookshelf`, `databases`,
-`glpi` and `linkding` but no tier-level `kustomization.yaml`, and no production cluster is
-deployed. See the note at the end of
-[`../documentations/01-architecture.md`](../documentations/01-architecture.md) and the open-work
-section of [`../documentations/14-design-decisions.md`](../documentations/14-design-decisions.md).
+**There is no `production/` overlay.** The unused production tree (never reconciled, no
+tier-level `kustomization.yaml`) was deleted on 2026-09-15. See the open-work section of
+[`../documentations/14-design-decisions.md`](../documentations/14-design-decisions.md).
 
 ## Traps
 
 - **Do not add `databases/` or `lab/` to `apps/staging/kustomization.yaml`.** They belong to their
   own Flux Kustomizations; the explicit resource list is what keeps them out.
 - **A new component under `apps/staging/` is invisible until it is listed** in that same file.
-- **`apps/base/` and `apps/production/` have no tier-level `kustomization.yaml`.** Only
+- **`apps/base/` has no tier-level `kustomization.yaml`.** Only
   `apps/staging/` does. Do not assume a base aggregate exists.
 - **Encrypted files never live in `base/`**, so a base kustomization always renders without an age
   key.

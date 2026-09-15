@@ -95,11 +95,10 @@ Grafana expands `${…}` in provisioning files as environment variables.
 `kube-prometheus-stack-prometheus:9090` can write series. App namespaces (`asp`, `fbref`, `scraper`, `database`, `lab`, `identity`, `n8n`, `flux-system`) carry NetworkPolicies, but `monitoring` has none, so nothing restricts who reaches it; the Service is
 not exposed outside the cluster.
 
-Flux side. `clusters/staging/monitoring.yaml` and
-`clusters/production/monitoring.yaml` declare a `monitoring-controllers`
-Kustomization (`path: ./monitoring/controllers/<env>`, `interval: 1m0s`,
+Flux side. `clusters/staging/monitoring.yaml` declares a `monitoring-controllers`
+Kustomization (`path: ./monitoring/controllers/staging`, `interval: 1m0s`,
 `retryInterval: 1m`, `timeout: 5m`, `prune: true`) with a `decryption` block
-pointing at the `sops-age` Secret. Staging additionally declares
+pointing at the `sops-age` Secret. It also declares
 `monitoring-configs` (`path: ./monitoring/configs/staging`), also with
 decryption. `monitoring-configs` has no `dependsOn` and reconciles straight off
 the root Kustomization. `monitoring-controllers` gained one on 2026-08-22 — see
@@ -181,14 +180,8 @@ kubectl -n monitoring exec deploy/kube-prometheus-stack-grafana -c grafana -- \
   `/spec/values/kubeEtcd` with `enabled: true` and the three control-plane IPs as
   `endpoints` — environment-specific, so not in `base/`.
   It is referenced from `monitoring/controllers/staging/kustomization.yaml`.
-- **production** — the same two resources, plus one JSON 6902 patch on the
-  `HelmRelease` that replaces `/spec/values/grafana/ingress/enabled` with
-  `false`. The reason is that the Tailscale operator is staging-only — it is
-  declared in `infrastructure/controllers/staging/tailscale-operator/` with no
-  `base/` and no production copy — so `ingressClassName: tailscale` names a
-  controller production does not run. The production
-  `grafana-admin.enc.yaml` is a separate ciphertext from the staging one.
-  The production tree is wired but not deployed.
+
+There is no other overlay; the unused production one was deleted on 2026-09-15.
 
 ## Why it is like this
 
@@ -378,8 +371,7 @@ directory (`monitoring/configs/staging/kube-prometheus-stack/`) went with it.
   `decryption` Flux applies the manifest verbatim, the Secret's values become
   the literal `ENC[AES256_GCM,...]` string, and *nothing fails at apply time* —
   Grafana simply refuses the admin login with no error anywhere in the chain.
-  The block is in `clusters/staging/monitoring.yaml` and
-  `clusters/production/monitoring.yaml`.
+  The block is in `clusters/staging/monitoring.yaml`.
 - **`install.crds: Create` and `upgrade.crds: CreateReplace` are what put the
   monitoring CRDs in the cluster and keep them in step with the chart.** Flux
   does not update CRDs on upgrade unless told to. Every `PodMonitor`,

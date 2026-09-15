@@ -83,10 +83,7 @@ Three things this component depends on but does not own:
 
 - `etcd-backup-s3.enc.yaml` — SOPS-encrypted Secret `etcd-backup-s3` holding
   `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` for the Garage bucket. Encrypted
-  manifests live only in overlays; `.sops.yaml` matches paths under `staging/`
-  and `production/`.
-
-There is no production overlay.
+  manifests live only in overlays; `.sops.yaml` matches paths under `staging/`.
 
 ## Why it is like this
 

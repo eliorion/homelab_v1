@@ -5,7 +5,7 @@ two-part base: the PHP application (`app/`, image `glpi/glpi:11.0.1`) and a
 dedicated MariaDB (`database/`, image `library/mariadb:11.8`), both single
 replicas in the `glpi` namespace, each with its own `ReadWriteOnce` PVC. The
 base is complete and renders nine objects, but **no overlay currently deploys
-it** — `apps/staging/glpi/` and `apps/production/glpi/` both carry
+it** — `apps/staging/glpi/` carries
 `resources: []`. It is scaffolding carried over from the k3s cluster and never
 migrated; see
 [`documentations/06-k3s-retirement.md`](../../../documentations/06-k3s-retirement.md).
@@ -16,11 +16,6 @@ The Flux `apps` Kustomization (`clusters/staging/apps.yaml`, `path:
 ./apps/staging`, `prune: true`, `dependsOn: db-migrations`, SOPS decryption)
 builds `apps/staging/kustomization.yaml`, which lists `glpi/` explicitly. That
 overlay renders nothing today, so Flux applies no GLPI object.
-`clusters/production/apps.yaml` points a single `apps` Kustomization at
-`./apps/production` (`dependsOn: infra-cnpg-plugin`, no `databases` /
-`db-migrations` split), but that cluster does not exist and `apps/production/`
-has no `kustomization.yaml` of its own — see
-[`clusters/production/README.md`](../../../clusters/production/README.md).
 
 Base (`apps/base/glpi/kustomization.yaml` → `namespace.yaml`, `app/`,
 `database/`):
@@ -68,9 +63,8 @@ Database (`database/kustomization.yaml` → `configmap.yaml`, `service.yaml`,
 
 ## Why it is like this
 
-**Nothing is deployed.** Both overlays hold `resources: []`;
-`apps/production/glpi/kustomization.yaml` still carries the real list in
-comments, the staging one no longer does. Doc 06 records the state after the
+**Nothing is deployed.** The staging overlay holds `resources: []`; the real
+list is under "Operating it" below. Doc 06 records the state after the
 k3s → Talos migration: the `audiobookshelf`/`glpi`/`linkding`/`keycloak`
 overlays "render no workloads yet (scaffolding) — same as on k3s, nothing
 migrated". The base is kept intact, so enabling GLPI means restoring the
@@ -78,7 +72,7 @@ resource list, not rewriting the manifests.
 
 **App and database are separate directories.** `app/` and `database/` are
 independent kustomize dirs under one base so the two halves can be enabled,
-patched or replaced separately; the staging and production overlays mirror the
+patched or replaced separately; the staging overlay mirrors the
 same split (`glpi/app/` and `glpi/database/`, each holding only its own SOPS
 Secret).
 
@@ -145,8 +139,6 @@ resources:
   - database/
 ```
 
-`apps/production/glpi/kustomization.yaml` takes the same three entries.
-
 ### Overlays
 
 - `apps/staging/glpi/` — `namespace: glpi`, `resources: []`. Subdirectories
@@ -154,8 +146,3 @@ resources:
   SOPS-encrypted Secret (`glpi-secret.enc.yaml`, `glpi-db-secret.enc.yaml`).
   Because the parent lists no resources, those subdirectories are not built
   either.
-- `apps/production/glpi/` — the same shape: same empty parent, same two
-  subdirectories with the same two encrypted Secret names (the `app/` and
-  `database/` kustomizations are identical to staging's; the parent
-  `kustomization.yaml` differs only in the comments it carries). There is no
-  staging/production divergence in this component.

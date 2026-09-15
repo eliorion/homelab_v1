@@ -110,9 +110,9 @@ the one it restored from.
   neither**, so anyone holding a write key can delete every object in its bucket.
   The mitigation is blast-radius reduction (per bucket keys), not prevention.
 
-> The production overlays still point both prod clusters at a single shared
-> `asp-cnpg-production` bucket, which is the layout staging moved away from. That
-> tree is not deployed; fix it before it ever is.
+> The never-deployed production overlays, which pointed two clusters at a single
+> shared `asp-cnpg-production` bucket, were deleted on 2026-09-15. Nothing in git
+> references that bucket any more; every backup above is a staging one.
 
 ## Backup data flow
 

@@ -33,19 +33,18 @@ Background reading:
 ## How it is wired
 
 Nothing here runs because it is in this directory. It runs because a
-Kustomization in `clusters/<env>/monitoring.yaml` names its path.
+Kustomization in `clusters/staging/monitoring.yaml` names its path.
 
 | Flux Kustomization | Declared in | `path` |
 |---|---|---|
 | `monitoring-controllers` | [`../clusters/staging/monitoring.yaml`](../clusters/staging/monitoring.yaml) | `./monitoring/controllers/staging` |
 | `monitoring-configs` | [`../clusters/staging/monitoring.yaml`](../clusters/staging/monitoring.yaml) | `./monitoring/configs/staging` |
-| `monitoring-controllers` | [`../clusters/production/monitoring.yaml`](../clusters/production/monitoring.yaml) | `./monitoring/controllers/production` |
 
-All three share `interval: 1m0s`, `retryInterval: 1m`, `timeout: 5m`,
-`prune: true` and a `decryption` block pointing at the `sops-age` Secret. None of
-them has a `dependsOn`. There is no `monitoring-configs` in production.
+Both share `interval: 1m0s`, `retryInterval: 1m`, `timeout: 5m`,
+`prune: true` and a `decryption` block pointing at the `sops-age` Secret. Neither
+has a `dependsOn`.
 
-Those three paths are the only entry points. No component in this tier has a
+Those two paths are the only entry points. No component in this tier has a
 Flux Kustomization of its own, so a directory that is not listed in the overlay
 kustomization below is not deployed at all.
 
@@ -56,15 +55,14 @@ kustomization below is not deployed at all.
 | `monitoring/` | Container only. **There is no `monitoring/kustomization.yaml`** and there should not be one — Flux names the overlay directories directly, so a kustomization here would be reconciled by nobody. |
 | `controllers/base/` | Holds `kube-prometheus-stack/`, `loki/`, `tempo/`, `alloy/` and `blackbox-exporter/`. **No `controllers/base/kustomization.yaml`**, same convention as `infrastructure/controllers/base/`: overlays reference the component directory, not the tier. |
 | `controllers/staging/kustomization.yaml` | The aggregate Flux reconciles as `monitoring-controllers` in staging. Five resources: `kube-prometheus-stack`, `loki`, `tempo`, `alloy`, `blackbox-exporter`. |
-| `controllers/production/kustomization.yaml` | The production aggregate. One resource: `kube-prometheus-stack` — Loki, Tempo and Alloy are staging-only, like everything else production does not deploy. |
 | `configs/staging/kustomization.yaml` | The aggregate Flux reconciles as `monitoring-configs`. Thirteen resources, listed below. No namespace transformer — every component names its own namespace. |
 
-`configs/` has no `base/` and no `production/`: `staging/` is the only overlay,
+`configs/` has no `base/`: `staging/` is the only overlay,
 so its components hard-code their staging values.
 
 ### What the aggregates pull in
 
-`controllers/<env>/kustomization.yaml` → `kube-prometheus-stack` (both envs), `loki`, `tempo`, `alloy` (staging):
+`controllers/staging/kustomization.yaml` → `kube-prometheus-stack`, `loki`, `tempo`, `alloy`, `blackbox-exporter`:
 
 | Path | What it does |
 |---|---|
@@ -75,7 +73,6 @@ so its components hard-code their staging values.
 | `controllers/base/alloy/` | `HelmRelease`s `alloy-node` (DaemonSet: pod, Talos and audit log files → Loki) and `alloy-receiver` (OTLP endpoint + events) — [`controllers/base/alloy/README.md`](controllers/base/alloy/README.md). |
 | `controllers/base/blackbox-exporter/` | `HelmRelease` `prometheus-blackbox-exporter` (`11.18.0`), the prober behind the `Probe` objects — [`controllers/base/blackbox-exporter/README.md`](controllers/base/blackbox-exporter/README.md). |
 | `controllers/staging/{loki,tempo,alloy,blackbox-exporter}/` | Reference the base, nothing else. |
-| `controllers/production/kube-prometheus-stack/` | The same two resources, plus a JSON 6902 patch setting `/spec/values/grafana/ingress/enabled` to `false`. |
 
 `configs/staging/kustomization.yaml`, in list order:
 
@@ -111,18 +108,13 @@ until the chart has landed — but it is why a fresh cluster shows
 `monitoring-configs` failing for the first few minutes.
 
 **Both paths carry SOPS Secrets, so both need `decryption`.** `controllers/`
-has `grafana-admin.enc.yaml` per overlay; `configs/staging` has the Grafana TLS
+has `grafana-admin.enc.yaml` in its overlay; `configs/staging` has the Grafana TLS
 Secret, the Grafana datasource and the two Telegram tokens.
 
-**Production is wired but not deployed.** `clusters/production/monitoring.yaml`
-reconciles only `monitoring/controllers/production`, and there is no
-`monitoring/configs/production/`. Nothing in the `configs` table above exists
-there: no alert rules, no dashboards, no Alertmanager token.
-
-The production overlay also patches the Grafana ingress off, for a separate
-reason — the Tailscale operator is declared only in the staging infrastructure
-overlay, so `ingressClassName: tailscale` names a controller production does not
-run.
+**There is no production overlay.** The unused production controllers
+overlay, which reconciled the stack without any of `configs/` and patched the
+Grafana ingress off, was deleted on 2026-09-15 with the rest of the production
+tree.
 
 ## Traps
 
@@ -137,16 +129,13 @@ run.
   Flux applies the ciphertext verbatim: the Secret's values become the literal
   `ENC[AES256_GCM,...]` string and nothing fails at apply time. Grafana just
   refuses the admin login, and Alertmanager just never delivers.
-- **`prune: true` on all three Kustomizations.** Deleting a directory from an
+- **`prune: true` on both Kustomizations.** Deleting a directory from an
   aggregate `kustomization.yaml` deletes the objects from the cluster on the next
   reconcile, including Secrets. Removing an entry is a destructive change.
 - **A new component directory is invisible until it is listed** in
-  `configs/staging/kustomization.yaml` or `controllers/<env>/kustomization.yaml`.
+  `configs/staging/kustomization.yaml` or `controllers/staging/kustomization.yaml`.
   There is no per-component Flux Kustomization in this tier to fall back on, and
   an unlisted directory produces no error.
-- **Anything added under `configs/staging/` is staging-only.** Production
-  reconciles the controllers path alone; alert rules, dashboards and monitors do
-  not follow.
 - **`controllers/base/` and `monitoring/` have no `kustomization.yaml` on
   purpose.** Adding one does not wire anything up, because no Flux Kustomization
   points at either path.
@@ -180,16 +169,12 @@ kubectl -n monitoring get pods
 
 ## Overlays
 
-| Tier | `base/` | `staging/` | `production/` |
-|---|---|---|---|
-| `controllers/` | yes (`kube-prometheus-stack/`, no tier kustomization) | yes, reconciled | yes, one patch, declared but not deployed |
-| `configs/` | no | yes, reconciled | no |
+| Tier | `base/` | `staging/` |
+|---|---|---|
+| `controllers/` | yes (`kube-prometheus-stack/`, no tier kustomization) | yes, reconciled |
+| `configs/` | no | yes, reconciled |
 
 Encrypted files live only in the overlays, never in `base/`. The `.enc.yaml`
 files under `staging/` are matched by the `(^|/)staging/.*\.enc\.ya?ml$` rule in
-[`../.sops.yaml`](../.sops.yaml) and the `production/` ones by the
-`(^|/)production/.*\.enc\.ya?ml$` rule, both encrypting only `data` /
-`stringData` under their environment's age key.
-
-Adding a second environment to `configs/` means splitting a `base/` out first and
-declaring a `monitoring-configs` Kustomization in that cluster directory.
+[`../.sops.yaml`](../.sops.yaml), encrypting only `data` / `stringData` under the
+staging age key.

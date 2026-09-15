@@ -189,10 +189,7 @@ and `apps` stays blocked until it completes.
 
 Staging only. `apps/base/databases/` holds the four CNPG clusters but no
 `db-migrations` base — the three Jobs are written directly in
-`apps/staging/databases/db-migrations/`. `apps/production/databases/` lists only
-`asp/` and has no `db-migrations` directory, and `clusters/production/apps.yaml`
-declares a single `apps` Kustomization on `./apps/production`, so the
-`databases` → `db-migrations` → `apps` chain exists on the staging cluster only.
+`apps/staging/databases/db-migrations/`.
 
 See also
 [`../../../../documentations/01-architecture.md`](../../../../documentations/01-architecture.md)

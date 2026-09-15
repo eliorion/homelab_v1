@@ -295,8 +295,7 @@ Restore procedure and the 2026-07-26 restore drill for this exact cluster
 
 ### Overlays
 
-Only a `staging` overlay exists (`apps/staging/databases/fbref/`); there is no
-production overlay for fbref, unlike asp. Base on its own gives the Namespace
+Only a `staging` overlay exists (`apps/staging/databases/fbref/`). Base on its own gives the Namespace
 and a Cluster with the default storage class and `10Gi`, no backups and no
 secrets. Staging adds the Longhorn storage class and `100Gi`, the barman-cloud
 plugin and the Garage `ObjectStore` + `ScheduledBackup`, the two managed-role

@@ -824,8 +824,8 @@ diagnosis inline; every other release points here.
 
 **Why.** With `encrypted_regex` scoped to the data blocks, manifest structure stays
 reviewable in a diff and only the secret values become ciphertext. Encrypted files are
-confined to the environment overlays and never appear in `base/`, so a base kustomization
-is always plaintext safe and reusable by both environments.
+confined to the `staging/` overlays and never appear in `base/`, so a base kustomization
+is always plaintext safe.
 
 **Rejected.** Sealed Secrets. An external secrets operator. Whole file encryption.
 
@@ -836,18 +836,25 @@ apply time. That has happened, and the diagnosis is commented inline where it bi
 
 **Reference.** `.sops.yaml`, `clusters/staging/infrastructure.yaml`
 
-### One repository, one branch, many clusters, separated only by path
+### One repository, one branch, one cluster
 
-**Why.** Each cluster reconciles its own path and they cannot conflict.
+**Why.** Flux on the one cluster reconciles `./clusters/staging` from `main`, and every tier
+is a `base/` plus a `staging/` overlay. A `production/` tree used to sit beside it, wired to
+a second cluster that was never bootstrapped; it was deleted on 2026-09-15. Workloads that
+are not meant for the live platform go to a planned in-cluster `dev` tier rather than a
+second cluster.
 
-**Rejected.** A branch per environment. A repository per environment.
+**Rejected.** A branch per environment. A repository per environment. Keeping the
+`production/` scaffolding: it had not been touched since June 2026, lacked the CNI, storage
+and most operators, and still encoded a bucket layout staging had moved away from.
 
-**Cost.** No promotion gate of any kind. Production manifests are edited in the same commits
-as staging ones and nothing enforces that staging was proven first. In practice the second
-environment simply rotted, which is the honest outcome and is recorded in
-[the README's limitations](../README.md#known-limitations).
+**Cost.** No promotion gate of any kind: a change merged to `main` is live within minutes and
+nothing proves it anywhere first. The deleted tree also leaves residue that deleting files
+cannot remove — its encrypted Secrets remain in git history, readable by anyone holding the
+production age key. Rotate any credential that was shared between those Secrets and
+staging, and keep the production age key archived offline rather than on a workstation.
 
-**Reference.** [00-bootstrap-cluster.md](00-bootstrap-cluster.md)
+**Reference.** [00-bootstrap-cluster.md](00-bootstrap-cluster.md), `.sops.yaml`
 
 ### Toolchain in `mise.toml`, every tool at `latest`
 
@@ -911,5 +918,5 @@ Tracked, not hidden.
 | Backups for the automation database | It is the only copy of every workflow and every stored credential | Unblocked: the Garage key is minted and encrypted, and the object store now sets the region that caused the 2026-08-10 outage. Enabling it is uncommenting four lines in `apps/staging/databases/n8n/kustomization.yaml` and confirming the bucket exists |
 | A dead man's switch | The watchdog alert is blackholed, so a dead monitoring stack is indistinguishable from a healthy cluster | Not started |
 | Network policy | Cilium is used as a datapath and not as a policy engine; there is no default deny anywhere | Not started |
-| Decide the fate of the second environment | It is wired but not deployed, has not been touched since June 2026, and still encodes a bucket layout that staging deliberately moved away from | Undecided |
+| Decide the fate of the second environment | It was wired but never deployed, had not been touched since June 2026, and still encoded a bucket layout that staging deliberately moved away from | Resolved 2026-09-15: the `production/` tree was deleted. The cluster is single-environment; non-production workloads go to an in-cluster `dev` tier (Phase 4). Rotating credentials shared with the deleted Secrets and archiving the production age key offline remain manual, see [§8](#one-repository-one-branch-one-cluster) |
 | Replicate snapshots to a second provider | A second offsite copy of the etcd snapshots, using the object storage account that already exists | Named as a deliberate future step |

@@ -34,7 +34,7 @@ Staging — `infrastructure/services/staging/homepage/`: what this cluster's pag
 
 Wired from `infrastructure/services/staging/kustomization.yaml`, reconciled by
 the `infrastructure-services` Flux Kustomization, which already carries the SOPS
-`decryption` block. There is no production overlay.
+`decryption` block.
 
 ### What the page shows
 

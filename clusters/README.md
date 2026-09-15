@@ -6,8 +6,8 @@
 repository (`infrastructure/`, `apps/`, `monitoring/`) is inert YAML until a
 `kustomize.toolkit.fluxcd.io/v1` Kustomization here points a `path:` at it.
 
-`staging` is the live cluster. `production` is scaffolding: the files exist and are
-internally consistent, but no production cluster is deployed.
+`staging` is the live cluster and the only one. A `production/` entrypoint for a cluster
+that was never bootstrapped was deleted on 2026-09-15.
 
 The files in `clusters/staging/` declare 22 Flux Kustomizations, 4 `GitRepository`
 sources for the application Helm charts, and the flux-generated bootstrap manifests.
@@ -308,22 +308,13 @@ Bootstrap and cluster-creation procedure:
 Tier layout rationale:
 [`../documentations/01-architecture.md`](../documentations/01-architecture.md).
 
-## Overlays: staging vs production
+## Overlays
 
-`clusters/production/` mirrors the staging structure with a smaller graph and points at
-the `production` overlays, which exist for `infrastructure/controllers`,
-`infrastructure/services`, `apps` and `monitoring/controllers`. It differs from staging
-in ways worth knowing before treating it as a template:
-
-- No `sources.yaml` and no `lab.yaml`.
-- `apps` depends only on `infra-cnpg-plugin`; there is no `databases` →
-  `db-migrations` → `apps` chain and no reflector gate.
-- `monitoring.yaml` declares only `monitoring-controllers`; there is no
-  `monitoring-configs` and no `monitoring/configs/production` directory.
-- Its `gotk-sync.yaml` Kustomization points at `./clusters/production`.
-
-No production cluster is deployed. Treat the directory as scaffolding, not as a
-reviewed second environment.
+`staging/` is the only entrypoint, and every tier it points at has only `base/` and
+`staging/` overlays. The `production/` entrypoint and its overlays were deleted on
+2026-09-15: they had never been reconciled, lacked the CNI, storage and most operators,
+and no Kustomization here referenced them. See
+[`../documentations/14-design-decisions.md`](../documentations/14-design-decisions.md#one-repository-one-branch-one-cluster).
 
 ## Notes on this README
 

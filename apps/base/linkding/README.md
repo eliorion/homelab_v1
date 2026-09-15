@@ -4,8 +4,7 @@ linkding is a self-hosted bookmark manager. The base runs it as a single
 replica in the `linkding` namespace, image `sissbruecker/linkding:1.45.0`,
 listening on port `9090`, with one `ReadWriteOnce` PVC for its SQLite database
 at `/etc/linkding/data`. The base renders four objects, but **no overlay
-currently deploys it** — `apps/staging/linkding/` and
-`apps/production/linkding/` both carry `resources: []`. It is scaffolding
+currently deploys it** — `apps/staging/linkding/` carries `resources: []`. It is scaffolding
 carried over from the k3s cluster and never migrated; see
 [`documentations/06-k3s-retirement.md`](../../../documentations/06-k3s-retirement.md).
 
@@ -15,11 +14,6 @@ The Flux `apps` Kustomization (`clusters/staging/apps.yaml`, `path:
 ./apps/staging`, `prune: true`, `dependsOn: db-migrations`, SOPS decryption)
 builds `apps/staging/kustomization.yaml`, which lists `linkding/` explicitly.
 That overlay renders nothing today, so Flux applies no linkding object.
-`clusters/production/apps.yaml` points a single `apps` Kustomization at
-`./apps/production` (`dependsOn: infra-cnpg-plugin`, no `databases` /
-`db-migrations` split), but that cluster does not exist and `apps/production/`
-has no `kustomization.yaml` of its own — see
-[`clusters/production/README.md`](../../../clusters/production/README.md).
 
 Base (`apps/base/linkding/kustomization.yaml` → `namespace.yaml`,
 `deployment.yaml`, `storage.yaml`, `service.yaml`):
@@ -43,9 +37,8 @@ Base (`apps/base/linkding/kustomization.yaml` → `namespace.yaml`,
 
 ## Why it is like this
 
-**Nothing is deployed.** Both overlays hold `resources: []`;
-`apps/production/linkding/kustomization.yaml` still carries the real list in
-comments, the staging one no longer does. Doc 06 records the state after the
+**Nothing is deployed.** The staging overlay holds `resources: []`; the real
+list is under "Operating it" below. Doc 06 records the state after the
 k3s → Talos migration: the `audiobookshelf`/`glpi`/`linkding`/`keycloak`
 overlays "render no workloads yet (scaffolding) — same as on k3s, nothing
 migrated". The base is kept intact, so enabling linkding means restoring the
@@ -56,8 +49,7 @@ what makes the Longhorn volume writable for it, and `runAsUser` /
 `runAsGroup: 33` keep the process off root. This is the pattern
 `audiobookshelf` repeats with its own uid `1000`.
 
-**The Ingress is stale.** `apps/staging/linkding/ingress.yaml` (and its
-production twin) names `ingressClassName: traefik`. Traefik was retired with
+**The Ingress is stale.** `apps/staging/linkding/ingress.yaml` names `ingressClassName: traefik`. Traefik was retired with
 k3s; the cluster now does L7 ingress with Cilium's Gateway API. Doc 14 counts
 this file among the objects "elsewhere in the repository [that] still name
 `ingressClassName: traefik`, a controller this cluster no longer runs". It is
@@ -112,8 +104,6 @@ resources:
   - ingress.yaml
 ```
 
-`apps/production/linkding/kustomization.yaml` takes the same three entries.
-
 ### Overlays
 
 - `apps/staging/linkding/` — `namespace: linkding`, `resources: []`. Present
@@ -123,8 +113,3 @@ resources:
   `linkding.eliorion.fr`, path `/` `Prefix` → Service `linkding` port `9090`;
   the Ingress carries no namespace of its own and relies on the overlay's
   `namespace:`).
-- `apps/production/linkding/` — the same three files with the same empty
-  resource list; `ingress.yaml` and `linkding-secret.enc.yaml` are identical to
-  staging's, and the two `kustomization.yaml` files differ only in the comments
-  they carry. There is no staging/production divergence in this component: both
-  point at the same `linkding.eliorion.fr` host.

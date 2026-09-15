@@ -66,7 +66,7 @@ The admin UI is reached on the tailnet at `https://fbref-admin-ui.<your-tailnet>
 
 ### Overlays
 
-There is no `apps/base/fbref/` and no production overlay: this staging directory is the whole
+There is no `apps/base/fbref/`: this staging directory is the whole
 component.
 
 ## Why it is like this

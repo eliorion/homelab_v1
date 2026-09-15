@@ -54,7 +54,7 @@ first.
 
 ### Overlays
 
-There is no `base/` and no production overlay for this component: it exists only
+There is no `base/` for this component: it exists only
 under `infrastructure/services/staging/`, listed as `arc-runner-set/` in
 `infrastructure/services/staging/kustomization.yaml`. The CI stack as a whole is
 staging-only. The two releases in this directory are the environment split —

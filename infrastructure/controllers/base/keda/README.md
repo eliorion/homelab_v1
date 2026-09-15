@@ -39,13 +39,11 @@ the operator genuinely is.
 
 ### Overlays
 
-There is no staging or production overlay for KEDA. Neither
-`infrastructure/controllers/staging/kustomization.yaml` nor
-`infrastructure/controllers/production/kustomization.yaml` lists `keda/`; the
+There is no staging overlay for KEDA.
+`infrastructure/controllers/staging/kustomization.yaml` does not list `keda/`; the
 `infra-keda` Flux Kustomization points at `base/keda` itself. Adding an
 environment overlay later means adding a pass-through `kustomization.yaml` and
-repointing `path:` — until then, any change here applies to every cluster that
-declares `infra-keda`.
+repointing `path:`.
 
 ## Why it is like this
 

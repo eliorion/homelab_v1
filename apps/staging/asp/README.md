@@ -62,12 +62,6 @@ The database, `asp-db`, is owned by the databases tier —
 
 There is no `apps/base/asp/`. The staging directory above is the whole live component.
 
-`apps/production/asp/` contains only `kustomization.yaml` (`namespace: asp`) and
-`ghcr-pull-secret.enc.yaml`, a SOPS-encrypted image pull Secret — no HelmRelease, so the app
-itself is not defined for production. There is no `apps/production/kustomization.yaml`, and per
-[`../../../documentations/01-architecture.md`](../../../documentations/01-architecture.md) the
-whole `production/` tree is wired but not deployed; treat it as scaffolding.
-
 ## Why it is like this
 
 **Values here are environment overrides, never image tags.** The chart's `values.yaml` in the

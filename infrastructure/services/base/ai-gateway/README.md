@@ -90,7 +90,7 @@ credentials are in the staging half of that directory.
 `../../base/ai-gateway` and adds `ai-gateway-secrets.enc.yaml`, which is
 decrypted by the `infrastructure-services` Flux Kustomization (`sops-age`).
 Encrypted manifests live only in overlays, never in `base/` — `.sops.yaml` only
-matches paths under `staging/` and `production/`.
+matches paths under `staging/`.
 
 That SOPS file carries two Secrets, templated in
 `ai-gateway-secrets.enc.yaml.example`:
@@ -105,8 +105,6 @@ the HelmRelease renders. The gateway boots and serves `/metrics` with them, but
 every provider call 401s until the real keys are in. `AI_GATEWAY_TOKEN` is no
 longer generated here: virtual keys are created in the dashboard and stored in
 the consuming project's own namespace.
-
-There is no production overlay.
 
 ## Why it is like this
 
@@ -257,7 +255,7 @@ only one of them failed silently with a 401.
 - **`BIFROST_ENCRYPTION_KEY` can never be rotated or lost.** See "Backup &
   restore".
 - **Secrets stay in the overlay.** Never move `*.enc.yaml` into `base/`:
-  `.sops.yaml` only encrypts under `staging/` and `production/`. Never commit
+  `.sops.yaml` only encrypts under `staging/`. Never commit
   `ai-gateway-secrets.enc.yaml.example` with real values.
 - **A model alias must match a routing rule.** Nothing enforces this coupling; an
   alias no rule matches is rejected as an unknown model.

@@ -22,9 +22,8 @@ There is a single overlay, `monitoring/configs/staging/`, applied by the Flux
 Kustomization `monitoring-configs`
 ([`../../clusters/staging/monitoring.yaml`](../../clusters/staging/monitoring.yaml),
 `path: ./monitoring/configs/staging`, `prune: true`, with a `decryption` block
-because several `*.enc.yaml` Secrets live here). There is no `base/` and no
-`production/` counterpart — `clusters/production/` does not deploy this tier —
-so every directory below is referenced directly from
+because several `*.enc.yaml` Secrets live here). There is no `base/`
+counterpart, so every directory below is referenced directly from
 `monitoring/configs/staging/kustomization.yaml`.
 
 This README documents the four alerting directories:
@@ -357,9 +356,8 @@ expands online.
 
 ## Overlays
 
-`staging/` is the only directory in this tree: there is no `base/` and no
-`production/`, and `clusters/production/` deploys no monitoring-configs
-Kustomization. Every manifest here therefore hard-codes its staging values —
+`staging/` is the only directory in this tree: there is no `base/`.
+Every manifest here therefore hard-codes its staging values —
 chat ids, thresholds, namespace matchers — directly. Adding a second environment
 means splitting a `base/` out first.
 

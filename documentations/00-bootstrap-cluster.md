@@ -168,8 +168,8 @@ The filename inside the Secret must end in `.agekey`.
 > Verify that the public line in the key file matches the recipient in `.sops.yaml` before
 > you trust it.
 
-`.sops.yaml` defines more than one recipient, selected by path. Check which recipient
-covers the path you are bootstrapping rather than assuming one key covers everything.
+`.sops.yaml` selects recipients by path. Today every rule names the same staging key; check
+that is still true before assuming one key covers everything.
 
 ### The deploy key for the external chart repository
 
@@ -231,33 +231,14 @@ not error at apply time.
 
 ## A second cluster
 
-One repository can drive several clusters. Each reconciles its own path and they cannot
-conflict, because each only applies what is under its own path.
-
-The steps are the same: install Talos on the new hardware, point `KUBECONFIG` at it and
-**verify you are on the right cluster before doing anything**, create both Secrets from
-step 5 using the recipient that covers that path, then bootstrap Flux against the other
-path.
-
-```bash
-kubectl get nodes        # must show the new cluster, not staging
-
-flux bootstrap github \
-  --owner=$GITHUB_USER \
-  --repository=homelab_v1 \
-  --branch=main \
-  --path=./clusters/production \
-  --personal
-```
-
-Two things to know before doing that today:
-
-- `clusters/production/flux-system/gotk-sync.yaml` still points at the repository's former
-  name. It would need updating first.
-- The production overlays have not been maintained since June 2026 and still encode a
-  shared bucket layout that staging deliberately moved away from. Treat that tree as
-  scaffolding, not as a ready second environment. See
-  [14-design-decisions.md](14-design-decisions.md#10-open-work).
+There is none, and none is wired. The repository drives one cluster from
+`./clusters/staging`; the never-bootstrapped production entrypoint and its
+overlays were deleted on 2026-09-15, and non-production workloads are planned as an
+in-cluster `dev` tier instead
+([14-design-decisions.md](14-design-decisions.md#one-repository-one-branch-one-cluster)).
+A second cluster would need its own `clusters/<name>/` entrypoint, overlays, `.sops.yaml`
+rule and age key before any of the steps above apply, and **verify you are on the right
+cluster before doing anything** (`kubectl get nodes`).
 
 Seeding a second cluster's databases from the first is a one time CloudNativePG recovery
 bootstrap: replace the Cluster's `initdb` with `bootstrap.recovery` pointing at the source

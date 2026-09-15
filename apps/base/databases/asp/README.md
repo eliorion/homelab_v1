@@ -34,19 +34,13 @@ Staging (`apps/staging/databases/asp/`):
 | `cluster-reflector-patch.yaml` | `inheritedMetadata` annotations allowing kubernetes-reflector to mirror into `lab` and `database` |
 | `cluster-recovery-patch.yaml` | **not referenced** by `kustomization.yaml`; leftover from the 2026-06-11 restore (see below) |
 
-Production (`apps/production/databases/asp/`) — see [Overlays](#overlays).
-
 Flux applies this through `clusters/staging/apps.yaml`: the Kustomization
 `databases` reconciles `./apps/staging/databases` (whose kustomization lists
 `asp/`), `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, decrypts with
 SOPS and uses `wait: true`, so it is Ready only when the CNPG Cluster reports
 Ready. `db-migrations` depends on `databases` (it needs `asp-db` and the
 generated `asp-db-app` secret), `apps` depends on `db-migrations`, and
-`clusters/staging/lab.yaml` also depends on `databases`. Production is **not**
-wired the same way: `clusters/production/apps.yaml` declares a single
-Kustomization, `apps` (`path: ./apps/production`, `dependsOn: infra-cnpg-plugin`,
-no `wait: true`). There is no `databases` and no `db-migrations` Kustomization on
-the production side, so none of the gating above exists there.
+`clusters/staging/lab.yaml` also depends on `databases`.
 
 ## Why it is like this
 
@@ -92,9 +86,9 @@ has `login=true` and `createrole=true`; `webapp_ro` and `grafana_ro` exist as
 than a gap: Flyway creates the role and its grants — the privilege boundary —
 and CNPG is what would attach a credential. Nothing has needed one yet. To give
 `grafana_ro` a login, add it to the roles list *with* a `passwordSecret` **in
-the staging overlay as a patch, never in this base**: `apps/production/databases/asp`
-consumes the same base and `clusters/production/apps.yaml` reconciles it, so a
-role pointing at a Secret that exists only in staging fails there.
+the staging overlay as a patch, never in this base**: the Secret it would name
+lives only in the overlay, and the base must stay renderable without any
+overlay's Secrets.
 
 **The init schema.** `db-init-configmap.yaml` carries `init.sql`, written to be
 idempotent so it is safe on a clean database and on a re-run. It creates
@@ -190,8 +184,8 @@ for later.
   `ALTER DEFAULT PRIVILEGES` block at the bottom, are what keep the schema
   usable by `app`. Dropping either reproduces `must be owner of table`.
 - The two `AWS_*_CHECKSUM_*: when_required` sidecar env vars are required for
-  Cloudflare R2 in **every** ObjectStore (staging and production, including
-  `objectstore-staging.yaml`). Without them backup *and* restore fail.
+  Cloudflare R2 in **every** ObjectStore. Without them backup *and* restore
+  fail.
 - A recovered cluster must archive under a different `serverName` than the one
   it restored from, and pruning an old prefix can take the `begin_wal` of the
   only base backup with it — which is exactly how the 2026-06-11 restore was
@@ -200,11 +194,6 @@ for later.
   reflection *permission*; do not add an auto-mirror annotation there, or the
   `-ca` / `-server` / `-replication` secrets leak into `lab` and `database`.
 - `*.enc.yaml` files are SOPS ciphertext. Never open or edit them by hand.
-- Production's seed-from-staging pieces (`objectstore-staging.yaml`,
-  `r2-staging-backup-credentials.enc.yaml`, `cluster-recovery-patch.yaml`) are
-  marked TEMPORARY. CNPG honours a `bootstrap` stanza only at first cluster
-  creation, so they must be in place *before* the prod cluster exists and are
-  inert afterwards; remove them once the prod cluster is seeded and verified.
 
 ## Operating it
 
@@ -236,30 +225,12 @@ recover into a throwaway cluster with `bootstrap.recovery` and **no**
 
 ### Overlays
 
-`staging` and `production` share the base and both add
-`r2-backup-credentials.enc.yaml`, `objectstore.yaml` (`r2-store`) and
-`scheduledbackup.yaml` (identical `asp-db-daily`, `0 0 3 * * *`), against the
-same R2 account endpoint
-`https://07e577de68147de704bb467debe46e21.r2.cloudflarestorage.com`.
+`staging` is the only overlay. It adds `r2-backup-credentials.enc.yaml`,
+`objectstore.yaml` (`r2-store` → `s3://asp-cnpg-staging`) and
+`scheduledbackup.yaml` (`asp-db-daily`, `0 0 3 * * *`) against the R2 account
+endpoint `https://07e577de68147de704bb467debe46e21.r2.cloudflarestorage.com`,
+plus the storage-class and reflector patches listed above.
 
-Differences actually on disk:
-
-| | staging | production |
-|---|---|---|
-| Bucket | `s3://asp-cnpg-staging` | `s3://asp-cnpg-production` |
-| Storage class patch | `cluster-storage-patch.yaml` → `longhorn` | none (cluster default) |
-| Reflector patch | `cluster-reflector-patch.yaml` (`lab`, `database`) | none |
-| Recovery patch | file present but **not** in `patches` | `cluster-recovery-patch.yaml` **is** applied (seed from staging) |
-| Extra resources | — | `objectstore-staging.yaml` (`r2-store-staging` → `s3://asp-cnpg-staging`, secret `r2-staging-credentials`) and `r2-staging-backup-credentials.enc.yaml` |
-
-The production recovery patch replaces `/spec/bootstrap` with a
-`recovery` bootstrap from `asp-db-staging` (database `automarket`, owner `app`)
-and adds an `externalClusters` entry pointing at `r2-store-staging` /
-`serverName: asp-db`, so the first production cluster is seeded from staging's
-archive while its own archiving still goes to `r2-store`. Both the extra
-resources and the patch are marked TEMPORARY (plan Step 6).
-
-Note that `../../../../documentations/03-backups.md` flags the production tree as
-not deployed, and as still pointing both production clusters at a single shared
-`asp-cnpg-production` bucket — the layout staging deliberately moved away from.
-Fix that before the production overlay is ever reconciled.
+A production overlay (bucket `s3://asp-cnpg-production` plus a temporary
+seed-from-staging recovery patch) was never reconciled and was deleted with the
+rest of the production tree on 2026-09-15.
