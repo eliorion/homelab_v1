@@ -9,7 +9,7 @@ repository (`infrastructure/`, `apps/`, `monitoring/`) is inert YAML until a
 `staging` is the live cluster and the only one. A `production/` entrypoint for a cluster
 that was never bootstrapped was deleted on 2026-09-15.
 
-The files in `clusters/staging/` declare 23 Flux Kustomizations, 4 `GitRepository`
+The files in `clusters/staging/` declare 24 Flux Kustomizations, 4 `GitRepository`
 sources for the application Helm charts, and the flux-generated bootstrap manifests.
 They carry no workload YAML of their own — only ordering, gating, timeouts and
 decryption.
@@ -35,7 +35,7 @@ rather than hand-editing.
 Every other Kustomization in this directory names `sourceRef: GitRepository/flux-system`,
 so the whole tree reconciles from one clone.
 
-### `staging/infrastructure.yaml` — 17 Kustomizations
+### `staging/infrastructure.yaml` — 18 Kustomizations
 
 | name | path (`./`-relative to repo root) | interval | timeout | dependsOn | gate |
 | --- | --- | --- | --- | --- | --- |
@@ -51,6 +51,7 @@ so the whole tree reconciles from one clone.
 | `infrastructure-controllers` | `infrastructure/controllers/staging` | 1m0s | 5m | `infra-cnpg-plugin` | sops |
 | `infrastructure-services` | `infrastructure/services/staging` | 1m0s | 5m | `infrastructure-controllers`, `infra-arc-controller`, `infra-keycloak-operator` | sops |
 | `infra-keycloak-realm` | `infrastructure/services/staging/keycloak/realm` | 1h | 10m | `infrastructure-services` | force + wait, sops |
+| `infra-harbor-config` | `infrastructure/services/staging/harbor/config` | 1h | 10m | `infrastructure-services` | force + wait, sops |
 | `infra-linstor` | `infrastructure/controllers/base/linstor` | 1h | 15m | — | wait + HelmRelease `piraeus-operator` |
 | `infra-seaweedfs` | `infrastructure/controllers/base/seaweedfs` | 1h | 15m | `infra-linstor` | wait + HelmRelease `seaweedfs-csi-driver` |
 | `infra-seaweedfs-config` | `infrastructure/controllers/staging/seaweedfs-config` | 1h | 15m | `infrastructure-controllers` | force |
@@ -85,6 +86,8 @@ resources inside it:
 - **`infra-keycloak-realm` runs last**, after `infrastructure-services`, because the
   keycloak-config-cli Job authenticates with the `keycloak-initial-admin` Secret that
   the operator generates once Keycloak is up.
+- **`infra-harbor-config` runs after `infrastructure-services`** for the same reason: its Job
+  calls the Harbor API with the `harbor-admin` Secret and needs Harbor up.
 - The longer timeouts (`infra-longhorn` 15m, `infra-cilium` 10m, `infra-keda` 10m,
   `infra-kyverno` 10m)
   exist because a first install on a cold node pulls the full image set before the
@@ -233,6 +236,7 @@ flowchart TD
     arc --> svc
     kco --> svc
     svc --> realm["infra-keycloak-realm"]
+    svc --> harborcfg["infra-harbor-config"]
     ctrl --> swcfg["infra-seaweedfs-config"]
 
     ctrl --> mon["monitoring-controllers"]
@@ -282,16 +286,17 @@ when a human bumps a chart version; application and service tiers run at `1m0s`.
     `400 {"error":"invalid_input","error_description":"A redirect URI is not a valid URI"}`,
     which reads as a bad realm file rather than as a missing decryption block.
 
-  Nine of the twenty-three Kustomizations carry the block: `infrastructure-controllers`,
-  `infrastructure-services`, `infra-reflector`, `infra-keycloak-realm`, `databases`,
+  Ten of the twenty-four Kustomizations carry the block: `infrastructure-controllers`,
+  `infrastructure-services`, `infra-reflector`, `infra-keycloak-realm`, `infra-harbor-config`, `databases`,
   `apps`, `monitoring-controllers`, `monitoring-configs`, and `dev-platform` — the one
   that carries it before its path holds any sops file. All point at the same
   `sops-age` Secret, created by hand once per cluster and never committed.
 
-- **`force: true` on exactly two Kustomizations, and both need it.** A Job is
+- **`force: true` on exactly three Kustomizations, and all need it.** A Job is
   immutable. `db-migrations` cannot pick up an image-tag bump, and
-  `infra-keycloak-realm` cannot pick up a realm edit (which changes the generated
-  ConfigMap hash, which changes the Job spec), without a delete and recreate.
+  `infra-keycloak-realm` and `infra-harbor-config` cannot pick up a config or script edit
+  (which changes the generated ConfigMap hash, which changes the Job spec), without a delete
+  and recreate.
 
 - **`timeout: 10m` on `infra-keycloak-realm` must stay above the Job's own wait.**
   `infrastructure/services/base/keycloak/realm/job.yaml` sets

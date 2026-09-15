@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: harbor-config
+  labels:
+    app: harbor
+    component: config
+spec:
+  backoffLimit: 5
+  # Deleted a day after it finishes; Flux re-creates it on the next reconcile, so the objects
+  # converge back to Git daily even without an edit.
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: harbor
+        component: config
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: configure
+          # sh + curl + jq; keep the kubectl minor within one of the cluster's.
+          image: docker.io/alpine/k8s:1.36.4
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "/script/configure.sh"]
+          env:
+            - name: HOME
+              value: /tmp
+            - name: HARBOR_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-admin
+                  key: HARBOR_ADMIN_PASSWORD
+            - name: E2E_CI_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-robot-e2e-ci
+                  key: secret
+            - name: E2E_PULL_DOCKERCONFIG
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-e2e-pull
+                  key: .dockerconfigjson
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: script
+              mountPath: /script
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: script
+          configMap:
+            name: harbor-config-script
+        - name: tmp
+          emptyDir: {}

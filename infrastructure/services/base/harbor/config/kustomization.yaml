@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - job.yaml
+
+# Keep the hash suffix: a script edit renames the ConfigMap, which changes the Job spec, which
+# makes Flux (force: true) re-create and re-run the Job.
+configMapGenerator:
+  - name: harbor-config-script
+    files:
+      - configure.sh
