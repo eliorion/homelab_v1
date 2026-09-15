@@ -1,0 +1,36 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: blackbox-probes
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: blackbox-probes.rules
+      rules:
+        - alert: PublicEndpointDown
+          expr: max by (instance) (probe_success{job="blackbox-public"}) == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Public endpoint {{ $labels.instance }} is failing"
+            description: "The in-cluster blackbox probe of {{ $labels.instance }} (DNS, Cloudflare, tunnel, TLS, expected status) has failed for 5 minutes."
+        - alert: InternalEndpointDown
+          expr: max by (instance) (probe_success{job="blackbox-internal"}) == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Internal endpoint {{ $labels.instance }} is failing"
+            description: "The blackbox probe of {{ $labels.instance }} (TLS, expected status) has failed for 5 minutes."
+        - alert: EndpointTLSCertExpiringSoon
+          expr: min by (instance) (probe_ssl_earliest_cert_expiry{job=~"blackbox-.+"} - time()) < 14 * 86400
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "TLS certificate of {{ $labels.instance }} expires within 14 days"
+            description: "The certificate served by {{ $labels.instance }} expires in {{ $value | humanizeDuration }}. Automated renewal should have replaced it by now."

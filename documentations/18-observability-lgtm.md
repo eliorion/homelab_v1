@@ -221,8 +221,8 @@ observe. "Covered" means data flows and something alerts or can be queried;
 | CI/CD | Covered | Every Dagger run: span tree, step output, duration and failure trend, engine cache. GitHub workflow-level spans (queue time, non-Dagger steps) are not captured |
 | Log-based alerting | **Gap** | Loki's ruler is not wired to Alertmanager; no alert fires on a log line |
 | Dead man's switch | **Gap** | `Watchdog` is still routed to a blackhole — a dead Prometheus or Alertmanager is silent. Tracked in [14](14-design-decisions.md) |
-| Synthetic / black-box probing | **Gap** | Nothing probes the public endpoints (Cloudflare tunnels, Gateway API) or certificate expiry from outside. blackbox-exporter or Grafana synthetic monitoring |
-| Certificate expiry | **Gap** | cert-manager and Harbor, KEDA, ARC controller, Tailscale operator, Keycloak are not scraped |
+| Synthetic / black-box probing | Covered | blackbox-exporter probes the four Cloudflare-tunnel hostnames the way users reach them, and Harbor from inside; `PublicEndpointDown` is critical. The home uplink itself failing is left to the dead man's switch |
+| Certificate expiry | Covered | cert-manager metrics (`CertificateNotReady`, `CertificateExpiringSoon`) plus probe-side expiry for served certificates, Cloudflare edge included. Harbor, KEDA, ARC controller, Tailscale operator and Keycloak metrics are still not scraped |
 | Continuous profiling | Not planned | Pyroscope would be a fourth stateful store for little gain until the applications are profiled |
 | Metrics HA and long-term retention | Accepted | One Prometheus replica, 10 days. Thanos or Mimir is the production answer; not worth the footprint at homelab scale |
 | Logs and traces HA | Accepted | Single-process Loki and Tempo: a restart pauses ingestion (collectors retry) and queries fail |

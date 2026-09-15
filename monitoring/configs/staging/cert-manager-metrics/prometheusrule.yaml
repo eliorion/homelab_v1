@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cert-manager
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: cert-manager.rules
+      rules:
+        - alert: CertificateNotReady
+          expr: max by (exported_namespace, name) (certmanager_certificate_ready_status{condition="False"}) == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} is not Ready"
+            description: "cert-manager reports the certificate not Ready for 15 minutes: issuance or renewal is failing. Check `kubectl -n {{ $labels.exported_namespace }} describe certificate {{ $labels.name }}`."
+        - alert: CertificateExpiringSoon
+          expr: min by (exported_namespace, name) (certmanager_certificate_expiration_timestamp_seconds - time()) < 14 * 86400
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} expires within 14 days"
+            description: "Expires in {{ $value | humanizeDuration }}. cert-manager renews at two thirds of the lifetime, so this means renewal has been failing."
