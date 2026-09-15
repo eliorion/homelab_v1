@@ -3,4 +3,5 @@ kind: Kustomization
 resources:
   - release.yaml
   - release-xl.yaml
+  - release-e2e.yaml
   - github-pat.enc.yaml

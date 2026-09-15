@@ -1,12 +1,13 @@
 # arc-runner-set
 
-The runner half of the self-hosted GitHub Actions stack: two
-`gha-runner-scale-set` HelmReleases that register two runner pools with GitHub
+The runner half of the self-hosted GitHub Actions stack: three
+`gha-runner-scale-set` HelmReleases that register three runner pools with GitHub
 for the `Eliorion/asp` repository. Each pool is an `AutoscalingRunnerSet`
 consumed by the ARC controller, which turns a queued job into a one-shot
 ephemeral pod in the `arc-runners` namespace and deletes it when the job ends.
 `self-hosted-arc` is the default pool for ordinary jobs; `self-hosted-arc-xl` is
-a smaller pool of bigger runners for the k3d end-to-end leg. The operator half
+a smaller pool of bigger runners for the k3d end-to-end leg; `self-hosted-arc-e2e` runs
+the e2e platform lane, two at a time, with no dind. The operator half
 (CRDs, controller Deployment, the `arc-systems` / `arc-runners` namespaces and
 the shared `HelmRepository/arc`) lives in
 [`infrastructure/controllers/base/arc/`](../../../controllers/base/arc/README.md).
@@ -18,12 +19,13 @@ is described in
 
 | File | What it does |
 |---|---|
-| `kustomization.yaml` | Lists `release.yaml`, `release-xl.yaml`, `github-pat.enc.yaml`. |
+| `kustomization.yaml` | Lists `release.yaml`, `release-xl.yaml`, `release-e2e.yaml`, `github-pat.enc.yaml`. |
 | `release.yaml` | `HelmRelease/arc-runner-set-asp` in `flux-system`, `targetNamespace: arc-runners`, chart `gha-runner-scale-set` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h. Registers the scale set `self-hosted-arc`, `minRunners: 5` / `maxRunners: 25`, with a hand-written dind pod template. |
 | `release-xl.yaml` | `HelmRelease/arc-runner-set-asp-xl`, same chart and version, same namespace and secret. Registers `self-hosted-arc-xl`, `minRunners: 2` / `maxRunners: 4`, same dind template plus a `runner-tier: xl` pod label and a hard one-pod-per-node `podAntiAffinity`. |
-| `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). Both releases point at it through `githubConfigSecret`. Never commit it decrypted. |
+| `release-e2e.yaml` | `HelmRelease/arc-runner-set-asp-e2e`, same chart, namespace and secret. Registers `self-hosted-arc-e2e`, `minRunners: 0` / `maxRunners: 2` — the e2e platform lane's concurrency, sized to the platform quota. Runner container only (no dind, non-root, no privilege escalation): the job drives the in-cluster Dagger engine and reads Secret `e2e-platform/vc-e2e-runner` (Role in `infrastructure/services/dev/e2e-platform/runner-access.yaml`). |
+| `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). All three releases point at it through `githubConfigSecret`. Never commit it decrypted. |
 
-Both releases carry the same pod template shape:
+The default and XL releases carry the same pod template shape:
 
 - `init-dind-externals` — an init container that copies `/home/runner/externals`
   into a shared `dind-externals` emptyDir, because the dind container expects
@@ -44,6 +46,7 @@ Sizing as the manifests currently declare it:
 |---|---|---|---|
 | `self-hosted-arc` | min 5 / max 25 | req 2Gi, limit 4Gi | req 1Gi, limit 6Gi, no CPU limit |
 | `self-hosted-arc-xl` | min 2 / max 4 | req 500m CPU + 512Mi, limit 1Gi | req 2Gi, limit 8Gi, no CPU limit |
+| `self-hosted-arc-e2e` | min 0 / max 2 | req 100m CPU + 512Mi, limit 2Gi | none |
 
 Flux applies this directory as part of the `infrastructure-services`
 Kustomization (`clusters/staging/infrastructure.yaml`, `path:
@@ -57,8 +60,8 @@ first.
 There is no `base/` for this component: it exists only
 under `infrastructure/services/staging/`, listed as `arc-runner-set/` in
 `infrastructure/services/staging/kustomization.yaml`. The CI stack as a whole is
-staging-only. The two releases in this directory are the environment split —
-default pool and XL pool — not two environments.
+staging-only. The three releases in this directory are the pool split —
+default, XL and e2e — not three environments.
 
 ## Why it is like this
 

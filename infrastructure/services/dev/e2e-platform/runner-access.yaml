@@ -1,0 +1,26 @@
+# The e2e runner scale set (infrastructure/services/staging/arc-runner-set/release-e2e.yaml)
+# reads the vcluster credential it hands to Dagger. Nothing else on the host.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: e2e-runner-kubeconfig
+  namespace: e2e-platform
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["vc-e2e-runner"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: e2e-runner-kubeconfig
+  namespace: e2e-platform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: e2e-runner-kubeconfig
+subjects:
+  - kind: ServiceAccount
+    name: self-hosted-arc-e2e-gha-rs-no-permission
+    namespace: arc-runners

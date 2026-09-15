@@ -5,6 +5,7 @@ resources:
   - guardrails.yaml
   - network.yaml
   - rbac.yaml
+  - runner-access.yaml
   - policies/workloads.yaml
   - policies/services-pvcs.yaml
   - policies/pods.yaml

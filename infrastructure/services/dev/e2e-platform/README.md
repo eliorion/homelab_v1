@@ -23,6 +23,7 @@ host, `timeout: 20m`, `wait: true`, after `infrastructure-controllers` (CNPG's H
 | `guardrails.yaml` | host | ResourceQuota `e2e-quota`, LimitRange `e2e-limits` (container max 2Gi, PVC max 5Gi). |
 | `network.yaml` | host | CiliumNetworkPolicies `e2e-host-boundary`, `e2e-platform-dns-api`, `e2e-vcluster-api`. |
 | `rbac.yaml` | host | `kyverno:admission-controller:e2e`: lets `policies/workloads.yaml` read CiliumNetworkPolicies. |
+| `runner-access.yaml` | host | Role `e2e-runner-kubeconfig`: the `self-hosted-arc-e2e` runner SA may get Secret `vc-e2e-runner`, nothing else. |
 | `policies/` | host | Kyverno `e2e-workloads`, `e2e-services`, `e2e-pvcs` (validating), `e2e-pods` (mutating). `tests/` is not applied. |
 | `vcluster/release.yaml` | host | HelmRepository `loft`, HelmRelease `vcluster` 0.37.1. |
 | `addons/` | host → vcluster | HelmReleases `keda` and `cnpg` built from `infrastructure/controllers/base/{keda,cnpg}` with `spec.kubeConfig`. |
@@ -73,8 +74,10 @@ the ClusterRole grants no reads beyond namespaces and Deployments.
 with a ten-year expiry and never rotates them. The alternative — the virtual API server trusting
 host-issued ServiceAccount JWTs — does not work here: the host API refuses anonymous requests
 (`401` on `/.well-known/openid-configuration` and `/openid/v1/jwks`), so the authenticator cannot
-fetch the signing keys. The mitigation is scope (above) and who can read the Secret (the e2e
-runner scale set and cluster admins only). Rotate:
+fetch the signing keys. The mitigation is scope (above) and who can read the Secret: the
+`self-hosted-arc-e2e` runner scale set (`runner-access.yaml`, at most two pods) and cluster
+admins. Any workflow that targets that scale set can read it, so the repository must keep
+fork PRs off self-hosted runners (asp `.github/CI-CUTOVER.md`, known scope gaps). Rotate:
 
 ```bash
 kubectl --kubeconfig <vcluster admin> -n kube-system delete serviceaccount e2e-runner
