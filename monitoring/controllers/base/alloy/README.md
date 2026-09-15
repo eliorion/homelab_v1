@@ -34,7 +34,7 @@ a `ServiceMonitor` labelled `release: kube-prometheus-stack` on port 12345.
 
 | Source | Path on the node | Loki labels | Processing |
 |---|---|---|---|
-| Pod logs | `/var/log/pods/*/*/*.log` | `job="kubernetes-pods"`, `namespace`, `pod`, `container`, `stream`, `node` | `stage.cri`; namespace/pod/container parsed from the path |
+| Pod logs | `/var/log/pods/*/*/*.log` | `job="kubernetes-pods"`, `namespace`, `pod`, `container`, `stream`, `node` | `stage.cri`; namespace/pod/container parsed from the path; `trace_id`/`span_id` of JSON lines as structured metadata |
 | Talos services and kernel | `/var/log/*.log` except `auditd.log` | `job="talos"`, `service`, `node` | successful Talos API calls in `machined` dropped |
 | Audit log | `/var/log/audit/kube/kube-apiserver.log` | `job="kube-apiserver-audit"`, `node` | filtered, timestamp from `requestReceivedTimestamp` |
 
@@ -102,6 +102,14 @@ than tightening the Talos audit policy keeps the full log on the node's disk for
 forensics (Talos rotates it at 100MB × 10), while Loki only holds what is worth
 searching.
 
+**Trace ids from app logs become structured metadata.** The asp, fbref and scraper
+Python services write JSON logs, and inside a sampled span their formatter adds
+`trace_id` and `span_id`. Lifting both into structured metadata lets Loki's `trace_id`
+derived field link a log line to its trace, and Tempo's "Logs for this span" query
+(`| trace_id=… | span_id=…`) find the lines of a span. Labels would open a stream per
+trace. Only lines containing `"trace_id": "` are parsed, so the JSON stage never runs on
+the rest of the cluster's logs.
+
 **`alloy-receiver` is one replica.** `loki.source.kubernetes_events` has no
 clustering, so a second replica would ship every event twice. OTLP itself is
 stateless and could scale; if it ever needs to, split events into their own
@@ -142,6 +150,12 @@ carries the one rule.
   Reordering the `source` list without rewriting the expression silently changes
   what is dropped. The `drop_counter_reason` of each stage shows up in
   `loki_process_dropped_lines_total{reason=…}` — check it after any edit.
+- **The trace-id match is a substring of Python's `json.dumps` output**, `"trace_id": "`
+  with a space after the colon. A logger that writes compact JSON (`"trace_id":"`)
+  is not matched and its lines get no trace link. The selector is an Alloy raw
+  string holding a double-quoted LogQL filter: a LogQL backtick string there passes
+  `alloy validate` but fails when the component is built, and the reloader then
+  keeps the previous config.
 - **`alloy-node` runs as root with `DAC_READ_SEARCH`.** The audit log is mode 0600
   owned by uid 65534; dropping the capability makes that one source fail while pod
   and Talos logs keep flowing.

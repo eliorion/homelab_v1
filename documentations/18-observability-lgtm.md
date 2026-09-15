@@ -213,7 +213,7 @@ observe. "Covered" means data flows and something alerts or can be queried;
 | Storage | Covered | LINSTOR and SeaweedFS rules; CNPG WAL archiving and volume fill |
 | GitOps | Covered | Flux reconcile failures on two Telegram paths |
 | Backups | Covered | etcd backup staleness; CNPG archiving |
-| Pod logs | Covered | 14 days |
+| Pod logs | Covered | 14 days; `trace_id`/`span_id` of JSON app logs as structured metadata, linked to Tempo |
 | Node / OS logs | Covered | Talos services and kernel |
 | Audit log | Covered, filtered | Successful system reads are not in Loki; the full log stays on each node for its rotation window |
 | Kubernetes events | Covered | kept past the apiserver's 1h event TTL |
