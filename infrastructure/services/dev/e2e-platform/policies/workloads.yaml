@@ -1,0 +1,61 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: e2e-workloads
+spec:
+  validationActions: ["Deny"]
+  failurePolicy: Fail
+  # Admission only: background reports would need list/watch on pods/ephemeralcontainers, which no API serves.
+  evaluation:
+    background:
+      enabled: false
+  # Empty list = no rules generated for Deployments/StatefulSets; the vcluster syncer creates bare Pods.
+  autogen:
+    podControllers:
+      controllers: []
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods", "pods/ephemeralcontainers"]
+    namespaceSelector:
+      matchLabels:
+        eliorion.fr/tier: e2e
+  variables:
+    - name: containers
+      expression: >-
+        object.spec.containers +
+        object.spec.?initContainers.orValue([]) +
+        object.spec.?ephemeralContainers.orValue([])
+    - name: runPod
+      expression: >-
+        'vcluster.loft.sh/managed-by' in object.metadata.?labels.orValue({}) &&
+        !(object.metadata.labels[?'vcluster.loft.sh/namespace'].orValue('') in
+          ['kube-system', 'keda', 'cnpg-system', 'e2e-system'])
+  validations:
+    # Flux applies the guardrails with the vcluster; refuse pods if they are missing anyway.
+    - expression: >-
+        request.operation != 'CREATE' ||
+        (dyn(resource.Get('v1', 'resourcequotas', request.namespace, 'e2e-quota')) != null &&
+         dyn(resource.Get('cilium.io/v2', 'ciliumnetworkpolicies', request.namespace, 'e2e-host-boundary')) != null)
+      message: e2e guardrails (ResourceQuota e2e-quota, CiliumNetworkPolicy e2e-host-boundary) are missing
+    - expression: >-
+        !object.spec.?hostNetwork.orValue(false) &&
+        !object.spec.?hostPID.orValue(false) &&
+        !object.spec.?hostIPC.orValue(false)
+      message: hostNetwork, hostPID and hostIPC are forbidden on the e2e platform
+    - expression: "!object.spec.?volumes.orValue([]).exists(v, has(v.hostPath))"
+      message: hostPath volumes are forbidden on the e2e platform
+    - expression: "!variables.containers.exists(c, c.?securityContext.?privileged.orValue(false))"
+      message: privileged containers are forbidden on the e2e platform
+    - expression: "request.operation != 'CREATE' || object.spec.?nodeName.orValue('') == ''"
+      message: spec.nodeName may not be set on the e2e platform
+    - expression: >-
+        object.spec.?nodeSelector.orValue({}).all(k, k in ['kubernetes.io/os', 'kubernetes.io/arch'])
+      message: nodeSelector may only use kubernetes.io/os and kubernetes.io/arch on the e2e platform
+    - expression: "!object.spec.?affinity.?nodeAffinity.?requiredDuringSchedulingIgnoredDuringExecution.hasValue()"
+      message: required node affinity is forbidden on the e2e platform
+    # Runs after policies/pods.yaml has mutated the pod.
+    - expression: "!variables.runPod || object.spec.?priorityClassName.orValue('') == 'e2e'"
+      message: e2e run pods must run at priorityClassName e2e

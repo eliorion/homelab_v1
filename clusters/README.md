@@ -9,7 +9,7 @@ repository (`infrastructure/`, `apps/`, `monitoring/`) is inert YAML until a
 `staging` is the live cluster and the only one. A `production/` entrypoint for a cluster
 that was never bootstrapped was deleted on 2026-09-15.
 
-The files in `clusters/staging/` declare 23 Flux Kustomizations, 4 `GitRepository`
+The files in `clusters/staging/` declare 24 Flux Kustomizations, 4 `GitRepository`
 sources for the application Helm charts, and the flux-generated bootstrap manifests.
 They carry no workload YAML of their own — only ordering, gating, timeouts and
 decryption.
@@ -134,7 +134,7 @@ project's read-only database replica. The labs are always on (`replicas: 1`), so
 reachable on the tailnet without scaling it up first; the scale and port-forward commands
 are in [`../apps/staging/lab/README.md`](../apps/staging/lab/README.md).
 
-### `staging/dev.yaml` — 1 Kustomization
+### `staging/dev.yaml` — 2 Kustomizations
 
 `dev-platform` → `infrastructure/services/dev`, `interval: 10m`, `retryInterval: 1m`,
 `timeout: 10m`, `prune: true`, `wait: true`, sops decryption. It depends on
@@ -151,6 +151,16 @@ are in [`../apps/staging/lab/README.md`](../apps/staging/lab/README.md).
 
 The previews the tier guards are created by the Dagger pipeline, not by Flux. Details in
 [`../infrastructure/services/dev/README.md`](../infrastructure/services/dev/README.md).
+
+`e2e-platform` → `infrastructure/services/dev/e2e-platform`, `interval: 10m`,
+`retryInterval: 1m`, `timeout: 20m`, `prune: true`, `wait: true`, sops decryption. It depends
+on `infrastructure-controllers` (the CNPG HelmRepository), `infra-keda` (the KEDA
+HelmRepository), `infra-kyverno`, `infra-cilium-config` and `infra-reflector`. The 20m covers
+the vcluster, then KEDA and CNPG installed into it, then the nested Kustomization
+`e2e-platform/e2e-platform-virtual`, which applies `virtual/` inside the vcluster through
+`spec.kubeConfig` and is not counted above because it lives outside `clusters/staging/`.
+Details in
+[`../infrastructure/services/dev/e2e-platform/README.md`](../infrastructure/services/dev/e2e-platform/README.md).
 
 ### `staging/monitoring.yaml` — 2 Kustomizations
 
@@ -246,6 +256,12 @@ flowchart TD
     kyv --> devp
     cilcfg --> devp
     refl --> devp
+
+    ctrl --> e2e["e2e-platform"]
+    keda --> e2e
+    kyv --> e2e
+    cilcfg --> e2e
+    refl --> e2e
 ```
 
 Nodes with no inbound edge have no `dependsOn` and are applied immediately by the root
@@ -278,10 +294,10 @@ generated object is Kyverno's to revert, not Flux's.
     `400 {"error":"invalid_input","error_description":"A redirect URI is not a valid URI"}`,
     which reads as a bad realm file rather than as a missing decryption block.
 
-  Nine of the twenty-three Kustomizations carry the block: `infrastructure-controllers`,
+  Ten of the twenty-four Kustomizations carry the block: `infrastructure-controllers`,
   `infrastructure-services`, `infra-reflector`, `infra-keycloak-realm`, `databases`,
-  `apps`, `monitoring-controllers`, `monitoring-configs`, and `dev-platform` — the one
-  that carries it before its path holds any sops file. All point at the same
+  `apps`, `monitoring-controllers`, `monitoring-configs`, `dev-platform` and
+  `e2e-platform` — the two that carry it before their path holds any sops file. All point at the same
   `sops-age` Secret, created by hand once per cluster and never committed.
 
 - **`force: true` on exactly two Kustomizations, and both need it.** A Job is

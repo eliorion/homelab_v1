@@ -1,0 +1,45 @@
+# Run pods get the e2e priority and the host pull secrets. Platform pods (the vcluster
+# control plane, and synced pods of the platform's own virtual namespaces) are left alone:
+# evicting them first would break every run at once.
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: e2e-pods
+spec:
+  failurePolicy: Fail
+  autogen:
+    podControllers:
+      controllers: []
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+    namespaceSelector:
+      matchLabels:
+        eliorion.fr/tier: e2e
+  matchConditions:
+    - name: synced-run-pod
+      expression: >-
+        'vcluster.loft.sh/managed-by' in object.metadata.?labels.orValue({}) &&
+        !(object.metadata.labels[?'vcluster.loft.sh/namespace'].orValue('') in
+          ['kube-system', 'keda', 'cnpg-system', 'e2e-system'])
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >-
+          Object{
+            spec: Object.spec{
+              priorityClassName: "e2e",
+              priority: -1000,
+              preemptionPolicy: "Never"
+            }
+          }
+    # imagePullSecrets is an atomic list: ApplyConfiguration refuses it, so replace it whole.
+    # The secrets live on the host only; nothing inside the vcluster can read them.
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: >-
+          [JSONPatch{op: "add", path: "/spec/imagePullSecrets",
+                     value: [{"name": "ghcr-pull-secret"}, {"name": "harbor-e2e-pull"}]}]

@@ -1,0 +1,36 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: ClusterResource
+metadata:
+  name: cluster
+spec:
+  crds:
+  - ../crds/ciliumnetworkpolicies.yaml
+  resources:
+  - apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: e2e-platform
+      labels:
+        eliorion.fr/tier: e2e
+  - apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: e2e-bare
+      labels:
+        eliorion.fr/tier: e2e
+  - apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: e2e-quota
+      namespace: e2e-platform
+  - apiVersion: cilium.io/v2
+    kind: CiliumNetworkPolicy
+    metadata:
+      name: e2e-host-boundary
+      namespace: e2e-platform
+  # e2e-bare has the quota but not the host boundary.
+  - apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: e2e-quota
+      namespace: e2e-bare

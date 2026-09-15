@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: engine-x-e2e-12-asp-x-vcluster
+  namespace: e2e-platform
+  labels:
+    app: asp-engine
+    vcluster.loft.sh/managed-by: vcluster
+    vcluster.loft.sh/namespace: e2e-12-asp
+spec:
+  priorityClassName: platform-critical
+  priority: 100000
+  preemptionPolicy: PreemptLowerPriority
+  imagePullSecrets:
+  - name: smuggled
+  containers:
+  - name: app
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vcluster-0
+  namespace: e2e-platform
+  labels:
+    app: vcluster
+    release: vcluster
+spec:
+  containers:
+  - name: syncer
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: keda-operator-x-keda-x-vcluster
+  namespace: e2e-platform
+  labels:
+    app: keda-operator
+    vcluster.loft.sh/managed-by: vcluster
+    vcluster.loft.sh/namespace: keda
+spec:
+  containers:
+  - name: keda
+    image: nginx

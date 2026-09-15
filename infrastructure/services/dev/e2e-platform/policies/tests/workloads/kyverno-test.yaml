@@ -1,0 +1,33 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: workloads
+policies:
+- ../../workloads.yaml
+resources:
+- resources.yaml
+variables: ../values.yaml
+clusterResources:
+- cluster.yaml
+results:
+- isValidatingPolicy: true
+  kind: Pod
+  policy: e2e-workloads
+  resources:
+  - e2e-platform/run-pod
+  - e2e-platform/vcluster-0
+  - e2e-platform/platform-pod
+  result: pass
+- isValidatingPolicy: true
+  kind: Pod
+  policy: e2e-workloads
+  resources:
+  - e2e-bare/no-guardrails
+  - e2e-platform/host-network
+  - e2e-platform/host-path
+  - e2e-platform/privileged-init
+  - e2e-platform/node-name
+  - e2e-platform/node-selector-hostname
+  - e2e-platform/required-affinity
+  - e2e-platform/run-pod-wrong-priority
+  result: fail

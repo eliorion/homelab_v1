@@ -1,5 +1,9 @@
 # dev — per-PR preview guardrails
 
+> **Being replaced.** Per-PR previews are superseded by one long-lived e2e platform vcluster,
+> [`e2e-platform/`](e2e-platform/README.md), reconciled by its own Flux Kustomization. The
+> preview machinery below is deleted once the platform is live.
+
 The `dev` tier hosts per-PR preview environments: one namespace `preview-pr-<n>` per
 pull request, each holding one [vcluster](https://www.vcluster.com/) the PR's pipeline
 deploys into. At most **3** previews exist at a time.

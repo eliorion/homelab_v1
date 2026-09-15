@@ -177,7 +177,32 @@ outage blocks preview writes; generation is always `Ignore`, so a pod rule refus
 until the guardrails exist. The vcluster Role is a hand-copied chart render to redo on every
 bump, and the syncer runs as root, so previews run at PSA `baseline`.
 
+**Superseded** by the e2e platform below; the preview machinery is removed once the platform is live.
+
 **Reference.** [`infrastructure/services/dev/README.md`](../infrastructure/services/dev/README.md)
+
+### One long-lived e2e platform vcluster, not a vcluster per PR
+
+**Why.** What an e2e run must prove is that a stack's new version works on the platform as
+staging runs it: beside the released versions of the other stacks, upgraded over existing data,
+with its NetworkPolicies enforced, on CNPG, LINSTOR and KEDA. One vcluster in `e2e-platform`
+carries KEDA and CNPG from the same bases as staging; each run gets `e2e-<pr>-*` namespaces
+inside it, installs main, upgrades what the PR changed, checks and deletes. The host boundary
+is Cilium **deny** rules, because the charts' own NetworkPolicies are synced into the one
+namespace and any namespace-wide allow would cancel them.
+
+**Rejected.** A vcluster per PR: operators installed per run, a host credential that creates
+namespaces in CI, and nothing staging-shaped to upgrade over. A default-deny NetworkPolicy
+fence: it masks the chart policies it is supposed to leave testable. Trusting host-issued
+ServiceAccount tokens inside the vcluster: the host API refuses the anonymous discovery the
+authenticator needs.
+
+**Cost.** The runner's vcluster token is long-lived; its reach is one ValidatingAdmissionPolicy
+and one ClusterRole wide, and rotation is manual. A KEDA or CNPG base change that needs
+something the vcluster lacks breaks the platform on the same commit as staging's bump. Chart
+NetworkPolicies are widened in exactly one way — DNS and API ports inside the vcluster.
+
+**Reference.** [`infrastructure/services/dev/e2e-platform/README.md`](../infrastructure/services/dev/e2e-platform/README.md)
 
 ---
 
@@ -826,6 +851,10 @@ previews after 24h or above the cap.
 (`kubectl get ns -l preview.eliorion.fr/tier=preview`). A pipeline that dies mid-deploy
 leaves a preview until the reaper runs, and any workflow on the default runner scale set
 can mint the driver token.
+
+**Superseded**: the e2e platform is a Flux object and only run namespaces come from the
+pipeline, inside the vcluster; a cancelled run is cleaned by the next run for that PR or by the
+in-vcluster reaper.
 
 **Reference.** [`infrastructure/services/dev/README.md`](../infrastructure/services/dev/README.md)
 

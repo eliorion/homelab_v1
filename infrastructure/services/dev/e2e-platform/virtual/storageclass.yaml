@@ -1,0 +1,17 @@
+# Virtual copy of the host StorageClass. PVCs sync to the host with this name and the host
+# provisions them; the copy only lets charts and CNPG resolve (and default to) ssd-single.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ssd-single
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: linstor.csi.linbit.com
+parameters:
+  csi.storage.k8s.io/fstype: xfs
+  linstor.csi.linbit.com/placementCount: "1"
+  linstor.csi.linbit.com/resourceGroup: ssd-single
+  linstor.csi.linbit.com/storagePool: ssd
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true

@@ -1,0 +1,87 @@
+# e2e-runner: the CI identity (Secret vc-e2e-runner on the host, see vcluster/release.yaml).
+# It creates a run's namespaces, then binds itself admin + e2e-run-crds inside them.
+# admission.yaml limits every write to run namespaces; reads are not admission-checked.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: e2e-runner
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "create", "patch", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["rolebindings"]
+    verbs: ["get", "list", "create", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles"]
+    resourceNames: ["admin", "e2e-run-crds"]
+    verbs: ["bind"]
+  # Preflight: are the platform operators Available?
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: e2e-run-crds
+rules:
+  - apiGroups: ["postgresql.cnpg.io"]
+    resources: ["clusters", "poolers"]
+    verbs: ["*"]
+  - apiGroups: ["keda.sh"]
+    resources: ["scaledobjects", "scaledjobs", "triggerauthentications"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: e2e-db-templates-reader
+  namespace: e2e-system
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["e2e-db-templates"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: e2e-runner-db-templates
+  namespace: e2e-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: e2e-db-templates-reader
+subjects:
+  - kind: ServiceAccount
+    name: e2e-runner
+    namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: e2e-reaper
+  namespace: e2e-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: e2e-reaper
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: e2e-reaper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: e2e-reaper
+subjects:
+  - kind: ServiceAccount
+    name: e2e-reaper
+    namespace: e2e-system

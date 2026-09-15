@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: run-pod
+  labels:
+    vcluster.loft.sh/managed-by: vcluster
+    vcluster.loft.sh/namespace: e2e-12-asp
+spec:
+  priorityClassName: e2e
+  containers:
+  - name: app
+    image: nginx
+  nodeSelector:
+    kubernetes.io/arch: amd64
+---
+# The control plane and platform pods keep the default priority.
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: vcluster-0
+  labels:
+    app: vcluster
+spec:
+  containers:
+  - name: syncer
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: platform-pod
+  labels:
+    vcluster.loft.sh/managed-by: vcluster
+    vcluster.loft.sh/namespace: cnpg-system
+spec:
+  containers:
+  - name: manager
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-bare
+  name: no-guardrails
+spec:
+  containers:
+  - name: app
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: host-network
+spec:
+  hostNetwork: true
+  containers:
+  - name: app
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: host-path
+spec:
+  containers:
+  - name: app
+    image: nginx
+  volumes:
+  - name: root
+    hostPath:
+      path: /
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: privileged-init
+spec:
+  initContainers:
+  - name: init
+    image: nginx
+    securityContext:
+      privileged: true
+  containers:
+  - name: app
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: node-name
+spec:
+  nodeName: staging-controlplane-1
+  containers:
+  - name: app
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: node-selector-hostname
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: staging-controlplane-1
+  containers:
+  - name: app
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: required-affinity
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values: [staging-controlplane-1]
+  containers:
+  - name: app
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: e2e-platform
+  name: run-pod-wrong-priority
+  labels:
+    vcluster.loft.sh/managed-by: vcluster
+    vcluster.loft.sh/namespace: e2e-12-fbref
+spec:
+  priorityClassName: platform-critical
+  containers:
+  - name: app
+    image: nginx

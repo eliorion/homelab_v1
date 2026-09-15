@@ -1,0 +1,82 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: loft
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://charts.loft.sh
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vcluster
+  namespace: e2e-platform
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: vcluster
+      version: "0.37.1"
+      sourceRef:
+        kind: HelmRepository
+        name: loft
+        namespace: flux-system
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled after ONE failed
+  # upgrade and leaves it unremediated. Keep it set (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    controlPlane:
+      distro:
+        k8s:
+          enabled: true
+          # Keep the minor on the staging cluster's; the e2e lane refuses to run otherwise.
+          image:
+            tag: v1.36.0
+      statefulSet:
+        resources:
+          requests:
+            memory: 512Mi
+          # LimitRange e2e-limits caps a container at 2Gi.
+          limits:
+            memory: 2Gi
+        persistence:
+          volumeClaim:
+            storageClass: ssd-single
+            size: 2Gi
+      proxy:
+        extraSANs:
+          - vcluster.e2e-platform.svc
+          - vcluster.e2e-platform.svc.cluster.local
+    rbac:
+      enableVolumeSnapshotRules:
+        enabled: false
+    sync:
+      toHost:
+        # Chart NetworkPolicies are enforced, as on staging (network.yaml explains the host side).
+        networkPolicies:
+          enabled: true
+      fromHost:
+        # The virtual StorageClass comes from virtual/storageclass.yaml.
+        storageClasses:
+          enabled: false
+    exportKubeConfig:
+      # vc-vcluster: admin certificate, read by Flux only (addons/, virtual Kustomization).
+      server: https://vcluster.e2e-platform.svc:443
+      additionalSecrets:
+        # Long-lived SA token scoped by virtual/rbac.yaml. The SA lives in kube-system because that
+        # namespace exists at first boot; rotation: README.md.
+        - name: vc-e2e-runner
+          server: https://vcluster.e2e-platform.svc:443
+          serviceAccount:
+            name: e2e-runner
+            namespace: kube-system
+            clusterRole: e2e-runner
