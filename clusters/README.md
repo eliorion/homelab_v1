@@ -136,7 +136,7 @@ are in [`../apps/staging/lab/README.md`](../apps/staging/lab/README.md).
 
 ### `staging/dev.yaml` — 1 Kustomization
 
-`e2e-platform` → `infrastructure/services/dev/e2e-platform`, `interval: 10m`,
+`dev-platform` → `infrastructure/services/dev/dev-platform`, `interval: 10m`,
 `retryInterval: 1m`, `timeout: 20m`, `prune: true`, `wait: true`, sops decryption. It depends
 on `infrastructure-controllers` (the CNPG HelmRepository), `infra-keda` (the KEDA
 HelmRepository), `infra-kyverno`, `infra-cilium-config` and `infra-reflector`.
@@ -150,11 +150,11 @@ HelmRepository), `infra-kyverno`, `infra-cilium-config` and `infra-reflector`.
 - **`decryption` with no sops file in the path yet**, on purpose: see the first Trap.
 
 The 20m covers the vcluster, then KEDA and CNPG installed into it, then the nested
-Kustomization `e2e-platform/e2e-platform-virtual`, which applies `virtual/` inside the
+Kustomization `dev-platform/dev-platform-virtual`, which applies `virtual/` inside the
 vcluster through `spec.kubeConfig` and is not counted above because it lives outside
 `clusters/staging/`. Runs are created by the Dagger pipeline inside the vcluster, not by
 Flux. Details in
-[`../infrastructure/services/dev/e2e-platform/README.md`](../infrastructure/services/dev/e2e-platform/README.md).
+[`../infrastructure/services/dev/dev-platform/README.md`](../infrastructure/services/dev/dev-platform/README.md).
 
 ### `staging/monitoring.yaml` — 2 Kustomizations
 
@@ -246,7 +246,7 @@ flowchart TD
     db --> lab["lab"]
     refl --> lab
 
-    ctrl --> e2e["e2e-platform"]
+    ctrl --> e2e["dev-platform"]
     keda --> e2e
     kyv --> e2e
     cilcfg --> e2e
@@ -266,7 +266,7 @@ same move `infra-cilium-config` makes for the Cilium CRs.
 
 Two reconcile cadences: operator tiers run at `interval: 1h` because they only change
 when a human bumps a chart version; application and service tiers run at `1m0s`.
-`e2e-platform` sits between, at `10m`: it changes only with platform edits.
+`dev-platform` sits between, at `10m`: it changes only with platform edits.
 
 ## Traps
 
@@ -284,7 +284,7 @@ when a human bumps a chart version; application and service tiers run at `1m0s`.
 
   Nine of the twenty-three Kustomizations carry the block: `infrastructure-controllers`,
   `infrastructure-services`, `infra-reflector`, `infra-keycloak-realm`, `databases`,
-  `apps`, `monitoring-controllers`, `monitoring-configs`, and `e2e-platform` — the one
+  `apps`, `monitoring-controllers`, `monitoring-configs`, and `dev-platform` — the one
   that carries it before its path holds any sops file. All point at the same
   `sops-age` Secret, created by hand once per cluster and never committed.
 

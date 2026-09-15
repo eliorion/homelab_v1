@@ -148,7 +148,7 @@ renewal.
 
 ## The e2e project
 
-A normal (not proxy-cache) **private** project for the asp e2e platform: proxy-cache projects
+A normal (not proxy-cache) **private** project for the asp dev platform: proxy-cache projects
 refuse pushes. Created by hand, like the proxy projects:
 
 - project `e2e`, private, quota 50Gi;
@@ -157,10 +157,10 @@ refuse pushes. Created by hand, like the proxy projects:
 - robot `e2e+ci`: push + pull on `e2e` only, with an expiry — stored in GitHub as
   `HARBOR_E2E_ROBOT` / `HARBOR_E2E_PUSH_TOKEN`;
 - robot `e2e+pull`: pull on `e2e` only — sops-encrypted into
-  `infrastructure/services/dev/e2e-platform/harbor-e2e-pull.enc.yaml`.
+  `infrastructure/services/dev/dev-platform/harbor-e2e-pull.enc.yaml`.
 
 `e2e+ci` needs pull as well as push: a push checks for existing blobs first.
-[`infrastructure/services/dev/e2e-platform/README.md`](../../dev/e2e-platform/README.md#registry)
+[`infrastructure/services/dev/dev-platform/README.md`](../../dev/dev-platform/README.md#registry)
 explains what goes into the project.
 
 ## Proxy projects are runtime state, not manifests

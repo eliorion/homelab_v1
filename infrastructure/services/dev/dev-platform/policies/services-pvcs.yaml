@@ -1,7 +1,7 @@
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
-  name: e2e-services
+  name: dev-services
 spec:
   validationActions: ["Deny"]
   failurePolicy: Fail
@@ -13,21 +13,21 @@ spec:
         resources: ["services"]
     namespaceSelector:
       matchLabels:
-        eliorion.fr/tier: e2e
+        eliorion.fr/tier: dev
   validations:
     - expression: >-
         object.spec.?type.orValue('ClusterIP') != 'LoadBalancer' ||
         (object.metadata.name == 'vcluster' && object.spec.?loadBalancerClass.orValue('') == 'tailscale')
       message: only the Service vcluster may be a LoadBalancer, and only with loadBalancerClass tailscale
     - expression: "object.spec.?type.orValue('ClusterIP') != 'NodePort'"
-      message: NodePort Services are forbidden on the e2e platform
+      message: NodePort Services are forbidden on the dev platform
     - expression: "object.spec.?externalIPs.orValue([]).size() == 0"
-      message: externalIPs are forbidden on the e2e platform
+      message: externalIPs are forbidden on the dev platform
 ---
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
-  name: e2e-pvcs
+  name: dev-pvcs
 spec:
   validationActions: ["Deny"]
   failurePolicy: Fail
@@ -39,7 +39,7 @@ spec:
         resources: ["persistentvolumeclaims"]
     namespaceSelector:
       matchLabels:
-        eliorion.fr/tier: e2e
+        eliorion.fr/tier: dev
   validations:
     - expression: "object.spec.?storageClassName.orValue('') == 'ssd-single'"
-      message: e2e platform PVCs must set storageClassName ssd-single
+      message: dev platform PVCs must set storageClassName ssd-single

@@ -7,7 +7,7 @@ consumed by the ARC controller, which turns a queued job into a one-shot
 ephemeral pod in the `arc-runners` namespace and deletes it when the job ends.
 `self-hosted-arc` is the default pool for ordinary jobs; `self-hosted-arc-xl` is
 a smaller pool of bigger runners for the k3d end-to-end leg; `self-hosted-arc-e2e` runs
-the e2e platform lane, two at a time, with no dind. The operator half
+the e2e lane on the dev platform, two at a time, with no dind. The operator half
 (CRDs, controller Deployment, the `arc-systems` / `arc-runners` namespaces and
 the shared `HelmRepository/arc`) lives in
 [`infrastructure/controllers/base/arc/`](../../../controllers/base/arc/README.md).
@@ -22,7 +22,7 @@ is described in
 | `kustomization.yaml` | Lists `release.yaml`, `release-xl.yaml`, `release-e2e.yaml`, `github-pat.enc.yaml`. |
 | `release.yaml` | `HelmRelease/arc-runner-set-asp` in `flux-system`, `targetNamespace: arc-runners`, chart `gha-runner-scale-set` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h. Registers the scale set `self-hosted-arc`, `minRunners: 5` / `maxRunners: 25`, with a hand-written dind pod template. |
 | `release-xl.yaml` | `HelmRelease/arc-runner-set-asp-xl`, same chart and version, same namespace and secret. Registers `self-hosted-arc-xl`, `minRunners: 2` / `maxRunners: 4`, same dind template plus a `runner-tier: xl` pod label and a hard one-pod-per-node `podAntiAffinity`. |
-| `release-e2e.yaml` | `HelmRelease/arc-runner-set-asp-e2e`, same chart, namespace and secret. Registers `self-hosted-arc-e2e`, `minRunners: 0` / `maxRunners: 2` — the e2e platform lane's concurrency, sized to the platform quota. Runner container only (no dind, non-root, no privilege escalation): the job drives the in-cluster Dagger engine and reads Secret `e2e-platform/vc-e2e-runner` (Role in `infrastructure/services/dev/e2e-platform/runner-access.yaml`). |
+| `release-e2e.yaml` | `HelmRelease/arc-runner-set-asp-e2e`, same chart, namespace and secret. Registers `self-hosted-arc-e2e`, `minRunners: 0` / `maxRunners: 2` — the e2e lane's concurrency, sized to the platform quota. Runner container only (no dind, non-root, no privilege escalation): the job drives the in-cluster Dagger engine and reads Secret `dev-platform/vc-e2e-runner` (Role in `infrastructure/services/dev/dev-platform/runner-access.yaml`). |
 | `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). All three releases point at it through `githubConfigSecret`. Never commit it decrypted. |
 
 The default and XL releases carry the same pod template shape:

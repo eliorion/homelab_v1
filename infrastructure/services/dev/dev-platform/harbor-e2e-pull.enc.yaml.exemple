@@ -1,0 +1,16 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. Pull credential for every image an e2e run deploys
+# (Harbor project `e2e`, robot `e2e+pull`, pull only). Kyverno policy dev-pods injects it
+# into run pods; nothing inside the vcluster can read it. See README.md, Registry.
+#
+#   cp harbor-e2e-pull.enc.yaml.exemple harbor-e2e-pull.enc.yaml
+#   # replace <e2e+pull robot token> below (keep the JSON on one line), then:
+#   sops -e -i harbor-e2e-pull.enc.yaml     # .sops.yaml rule for infrastructure/services/dev/
+#   # and uncomment `- harbor-e2e-pull.enc.yaml` in kustomization.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: harbor-e2e-pull
+  namespace: dev-platform
+type: kubernetes.io/dockerconfigjson
+stringData:
+  .dockerconfigjson: '{"auths":{"registry.eliorion.fr":{"username":"robot$e2e+pull","password":"<e2e+pull robot token>"}}}'

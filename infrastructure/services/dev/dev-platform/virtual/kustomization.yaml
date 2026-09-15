@@ -1,4 +1,4 @@
-# Applied INSIDE the vcluster by the Flux Kustomization e2e-platform-virtual (spec.kubeConfig).
+# Applied INSIDE the vcluster by the Flux Kustomization dev-platform-virtual (spec.kubeConfig).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:

@@ -10,15 +10,15 @@ variables: ../values.yaml
 results:
 - isMutatingPolicy: true
   kind: Pod
-  policy: e2e-pods
+  policy: dev-pods
   resources:
-  - e2e-platform/engine-x-e2e-12-asp-x-vcluster
+  - dev-platform/engine-x-e2e-12-asp-x-vcluster
   patchedResources: patched.yaml
   result: pass
 - isMutatingPolicy: true
   kind: Pod
-  policy: e2e-pods
+  policy: dev-pods
   resources:
-  - e2e-platform/vcluster-0
-  - e2e-platform/keda-operator-x-keda-x-vcluster
+  - dev-platform/vcluster-0
+  - dev-platform/keda-operator-x-keda-x-vcluster
   result: skip

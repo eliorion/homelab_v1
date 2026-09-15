@@ -130,7 +130,7 @@ machine PKI.
 
 **Reference.** [09-etcd-backup-dr.md](09-etcd-backup-dr.md)
 
-### Kyverno with CEL policy types only for the e2e platform guardrails
+### Kyverno with CEL policy types only for the dev platform guardrails
 
 **Why.** The `dev` tier needs an admission engine that can validate what lands in the e2e
 platform namespace, mutate its run pods (priority, host pull secrets), and in Phase 6 verify
@@ -148,18 +148,18 @@ signatures, so it would need a second mechanism beside it for the two harder job
 requested) that every matched request round-trips through, and a `Fail` policy turns a
 Kyverno outage into an admission outage for what it matches — contained by excluding
 `kube-system`, `kyverno` and `flux-system` at the webhook, and by keeping `Fail` to
-e2e-platform-scoped policies. Kyverno's compatibility matrix lists Kubernetes 1.33–1.35 for
+dev-platform-scoped policies. Kyverno's compatibility matrix lists Kubernetes 1.33–1.35 for
 v1.19 while this cluster runs 1.36: the 1.36 support is in the code and in two conformance
 jobs, not yet on paper. The CRDs are part of the Helm release, so uninstalling it deletes
 every policy, and the release record sits at ~92% of the 1 MiB Secret cap.
 
 **Reference.** [`infrastructure/controllers/base/kyverno/README.md`](../infrastructure/controllers/base/kyverno/README.md)
 
-### One long-lived e2e platform vcluster, not a vcluster per PR
+### One long-lived dev platform vcluster, not a vcluster per PR
 
 **Why.** What an e2e run must prove is that a stack's new version works on the platform as
 staging runs it: beside the released versions of the other stacks, upgraded over existing data,
-with its NetworkPolicies enforced, on CNPG, LINSTOR and KEDA. One vcluster in `e2e-platform`
+with its NetworkPolicies enforced, on CNPG, LINSTOR and KEDA. One vcluster in `dev-platform`
 carries KEDA and CNPG from the same bases as staging; each run gets `e2e-<pr>-*` namespaces
 inside it, installs main, upgrades what the PR changed, checks and deletes. The host boundary
 is Cilium **deny** rules, because the charts' own NetworkPolicies are synced into the one
@@ -176,7 +176,7 @@ and one ClusterRole wide, and rotation is manual. A KEDA or CNPG base change tha
 something the vcluster lacks breaks the platform on the same commit as staging's bump. Chart
 NetworkPolicies are widened in exactly one way — DNS and API ports inside the vcluster.
 
-**Reference.** [`infrastructure/services/dev/e2e-platform/README.md`](../infrastructure/services/dev/e2e-platform/README.md)
+**Reference.** [`infrastructure/services/dev/dev-platform/README.md`](../infrastructure/services/dev/dev-platform/README.md)
 
 ---
 
@@ -825,7 +825,7 @@ vcluster per PR on the host, which needs a host credential in CI that can create
 (`kubectl get ns -l e2e.eliorion.fr/run`). A run that dies mid-deploy leaves its namespaces
 until the next run for that PR or the in-vcluster reaper deletes them.
 
-**Reference.** [`infrastructure/services/dev/e2e-platform/README.md`](../infrastructure/services/dev/e2e-platform/README.md)
+**Reference.** [`infrastructure/services/dev/dev-platform/README.md`](../infrastructure/services/dev/dev-platform/README.md)
 
 ### `wait: true` on the narrow operator tiers and deliberately not on the wide ones
 
@@ -980,6 +980,6 @@ Tracked, not hidden.
 | CI on this repository | No render check, no schema validation, no lint, no secret leak check on a pull request that Flux will apply within ten minutes | Not started |
 | Backups for the automation database | It is the only copy of every workflow and every stored credential | Unblocked: the Garage key is minted and encrypted, and the object store now sets the region that caused the 2026-08-10 outage. Enabling it is uncommenting four lines in `apps/staging/databases/n8n/kustomization.yaml` and confirming the bucket exists |
 | A dead man's switch | The watchdog alert is blackholed, so a dead monitoring stack is indistinguishable from a healthy cluster | Not started |
-| Network policy | Cilium is used as a datapath, not as a policy engine, outside the e2e platform; deny rules exist only in `e2e-platform` (the `dev` tier) | e2e platform only |
+| Network policy | Cilium is used as a datapath, not as a policy engine, outside the dev platform; deny rules exist only in `dev-platform` (the `dev` tier) | dev platform only |
 | Decide the fate of the second environment | It was wired but never deployed, had not been touched since June 2026, and still encoded a bucket layout that staging deliberately moved away from | Resolved 2026-09-15: the `production/` tree was deleted. The cluster is single-environment; non-production workloads go to an in-cluster `dev` tier (Phase 4). Rotating credentials shared with the deleted Secrets and archiving the production age key offline remain manual, see [§8](#one-repository-one-branch-one-cluster) |
 | Replicate snapshots to a second provider | A second offsite copy of the etcd snapshots, using the object storage account that already exists | Named as a deliberate future step |

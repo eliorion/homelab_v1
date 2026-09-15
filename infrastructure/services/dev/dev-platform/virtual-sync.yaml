@@ -1,4 +1,4 @@
-# Applies virtual/ inside the vcluster. It lives in e2e-platform because spec.kubeConfig reads
+# Applies virtual/ inside the vcluster. It lives in dev-platform because spec.kubeConfig reads
 # a Secret from the Kustomization's own namespace.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -13,7 +13,7 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  path: ./infrastructure/services/dev/e2e-platform/virtual
+  path: ./infrastructure/services/dev/dev-platform/virtual
   prune: true
   wait: true
   kubeConfig:

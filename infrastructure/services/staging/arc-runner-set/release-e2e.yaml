@@ -23,8 +23,8 @@ spec:
   values:
     githubConfigUrl: https://github.com/Eliorion/asp
     githubConfigSecret: arc-github-pat
-    # The e2e platform lane. maxRunners IS the lane's concurrency: two runs share the
-    # platform's quota (infrastructure/services/dev/e2e-platform/README.md).
+    # The e2e lane on the dev platform. maxRunners IS the lane's concurrency: two runs share the
+    # platform's quota (infrastructure/services/dev/dev-platform/README.md).
     runnerScaleSetName: self-hosted-arc-e2e
     minRunners: 0
     maxRunners: 2

@@ -1,10 +1,10 @@
-# The one host namespace behind the e2e platform vcluster (README.md).
+# The one host namespace behind the dev platform vcluster (README.md).
 apiVersion: v1
 kind: Namespace
 metadata:
   name: dev-platform
   labels:
-    eliorion.fr/tier: e2e
+    eliorion.fr/tier: dev
     # The vcluster syncer creates plain pods here; baseline is what the charts need.
     pod-security.kubernetes.io/enforce: baseline
 ---
@@ -15,4 +15,4 @@ metadata:
 value: -1000
 preemptionPolicy: Never
 globalDefault: false
-description: Dev environnment for e2e to run workloads inside the platform vcluster; first to be preempted, never preempt.
+description: Run workloads inside the dev platform vcluster (e2e runs, dev sandboxes); first to be preempted, never preempt.

@@ -6,7 +6,7 @@ for an application. Operators live one directory over in
 Kubernetes API are used to run — Nexus, Keycloak, Renovate, the ARC runner
 scale sets, Cloudflare tunnels, the Garage gateway, etcd backup, the AI gateway,
 the Radar dashboard, and the CNPG databases that belong to them. It also holds
-the `dev` tier (`dev/`): the e2e platform vcluster, reconciled on its own Flux path.
+the `dev` tier (`dev/`): the dev platform vcluster, reconciled on its own Flux path.
 
 Each component owns a directory with its own README. Start there; this file only
 covers the tier root.
@@ -24,7 +24,7 @@ kustomization is always safe to render without an age key.
 | `base/<component>/` | The shared manifests for one component. There is **no** kustomization at `base/` itself — nothing aggregates the components, so `base/` is never a Flux path. |
 | `staging/kustomization.yaml` | The tier root that Flux actually reconciles. It lists the component directories, one line each. |
 | `staging/<component>/kustomization.yaml` | Pulls in `../../base/<component>` and adds the overlay's own resources and patches. |
-| `dev/` | The `dev` tier: the e2e platform vcluster with its quota, network boundary and Kyverno policies. Not a component of `staging/`; see "The dev tier". |
+| `dev/` | The `dev` tier: the dev platform vcluster with its quota, network boundary and Kyverno policies. Not a component of `staging/`; see "The dev tier". |
 
 Flux reconciles this tier through the Kustomization `infrastructure-services` in
 `clusters/staging/infrastructure.yaml`: `path: ./infrastructure/services/staging`,
@@ -51,11 +51,11 @@ deleted on 2026-09-15 — see the open-work section of
 
 ### The dev tier
 
-`dev/e2e-platform/` has its own `kustomization.yaml`, reconciled by the Flux Kustomization
-`e2e-platform` in `clusters/staging/dev.yaml`. It has no `base/`/overlay split: it exists
+`dev/dev-platform/` has its own `kustomization.yaml`, reconciled by the Flux Kustomization
+`dev-platform` in `clusters/staging/dev.yaml`. It has no `base/`/overlay split: it exists
 for the one cluster. The e2e runs themselves are created by the Dagger pipeline inside the
 vcluster, not by Flux. Everything else is in
-[`dev/e2e-platform/README.md`](dev/e2e-platform/README.md).
+[`dev/dev-platform/README.md`](dev/dev-platform/README.md).
 
 ## Traps
 
@@ -67,7 +67,7 @@ vcluster, not by Flux. Everything else is in
   The `infrastructure-services` Kustomization runs with `prune: true`, so
   dropping a component from the list is not "stop managing it", it is "delete
   it from the cluster".
-- **Never list `dev/` in `staging/kustomization.yaml`.** `e2e-platform` already owns
+- **Never list `dev/` in `staging/kustomization.yaml`.** `dev-platform` already owns
   those objects; a second Kustomization would fight its prune.
 - **Render before committing.** `kubectl kustomize infrastructure/services/staging`
   is the check that the tier root, every overlay and every base still agree.

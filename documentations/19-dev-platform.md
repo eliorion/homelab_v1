@@ -1,4 +1,4 @@
-# 19 — The e2e platform
+# 19 — The dev platform
 
 The asp monorepo ships three stacks — asp, fbref and the scraper platform — as three Helm
 charts released independently. Their end-to-end tests used to run in a k3d cluster built inside
@@ -8,16 +8,16 @@ local-path storage and plain Postgres, freshly installed.
 
 Staging runs something else. It runs one stack's new version beside the others' current ones,
 upgrades it over existing data, enforces its NetworkPolicies with Cilium, stores its data in
-CloudNativePG on LINSTOR, and scales its workers with KEDA. The e2e platform exists to test
+CloudNativePG on LINSTOR, and scales its workers with KEDA. The dev platform exists to test
 against that.
 
 ## Shape
 
 ```
-host namespace e2e-platform   (Flux: infrastructure/services/dev/e2e-platform)
+host namespace dev-platform   (Flux: infrastructure/services/dev/dev-platform)
 ├─ vcluster pod               Kubernetes 1.36 control plane, SQLite on ssd-single
 ├─ Cilium deny boundary       no world, no host API, no other namespace — in or out
-├─ Kyverno                    no host access, ssd-single only, run pods at priority e2e,
+├─ Kyverno                    no host access, ssd-single only, run pods at priority dev,
 │                             host pull secrets injected
 └─ synced pods                everything below, as plain pods
 
@@ -69,4 +69,4 @@ HelmRelease.
 - [`14-design-decisions.md`](14-design-decisions.md) §1 and §8 record why one platform and why
   the pipeline, not Flux, owns runs.
 
-**Reference.** [`infrastructure/services/dev/e2e-platform/README.md`](../infrastructure/services/dev/e2e-platform/README.md)
+**Reference.** [`infrastructure/services/dev/dev-platform/README.md`](../infrastructure/services/dev/dev-platform/README.md)

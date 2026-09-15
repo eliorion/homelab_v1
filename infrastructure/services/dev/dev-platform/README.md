@@ -1,6 +1,6 @@
-# e2e-platform — one long-lived vcluster for end-to-end runs
+# dev-platform — one long-lived vcluster for e2e runs and development
 
-One [vcluster](https://www.vcluster.com/) in the host namespace `e2e-platform` is the platform
+One [vcluster](https://www.vcluster.com/) in the host namespace `dev-platform` is the platform
 every asp e2e run deploys onto. It is shaped like staging where behaviour depends on it: the
 host's Cilium enforces the charts' NetworkPolicies, volumes are LINSTOR `ssd-single`, and KEDA
 and CloudNativePG run inside it at **the same chart versions as staging, from the same bases**.
@@ -9,30 +9,30 @@ Runs are not Flux objects. The asp pipeline creates `e2e-<pr>-asp`, `e2e-<pr>-fb
 `e2e-<pr>-scraper` inside the vcluster, installs main's charts and released images, upgrades
 the stacks the PR changed, checks, and deletes the namespaces. This directory owns the
 platform and the fence around it; it never creates a run. Design and the run lifecycle:
-[`documentations/19-e2e-platform.md`](../../../../documentations/19-e2e-platform.md).
+[`documentations/19-dev-platform.md`](../../../../documentations/19-dev-platform.md).
 
 ## How it is wired
 
-Flux Kustomization `e2e-platform` (`clusters/staging/dev.yaml`) applies this directory to the
+Flux Kustomization `dev-platform` (`clusters/staging/dev.yaml`) applies this directory to the
 host, `timeout: 20m`, `wait: true`, after `infrastructure-controllers` (CNPG's HelmRepository),
 `infra-keda`, `infra-kyverno`, `infra-cilium-config` and `infra-reflector`.
 
 | Path | Applied to | What it does |
 |---|---|---|
-| `namespace.yaml` | host | Namespace `e2e-platform` (PSA `baseline`, label `eliorion.fr/tier: e2e`); PriorityClass `e2e` (-1000, `Never`). |
-| `guardrails.yaml` | host | ResourceQuota `e2e-quota`, LimitRange `e2e-limits` (container max 2Gi, PVC max 5Gi). |
-| `network.yaml` | host | CiliumNetworkPolicies `e2e-host-boundary`, `e2e-platform-dns-api`, `e2e-vcluster-api`. |
-| `rbac.yaml` | host | `kyverno:admission-controller:e2e`: lets `policies/workloads.yaml` read CiliumNetworkPolicies. |
+| `namespace.yaml` | host | Namespace `dev-platform` (PSA `baseline`, label `eliorion.fr/tier: dev`); PriorityClass `dev` (-1000, `Never`). |
+| `guardrails.yaml` | host | ResourceQuota `dev-quota`, LimitRange `dev-limits` (container default limit 500m CPU / 512Mi, max 2Gi, PVC max 5Gi). |
+| `network.yaml` | host | CiliumNetworkPolicies `dev-host-boundary`, `dev-platform-dns-api`, `dev-vcluster-api`. |
+| `rbac.yaml` | host | `kyverno:admission-controller:dev`: lets `policies/workloads.yaml` read CiliumNetworkPolicies. |
 | `runner-access.yaml` | host | Role `e2e-runner-kubeconfig`: the `self-hosted-arc-e2e` runner SA may get Secret `vc-e2e-runner`, nothing else. |
-| `policies/` | host | Kyverno `e2e-workloads`, `e2e-services`, `e2e-pvcs` (validating), `e2e-pods` (mutating). `tests/` is not applied. |
+| `policies/` | host | Kyverno `dev-workloads`, `dev-services`, `dev-pvcs` (validating), `dev-pods` (mutating). `tests/` is not applied. |
 | `vcluster/release.yaml` | host | HelmRepository `loft`, HelmRelease `vcluster` 0.37.1. |
 | `addons/` | host → vcluster | HelmReleases `keda` and `cnpg` built from `infrastructure/controllers/base/{keda,cnpg}` with `spec.kubeConfig`. |
-| `virtual-sync.yaml` | host | Flux Kustomization `e2e-platform-virtual`, in `e2e-platform` because `spec.kubeConfig` reads a Secret from its own namespace. |
+| `virtual-sync.yaml` | host | Flux Kustomization `dev-platform-virtual`, in `dev-platform` because `spec.kubeConfig` reads a Secret from its own namespace. |
 | `virtual/` | vcluster | Namespace `e2e-system`, StorageClass `ssd-single` (default), RBAC for `e2e-runner` and the reaper, ValidatingAdmissionPolicy `e2e-runner-scope`, ConfigMap `e2e-db-templates`, CronJob `e2e-reaper`. |
 
 Inside the vcluster the stacks see: namespaces of their own, KEDA's CRDs and external metrics
 API, the CNPG operator, a default `ssd-single` StorageClass. On the host there are only plain
-pods, services, PVCs and NetworkPolicies in `e2e-platform`, named `<name>-x-<namespace>-x-vcluster`.
+pods, services, PVCs and NetworkPolicies in `dev-platform`, named `<name>-x-<namespace>-x-vcluster`.
 
 ## Network
 
@@ -41,16 +41,16 @@ syncs each chart's NetworkPolicies into this one namespace (`sync.toHost.network
 NetworkPolicies add up: a namespace-wide "allow same namespace" would silently cancel every
 chart restriction. Cilium deny rules take precedence over any allow, so:
 
-- `e2e-host-boundary` (every synced pod) denies egress to `world`, `host`, `remote-node`,
+- `dev-host-boundary` (every synced pod) denies egress to `world`, `host`, `remote-node`,
   `kube-apiserver`, `ingress`, `health`, `unmanaged` and every other namespace, and ingress from
   every other namespace. `enableDefaultDeny: false` is **load-bearing**: a policy that selects a
   pod puts it into default-deny even when it holds only deny rules.
 - A pod no chart policy selects stays open inside the namespace, as on staging. A pod a chart
   policy selects is restricted by that policy, as on staging.
-- `e2e-platform-dns-api` adds DNS and API reachability. Chart policies allow port 53 and
+- `dev-platform-dns-api` adds DNS and API reachability. Chart policies allow port 53 and
   443/6443, but the vcluster's CoreDNS listens on **1053** and its API on **8443**, and Cilium
   matches ports after DNAT. This is the one place the platform widens a chart policy.
-- `e2e-vcluster-api` fences the control plane pod: egress to the host API and this namespace
+- `dev-vcluster-api` fences the control plane pod: egress to the host API and this namespace
   (webhooks, the KEDA metrics APIService, CoreDNS); ingress on 8443 from this namespace, the
   Dagger engine and Flux's helm and kustomize controllers.
 
@@ -61,7 +61,7 @@ through the virtual API.
 
 | Identity | Where | Can |
 |---|---|---|
-| `vc-vcluster` (host Secret) | admin certificate | Flux only (`addons/`, `e2e-platform-virtual`). Nothing else has RBAC on Secrets here. |
+| `vc-vcluster` (host Secret) | admin certificate | Flux only (`addons/`, `dev-platform-virtual`). Nothing else has RBAC on Secrets here. |
 | `vc-e2e-runner` (host Secret) | token for virtual SA `kube-system/e2e-runner` | create/delete run namespaces and bind itself `admin` + `e2e-run-crds` inside them; read `e2e-db-templates`; list Deployments (preflight). |
 | `e2e-system/e2e-reaper` | in-vcluster SA | delete run namespaces. |
 
@@ -81,7 +81,7 @@ fork PRs off self-hosted runners (asp `.github/CI-CUTOVER.md`, known scope gaps)
 
 ```bash
 kubectl --kubeconfig <vcluster admin> -n kube-system delete serviceaccount e2e-runner
-kubectl -n e2e-platform delete pod vcluster-0     # re-creates the SA and rewrites vc-e2e-runner
+kubectl -n dev-platform delete pod vcluster-0     # re-creates the SA and rewrites vc-e2e-runner
 ```
 
 Deleting the SA invalidates every token minted for it. The SA sits in `kube-system` because
@@ -90,10 +90,10 @@ namespace created later by `virtual/` would block the export.
 
 ## Pods
 
-`e2e-pods` mutates **run pods** only — synced pods (`vcluster.loft.sh/managed-by`) whose virtual
+`dev-pods` mutates **run pods** only — synced pods (`vcluster.loft.sh/managed-by`) whose virtual
 namespace is not `kube-system`, `keda`, `cnpg-system` or `e2e-system`:
 
-- priority `e2e` (-1000, never preempts). The control plane and the operators keep the default
+- priority `dev` (-1000, never preempts). The control plane and the operators keep the default
   priority: evicting them first would break every run at once.
 - `imagePullSecrets` replaced with `harbor-e2e-pull`, a **host** Secret (see Registry). The
   charts run with `imagePullSecrets: []`; nothing inside the vcluster can read the registry
@@ -102,8 +102,8 @@ namespace is not `kube-system`, `keda`, `cnpg-system` or `e2e-system`:
   The vcluster value `sync.fromHost.secrets` was rejected: it renders cluster-wide `secrets
   list/watch` for the syncer.
 
-`e2e-workloads` refuses host access, node pinning, privileged containers and, for run pods, any
-priority other than `e2e`, and refuses pods until `e2e-quota` and `e2e-host-boundary` exist.
+`dev-workloads` refuses host access, node pinning, privileged containers and, for run pods, any
+priority other than `dev`, and refuses pods until `dev-quota` and `dev-host-boundary` exist.
 
 ## Registry
 
@@ -119,35 +119,29 @@ project, `registry.eliorion.fr/e2e`:
   credential; copying keeps one pull secret instead of two.
 
 Pull credential: `harbor-e2e-pull.enc.yaml`, a sops-encrypted `kubernetes.io/dockerconfigjson`
-for robot `robot$e2e+pull` (pull only), injected by `e2e-pods`. The push robot `robot$e2e+ci`
+for robot `robot$e2e+pull` (pull only), injected by `dev-pods`. The push robot `robot$e2e+ci`
 lives in GitHub only (`HARBOR_E2E_ROBOT` / `HARBOR_E2E_PUSH_TOKEN`). Project setup: Harbor
-README, "The e2e project". Create the Secret from the template:
-
-```bash
-cd infrastructure/services/dev/e2e-platform
-kubectl create secret docker-registry harbor-e2e-pull -n e2e-platform \
-  --docker-server=registry.eliorion.fr --docker-username='robot$e2e+pull' \
-  --docker-password="$(read -rsp 'e2e+pull token: ' t; echo "$t")" \
-  --dry-run=client -o yaml > harbor-e2e-pull.enc.yaml
-sops --encrypt --in-place harbor-e2e-pull.enc.yaml   # .sops.yaml matches infrastructure/services/dev/
-```
-
-then list it in `kustomization.yaml`. Until it exists, run pods referencing a private image fail
-with `ImagePullBackOff`; public images still pull.
+README, "The e2e project". Create the Secret from `harbor-e2e-pull.enc.yaml.exemple`: copy it to
+`harbor-e2e-pull.enc.yaml`, put the robot token in, `sops -e -i` it (the `.sops.yaml` rule for
+`infrastructure/services/dev/` picks the staging key and encrypts `stringData` only), and
+uncomment its line in `kustomization.yaml`. Until it exists, run pods referencing a private image
+fail with `ImagePullBackOff`; public images still pull.
 
 ## Quota
 
 Measured on a throwaway vcluster (2026-09-15) and from `helm template` of the three charts:
 
-| | pods | requests.cpu | requests.memory | limits.memory | PVCs |
-|---|---|---|---|---|---|
-| platform (control plane, CoreDNS, KEDA ×3, CNPG operator) | 6 | 620m | ~0.9Gi | ~7.2Gi | 1 |
-| one run: asp + fbref + scraper workloads | 12 | 1.32 | 2.05Gi | 5.95Gi | — |
-| one run: 3 CNPG clusters × 2 instances (LimitRange defaults) | 6 | 0.3 | ~0.4Gi | 3Gi | 6 |
-| one run: migration hooks, helm tests, fixtures (transient) | ~10 | ~0.5 | ~0.6Gi | ~5Gi | — |
+| | pods | requests.cpu | requests.memory | limits.cpu | limits.memory | PVCs |
+|---|---|---|---|---|---|---|
+| platform (control plane, CoreDNS, KEDA ×3, CNPG operator) | 6 | 620m | ~0.9Gi | ~6 | ~7.2Gi | 1 |
+| one run: asp + fbref + scraper workloads | 12 | 1.32 | 2.05Gi | 7.5 | 5.95Gi | — |
+| one run: CNPG, 1 instance each, 2 for fbref (LimitRange defaults) | 4 | 0.2 | ~0.3Gi | 2 | 2Gi | 4 |
+| one run: migration hooks, helm tests, fixtures (transient) | ~5 | ~0.3 | ~0.4Gi | ~2.5 | ~2.5Gi | — |
 
-`e2e-quota` covers the platform plus two concurrent runs with headroom: 100 pods, 7 CPU and
-12Gi requested, 40Gi memory limits, 16 PVCs, 40Gi `ssd-single`. The asp lane runs at most two
+`dev-quota` covers the platform plus two concurrent runs: 60 pods, 7 CPU and 12Gi requested,
+30 CPU and 36Gi of limits, 16 PVCs, 40Gi `ssd-single`. Because the quota caps `limits.cpu`,
+`dev-limits` gives every container without a CPU limit a 500m default; the vcluster control plane
+sets its own 2 CPU so the API server is not throttled. The asp lane runs at most two
 at once (its runner scale set). Free requests on the cluster at measurement: ~18 CPU, ~37Gi.
 
 ## Traps
@@ -167,14 +161,14 @@ at once (its runner scale set). Free requests on the cluster at measurement: ~18
 ## Verification
 
 ```bash
-kubectl kustomize infrastructure/services/dev/e2e-platform
-kustomize build --load-restrictor LoadRestrictionsNone infrastructure/services/dev/e2e-platform/virtual
-(cd infrastructure/services/dev/e2e-platform/policies/tests && kyverno test .)
+kubectl kustomize infrastructure/services/dev/dev-platform
+kustomize build --load-restrictor LoadRestrictionsNone infrastructure/services/dev/dev-platform/virtual
+(cd infrastructure/services/dev/dev-platform/policies/tests && kyverno test .)
 
-flux -n e2e-platform get helmreleases          # vcluster, keda, cnpg Ready
-flux -n e2e-platform get kustomizations         # e2e-platform-virtual Ready
-kubectl -n e2e-platform get secret vc-vcluster -o jsonpath='{.data.config}' | base64 -d > /tmp/vc.yaml
-# reach the API: kubectl -n e2e-platform port-forward svc/vcluster 18443:443, then point /tmp/vc.yaml at it
+flux -n dev-platform get helmreleases          # vcluster, keda, cnpg Ready
+flux -n dev-platform get kustomizations         # dev-platform-virtual Ready
+kubectl -n dev-platform get secret vc-vcluster -o jsonpath='{.data.config}' | base64 -d > /tmp/vc.yaml
+# reach the API: kubectl -n dev-platform port-forward svc/vcluster 18443:443, then point /tmp/vc.yaml at it
 ```
 
 What the throwaway proof covered (same values, namespace `e2e-spike`, since deleted):
@@ -183,8 +177,8 @@ What the throwaway proof covered (same values, namespace `e2e-spike`, since dele
 - world egress stayed blocked even where that policy allowed `0.0.0.0/0:443`;
 - the host API, a staging pod and Service, and Harbor were blocked from synced pods, and an
   outside pod was blocked from reaching them;
-- removing `e2e-host-boundary` restored world egress (`301`) and outside ingress (`200`);
-- removing `e2e-platform-dns-api` broke DNS for a policy-restricted pod;
+- removing `dev-host-boundary` restored world egress (`301`) and outside ingress (`200`);
+- removing `dev-platform-dns-api` broke DNS for a policy-restricted pod;
 - KEDA's external metrics APIService was `Available`; a 2-instance synchronous CNPG cluster became
   healthy with its `-app` Secret (`uri`, `jdbc-uri`, `username`, `password`); a `postgresql`
   ScaledObject scaled 0→1 in ~10s and back in ~45s;

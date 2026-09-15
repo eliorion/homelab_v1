@@ -11,7 +11,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: vcluster
-  namespace: e2e-platform
+  namespace: dev-platform
 spec:
   interval: 30m
   timeout: 10m
@@ -45,8 +45,10 @@ spec:
         resources:
           requests:
             memory: 512Mi
-          # LimitRange e2e-limits caps a container at 2Gi.
+          # LimitRange dev-limits caps a container at 2Gi, and would default the CPU limit to
+          # 500m, which throttles the API server every run depends on.
           limits:
+            cpu: "2"
             memory: 2Gi
         persistence:
           volumeClaim:
@@ -54,8 +56,8 @@ spec:
             size: 2Gi
       proxy:
         extraSANs:
-          - vcluster.e2e-platform.svc
-          - vcluster.e2e-platform.svc.cluster.local
+          - vcluster.dev-platform.svc
+          - vcluster.dev-platform.svc.cluster.local
     rbac:
       enableVolumeSnapshotRules:
         enabled: false
@@ -70,12 +72,12 @@ spec:
           enabled: false
     exportKubeConfig:
       # vc-vcluster: admin certificate, read by Flux only (addons/, virtual Kustomization).
-      server: https://vcluster.e2e-platform.svc:443
+      server: https://vcluster.dev-platform.svc:443
       additionalSecrets:
         # Long-lived SA token scoped by virtual/rbac.yaml. The SA lives in kube-system because that
         # namespace exists at first boot; rotation: README.md.
         - name: vc-e2e-runner
-          server: https://vcluster.e2e-platform.svc:443
+          server: https://vcluster.dev-platform.svc:443
           serviceAccount:
             name: e2e-runner
             namespace: kube-system

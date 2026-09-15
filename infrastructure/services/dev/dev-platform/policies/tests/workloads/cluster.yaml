@@ -9,28 +9,28 @@ spec:
   - apiVersion: v1
     kind: Namespace
     metadata:
-      name: e2e-platform
+      name: dev-platform
       labels:
-        eliorion.fr/tier: e2e
+        eliorion.fr/tier: dev
   - apiVersion: v1
     kind: Namespace
     metadata:
-      name: e2e-bare
+      name: dev-bare
       labels:
-        eliorion.fr/tier: e2e
+        eliorion.fr/tier: dev
   - apiVersion: v1
     kind: ResourceQuota
     metadata:
-      name: e2e-quota
-      namespace: e2e-platform
+      name: dev-quota
+      namespace: dev-platform
   - apiVersion: cilium.io/v2
     kind: CiliumNetworkPolicy
     metadata:
-      name: e2e-host-boundary
-      namespace: e2e-platform
-  # e2e-bare has the quota but not the host boundary.
+      name: dev-host-boundary
+      namespace: dev-platform
+  # dev-bare has the quota but not the host boundary.
   - apiVersion: v1
     kind: ResourceQuota
     metadata:
-      name: e2e-quota
-      namespace: e2e-bare
+      name: dev-quota
+      namespace: dev-bare
