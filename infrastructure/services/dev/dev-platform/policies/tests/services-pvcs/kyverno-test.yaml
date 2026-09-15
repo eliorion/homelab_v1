@@ -10,30 +10,30 @@ variables: ../values.yaml
 results:
 - isValidatingPolicy: true
   kind: Service
-  policy: e2e-services
+  policy: dev-services
   resources:
-  - e2e-platform/vcluster
-  - e2e-platform/web
+  - dev-platform/vcluster
+  - dev-platform/web
   result: pass
 - isValidatingPolicy: true
   kind: Service
-  policy: e2e-services
+  policy: dev-services
   resources:
-  - e2e-platform/lb-no-class
-  - e2e-platform/lb-wrong-name
-  - e2e-platform/nodeport
-  - e2e-platform/external-ips
+  - dev-platform/lb-no-class
+  - dev-platform/lb-wrong-name
+  - dev-platform/nodeport
+  - dev-platform/external-ips
   result: fail
 - isValidatingPolicy: true
   kind: PersistentVolumeClaim
-  policy: e2e-pvcs
+  policy: dev-pvcs
   resources:
-  - e2e-platform/data
+  - dev-platform/data
   result: pass
 - isValidatingPolicy: true
   kind: PersistentVolumeClaim
-  policy: e2e-pvcs
+  policy: dev-pvcs
   resources:
-  - e2e-platform/data-ssd
-  - e2e-platform/data-default
+  - dev-platform/data-ssd
+  - dev-platform/data-default
   result: fail

@@ -6,12 +6,12 @@ namespaces:
 - apiVersion: v1
   kind: Namespace
   metadata:
-    name: e2e-platform
+    name: dev-platform
     labels:
-      eliorion.fr/tier: e2e
+      eliorion.fr/tier: dev
 - apiVersion: v1
   kind: Namespace
   metadata:
-    name: e2e-bare
+    name: dev-bare
     labels:
-      eliorion.fr/tier: e2e
+      eliorion.fr/tier: dev

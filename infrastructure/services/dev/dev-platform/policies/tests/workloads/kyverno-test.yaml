@@ -12,22 +12,22 @@ clusterResources:
 results:
 - isValidatingPolicy: true
   kind: Pod
-  policy: e2e-workloads
+  policy: dev-workloads
   resources:
-  - e2e-platform/run-pod
-  - e2e-platform/vcluster-0
-  - e2e-platform/platform-pod
+  - dev-platform/run-pod
+  - dev-platform/vcluster-0
+  - dev-platform/platform-pod
   result: pass
 - isValidatingPolicy: true
   kind: Pod
-  policy: e2e-workloads
+  policy: dev-workloads
   resources:
-  - e2e-bare/no-guardrails
-  - e2e-platform/host-network
-  - e2e-platform/host-path
-  - e2e-platform/privileged-init
-  - e2e-platform/node-name
-  - e2e-platform/node-selector-hostname
-  - e2e-platform/required-affinity
-  - e2e-platform/run-pod-wrong-priority
+  - dev-bare/no-guardrails
+  - dev-platform/host-network
+  - dev-platform/host-path
+  - dev-platform/privileged-init
+  - dev-platform/node-name
+  - dev-platform/node-selector-hostname
+  - dev-platform/required-affinity
+  - dev-platform/run-pod-wrong-priority
   result: fail

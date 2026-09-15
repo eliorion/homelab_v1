@@ -4,7 +4,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: e2e-runner-kubeconfig
-  namespace: e2e-platform
+  namespace: dev-platform
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
@@ -15,7 +15,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: e2e-runner-kubeconfig
-  namespace: e2e-platform
+  namespace: dev-platform
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

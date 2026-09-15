@@ -6,6 +6,8 @@ resources:
   - network.yaml
   - rbac.yaml
   - runner-access.yaml
+  # After sops-encrypting it from harbor-e2e-pull.enc.yaml.exemple (README.md, Registry):
+  # - harbor-e2e-pull.enc.yaml
   - policies/workloads.yaml
   - policies/services-pvcs.yaml
   - policies/pods.yaml

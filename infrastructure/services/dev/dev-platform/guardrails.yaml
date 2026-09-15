@@ -7,11 +7,11 @@ metadata:
   namespace: dev-platform
 spec:
   hard:
-    pods: "30"
+    pods: "60"
     requests.cpu: "7"
     requests.memory: 12Gi
-    limits.cpu: "10"
-    limits.memory: 25Gi
+    limits.cpu: "30"
+    limits.memory: 36Gi
     persistentvolumeclaims: "16"
     requests.storage: 40Gi
     ssd-single.storageclass.storage.k8s.io/requests.storage: 40Gi
@@ -29,7 +29,9 @@ metadata:
 spec:
   limits:
     - type: Container
+      # limits.cpu in dev-quota refuses any container without a CPU limit; this supplies one.
       default:
+        cpu: 500m
         memory: 512Mi
       defaultRequest:
         cpu: 50m

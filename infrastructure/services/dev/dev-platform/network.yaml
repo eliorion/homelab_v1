@@ -1,4 +1,4 @@
-# Host network boundary for the e2e platform. Deliberately NO default-deny NetworkPolicy:
+# Host network boundary for the dev platform. Deliberately NO default-deny NetworkPolicy:
 # NetworkPolicies are allow-unions, so any namespace-wide allow would cancel the chart
 # NetworkPolicies the vcluster syncs here. Deny rules win over every allow instead.
 # Rationale and the live proof: README.md.

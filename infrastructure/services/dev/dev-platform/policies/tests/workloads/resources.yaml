@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: run-pod
   labels:
     vcluster.loft.sh/managed-by: vcluster
     vcluster.loft.sh/namespace: e2e-12-asp
 spec:
-  priorityClassName: e2e
+  priorityClassName: dev
   containers:
   - name: app
     image: nginx
@@ -18,7 +18,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: vcluster-0
   labels:
     app: vcluster
@@ -30,7 +30,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: platform-pod
   labels:
     vcluster.loft.sh/managed-by: vcluster
@@ -43,7 +43,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-bare
+  namespace: dev-bare
   name: no-guardrails
 spec:
   containers:
@@ -53,7 +53,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: host-network
 spec:
   hostNetwork: true
@@ -64,7 +64,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: host-path
 spec:
   containers:
@@ -78,7 +78,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: privileged-init
 spec:
   initContainers:
@@ -93,7 +93,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: node-name
 spec:
   nodeName: staging-controlplane-1
@@ -104,7 +104,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: node-selector-hostname
 spec:
   nodeSelector:
@@ -116,7 +116,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: required-affinity
 spec:
   affinity:
@@ -134,7 +134,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: e2e-platform
+  namespace: dev-platform
   name: run-pod-wrong-priority
   labels:
     vcluster.loft.sh/managed-by: vcluster

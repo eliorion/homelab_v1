@@ -1,13 +1,13 @@
-# The e2e platform: one long-lived vcluster (infrastructure/services/dev/e2e-platform/README.md).
+# The dev platform: one long-lived vcluster (infrastructure/services/dev/dev-platform/README.md).
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: e2e-platform
+  name: dev-platform
   namespace: flux-system
 spec:
   interval: 10m
   retryInterval: 1m
-  # vcluster, then KEDA + CNPG inside it, then e2e-platform-virtual; all health-checked.
+  # vcluster, then KEDA + CNPG inside it, then dev-platform-virtual; all health-checked.
   timeout: 20m
   dependsOn:
     - name: infrastructure-controllers
@@ -18,7 +18,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./infrastructure/services/dev/e2e-platform
+  path: ./infrastructure/services/dev/dev-platform
   prune: true
   wait: true
   # No sops file here yet. Keep this block: without it a future *.enc.yaml is applied as ciphertext, silently.

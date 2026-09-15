@@ -1,10 +1,10 @@
-# Run pods get the e2e priority and the host pull secrets. Platform pods (the vcluster
+# Run pods get the dev priority and the host pull secret. Platform pods (the vcluster
 # control plane, and synced pods of the platform's own virtual namespaces) are left alone:
 # evicting them first would break every run at once.
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
-  name: e2e-pods
+  name: dev-pods
 spec:
   failurePolicy: Fail
   autogen:
@@ -18,7 +18,7 @@ spec:
         resources: ["pods"]
     namespaceSelector:
       matchLabels:
-        eliorion.fr/tier: e2e
+        eliorion.fr/tier: dev
   matchConditions:
     - name: synced-run-pod
       expression: >-
@@ -31,7 +31,7 @@ spec:
         expression: >-
           Object{
             spec: Object.spec{
-              priorityClassName: "e2e",
+              priorityClassName: "dev",
               priority: -1000,
               preemptionPolicy: "Never"
             }
