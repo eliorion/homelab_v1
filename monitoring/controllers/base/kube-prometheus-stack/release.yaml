@@ -66,6 +66,10 @@ spec:
       # RWO volume: RollingUpdate deadlocks on the volume the old pod still holds.
       deploymentStrategy:
         type: Recreate
+      grafana.ini:
+        plugins:
+          # Pinned: the chart sets preinstall_auto_update=false, so an unpinned plugin on the PVC never updates. See README.
+          preinstall: grafana-lokiexplore-app@2.5.2
       sidecar:
         datasources:
           exemplarTraceIdDestinations:
