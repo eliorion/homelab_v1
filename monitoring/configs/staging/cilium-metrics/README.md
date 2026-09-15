@@ -56,9 +56,13 @@ every ephemeral CI runner.
 - **Port names are a contract with the Cilium chart.** A chart bump that renames
   `hubble-metrics` or `envoy-metrics` leaves these monitors selecting nothing, with
   no error.
-- **`hubble-l7-http-metrics-by-workload` stays empty.** L7 HTTP metrics need
-  Envoy L7 visibility (an L7 network policy); this cluster has no network policy
-  at all. The dashboard is rendered by the chart and cannot be skipped separately.
+- **`hubble-l7-http-metrics-by-workload` and `hubble-dns-namespace` stay empty.**
+  Hubble's HTTP and DNS metrics come from Cilium's L7 proxy, which only sees traffic
+  selected by an L7 rule (`toPorts.rules.http` / `rules.dns`) in a
+  `CiliumNetworkPolicy`. The NetworkPolicies in the app namespaces are plain L3/L4, so
+  `hubble_dns_queries_total` and `hubble_http_requests_total` have no series (measured
+  2026-09-14). The dashboards are rendered by the chart and cannot be skipped
+  separately.
 - **The agent is `hostNetwork`**: ports 9962 and 9965 are open on every node's LAN
   address, unauthenticated, like node-exporter's 9100.
 

@@ -92,8 +92,8 @@ the `dagger-ci` dashboard. `url: "$${__value.raw}"` is escaped with `$$` because
 Grafana expands `${…}` in provisioning files as environment variables.
 
 **The push receivers are unauthenticated.** Anything in the cluster that can reach
-`kube-prometheus-stack-prometheus:9090` can write series. There is no network
-policy in this cluster; the Service is not exposed outside it.
+`kube-prometheus-stack-prometheus:9090` can write series. App namespaces (`asp`, `fbref`, `scraper`, `database`, `lab`, `identity`, `n8n`, `flux-system`) carry NetworkPolicies, but `monitoring` has none, so nothing restricts who reaches it; the Service is
+not exposed outside the cluster.
 
 Flux side. `clusters/staging/monitoring.yaml` and
 `clusters/production/monitoring.yaml` declare a `monitoring-controllers`

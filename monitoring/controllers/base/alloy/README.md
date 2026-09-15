@@ -87,7 +87,9 @@ about 6GB a day per node. The pipeline drops:
 
 1. the `RequestReceived` and `ResponseStarted` stages (each request is kept once,
    at `ResponseComplete`);
-2. successful (`2xx`/`3xx`) `get`/`list`/`watch` by any `system:` identity;
+2. successful (`1xx`/`2xx`/`3xx`) `get`/`list`/`watch` by any `system:` identity —
+   `1xx` because a WebSocket watch (the Keycloak operator's Java client) completes
+   with `101 Switching Protocols`, which the first version of the regex let through;
 3. `create`/`update`/`patch` of `leases`, `subjectaccessreviews` and `tokenreviews`
    — leader-election heartbeats and authorization checks;
 4. `patch` by Flux's `kustomize-controller` and `helm-controller` — server-side
