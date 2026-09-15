@@ -12,7 +12,6 @@ spec:
   priority: -1000
   preemptionPolicy: Never
   imagePullSecrets:
-    - name: ghcr-pull-secret
     - name: harbor-e2e-pull
   containers:
     - name: app

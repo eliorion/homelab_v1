@@ -95,15 +95,45 @@ namespace is not `kube-system`, `keda`, `cnpg-system` or `e2e-system`:
 
 - priority `e2e` (-1000, never preempts). The control plane and the operators keep the default
   priority: evicting them first would break every run at once.
-- `imagePullSecrets` replaced with `ghcr-pull-secret` and `harbor-e2e-pull`, both **host**
-  Secrets. The charts run with `imagePullSecrets: []`; nothing inside the vcluster can read the
-  registry credentials. `imagePullSecrets` is an atomic list, so this is a JSONPatch —
+- `imagePullSecrets` replaced with `harbor-e2e-pull`, a **host** Secret (see Registry). The
+  charts run with `imagePullSecrets: []`; nothing inside the vcluster can read the registry
+  credential. `imagePullSecrets` is an atomic list, so this is a JSONPatch —
   ApplyConfiguration refuses it, and with `failurePolicy: Fail` the refusal blocks the pod sync.
   The vcluster value `sync.fromHost.secrets` was rejected: it renders cluster-wide `secrets
   list/watch` for the syncer.
 
 `e2e-workloads` refuses host access, node pinning, privileged containers and, for run pods, any
 priority other than `e2e`, and refuses pods until `e2e-quota` and `e2e-host-boundary` exist.
+
+## Registry
+
+Nodes pull images through containerd over HTTPS, so a run's images must be in a registry; the
+Dagger engine's build cache is not one. Every image a run deploys comes from one private Harbor
+project, `registry.eliorion.fr/e2e`:
+
+- **PR-built services**: the asp `build-scan` job builds, scans (trivy) and only then pushes to
+  `e2e/<image>:pr-<n>-<sha12>`, and hands the digest to the e2e job. The scanned image is the
+  deployed image; the e2e job never builds.
+- **Unchanged services**: main's released tags, copied from GHCR into `e2e/<image>:<tag>` once
+  per tag (skipped when present). GHCR packages are private and the nodes hold no GHCR
+  credential; copying keeps one pull secret instead of two.
+
+Pull credential: `harbor-e2e-pull.enc.yaml`, a sops-encrypted `kubernetes.io/dockerconfigjson`
+for robot `robot$e2e+pull` (pull only), injected by `e2e-pods`. The push robot `robot$e2e+ci`
+lives in GitHub only (`HARBOR_E2E_ROBOT` / `HARBOR_E2E_PUSH_TOKEN`). Project setup: Harbor
+README, "The e2e project". Create the Secret from the template:
+
+```bash
+cd infrastructure/services/dev/e2e-platform
+kubectl create secret docker-registry harbor-e2e-pull -n e2e-platform \
+  --docker-server=registry.eliorion.fr --docker-username='robot$e2e+pull' \
+  --docker-password="$(read -rsp 'e2e+pull token: ' t; echo "$t")" \
+  --dry-run=client -o yaml > harbor-e2e-pull.enc.yaml
+sops --encrypt --in-place harbor-e2e-pull.enc.yaml   # .sops.yaml matches infrastructure/services/dev/
+```
+
+then list it in `kustomization.yaml`. Until it exists, run pods referencing a private image fail
+with `ImagePullBackOff`; public images still pull.
 
 ## Quota
 

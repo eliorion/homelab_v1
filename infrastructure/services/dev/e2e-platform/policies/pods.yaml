@@ -37,9 +37,10 @@ spec:
             }
           }
     # imagePullSecrets is an atomic list: ApplyConfiguration refuses it, so replace it whole.
-    # The secrets live on the host only; nothing inside the vcluster can read them.
+    # Every run image comes from Harbor project e2e (README.md, Registry); the secret lives on
+    # the host only, and nothing inside the vcluster can read it.
     - patchType: JSONPatch
       jsonPatch:
         expression: >-
           [JSONPatch{op: "add", path: "/spec/imagePullSecrets",
-                     value: [{"name": "ghcr-pull-secret"}, {"name": "harbor-e2e-pull"}]}]
+                     value: [{"name": "harbor-e2e-pull"}]}]
