@@ -41,6 +41,11 @@ spec:
       # Private GHCR images; the Secret is mirrored into the ns by reflector.
       imagePullSecrets:
         - name: ghcr-pull-secret
+    otel:
+      enabled: true
+      # OTLP/HTTP base URL: the SDKs append /v1/traces; the chart's egress opens 4318 only.
+      endpoint: http://alloy-receiver.monitoring.svc.cluster.local:4318
+      environment: staging
     # Off: no scraper producer feeds asp today — flipping this alone is not
     # enough, asp must rejoin the scraper platform first (README.md).
     ingest:

@@ -43,6 +43,9 @@ Values set here:
 | `poolctl.enabled` | `true` — chart default is `false`; see Traps |
 | `poolctl.maxSolvers` | `2` — chart default is 4; see Traps |
 | `adminUi.service.annotations` | `tailscale.com/expose: "true"`, `tailscale.com/hostname: scraper-admin-ui` |
+| `otel.enabled` | `true` |
+| `otel.endpoint` | `http://alloy-receiver.monitoring.svc.cluster.local:4318` |
+| `otel.environment` | `staging` |
 
 Flux applies this through the `apps` Kustomization in
 [`../../../clusters/staging/apps.yaml`](../../../clusters/staging/apps.yaml) (`path: ./apps/staging`,
@@ -152,9 +155,18 @@ engine pod.
 **There is no `keda:` block on purpose.** KEDA is a hard requirement of the chart: no enable flag,
 no fixed-replica mode. Every pool and solver is HPA-owned, and an idle namespace is backend-only.
 
+**Tracing is switched on here.** `otel.enabled` gives `scraper-backend`, `scraper-poolctl` and
+`engine-worker` the `OTEL_*` environment and one egress rule to `monitoring` on TCP 4318
+(the engine through its `engine-egress` policy); the services send traces to `alloy-receiver`, which forwards them
+to Tempo. The scraper admin UI is not instrumented. An engine span (`scraper-engine.page`)
+carries site, tenant, lane, pool name, fetcher backend and request id — never a proxy URL.
+fbref was the pilot; the full rationale is in [`../fbref/README.md`](../fbref/README.md).
+
 ## Traps
 
 - **Never set image tags in `release.yaml`.** The chart's `values.yaml` owns them.
+- **The engine can reach `monitoring:4318` once `otel.enabled` is on.** A fetch that is tricked
+  into requesting that address could forge spans; it cannot read anything back.
 - **`upgrade.remediation.retries: 3` is required, not decorative.** helm-controller performs no
   remediation at the default `retries: 0`, so `strategy: rollback` alone is a no-op.
 - **`timeout: 10m` must stay above the pools' warm-up budget** (readiness `initialDelay 90s` plus
@@ -205,6 +217,14 @@ flux reconcile helmrelease scraper -n scraper --with-source
 kubectl -n scraper get pods,scaledobject
 kubectl -n tailscale get pods               # egress proxies for the tailscale/b/c pools
 kubectl -n scraper logs deploy/scraper-poolctl --tail=50   # solver_created / solver_cap_reached
+```
+
+Traces in Grafana (Explore → Tempo, TraceQL):
+
+```
+{resource.service.namespace="scraper"}
+{name="scraper-engine.page"}
+{resource.service.name="scraper-backend" && kind=server}
 ```
 
 Adding an egress — no commit, no rollout. Leave `residential` false until its IP is verified:
