@@ -103,20 +103,24 @@ ensure_robot() {
   access=$3
   full="robot\$${PROJECT}+${name}"
   perms=$(jq -n --arg ns "$PROJECT" --argjson a "$access" '[{kind: "project", namespace: $ns, access: $a}]')
-  existing=$(api GET "/robots?q=Level%3Dproject%2CProjectID%3D${pid}&page_size=100" |
-    jq -c --arg f "$full" '.[] | select(.name == $f)')
+  find_robot() {
+    api GET "/robots?q=Level%3Dproject%2CProjectID%3D${pid}&page_size=100" |
+      jq -c --arg f "$full" '.[] | select(.name == $f)'
+  }
+  existing=$(find_robot)
   if [ -z "$existing" ]; then
-    api POST /robots -d "$(jq -n --arg n "$name" --arg s "$secret" --argjson p "$perms" \
-      '{name: $n, level: "project", duration: -1, disable: false, secret: $s, permissions: $p}')" >/dev/null
+    api POST /robots -d "$(jq -n --arg n "$name" --argjson p "$perms" \
+      '{name: $n, level: "project", duration: -1, disable: false, permissions: $p}')" >/dev/null
     log "created $full"
-  else
-    id=$(printf '%s' "$existing" | jq -r .id)
-    api PUT "/robots/$id" -d "$(printf '%s' "$existing" |
-      jq --argjson p "$perms" '. + {permissions: $p, disable: false, duration: -1}')"
-    # The secret in Git wins: rotating a robot is an edit of the sops file.
-    api PATCH "/robots/$id" -d "$(jq -n --arg s "$secret" '{secret: $s}')" >/dev/null
-    log "updated $full (permissions and secret)"
+    existing=$(find_robot)
   fi
+  id=$(printf '%s' "$existing" | jq -r .id)
+  api PUT "/robots/$id" -d "$(printf '%s' "$existing" |
+    jq --argjson p "$perms" '. + {permissions: $p, disable: false, duration: -1}')"
+  # Create IGNORES a supplied secret and generates its own, so the secret is always set here,
+  # on every run. The secret in Git wins: rotating a robot is an edit of the sops file.
+  api PATCH "/robots/$id" -d "$(jq -n --arg s "$secret" '{secret: $s}')" >/dev/null
+  log "ensured $full (permissions and secret)"
 }
 
 ensure_robot ci "$E2E_CI_SECRET" \

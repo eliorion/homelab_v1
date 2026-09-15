@@ -162,8 +162,8 @@ with the `harbor-admin` Secret and converges, idempotently, on every run:
   existing blobs first, hence pull);
 - robot `robot$e2e+pull`: pull on `e2e`, for the dev platform's run pods.
 
-**You choose the robot secrets, Harbor does not.** The API takes a caller-supplied secret on
-create and on `PATCH /robots/{id}`, so both live in `staging/harbor/config/e2e-robots.enc.yaml`
+**You choose the robot secrets, Harbor does not.** `PATCH /robots/{id}` takes a caller-supplied
+secret (create ignores one and generates its own, so every run PATCHes), so both live in `staging/harbor/config/e2e-robots.enc.yaml`
 (template: `e2e-robots.enc.yaml.exemple`): Secret `harbor-robot-e2e-ci` and Secret
 `harbor-e2e-pull`, which is also the dockerconfigjson reflector mirrors into `dev-platform`. Each
 run sets the secret from Git, so rotating a robot is an edit of that file; update the GitHub
@@ -176,7 +176,9 @@ the proxy projects below — are untouched.
 
 Proven against Harbor 2.15.2 on a scratch project (since deleted): create, a second idempotent
 run, a secret rotation (the old secret's token grants no actions), GC schedule creation, and the
-two robots' token scopes (`push,pull` and `pull`).
+two robots' token scopes (`push,pull` and `pull`). That proof ran the update path twice before
+checking a token, which hid that create ignores the secret: the first live run left both robots
+with Harbor's own random secrets (a token with no actions) until the PATCH moved to every run.
 
 ## Proxy projects are runtime state, not manifests
 
