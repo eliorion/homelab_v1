@@ -30,6 +30,12 @@ spec:
     maxRunners: 2
     template:
       spec:
+        # The runner image's user is the NAME `runner`, which the kubelet cannot check against
+        # runAsNonRoot — it needs the uid. fsGroup gives that uid the work emptyDir.
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          fsGroup: 1001
         # No dind: the job only drives the in-cluster Dagger engine and reads one Secret.
         containers:
           - name: runner
@@ -47,6 +53,7 @@ spec:
                 value: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/metrics
             securityContext:
               runAsNonRoot: true
+              runAsUser: 1001
               allowPrivilegeEscalation: false
               capabilities:
                 drop: ["ALL"]
