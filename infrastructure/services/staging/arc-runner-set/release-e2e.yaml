@@ -1,0 +1,64 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: arc-runner-set-asp-e2e
+  namespace: flux-system
+spec:
+  targetNamespace: arc-runners
+  releaseName: arc-runner-set-asp-e2e
+  interval: 30m
+  chart:
+    spec:
+      chart: gha-runner-scale-set
+      version: "0.14.2"
+      sourceRef:
+        kind: HelmRepository
+        name: arc
+        namespace: flux-system
+      interval: 12h
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    githubConfigUrl: https://github.com/Eliorion/asp
+    githubConfigSecret: arc-github-pat
+    # The e2e platform lane. maxRunners IS the lane's concurrency: two runs share the
+    # platform's quota (infrastructure/services/dev/e2e-platform/README.md).
+    runnerScaleSetName: self-hosted-arc-e2e
+    minRunners: 0
+    maxRunners: 2
+    template:
+      spec:
+        # No dind: the job only drives the in-cluster Dagger engine and reads one Secret.
+        containers:
+          - name: runner
+            # renovate: datasource=docker depName=ghcr.io/actions/actions-runner
+            image: ghcr.io/actions/actions-runner:2.336.0
+            command: ["/home/runner/run.sh"]
+            env:
+              - name: OTEL_EXPORTER_OTLP_PROTOCOL
+                value: http/protobuf
+              - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+                value: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/traces
+              - name: OTEL_EXPORTER_OTLP_LOGS_ENDPOINT
+                value: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/logs
+              - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+                value: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/metrics
+            securityContext:
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 2Gi
+            volumeMounts:
+              - name: work
+                mountPath: /home/runner/_work
+        volumes:
+          - name: work
+            emptyDir: {}

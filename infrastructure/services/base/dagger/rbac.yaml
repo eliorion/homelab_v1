@@ -59,6 +59,9 @@ subjects:
   - kind: ServiceAccount
     name: self-hosted-arc-xl-gha-rs-no-permission
     namespace: arc-runners
+  - kind: ServiceAccount
+    name: self-hosted-arc-e2e-gha-rs-no-permission
+    namespace: arc-runners
 # The Forgejo runner binding is added with the runner itself (Phase 5); its
 # ServiceAccount does not exist yet and binding a missing subject is silently
 # inert rather than an error, so it would look configured while granting
