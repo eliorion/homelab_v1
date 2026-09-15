@@ -28,6 +28,9 @@ Values set here:
 |---|---|
 | `global.imagePullSecrets` | `ghcr-pull-secret` — the private GHCR image |
 | `adminUi.service.annotations` | `tailscale.com/expose: "true"`, `tailscale.com/hostname: fbref-admin-ui` |
+| `otel.enabled` | `true` |
+| `otel.endpoint` | `http://alloy-receiver.monitoring.svc.cluster.local:4318` |
+| `otel.environment` | `staging` |
 | `engine.sites` | `"fbref,transfermarkt"` |
 | `engine.maxInFlightOverrides.transfermarkt` | `10` |
 | `mcp.auth.enabled` | `true` |
@@ -61,6 +64,8 @@ Everything else fbref depends on is owned elsewhere:
   [`../../../documentations/02-keycloak.md`](../../../documentations/02-keycloak.md) and
   `infrastructure/services/base/keycloak/realm/realm-mcp.yaml`.
 - The scraping itself — [`../scraper/README.md`](../scraper/README.md).
+- The trace collector `alloy-receiver` and the Tempo store —
+  [`../../../monitoring/controllers/base/alloy/README.md`](../../../monitoring/controllers/base/alloy/README.md).
 
 The admin UI is reached on the tailnet at `https://fbref-admin-ui.<your-tailnet>.ts.net`.
 
@@ -107,6 +112,15 @@ and every `crawl_*` flag stays off except the confederation-index seed.
 the same two residential pools every other site on the scraper platform draws from. Widen it
 once phase 5's throughput and error-rate checks are clear.
 
+**Tracing is switched on here, not in the chart.** The chart's `otel` block is off by default;
+enabling it gives the engine, the audit and refresh CronJobs, `fbref-mcp` and the admin UI the
+`OTEL_*` environment, and each NetworkPolicy one egress rule to `monitoring` on TCP 4318. The
+services then send traces over OTLP/HTTP to `alloy-receiver`, which forwards them to Tempo.
+Traces only: stdout logs already reach Loki, and each JSON log line written inside a span
+carries `trace_id`/`span_id`, which `alloy-node` turns into a link to the trace. fbref was the
+pilot, before scraper and asp. Setting `otel.enabled: false` is the one-commit rollback; an
+unreachable collector only drops spans.
+
 **The MCP server is the one public surface, so it is authenticated.** It is reached at
 `https://fbref-mcp.eliorion.fr/mcp` through the Cloudflare tunnel — there is no Ingress object —
 because hosted AI providers must be able to call it: claude.ai on the web and ChatGPT connectors
@@ -150,6 +164,9 @@ CLI clients working while still fencing browser origins to the two hosted connec
   platform cannot pace.
 - **Do not raise `maxInFlightOverrides.transfermarkt` casually.** The two residential pools are
   shared with every other site; extra in-flight work for one source comes out of the others.
+- **`otel.endpoint` is the OTLP/HTTP base URL, port 4318, without `/v1/traces`.** The SDKs append
+  the path. Port 4317 is gRPC, and the chart's egress rule opens `otel.collector.port` (4318)
+  only.
 - **`reconcileStrategy: Revision` plus the GitRepository `ignore` block are a pair.** Widen the
   `ignore` allowlist beyond `/k8s/charts/fbref/` and every unrelated commit to the `asp`
   repository re-reconciles this release.
@@ -168,6 +185,14 @@ Check the public MCP surface (401 without a token is the expected answer):
 ```sh
 curl -si https://fbref-mcp.eliorion.fr/mcp | head -1
 curl -sS https://fbref-mcp.eliorion.fr/.well-known/oauth-protected-resource/mcp
+```
+
+Traces in Grafana (Explore → Tempo, TraceQL):
+
+```
+{resource.service.namespace="fbref"}
+{name="fbref-engine.tick"}
+{resource.service.name="fbref-mcp" && kind=server}
 ```
 
 More probes, and the tunnel-side configuration, are in
