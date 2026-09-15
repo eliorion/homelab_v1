@@ -285,6 +285,11 @@ named as a limitation rather than papered over.
 
 **Reference.** `infrastructure/services/base/keycloak/app/certificate.yaml`
 
+**Since 2026-09.** This decision still holds for Keycloak, but cert-manager no longer issues
+only this CA: ACME `ClusterIssuers` were added for the Harbor registry, whose clients (node
+containerd, the Dagger engine, laptops) must trust it with no CA distribution.
+`infrastructure/controllers/staging/cert-manager-issuers/README.md` carries that reasoning.
+
 ---
 
 ## 3. Storage
