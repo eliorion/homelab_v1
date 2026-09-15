@@ -1,0 +1,56 @@
+groups:
+  - name: node-kernel.log-rules
+    interval: 1m
+    rules:
+      - alert: KernelDiskIOErrors
+        expr: |
+          sum by (node) (count_over_time({job="talos", service="kernel"} |~ `(?i)i/o error|uas_eh_|reset (superspeed|high-speed) usb|blk_update_request|critical medium error` [10m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk I/O errors in the kernel log of {{ $labels.node }}"
+          description: "{{ $value }} kernel lines in 10 minutes match block-device or USB-bridge error signatures. Check `talosctl -n {{ $labels.node }} dmesg` and the disk's SMART data before the volume goes read-only."
+      - alert: KernelHungTask
+        expr: |
+          sum by (node) (count_over_time({job="talos", service="kernel"} |~ `(?i)blocked for more than [0-9]+ seconds|soft lockup|hard lockup|rcu_sched self-detected stall` [10m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Hung task or CPU lockup on {{ $labels.node }}"
+          description: "The kernel reported a task blocked on I/O or a CPU lockup. On this cluster that usually means a stalled disk or DRBD device."
+      - alert: KernelOOMKill
+        expr: |
+          sum by (node) (count_over_time({job="talos", service="kernel"} |~ `(?i)out of memory|oom-kill|killed process` [10m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kernel OOM kill on {{ $labels.node }}"
+          description: "The kernel OOM killer ran on {{ $labels.node }}. Container-limit kills show up as OOMKilled pods; this one is node-level memory exhaustion."
+      - alert: FilesystemErrors
+        expr: |
+          sum by (node) (count_over_time({job="talos", service="kernel"} |~ `(?i)xfs.*(error|corrupt|shutdown)|ext4-fs error|remount.*read-only` [10m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Filesystem errors on {{ $labels.node }}"
+          description: "XFS or ext4 reported corruption or a forced shutdown, or a filesystem was remounted read-only."
+  - name: kubernetes.log-rules
+    interval: 1m
+    rules:
+      - alert: VolumeMountFailing
+        expr: |
+          sum by (namespace) (count_over_time({job="kubernetes-events"} | logfmt | reason=~"FailedAttachVolume|FailedMount" [30m])) > 10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Volumes keep failing to attach or mount in {{ $labels.namespace }}"
+          description: "More than 10 FailedAttachVolume/FailedMount events in 30 minutes, sustained for 15 minutes. Node reboots produce short bursts (up to 7 in 15 minutes); this is past that."
+      - alert: UnexpectedPodExec
+        expr: |
+          sum by (user_username, objectRef_namespace, objectRef_subresource) (count_over_time({job="kube-apiserver-audit"} | json | objectRef_subresource=~"exec|attach|portforward" and responseStatus_code="101" and user_username!~"admin|talos:admin|system:serviceaccount:arc-runners:.+|system:serviceaccount:cnpg-system:cnpg-system-cnpg-cloudnative-pg" [10m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.user_username }} ran {{ $labels.objectRef_subresource }} in {{ $labels.objectRef_namespace }}"
+          description: "A successful exec, attach or port-forward by an identity outside the allowlist (admin, talos:admin, ARC runners, CNPG operator). Exec into a pod is code execution in it."

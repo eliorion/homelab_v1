@@ -3,3 +3,12 @@ kind: Kustomization
 resources:
   - repository.yaml
   - release.yaml
+  - prometheusrule-ruler.yaml
+# Fixed name: release.yaml mounts it by name, and kustomize does not rewrite names inside HelmRelease values.
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: loki-rules
+    namespace: monitoring
+    files:
+      - rules/fake/log-alerts.yaml

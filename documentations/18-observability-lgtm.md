@@ -219,7 +219,7 @@ observe. "Covered" means data flows and something alerts or can be queried;
 | Kubernetes events | Covered | kept past the apiserver's 1h event TTL |
 | Traces | Partial | Store and pipeline ready; **only Dagger emits them**. The applications (`asp`, `fbref`, `scraper`) are not instrumented. Beyla (eBPF auto-instrumentation, available in Alloy) is the no-code option |
 | CI/CD | Covered | Every Dagger run: span tree, step output, duration and failure trend, engine cache. GitHub workflow-level spans (queue time, non-Dagger steps) are not captured |
-| Log-based alerting | **Gap** | Loki's ruler is not wired to Alertmanager; no alert fires on a log line |
+| Log-based alerting | Covered | Loki's ruler sends six rules to Alertmanager: disk I/O errors, hung tasks, OOM kills and filesystem errors from the kernel log, sustained volume-mount failures from events, and unexpected pod exec from the audit log |
 | Dead man's switch | **Gap** | `Watchdog` is still routed to a blackhole — a dead Prometheus or Alertmanager is silent. Tracked in [14](14-design-decisions.md) |
 | Synthetic / black-box probing | Covered | blackbox-exporter probes the four Cloudflare-tunnel hostnames the way users reach them, and Harbor from inside; `PublicEndpointDown` is critical. The home uplink itself failing is left to the dead man's switch |
 | Certificate expiry | Covered | cert-manager metrics (`CertificateNotReady`, `CertificateExpiringSoon`) plus probe-side expiry for served certificates, Cloudflare edge included. Harbor, KEDA, ARC controller, Tailscale operator and Keycloak metrics are still not scraped |
