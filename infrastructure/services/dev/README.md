@@ -302,6 +302,12 @@ refused explicitly. Deletes use `--wait=false`; the Job has `activeDeadlineSecon
 - **`PriorityClass` `value` and `preemptionPolicy` are immutable.** Changing either needs
   the object deleted; Flux cannot patch it.
 
+- **`preview-workloads` and `preview-httproutes` are admission-only** (`evaluation.background.enabled: false`).
+  With background on, Kyverno reports the policy not Ready ("missing permissions") because a background
+  scan needs list/watch on what it matches: `pods/ephemeralcontainers` is not a listable resource, and the
+  reports controller has no read on `httproutes`. Enforcement was never affected (`WebhookConfigured=True`);
+  admission is where both are decided anyway.
+
 ## Verification
 
 ### Offline
