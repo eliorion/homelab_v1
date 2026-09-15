@@ -141,6 +141,28 @@ pods, so the default RollingUpdate deadlocks: the new pod waits for the volume t
 old pod holds, and the HelmRelease fails on timeout. The brief outage is
 acceptable — nothing alerts through Grafana.
 
+**The Logs Drilldown plugin is pinned in `grafana.ini`.** Grafana installs its
+Drilldown apps (`grafana-lokiexplore-app`, `grafana-exploretraces-app`,
+`grafana-metricsdrilldown-app`, `grafana-pyroscope-app`) from grafana.com at
+startup into `/var/lib/grafana/plugins` — on the persistent volume — and the
+Grafana chart sets `[plugins] preinstall_auto_update = false`, so a plugin that is
+already on the volume is never replaced. Grafana 11.3 had installed Logs Drilldown
+1.0.10 (April 2025, built against React 18). After the upgrade to Grafana 13, which
+ships React 19, **Drilldown → Logs** failed with `Plugin failed to load: TypeError:
+… __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner`. The other
+three apps did not exist in 11.3, were installed fresh by 13 and were current.
+Grafana's installer (`pkg/services/pluginsintegration/plugininstaller`) replaces an
+installed plugin when the configured `id@version` differs from what is on disk, so
+the pin is the fix. It uses the background `preinstall` list, not
+`preinstall_sync`: a failed synchronous install aborts Grafana's startup, which would
+turn a grafana.com outage into a Grafana outage.
+
+**Trap: bump the pin with Grafana.** Renovate does not see it. After any Grafana
+major, open **Drilldown → Logs**; if it fails to load, set the latest version from
+`https://grafana.com/api/plugins/grafana-lokiexplore-app/versions` whose
+`grafanaDependency` matches. Check the other three apps the same way — they are not
+pinned, so a stale copy of any of them fails identically.
+
 **Rotating the Grafana admin password.** `admin.existingSecret` is only consumed
 at Grafana's *first* init against an empty database. With the PVC, editing the
 Secret alone silently does not apply. Change the Secret, then either reset it in
