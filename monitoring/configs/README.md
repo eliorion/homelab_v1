@@ -35,6 +35,8 @@ This README documents the four alerting directories:
 | `staging/flux-am/` | Flux metrics → Prometheus → Alertmanager → Telegram (metric path) |
 | `staging/etcd-backup-alerts/` | Alerts on the `etcd-backup` CronJob |
 | `staging/cnpg-alerts/` | CNPG scrape + WAL-archiving and volume alerts |
+| `staging/blackbox-probes/` | Public and internal endpoint probes, endpoint TLS expiry — own README |
+| `staging/cert-manager-metrics/` | cert-manager scrape, certificate readiness and expiry — own README |
 
 The other siblings are outside the scope of this file. `fbref-grafana/`
 (dashboards + datasource) and `n8n-metrics/` are not alerting at all. The

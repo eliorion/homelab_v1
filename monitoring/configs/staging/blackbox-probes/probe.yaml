@@ -1,0 +1,66 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: public-endpoints
+  namespace: monitoring
+  labels:
+    # Matches Prometheus probeSelector.
+    release: kube-prometheus-stack
+spec:
+  jobName: blackbox-public
+  interval: 60s
+  module: http_2xx
+  prober:
+    # Service rendered by monitoring/controllers/base/blackbox-exporter.
+    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      labels:
+        exposure: public
+      static:
+        - https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration
+        - https://nao.eliorion.fr/
+        - https://mve-azuracast.eliorion.fr/
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: public-endpoints-authenticated
+  namespace: monitoring
+  labels:
+    # Matches Prometheus probeSelector.
+    release: kube-prometheus-stack
+spec:
+  jobName: blackbox-public
+  interval: 60s
+  module: http_401
+  prober:
+    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      labels:
+        exposure: public
+      static:
+        - https://fbref-mcp.eliorion.fr/mcp
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: internal-endpoints
+  namespace: monitoring
+  labels:
+    # Matches Prometheus probeSelector.
+    release: kube-prometheus-stack
+spec:
+  jobName: blackbox-internal
+  interval: 60s
+  module: http_401
+  prober:
+    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      labels:
+        exposure: internal
+      static:
+        # Harbor's CiliumNetworkPolicy admits in-cluster sources only: unreachable from the LAN.
+        - https://registry.eliorion.fr/v2/

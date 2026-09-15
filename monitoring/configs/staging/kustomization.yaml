@@ -12,3 +12,5 @@ resources:
   - ingestion-alerts
   - cilium-metrics
   - dagger-ci
+  - blackbox-probes
+  - cert-manager-metrics
