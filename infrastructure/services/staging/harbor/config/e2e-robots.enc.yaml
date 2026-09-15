@@ -1,0 +1,70 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. The secrets of the two robots of Harbor project `e2e`,
+# which the harbor-config Job creates and keeps in sync (infrastructure/services/base/harbor/README.md,
+# "Harbor objects as code"). YOU choose both secrets; Harbor never generates them.
+#
+#   cp e2e-robots.enc.yaml.exemple e2e-robots.enc.yaml
+#   # replace both <...> with a secret of 8-128 chars holding an upper, a lower and a digit, e.g.
+#   #   printf 'Aa1%s\n' "$(openssl rand -hex 24)"
+#   sops -e -i e2e-robots.enc.yaml
+#
+# Then give the ci secret to GitHub (asp repository), never to the cluster:
+#   gh secret set HARBOR_E2E_PUSH_TOKEN      # the <robot$e2e+ci secret> value
+#   gh variable set HARBOR_E2E_ROBOT -b 'robot$e2e+ci'
+#
+# Rotate a robot: change its value here, re-encrypt, push. The Job sets the new secret and the old
+# one stops working; update the GitHub secret in the same change for e2e+ci.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: harbor-robot-e2e-ci
+    namespace: registry
+type: Opaque
+stringData:
+    secret: ENC[AES256_GCM,data:wF+sXz5ZQ/JYDGOp301i6X3cLO7KTBNtE2K3qswP4vdH0t/eWR4pYm4CAedB5iwPBkr5,iv:puxeiZUvpLQANSMC6YL1KQYBx4mJemDuFg7DXu8BNy0=,tag:yrpDDIsLFvhLEJx7Ya6EyA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAycnRsUngycWJQc1d5Nmox
+            cUtKM3AvSDJ6N2t6RVZUemN4R0ZRYmhoL1RNClNQM0R6cm9Oekt4cEtkSGljbWc0
+            TWZsM3ZQZ3dtSGkvSnF0a3lXUDROd00KLS0tIFpUZDQ1b3o2SjZrWUJCUm01T1V3
+            WURRekNkU1JiMjRqZWl3aWo0ZDBXS3cKIk++y/WKAjrJTqADcVkoVhlW1rSUx0kH
+            7Ea58860JL/Iwv02OyfNktMuL7sd0pyYwubLrJ4d6SWLTTaAlUGA0w==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-15T20:20:29Z"
+    mac: ENC[AES256_GCM,data:+4wu8Rg+hou0azQzaurJr5aFDJ/+wpNd6VWrZuhedaV0j+YBl9/3rbYivOIJ/bRza535zF/bggi3t5F0GHIl5AS0mAd0bP8B/MbpjeUR6B1ewasVaeY1YN/qqTMZUWp2uI2mPdLFz0SxVmav6ytNmS5w1xLDTtLiL2SMXmBOal0=,iv:QBxkQf2sY9uIhXTMOJXmxgqQwKjk62fZaftwieDAxLQ=,tag:HoAguQaXrqXMqGZgZQTxgQ==,type:str]
+    version: 3.13.3
+---
+# Also the image pull secret for e2e run pods: reflector mirrors it into dev-platform, where
+# Kyverno policy dev-pods injects it. The Job reads the pull robot's secret from here too, so the
+# value exists once.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: harbor-e2e-pull
+    namespace: registry
+    annotations:
+        reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+        reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: dev-platform
+        reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+        reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: dev-platform
+type: kubernetes.io/dockerconfigjson
+stringData:
+    .dockerconfigjson: ENC[AES256_GCM,data:ADKzlMMMkqvyCqsJSgK25feCGehgjrAxf/o+0K6m/nNaufMi8z3LpFE7qvu6d91HEGLI05VSPz5AJnKJ1IYnFL930n331X9FllD4aQSmbY27Se0VkLdyQpHSzX8pdZOdOcSxXgOXaIBzuGKugl9NQv2ugm73mqcMPWmgmtFFoGga,iv:266dU0GpmUQYdabTWeO5RZ7xDl30KPGaY4k/WD4LvWU=,tag:RRywt7YcZIVl0m9SFFPm6A==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAycnRsUngycWJQc1d5Nmox
+            cUtKM3AvSDJ6N2t6RVZUemN4R0ZRYmhoL1RNClNQM0R6cm9Oekt4cEtkSGljbWc0
+            TWZsM3ZQZ3dtSGkvSnF0a3lXUDROd00KLS0tIFpUZDQ1b3o2SjZrWUJCUm01T1V3
+            WURRekNkU1JiMjRqZWl3aWo0ZDBXS3cKIk++y/WKAjrJTqADcVkoVhlW1rSUx0kH
+            7Ea58860JL/Iwv02OyfNktMuL7sd0pyYwubLrJ4d6SWLTTaAlUGA0w==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-15T20:20:29Z"
+    mac: ENC[AES256_GCM,data:+4wu8Rg+hou0azQzaurJr5aFDJ/+wpNd6VWrZuhedaV0j+YBl9/3rbYivOIJ/bRza535zF/bggi3t5F0GHIl5AS0mAd0bP8B/MbpjeUR6B1ewasVaeY1YN/qqTMZUWp2uI2mPdLFz0SxVmav6ytNmS5w1xLDTtLiL2SMXmBOal0=,iv:QBxkQf2sY9uIhXTMOJXmxgqQwKjk62fZaftwieDAxLQ=,tag:HoAguQaXrqXMqGZgZQTxgQ==,type:str]
+    version: 3.13.3
