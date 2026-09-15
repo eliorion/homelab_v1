@@ -39,10 +39,9 @@ Flux Kustomization `infra-reflector` (`clusters/staging/infrastructure.yaml`) re
 
 ### Overlays
 
-There is no production overlay. `base/reflector/` carries the operator itself and is
+`base/reflector/` carries the operator itself and is
 environment-neutral; the staging overlay adds the single cluster-specific resource, the
-encrypted `ghcr-pull-secret`. A production overlay would be the same base plus its own
-encrypted secret.
+encrypted `ghcr-pull-secret`.
 
 ### Consumers (outside this directory)
 

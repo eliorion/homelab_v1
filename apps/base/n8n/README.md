@@ -261,6 +261,5 @@ on first visit. Once the Garage backup is uncommented, the restore procedure for
 
 ### Overlays
 
-Only `apps/staging/n8n/` exists — n8n is staging-only, there is no production
-overlay. The overlay adds the `n8n-config` ConfigMap and the SOPS-encrypted
+Only `apps/staging/n8n/` exists — n8n is staging-only. The overlay adds the `n8n-config` ConfigMap and the SOPS-encrypted
 `n8n-secrets` Secret and sets `namespace: n8n`; it patches nothing in the base.

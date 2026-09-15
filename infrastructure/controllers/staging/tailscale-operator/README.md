@@ -23,9 +23,8 @@ identity — no Cloudflare hostname, no public ingress, no LAN LoadBalancer.
 
 ### Overlays
 
-There is no `base/` and no production copy: the component exists only in the
-staging overlay and is wired in `../kustomization.yaml`. The production overlay
-(`infrastructure/controllers/production/kustomization.yaml`) lists `cnpg/` only.
+There is no `base/`: the component exists only in the
+staging overlay and is wired in `../kustomization.yaml`.
 The operator itself is namespace-agnostic — it watches the whole cluster, so the
 Services and Ingresses it publishes live in the namespaces of the workloads they
 belong to, not here.

@@ -42,8 +42,7 @@ What `release.yaml` sets:
 
 `infrastructure/services/staging/radar/kustomization.yaml` is the only overlay
 and it does exactly one thing: pull in `../../base/radar`. There is nothing
-environment-specific and no encrypted material, so there is no patch and no
-`production/` overlay. The component is reconciled because
+environment-specific and no encrypted material, so there is no patch. The component is reconciled because
 `infrastructure/services/staging/kustomization.yaml` lists `radar/`; see
 [`../../README.md`](../../README.md).
 

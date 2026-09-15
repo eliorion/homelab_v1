@@ -87,21 +87,9 @@ retired hand-written StatefulSet read, and the operator generates
 in `infrastructure/services/staging/databases/keycloak/`, next to every other
 infra/services database, mirroring `apps/staging/databases/`.
 
-`production/keycloak/` is staged but **inert**: its `resources:` list is
-commented out, so only the `patches:` entries are declared and nothing is
-applied until the list is uncommented. It contains:
-
-- `app/kustomization.yaml` + `app/secret.enc.yaml`;
-- `database/objectstore.yaml` — the `r2-store` barman-cloud ObjectStore pointing
-  at `s3://asp-cnpg-production` on Cloudflare R2, 7-day retention, gzip + AES256;
-- `database/cluster-backup-patch.yaml` — attaches the barman-cloud plugin to the
-  `keycloak-db` Cluster as WAL archiver (`barmanObjectName: r2-store`,
-  `serverName: keycloak-db`);
-- `database/scheduledbackup.yaml` — `keycloak-db-daily`, `0 0 3 * * *`;
-- `database/objectstore-staging.yaml` and `database/cluster-recovery-patch.yaml`
-  — the temporary seed-from-staging pair (see Traps);
-- `database/r2-backup-credentials.enc.yaml`,
-  `database/r2-staging-credentials.enc.yaml` — sops R2 credentials.
+There is no production overlay. The inert `production/keycloak/` scaffolding
+(commented-out resources, a seed-from-staging recovery pair) was deleted with the
+rest of the production tree on 2026-09-15.
 
 ## Why it is like this
 
@@ -125,8 +113,8 @@ reads like access control and is not.
 
 **The realm name is per-environment and is the issuer.** `realm: $(env:APPS_REALM)`
 comes from the `keycloak-realm-vars` ConfigMap in the staging overlay. Hardcoding
-`staging-apps` in `base/` would import a staging-named realm into a production
-cluster. The cost of the indirection is that the name is now a value that must
+`staging-apps` in `base/` would import a staging-named realm into any other
+environment. The cost of the indirection is that the name is now a value that must
 match in three places: this ConfigMap, `OIDC_DISCOVERY_URI` in
 `apps/staging/nextcloud/configmap.yaml`, and the three URLs of the Cloudflare
 Access identity provider in the Zero Trust dashboard.
@@ -448,12 +436,6 @@ for both backup and restore (plugin-barman-cloud issue #411).
 - **The PodDisruptionBudget selector must match the operator's pod labels**
   (`app: keycloak` and `app.kubernetes.io/managed-by: keycloak-operator`), or it
   selects nothing and protects nothing.
-- **`production/keycloak/database/objectstore-staging.yaml` and
-  `cluster-recovery-patch.yaml` are temporary**, for seeding production from the
-  staging backup only, and must be removed once the prod `keycloak-db` is seeded
-  and verified. CNPG honors a `bootstrap` stanza only at first cluster creation,
-  so the recovery patch must be present *before* the prod cluster is created and
-  is inert once it exists.
 
 ## Operating it
 

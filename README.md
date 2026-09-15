@@ -453,9 +453,9 @@ SOPS leak check on a pull request. The verification commands exist but a human h
 them, which is a convention rather than a control. This is conspicuous in a repository
 that operates an entire self hosted Actions runner fleet for a different repository.
 
-**Staging only.** `clusters/production` and the production overlays exist and are wired,
-but no production cluster is deployed and the tree has not been touched since June 2026.
-Treat it as scaffolding.
+**One environment, no promotion gate.** The cluster is the only environment. An unused
+production tree, wired to a cluster that was never bootstrapped, was deleted on 2026-09-15;
+nothing proves a change anywhere before `main` applies it.
 
 **The etcd restore has never been completed end to end.** Tiers 0 and 1 of the drill are
 scripted, proven and repeatable via `mise run etcd-drill`. Tier 2, the destructive full
@@ -492,7 +492,7 @@ documentations/      Numbered guides. Start at 14 for the decisions, 01 for the 
 scripts/             Helper scripts, including the read only etcd restore drill
 ```
 
-Every tier uses a `base/` plus `staging/` (plus `production/`) kustomize overlay pair.
+Every tier uses a `base/` plus `staging/` kustomize overlay pair.
 
 The developer environment is a devcontainer with a `mise.toml` toolchain, so the whole
 tool set (`talosctl`, `talhelper`, `flux`, `sops`, `age`, `helm`, `kubectl`) comes up with
@@ -516,7 +516,7 @@ sections are the parts worth reading.
 | # | Document | What it covers |
 |---|---|---|
 | 14 | [Design decisions and tradeoffs](documentations/14-design-decisions.md) | **Start here.** Every significant decision, what was rejected, and what it cost |
-| 00 | [Bootstrap the cluster](documentations/00-bootstrap-cluster.md) | Talos install, SOPS key, Flux bootstrap, second cluster |
+| 00 | [Bootstrap the cluster](documentations/00-bootstrap-cluster.md) | Talos install, SOPS key, Flux bootstrap |
 | 01 | [Architecture](documentations/01-architecture.md) | Repository layout and the Flux reconcile graph |
 | 02 | [Keycloak](documentations/02-keycloak.md) | Identity, the `mcp` realm, dynamic client registration, admin console hardening |
 | 03 | [Database backups](documentations/03-backups.md) | CNPG to R2 and Garage, PITR, the restore drill |

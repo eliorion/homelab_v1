@@ -19,8 +19,7 @@ which today means the step output of every Dagger CI run. Grafana reads it as th
 | `rules/fake/log-alerts.yaml` | The log-based alert rules, evaluated by Loki's ruler. See "Log-based alerts" below. |
 | `prometheusrule-ruler.yaml` | `PrometheusRule/loki-ruler`: `LokiRuleEvaluationFailing`, `LokiRulerCannotNotify` — Prometheus watching the ruler. |
 
-`monitoring/controllers/staging/loki/` only references the base. The production
-aggregate does not list Loki: that tree is not deployed.
+`monitoring/controllers/staging/loki/` only references the base.
 
 What the release renders: a `loki` StatefulSet (one pod, PVC `storage-loki-0` on
 `ssd`), Services `loki` (HTTP 3100, gRPC 9095), `loki-headless` and

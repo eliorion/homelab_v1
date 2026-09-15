@@ -19,7 +19,7 @@ ObjectStore").
 Files here: `kustomization.yaml` (aggregates the two below), `repository.yaml`
 (`HelmRepository/cnpg-plugin`, `type: oci`, 24h interval) and `release.yaml`
 (`HelmRelease/plugin-barman-cloud` in `flux-system`, `targetNamespace:
-cnpg-system`). There is no staging or production overlay — both clusters apply
+cnpg-system`). There is no staging overlay — the cluster applies
 this base path directly.
 
 The operator that consumes this plugin, and the backup traps that come with it,

@@ -70,7 +70,8 @@ Dependency-ordered; each block is one commit/PR.
    checkpoint WAL segment was never archived (no traffic → no segment
    switch) — recovery fails with "could not locate required checkpoint
    record" until you run `CHECKPOINT; SELECT pg_switch_wal();` on the source.
-   Original per-cluster steps, kept for production reference:
+   Original per-cluster steps, kept for production reference (historical: the
+   production tree was deleted 2026-09-15 and no production migration is planned):
    - [ ] Trigger + verify a fresh barman-cloud backup to R2 on k3s
          (`kubectl get backups.postgresql.cnpg.io`, check R2 object timestamps).
    - [ ] Scale app writers down on k3s (avoid writes after the backup).
@@ -133,6 +134,8 @@ LAN→tailnet path. The chain, end to end:
       API (matched by public key — titles lie after the rename: the LIVE key
       is still titled `...talos-staging`). A `./clusters/production` key from
       2026-06-02 remains — review whether production is still planned.
+      (2026-09-15: it is not; the production tree was deleted from the repo,
+      and that deploy key is no longer registered on `homelab_v1`.)
 - [x] GitHub `asp` deploy keys: only the live Talos key exists.
 - [x] `~/k3s-staging-kubeconfig.bak` deleted (2026-06-11).
 

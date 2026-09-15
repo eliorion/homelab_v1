@@ -74,7 +74,7 @@ The admin UI is reached on the tailnet at `https://scraper-admin-ui.<your-tailne
 
 ### Overlays
 
-There is no `apps/base/scraper/` and no production overlay: this staging directory is the whole
+There is no `apps/base/scraper/`: this staging directory is the whole
 component.
 
 ## Why it is like this

@@ -44,11 +44,8 @@ Flux applies this directory in two different ways, on purpose:
 - **staging** — `infrastructure/controllers/staging/cnpg/kustomization.yaml` is a
   pass-through onto `../../base/cnpg/`; no patches, no environment-specific
   values. It is referenced from `infrastructure/controllers/staging/kustomization.yaml`.
-- **production** — `infrastructure/controllers/production/cnpg/kustomization.yaml`
-  is the identical pass-through. The production tree is not deployed.
-- The **plugin** has no overlay at all: both clusters point their
-  `infra-cnpg-plugin` Kustomization straight at the base path, so staging and
-  production run the same plugin manifests.
+- The **plugin** has no overlay at all: the `infra-cnpg-plugin` Kustomization
+  points straight at the base path.
 
 ## Why it is like this
 

@@ -56,21 +56,9 @@ schedule) is added by the overlay, never by the base:
 
 ### Overlays
 
-`staging/` is the only live overlay, but it is not the only one on disk. A
-production keycloak database overlay exists at
-`infrastructure/services/production/keycloak/database/` — a different layout
-(`keycloak/database/`, not `databases/keycloak/`) holding an ObjectStore,
-ScheduledBackup, R2 credential, the backup patch and a temporary
-seed-from-staging recovery patch. Nothing reconciles it: its parent
-`production/keycloak/kustomization.yaml` has the whole `resources:` block
-commented out — only the `patches:` block is live, and it targets a `Cluster` that
-the (empty) resource set does not contain — and
-`infrastructure/services/production/kustomization.yaml` comments out `keycloak/`
-in turn. `kubectl kustomize infrastructure/services/production/keycloak` renders
-nothing. The Flux `infrastructure-services` Kustomization in
-`clusters/production/infrastructure.yaml` points at
-`./infrastructure/services/production`, so what it actually applies is
-`cloudflare/` alone.
+`staging/` is the only overlay. An inert production keycloak database overlay
+(never reconciled, with a temporary seed-from-staging recovery patch) was deleted
+with the rest of the production tree on 2026-09-15.
 
 The base/overlay split is deliberate: the base says how many instances, which
 database name and how much disk; the overlay says where backups go and with which

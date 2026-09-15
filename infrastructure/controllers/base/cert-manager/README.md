@@ -29,8 +29,7 @@ Deep detail lives in
 | `release.yaml` | `HelmRelease` `cert-manager` in `flux-system`, `targetNamespace: cert-manager`, chart `cert-manager` pinned to `v1.21.2`, reconcile `interval: 30m`, chart revision check `interval: 12h`, `install.createNamespace: true`, `values.crds.enabled: true`. |
 
 Flux applies this directory through its own Kustomization, `infra-certmanager`,
-declared identically in `clusters/staging/infrastructure.yaml` and
-`clusters/production/infrastructure.yaml`:
+declared in `clusters/staging/infrastructure.yaml`:
 `path: ./infrastructure/controllers/base/cert-manager`, `interval: 1h`,
 `retryInterval: 1m`, `timeout: 5m`, `prune: true`, `wait: true`, and two health
 checks — the `cert-manager` and `cert-manager-webhook` Deployments in namespace
@@ -59,12 +58,9 @@ Consumers:
 
 ### Overlays
 
-There is no `staging/` or `production/` overlay for cert-manager, and neither
-`infrastructure/controllers/staging/kustomization.yaml` nor
-`infrastructure/controllers/production/kustomization.yaml` references it. Both
-clusters point their `infra-certmanager` Kustomization straight at this base
-directory, so staging and production run the same chart version with the same
-values.
+There is no `staging/` overlay for cert-manager, and
+`infrastructure/controllers/staging/kustomization.yaml` does not reference it. The
+`infra-certmanager` Kustomization points straight at this base directory.
 
 ## Why it is like this
 

@@ -71,7 +71,7 @@ adds:
 | `cluster-storage-patch.yaml` | JSON patch adding `storageClass: longhorn` to `dbtools-db` (explicit — also the cluster default SC on Talos) |
 | `nao-env-patch.yaml` | strategic merge on the nao Deployment: `BETTER_AUTH_URL` + `BETTER_AUTH_TRUSTED_ORIGINS` |
 
-There is no production overlay. `nao-env-patch.yaml` is the only
+`nao-env-patch.yaml` is the only
 environment-specific piece of configuration: env entries merge by `name`, so
 only those two variables are replaced. The LLM settings are not in the overlay —
 the gateway's Service DNS name and the tier aliases are identical in every

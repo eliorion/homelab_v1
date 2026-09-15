@@ -33,8 +33,9 @@ Dagger CI telemetry).
 - `clusters/staging/` — Flux entrypoints pointing at the tiers below
 - `infrastructure/controllers/` — operators; `infrastructure/services/` —
   platform workloads; `apps/`, `monitoring/` — application and monitoring tiers
-- Each tier uses `base/` + `staging/` (+ `production/`) kustomize overlays.
-  No production cluster is deployed; the production tree is scaffolding.
+- Each tier uses `base/` + `staging/` kustomize overlays. There is one
+  cluster and one environment; the unused `production/` tree was deleted
+  2026-09-15.
 
 ## Documentation convention (applies to every change)
 

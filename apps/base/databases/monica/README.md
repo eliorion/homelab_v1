@@ -98,4 +98,4 @@ nothing here is applied by hand.
 
 ### Overlays
 
-`staging/` is the only reconciled overlay. There is no `production/databases/monica`.
+`staging/` is the only overlay.

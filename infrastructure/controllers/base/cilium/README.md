@@ -44,8 +44,8 @@ Two things this component depends on but does **not** own, both at the Talos lay
 
 ### Overlays
 
-There are none. `infrastructure/controllers/staging/kustomization.yaml` and
-`infrastructure/controllers/production/kustomization.yaml` do not reference cilium — the
+There are none. `infrastructure/controllers/staging/kustomization.yaml` does not
+reference cilium — the
 Flux Kustomizations point straight at `base/cilium` and `base/cilium/config`. Any future
 per-environment difference (a different LB pool range, a different Gateway hostname) would
 need an overlay created first.

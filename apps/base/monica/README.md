@@ -200,4 +200,4 @@ password are read from the same Secret, so no new object is needed.
 ### Overlays
 
 `staging/` is the only reconciled overlay, and it carries nothing but the SOPS
-Secret. There is no `production/monica`.
+Secret.

@@ -54,7 +54,7 @@ Each lab is reached on the tailnet at `http://lab-asp.<tailnet>.ts.net:8888` and
 
 ### Overlays
 
-There is no `apps/base/lab/` and no production overlay — this staging directory is the whole
+There is no `apps/base/lab/` — this staging directory is the whole
 component. Everything environment-specific (which projects exist, tailnet exposure, the pull
 secret source) is a value on the one HelmRelease, and the templating lives in the external
 chart.

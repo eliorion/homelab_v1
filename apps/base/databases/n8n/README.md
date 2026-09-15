@@ -186,8 +186,7 @@ n8n-specific side is in
 
 ### Overlays
 
-Only a `staging` overlay exists (`apps/staging/databases/n8n/`); there is no
-production overlay for n8n. Base on its own gives the Namespace and a Cluster
+Only a `staging` overlay exists (`apps/staging/databases/n8n/`). Base on its own gives the Namespace and a Cluster
 with the default storage class (Longhorn) and `5Gi`, no backups and no secrets.
 Staging adds `storageClass: longhorn` and, once uncommented, the barman-cloud
 plugin with the Garage `ObjectStore`, `ScheduledBackup` and credential Secret.

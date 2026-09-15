@@ -228,7 +228,7 @@ it runs.
 
 ### Overlays
 
-Only `apps/staging/azuracast/` exists — there is no production overlay. That
+Only `apps/staging/azuracast/` exists. That
 overlay is a bare passthrough: `resources: [../../base/azuracast/]`, no
 namespace directive, no patches, no secrets. Every resource in the base already
 sets `namespace: azuracast` explicitly, so staging and base render identically.

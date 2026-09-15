@@ -37,22 +37,12 @@ remote configuration.
 
 ### Overlays
 
-Two overlays exist and they are the same shape: this one and
-`../../production/cloudflare/`, each the base plus its own
-`tunnel-secret.enc.yaml` and nothing else. Only staging is live. Flux applies it
+This is the only overlay: the base plus its own `tunnel-secret.enc.yaml` and
+nothing else. Flux applies it
 from `../kustomization.yaml` (`infrastructure/services/staging/`), reconciled by
 the `infrastructure-services` Kustomization in
-`clusters/staging/infrastructure.yaml`.
-
-The production overlay is listed in
-`infrastructure/services/production/kustomization.yaml` — cloudflare is in fact
-its only uncommented entry — and `clusters/production/infrastructure.yaml`
-declares an `infrastructure-services` Kustomization pointing at
-`./infrastructure/services/production`. That entrypoint runs only on a
-production cluster, and none is deployed, so nothing reconciles it today. Treat
-it as scaffolding
-([../../../../documentations/01-architecture.md](../../../../documentations/01-architecture.md#a-note-on-production)),
-and do not assume a change here reaches it.
+`clusters/staging/infrastructure.yaml`. A same-shaped production overlay, never
+reconciled, was deleted on 2026-09-15.
 
 ## Why it is like this
 

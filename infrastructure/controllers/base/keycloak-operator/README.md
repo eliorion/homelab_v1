@@ -42,7 +42,7 @@ only supported way to change `upstream/`.
 
 ### Overlays
 
-There is no `staging/` or `production/` overlay for this component. Flux applies
+There is no `staging/` overlay for this component. Flux applies
 the base directly: `clusters/staging/infrastructure.yaml` declares a
 Kustomization `infra-keycloak-operator` with
 `path: ./infrastructure/controllers/base/keycloak-operator`, `wait: true` and a

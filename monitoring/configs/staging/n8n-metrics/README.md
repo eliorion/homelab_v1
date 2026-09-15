@@ -134,8 +134,7 @@ kubectl -n n8n get cluster n8n-db     # CNPG first: n8n cannot start without it
 
 ## Overlays
 
-`staging/` only. There is no `base/` and no `production/` for this directory,
-and `clusters/production/` deploys no monitoring-configs Kustomization at all,
+`staging/` only. There is no `base/` for this directory,
 so the namespace matcher, the `job` name and the thresholds are hard-coded here.
 There are no Secrets in this directory, so it does not depend on the
 Kustomization's `decryption` block.
