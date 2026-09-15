@@ -1,30 +1,3 @@
-# The dev tier: preview-namespace guardrails (infrastructure/services/dev/README.md).
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: dev-platform
-  namespace: flux-system
-spec:
-  interval: 10m
-  retryInterval: 1m
-  timeout: 10m
-  dependsOn:
-    - name: infrastructure-services
-    - name: infra-kyverno
-    - name: infra-cilium-config
-    - name: infra-reflector
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  path: ./infrastructure/services/dev
-  prune: true
-  wait: true
-  # No sops file here yet. Keep this block: without it a future *.enc.yaml is applied as ciphertext, silently.
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
----
 # The e2e platform: one long-lived vcluster (infrastructure/services/dev/e2e-platform/README.md).
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

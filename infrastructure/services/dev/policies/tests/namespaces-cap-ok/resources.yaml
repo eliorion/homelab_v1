@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: preview-pr-12
-  labels:
-    preview.eliorion.fr/tier: preview
-    preview.eliorion.fr/pr: "12"
-    pod-security.kubernetes.io/enforce: baseline

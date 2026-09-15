@@ -15,8 +15,7 @@ platform and the fence around it; it never creates a run. Design and the run lif
 
 Flux Kustomization `e2e-platform` (`clusters/staging/dev.yaml`) applies this directory to the
 host, `timeout: 20m`, `wait: true`, after `infrastructure-controllers` (CNPG's HelmRepository),
-`infra-keda`, `infra-kyverno`, `infra-cilium-config` and `infra-reflector`. It is separate from
-`dev-platform`: `../kustomization.yaml` does not list this directory and must not.
+`infra-keda`, `infra-kyverno`, `infra-cilium-config` and `infra-reflector`.
 
 | Path | Applied to | What it does |
 |---|---|---|
