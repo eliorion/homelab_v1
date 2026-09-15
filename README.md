@@ -532,3 +532,4 @@ sections are the parts worth reading.
 | 12 | [Garage object storage](documentations/12-garage-object-storage.md) | Self hosted S3, and the postmortem of the outage it caused |
 | 13 | [AzuraCast load test](documentations/13-azuracast-load-test.md) | What a listener actually costs, and the two measurement traps avoided |
 | 18 | [Observability: logs, traces, CI](documentations/18-observability-lgtm.md) | Loki, Tempo and Alloy beside kube-prometheus-stack, Dagger CI in Grafana, and the gap analysis against a production-grade setup |
+| 19 | [The e2e platform](documentations/19-e2e-platform.md) | One long-lived vcluster shaped like staging, where each PR installs main, upgrades what it changed, and checks |

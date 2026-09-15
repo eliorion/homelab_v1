@@ -1,0 +1,111 @@
+# Host network boundary for the e2e platform. Deliberately NO default-deny NetworkPolicy:
+# NetworkPolicies are allow-unions, so any namespace-wide allow would cancel the chart
+# NetworkPolicies the vcluster syncs here. Deny rules win over every allow instead.
+# Rationale and the live proof: README.md.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: e2e-host-boundary
+  namespace: e2e-platform
+spec:
+  # Synced pods only; the control plane pod has its own policy below.
+  endpointSelector:
+    matchExpressions:
+      - key: vcluster.loft.sh/managed-by
+        operator: Exists
+  # Required: without it this deny-only policy would put every synced pod into default-deny.
+  enableDefaultDeny:
+    ingress: false
+    egress: false
+  egressDeny:
+    - toEntities: [world, host, remote-node, kube-apiserver, ingress, health, unmanaged]
+    - toEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: NotIn
+              values: [e2e-platform]
+  ingressDeny:
+    - fromEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: NotIn
+              values: [e2e-platform]
+---
+# Chart NetworkPolicies allow DNS on 53 and the API on 443/6443. Inside the vcluster, CoreDNS
+# listens on 1053 and the virtual API on 8443, and Cilium matches the port after DNAT.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: e2e-platform-dns-api
+  namespace: e2e-platform
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: vcluster.loft.sh/managed-by
+        operator: Exists
+  enableDefaultDeny:
+    ingress: false
+    egress: false
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s-app: vcluster-kube-dns
+      toPorts:
+        - ports:
+            - port: "1053"
+              protocol: ANY
+    - toEndpoints:
+        - matchLabels:
+            app: vcluster
+          matchExpressions:
+            - key: vcluster.loft.sh/managed-by
+              operator: DoesNotExist
+      toPorts:
+        - ports:
+            - port: "8443"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: e2e-vcluster-api
+  namespace: e2e-platform
+spec:
+  endpointSelector:
+    matchLabels:
+      app: vcluster
+    matchExpressions:
+      - key: vcluster.loft.sh/managed-by
+        operator: DoesNotExist
+  egress:
+    - toEntities: [kube-apiserver]
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+            - port: "443"
+              protocol: TCP
+    # Webhooks, the KEDA metrics APIService and CoreDNS run as synced pods here.
+    - toEndpoints:
+        - {}
+  ingress:
+    - fromEndpoints:
+        - {}
+      toPorts:
+        - ports:
+            - port: "8443"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: dagger
+            app.kubernetes.io/name: dagger-helm
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: flux-system
+            app: helm-controller
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: flux-system
+            app: kustomize-controller
+      toPorts:
+        - ports:
+            - port: "8443"
+              protocol: TCP

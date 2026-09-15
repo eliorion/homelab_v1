@@ -60,6 +60,10 @@ for the one cluster that runs previews. The previews themselves are created by t
 Dagger pipeline, not by Flux. Everything else is in
 [`dev/README.md`](dev/README.md).
 
+`dev/e2e-platform/` is **not** part of that kustomization: its own Flux Kustomization
+`e2e-platform` (same file) reconciles the long-lived e2e platform vcluster. See
+[`dev/e2e-platform/README.md`](dev/e2e-platform/README.md).
+
 ## Traps
 
 - **A component under `base/` does nothing until the overlay root lists it.**
@@ -70,8 +74,9 @@ Dagger pipeline, not by Flux. Everything else is in
   The `infrastructure-services` Kustomization runs with `prune: true`, so
   dropping a component from the list is not "stop managing it", it is "delete
   it from the cluster".
-- **Never list `dev/` in `staging/kustomization.yaml`.** `dev-platform` already owns
-  those objects; a second Kustomization would fight its prune.
+- **Never list `dev/` in `staging/kustomization.yaml`, nor `e2e-platform/` in
+  `dev/kustomization.yaml`.** `dev-platform` and `e2e-platform` already own those objects;
+  a second Kustomization would fight their prune.
 - **Render before committing.** `kubectl kustomize infrastructure/services/staging`
   is the check that the tier root, every overlay and every base still agree.
 

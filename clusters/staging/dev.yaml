@@ -24,3 +24,32 @@ spec:
     provider: sops
     secretRef:
       name: sops-age
+---
+# The e2e platform: one long-lived vcluster (infrastructure/services/dev/e2e-platform/README.md).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: e2e-platform
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  # vcluster, then KEDA + CNPG inside it, then e2e-platform-virtual; all health-checked.
+  timeout: 20m
+  dependsOn:
+    - name: infrastructure-controllers
+    - name: infra-kyverno
+    - name: infra-cilium-config
+    - name: infra-keda
+    - name: infra-reflector
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/services/dev/e2e-platform
+  prune: true
+  wait: true
+  # No sops file here yet. Keep this block: without it a future *.enc.yaml is applied as ciphertext, silently.
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

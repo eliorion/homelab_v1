@@ -1,0 +1,48 @@
+# Native admission inside the vcluster (no Kyverno there). Proven live: README.md.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: e2e-runner-scope
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["*"]
+        apiVersions: ["*"]
+        operations: ["CREATE", "UPDATE", "DELETE"]
+        # "*/*" covers resources and subresources, and may not be combined with "*".
+        resources: ["*/*"]
+  matchConditions:
+    - name: e2e-identities
+      expression: >-
+        request.userInfo.username in [
+          'system:serviceaccount:kube-system:e2e-runner',
+          'system:serviceaccount:e2e-system:e2e-reaper']
+  variables:
+    - name: runNs
+      expression: "'^e2e-[0-9]{1,6}-(asp|fbref|scraper)$'"
+    - name: name
+      expression: "request.operation == 'DELETE' ? oldObject.metadata.name : object.metadata.name"
+  validations:
+    - expression: >-
+        request.resource.resource == 'namespaces'
+          ? variables.name.matches(variables.runNs)
+          : (request.namespace != '' && request.namespace.matches(variables.runNs))
+      messageExpression: >-
+        'only run namespaces e2e-<pr>-<stack> and objects inside them may be written, not ' +
+        request.resource.resource + ' ' + request.namespace + '/' + variables.name
+    # Binding admin to anyone else (system:authenticated, another SA) would hand out the run namespace.
+    - expression: >-
+        request.resource.resource != 'rolebindings' || request.operation == 'DELETE' ||
+        (object.roleRef.kind == 'ClusterRole' && object.roleRef.name in ['admin', 'e2e-run-crds'] &&
+         size(object.subjects) == 1 && object.subjects[0].kind == 'ServiceAccount' &&
+         object.subjects[0].name == 'e2e-runner' && object.subjects[0].namespace == 'kube-system')
+      message: RoleBindings may only bind admin or e2e-run-crds to kube-system/e2e-runner
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: e2e-runner-scope
+spec:
+  policyName: e2e-runner-scope
+  validationActions: [Deny]

@@ -1,0 +1,28 @@
+# Applied INSIDE the vcluster by the Flux Kustomization e2e-platform-virtual (spec.kubeConfig).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespaces.yaml
+  - storageclass.yaml
+  - rbac.yaml
+  - admission.yaml
+  - reaper.yaml
+configMapGenerator:
+  # The staging CNPG Cluster specs, from Git. The e2e harness builds each run's databases from
+  # these, so staging and e2e cannot drift apart. kustomize-controller allows files outside the
+  # path; locally build with --load-restrictor LoadRestrictionsNone.
+  - name: e2e-db-templates
+    namespace: e2e-system
+    options:
+      # The harness reads it by name.
+      disableNameSuffixHash: true
+    files:
+      - asp.yaml=../../../../../apps/base/databases/asp/database.yaml
+      - asp-db-init.yaml=../../../../../apps/base/databases/asp/db-init-configmap.yaml
+      - fbref.yaml=../../../../../apps/base/databases/fbref/database.yaml
+      - scraper.yaml=../../../../../apps/base/databases/scraper/database.yaml
+  # Keep the hash suffix: it renames the ConfigMap on a script edit, which changes the CronJob spec.
+  - name: e2e-reaper-script
+    namespace: e2e-system
+    files:
+      - reaper.sh

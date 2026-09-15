@@ -1,0 +1,18 @@
+# The one host namespace behind the e2e platform vcluster (README.md).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: e2e-platform
+  labels:
+    eliorion.fr/tier: e2e
+    # The vcluster syncer creates plain pods here; baseline is what the charts need.
+    pod-security.kubernetes.io/enforce: baseline
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: e2e
+value: -1000
+preemptionPolicy: Never
+globalDefault: false
+description: e2e run workloads inside the platform vcluster; first to be preempted, never preempt.

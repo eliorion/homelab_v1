@@ -1,0 +1,62 @@
+# Backstop for cancelled or crashed runs: a finished run deletes its own namespaces.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: e2e-reaper
+  namespace: e2e-system
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app: e2e-reaper
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: e2e-reaper
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: reaper
+              # sh + kubectl; keep the kubectl minor within one of the vcluster's.
+              image: docker.io/alpine/k8s:1.36.4
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh", "/script/reaper.sh"]
+              env:
+                - name: HOME
+                  value: /tmp
+                # Longer than the CI job timeout (60 min), so a live run is never reaped.
+                - name: MAX_AGE_SECONDS
+                  value: "4500"
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 128Mi
+              volumeMounts:
+                - name: script
+                  mountPath: /script
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: script
+              configMap:
+                name: e2e-reaper-script
+            - name: tmp
+              emptyDir: {}

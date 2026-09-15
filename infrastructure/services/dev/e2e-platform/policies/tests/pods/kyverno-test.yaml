@@ -1,0 +1,24 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: pods
+policies:
+- ../../pods.yaml
+resources:
+- resources.yaml
+variables: ../values.yaml
+results:
+- isMutatingPolicy: true
+  kind: Pod
+  policy: e2e-pods
+  resources:
+  - e2e-platform/engine-x-e2e-12-asp-x-vcluster
+  patchedResources: patched.yaml
+  result: pass
+- isMutatingPolicy: true
+  kind: Pod
+  policy: e2e-pods
+  resources:
+  - e2e-platform/vcluster-0
+  - e2e-platform/keda-operator-x-keda-x-vcluster
+  result: skip

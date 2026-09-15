@@ -1,0 +1,39 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: services-pvcs
+policies:
+- ../../services-pvcs.yaml
+resources:
+- resources.yaml
+variables: ../values.yaml
+results:
+- isValidatingPolicy: true
+  kind: Service
+  policy: e2e-services
+  resources:
+  - e2e-platform/vcluster
+  - e2e-platform/web
+  result: pass
+- isValidatingPolicy: true
+  kind: Service
+  policy: e2e-services
+  resources:
+  - e2e-platform/lb-no-class
+  - e2e-platform/lb-wrong-name
+  - e2e-platform/nodeport
+  - e2e-platform/external-ips
+  result: fail
+- isValidatingPolicy: true
+  kind: PersistentVolumeClaim
+  policy: e2e-pvcs
+  resources:
+  - e2e-platform/data
+  result: pass
+- isValidatingPolicy: true
+  kind: PersistentVolumeClaim
+  policy: e2e-pvcs
+  resources:
+  - e2e-platform/data-ssd
+  - e2e-platform/data-default
+  result: fail

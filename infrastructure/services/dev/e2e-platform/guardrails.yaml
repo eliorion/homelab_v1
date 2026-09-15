@@ -1,0 +1,40 @@
+# Sized for the platform (control plane, CoreDNS, KEDA, CNPG operator) plus two concurrent
+# three-stack runs with their CNPG clusters. Numbers and how they were measured: README.md.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: e2e-quota
+  namespace: e2e-platform
+spec:
+  hard:
+    pods: "100"
+    requests.cpu: "7"
+    requests.memory: 12Gi
+    limits.memory: 40Gi
+    persistentvolumeclaims: "16"
+    requests.storage: 40Gi
+    ssd-single.storageclass.storage.k8s.io/requests.storage: 40Gi
+    ssd.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    hdd.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    services: "100"
+    services.loadbalancers: "1"
+    services.nodeports: "0"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: e2e-limits
+  namespace: e2e-platform
+spec:
+  limits:
+    - type: Container
+      default:
+        memory: 512Mi
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        memory: 2Gi
+    - type: PersistentVolumeClaim
+      max:
+        storage: 5Gi

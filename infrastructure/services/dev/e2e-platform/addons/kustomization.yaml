@@ -1,0 +1,61 @@
+# KEDA and CNPG inside the vcluster, from the SAME bases staging installs: one version bump
+# moves both. Only the delivery changes: HelmRelease objects here, workloads in the vcluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: e2e-platform
+resources:
+  - ../../../../controllers/base/keda
+  - ../../../../controllers/base/cnpg
+patches:
+  # Staging's Kustomizations own the host Namespaces and HelmRepositories.
+  - target:
+      kind: Namespace
+    patch: |
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: any
+  - target:
+      kind: HelmRepository
+    patch: |
+      $patch: delete
+      apiVersion: source.toolkit.fluxcd.io/v1
+      kind: HelmRepository
+      metadata:
+        name: any
+  - target:
+      kind: HelmRelease
+    patch: |
+      - op: add
+        path: /spec/kubeConfig
+        value:
+          secretRef:
+            name: vc-vcluster
+            key: config
+      - op: add
+        path: /spec/dependsOn
+        value:
+          - name: vcluster
+  # The release Secret defaults to the HelmRelease namespace, which does not exist in the vcluster.
+  - target:
+      kind: HelmRelease
+      name: keda
+    patch: |
+      - op: add
+        path: /spec/storageNamespace
+        value: keda
+  - target:
+      kind: HelmRelease
+      name: cnpg
+    patch: |
+      - op: add
+        path: /spec/storageNamespace
+        value: cnpg-system
+      # No PodMonitor CRD and no monitoring namespace inside the vcluster.
+      - op: replace
+        path: /spec/values/monitoring/podMonitorEnabled
+        value: false
+      - op: replace
+        path: /spec/values/monitoring/grafanaDashboard/create
+        value: false
