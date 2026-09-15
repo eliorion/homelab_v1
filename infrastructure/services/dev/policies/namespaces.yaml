@@ -1,0 +1,54 @@
+# The only barrier between preview-driver's cluster-wide namespace RBAC and every other namespace.
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: preview-namespaces
+spec:
+  validationActions: ["Deny"]
+  failurePolicy: Fail
+  evaluation:
+    background:
+      enabled: false
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE", "DELETE"]
+        resources: ["namespaces"]
+  # request.* only: the API server evaluates it, so a Kyverno outage never blocks other identities' namespace writes.
+  matchConditions:
+    - name: preview-identities
+      expression: >-
+        request.userInfo.username in [
+          'system:serviceaccount:dev-platform:preview-driver',
+          'system:serviceaccount:dev-platform:preview-reaper'
+        ]
+  variables:
+    - name: isReaper
+      expression: request.userInfo.username == 'system:serviceaccount:dev-platform:preview-reaper'
+    - name: labels
+      expression: object.metadata.?labels.orValue({})
+  validations:
+    - expression: request.name.matches('^preview-pr-[0-9]{1,6}$')
+      messageExpression: "'namespace ' + request.name + ' is not a preview namespace (preview-pr-<number>)'"
+    - expression: "!variables.isReaper || request.operation == 'DELETE'"
+      message: preview-reaper may only delete preview namespaces
+    - expression: >-
+        request.operation != 'CREATE' ||
+        (variables.labels[?'preview.eliorion.fr/tier'].orValue('') == 'preview' &&
+         request.name == 'preview-pr-' + variables.labels[?'preview.eliorion.fr/pr'].orValue(''))
+      message: a preview namespace needs labels preview.eliorion.fr/tier=preview and preview.eliorion.fr/pr=<its number>
+    - expression: >-
+        request.operation != 'CREATE' ||
+        variables.labels[?'pod-security.kubernetes.io/enforce'].orValue('baseline') in ['baseline', 'restricted']
+      message: pod-security.kubernetes.io/enforce must be baseline or restricted
+    - expression: >-
+        request.operation != 'UPDATE' ||
+        variables.labels == oldObject.metadata.?labels.orValue({})
+      message: preview namespace labels are immutable
+    - expression: >-
+        request.operation != 'CREATE' ||
+        dyn(resource.List('v1', 'namespaces', '').?items.orValue([])).filter(n,
+          n.metadata.name != request.name && n.metadata.name.matches('^preview-pr-[0-9]+$') &&
+          n.?status.?phase.orValue('Active') != 'Terminating').size() < 3
+      message: at most 3 previews may exist; wait for one to be reaped or delete one

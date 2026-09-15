@@ -5,7 +5,9 @@ for an application. Operators live one directory over in
 `infrastructure/controllers/`; this tier is what those operators and the plain
 Kubernetes API are used to run — Nexus, Keycloak, Renovate, the ARC runner
 scale sets, Cloudflare tunnels, the Garage gateway, etcd backup, the AI gateway,
-the Radar dashboard, and the CNPG databases that belong to them.
+the Radar dashboard, and the CNPG databases that belong to them. It also holds
+the `dev` tier (`dev/`): the guardrails for per-PR preview namespaces, reconciled on
+its own Flux path.
 
 Each component owns a directory with its own README. Start there; this file only
 covers the tier root.
@@ -23,6 +25,7 @@ kustomization is always safe to render without an age key.
 | `base/<component>/` | The shared manifests for one component. There is **no** kustomization at `base/` itself — nothing aggregates the components, so `base/` is never a Flux path. |
 | `staging/kustomization.yaml` | The tier root that Flux actually reconciles. It lists the component directories, one line each. |
 | `staging/<component>/kustomization.yaml` | Pulls in `../../base/<component>` and adds the overlay's own resources and patches. |
+| `dev/` | The `dev` tier: quota, network policy, RBAC and Kyverno policies for preview namespaces, plus the preview reaper. Not a component of `staging/`; see "The dev tier". |
 
 Flux reconciles this tier through the Kustomization `infrastructure-services` in
 `clusters/staging/infrastructure.yaml`: `path: ./infrastructure/services/staging`,
@@ -47,6 +50,16 @@ encoding a shared bucket layout that staging deliberately moved away from, was
 deleted on 2026-09-15 — see the open-work section of
 [`../../documentations/14-design-decisions.md`](../../documentations/14-design-decisions.md).
 
+### The dev tier
+
+`dev/` is a flat directory with its own `kustomization.yaml`, reconciled by the Flux
+Kustomization `dev-platform` in `clusters/staging/dev.yaml` (`interval: 10m`,
+`wait: true`, sops, `dependsOn` `infrastructure-services`, `infra-kyverno`,
+`infra-cilium-config`, `infra-reflector`). It has no `base/`/overlay split: it exists
+for the one cluster that runs previews. The previews themselves are created by the
+Dagger pipeline, not by Flux. Everything else is in
+[`dev/README.md`](dev/README.md).
+
 ## Traps
 
 - **A component under `base/` does nothing until the overlay root lists it.**
@@ -57,6 +70,8 @@ deleted on 2026-09-15 — see the open-work section of
   The `infrastructure-services` Kustomization runs with `prune: true`, so
   dropping a component from the list is not "stop managing it", it is "delete
   it from the cluster".
+- **Never list `dev/` in `staging/kustomization.yaml`.** `dev-platform` already owns
+  those objects; a second Kustomization would fight its prune.
 - **Render before committing.** `kubectl kustomize infrastructure/services/staging`
   is the check that the tier root, every overlay and every base still agree.
 

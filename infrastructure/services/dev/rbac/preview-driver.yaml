@@ -1,0 +1,45 @@
+# Cluster-wide CREATE only. Never add patch/delete here: Kyverno never sees kyverno/flux-system (README).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: preview-driver-namespaces
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: preview-driver-namespaces
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: preview-driver-namespaces
+subjects:
+  - kind: ServiceAccount
+    name: preview-driver
+    namespace: dev-platform
+---
+# Bound per preview namespace by policies/generate-rbac.yaml; no ClusterRoleBinding may reference it.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: preview-driver-namespaced
+rules:
+  # Through a RoleBinding this covers only the Namespace object the binding lives in.
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps", "secrets", "serviceaccounts", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["statefulsets", "deployments", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events", "endpoints", "resourcequotas", "limitranges"]
+    verbs: ["get", "list", "watch"]

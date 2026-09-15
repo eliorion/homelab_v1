@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+  namespace: preview-pr-12
+spec:
+  priorityClassName: dev-preview
+  priority: -1000
+  preemptionPolicy: Never
+  containers:
+    - name: app
+      image: nginx

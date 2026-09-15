@@ -1,0 +1,33 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: workloads
+policies:
+- ../../workloads.yaml
+resources:
+- resources.yaml
+variables: values.yaml
+clusterResources:
+- cluster.yaml
+results:
+- isValidatingPolicy: true
+  kind: Pod
+  policy: preview-workloads
+  resources:
+  - preview-pr-12/good
+  result: pass
+- isValidatingPolicy: true
+  kind: Pod
+  policy: preview-workloads
+  resources:
+  - preview-pr-13/no-guardrails
+  - preview-pr-12/host-network
+  - preview-pr-12/host-pid
+  - preview-pr-12/host-path
+  - preview-pr-12/privileged
+  - preview-pr-12/privileged-init
+  - preview-pr-12/node-name
+  - preview-pr-12/node-selector-hostname
+  - preview-pr-12/required-affinity
+  - preview-pr-12/wrong-priority
+  result: fail

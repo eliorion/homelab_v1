@@ -156,6 +156,29 @@ every policy, and the release record sits at ~92% of the 1 MiB Secret cap.
 
 **Reference.** [`infrastructure/controllers/base/kyverno/README.md`](../infrastructure/controllers/base/kyverno/README.md)
 
+### A `dev` tier of per-PR previews, fenced by generated guardrails
+
+**Why.** Each pull request gets a disposable namespace `preview-pr-<n>` holding a vcluster,
+at most three at once, running unreviewed code on the real cluster. Kyverno clones a
+ResourceQuota, a LimitRange and default-deny network policy (plus Cilium exceptions for
+DNS, Harbor and the vcluster API) from a template namespace, generates the namespace's
+RoleBindings, keeps both synchronized, and validates what lands there: no host access or
+node pinning, one tailnet LoadBalancer, `ssd-single` volumes, HTTPRoutes only for the PR's
+own hostname, and a priority that yields to everything else. It is the first default deny
+in the cluster.
+
+**Rejected.** Letting the vcluster chart own its RBAC: the driver would need RBAC write,
+which is escalation. A cluster-wide namespace delete for the driver, guarded by a Kyverno
+policy: Kyverno's webhook never sees `kube-system`, `kyverno` or `flux-system`, so patch and
+delete are granted per preview namespace instead, and the only cluster-wide write is create.
+
+**Cost.** Everything depends on Kyverno. Validation is `Fail` and scoped to previews, so an
+outage blocks preview writes; generation is always `Ignore`, so a pod rule refuses pods
+until the guardrails exist. The vcluster Role is a hand-copied chart render to redo on every
+bump, and the syncer runs as root, so previews run at PSA `baseline`.
+
+**Reference.** [`infrastructure/services/dev/README.md`](../infrastructure/services/dev/README.md)
+
 ---
 
 ## 2. Networking and exposure
@@ -790,6 +813,22 @@ an entire downstream branch.
 
 **Reference.** `clusters/staging/infrastructure.yaml`
 
+### Previews are created by the Dagger pipeline, not reconciled by Flux
+
+**Why.** A preview follows a PR's pushes and closes with it. The pipeline mints a
+short-lived token for one ServiceAccount, creates the namespace and installs the vcluster;
+Flux owns only the fence around it — policies, templates, RBAC — and a reaper that deletes
+previews after 24h or above the cap.
+
+**Rejected.** Committing a Flux object per PR to this repository.
+
+**Cost.** Git does not list the previews that exist; the cluster does
+(`kubectl get ns -l preview.eliorion.fr/tier=preview`). A pipeline that dies mid-deploy
+leaves a preview until the reaper runs, and any workflow on the default runner scale set
+can mint the driver token.
+
+**Reference.** [`infrastructure/services/dev/README.md`](../infrastructure/services/dev/README.md)
+
 ### `wait: true` on the narrow operator tiers and deliberately not on the wide ones
 
 **Why.** Gating a wide fan out tier on full health would let one sick workload block
@@ -943,6 +982,6 @@ Tracked, not hidden.
 | CI on this repository | No render check, no schema validation, no lint, no secret leak check on a pull request that Flux will apply within ten minutes | Not started |
 | Backups for the automation database | It is the only copy of every workflow and every stored credential | Unblocked: the Garage key is minted and encrypted, and the object store now sets the region that caused the 2026-08-10 outage. Enabling it is uncommenting four lines in `apps/staging/databases/n8n/kustomization.yaml` and confirming the bucket exists |
 | A dead man's switch | The watchdog alert is blackholed, so a dead monitoring stack is indistinguishable from a healthy cluster | Not started |
-| Network policy | Cilium is used as a datapath and not as a policy engine; there is no default deny anywhere | Not started |
+| Network policy | Cilium is used as a datapath, not as a policy engine, outside the preview namespaces; default deny exists only in `preview-*` (the `dev` tier) | Previews only |
 | Decide the fate of the second environment | It was wired but never deployed, had not been touched since June 2026, and still encoded a bucket layout that staging deliberately moved away from | Resolved 2026-09-15: the `production/` tree was deleted. The cluster is single-environment; non-production workloads go to an in-cluster `dev` tier (Phase 4). Rotating credentials shared with the deleted Secrets and archiving the production age key offline remain manual, see [§8](#one-repository-one-branch-one-cluster) |
 | Replicate snapshots to a second provider | A second offsite copy of the etcd snapshots, using the object storage account that already exists | Named as a deliberate future step |

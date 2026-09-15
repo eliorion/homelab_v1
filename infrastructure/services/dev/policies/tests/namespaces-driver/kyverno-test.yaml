@@ -1,0 +1,27 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: namespaces-driver
+policies:
+  - ../../namespaces.yaml
+resources:
+  - resources.yaml
+userinfo: userinfo.yaml
+results:
+  - isValidatingPolicy: true
+    kind: Namespace
+    policy: preview-namespaces
+    resources: [foo, preview-pr-1, preview-pr-2, preview-pr-3]
+    result: fail
+  - isValidatingPolicy: true
+    kind: Namespace
+    policy: preview-namespaces
+    operation: DELETE
+    resources: [asp]
+    result: fail
+  - isValidatingPolicy: true
+    kind: Namespace
+    policy: preview-namespaces
+    operation: DELETE
+    resources: [preview-pr-12]
+    result: pass

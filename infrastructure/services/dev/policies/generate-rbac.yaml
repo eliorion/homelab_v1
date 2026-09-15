@@ -1,0 +1,72 @@
+apiVersion: policies.kyverno.io/v1
+kind: GeneratingPolicy
+metadata:
+  name: preview-rbac
+spec:
+  evaluation:
+    generateExisting:
+      enabled: true
+    synchronize:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        # Keep UPDATE: with synchronize, an UPDATE these rules do not match DELETES every downstream (README).
+        operations: ["CREATE", "UPDATE"]
+        resources: ["namespaces"]
+    namespaceSelector:
+      matchLabels:
+        preview.eliorion.fr/tier: preview
+  matchConditions:
+    - name: preview-name
+      expression: request.name.matches('^preview-(pr-[0-9]{1,6}|canary)$')
+  variables:
+    - name: ns
+      expression: string(object.metadata.name)
+    - name: platform
+      expression: >-
+        [
+          {
+            "apiVersion": dyn("rbac.authorization.k8s.io/v1"),
+            "kind": dyn("RoleBinding"),
+            "metadata": dyn({"name": "vcluster", "namespace": variables.ns}),
+            "roleRef": dyn({"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": "preview-vcluster"}),
+            "subjects": dyn([{"kind": "ServiceAccount", "name": "vc-vcluster", "namespace": variables.ns}])
+          },
+          {
+            "apiVersion": dyn("rbac.authorization.k8s.io/v1"),
+            "kind": dyn("RoleBinding"),
+            "metadata": dyn({"name": "preview-reader", "namespace": variables.ns}),
+            "roleRef": dyn({"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": "preview-kubeconfig-reader"}),
+            "subjects": dyn([{"kind": "ServiceAccount", "name": "preview-reader", "namespace": "dev-platform"}])
+          },
+          {
+            "apiVersion": dyn("rbac.authorization.k8s.io/v1"),
+            "kind": dyn("RoleBinding"),
+            "metadata": dyn({"name": "dagger-devs-view", "namespace": variables.ns}),
+            "roleRef": dyn({"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": "view"}),
+            "subjects": dyn([{"apiGroup": "rbac.authorization.k8s.io", "kind": "Group", "name": "dagger-devs"}])
+          }
+        ]
+    # preview-canary (HL-5) gets neither: no driver writes, and the reaper never deletes it.
+    - name: writers
+      expression: >-
+        variables.ns == 'preview-canary' ? [] : [
+          {
+            "apiVersion": dyn("rbac.authorization.k8s.io/v1"),
+            "kind": dyn("RoleBinding"),
+            "metadata": dyn({"name": "preview-driver", "namespace": variables.ns}),
+            "roleRef": dyn({"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": "preview-driver-namespaced"}),
+            "subjects": dyn([{"kind": "ServiceAccount", "name": "preview-driver", "namespace": "dev-platform"}])
+          },
+          {
+            "apiVersion": dyn("rbac.authorization.k8s.io/v1"),
+            "kind": dyn("RoleBinding"),
+            "metadata": dyn({"name": "preview-reaper", "namespace": variables.ns}),
+            "roleRef": dyn({"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": "preview-reaper-delete"}),
+            "subjects": dyn([{"kind": "ServiceAccount", "name": "preview-reaper", "namespace": "dev-platform"}])
+          }
+        ]
+  generate:
+    - expression: generator.Apply(variables.ns, variables.platform + variables.writers)

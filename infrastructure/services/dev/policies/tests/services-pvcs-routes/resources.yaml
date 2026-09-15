@@ -1,0 +1,215 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vcluster
+  namespace: preview-pr-12
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    app: vcluster
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  allocateLoadBalancerNodePorts: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: preview-pr-12
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    app: vcluster
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lb-no-class
+  namespace: preview-pr-12
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    app: vcluster
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lb-wrong-name
+  namespace: preview-pr-12
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    app: vcluster
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeport
+  namespace: preview-pr-12
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    app: vcluster
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-ips
+  namespace: preview-pr-12
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    app: vcluster
+  externalIPs:
+  - 192.168.1.200
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data
+  namespace: preview-pr-12
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ssd-single
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-ssd
+  namespace: preview-pr-12
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ssd
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-hdd
+  namespace: preview-pr-12
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: hdd
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: app
+  namespace: preview-pr-12
+spec:
+  parentRefs:
+  - name: preview
+    namespace: dev-platform
+  rules:
+  - backendRefs:
+    - name: web
+      port: 80
+  hostnames:
+  - pr-12.preview.eliorion.fr
+  - pr-12-api.preview.eliorion.fr
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: other-pr
+  namespace: preview-pr-12
+spec:
+  parentRefs:
+  - name: preview
+    namespace: dev-platform
+  rules:
+  - backendRefs:
+    - name: web
+      port: 80
+  hostnames:
+  - pr-13.preview.eliorion.fr
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: no-hostnames
+  namespace: preview-pr-12
+spec:
+  parentRefs:
+  - name: preview
+    namespace: dev-platform
+  rules:
+  - backendRefs:
+    - name: web
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: foreign-host
+  namespace: preview-pr-12
+spec:
+  parentRefs:
+  - name: preview
+    namespace: dev-platform
+  rules:
+  - backendRefs:
+    - name: web
+      port: 80
+  hostnames:
+  - grafana.eliorion.fr
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wrong-parent
+  namespace: preview-pr-12
+spec:
+  parentRefs:
+  - name: internal
+    namespace: kube-system
+  rules:
+  - backendRefs:
+    - name: web
+      port: 80
+  hostnames:
+  - pr-12.preview.eliorion.fr
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cross-ns-backend
+  namespace: preview-pr-12
+spec:
+  parentRefs:
+  - name: preview
+    namespace: dev-platform
+  rules:
+  - backendRefs:
+    - name: keycloak
+      namespace: identity
+      port: 80
+  hostnames:
+  - pr-12.preview.eliorion.fr

@@ -1,0 +1,22 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: generate-rbac
+policies:
+  - ../../generate-rbac.yaml
+resources:
+  - resources.yaml
+variables: values.yaml
+results:
+  - isGeneratingPolicy: true
+    kind: Namespace
+    policy: preview-rbac
+    resources: [preview-pr-12]
+    generatedResource: generated-pr.yaml
+    result: pass
+  - isGeneratingPolicy: true
+    kind: Namespace
+    policy: preview-rbac
+    resources: [preview-canary]
+    generatedResource: generated-canary.yaml
+    result: pass

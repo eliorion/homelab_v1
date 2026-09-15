@@ -1,0 +1,32 @@
+apiVersion: policies.kyverno.io/v1
+kind: GeneratingPolicy
+metadata:
+  name: preview-guardrails
+spec:
+  evaluation:
+    generateExisting:
+      enabled: true
+    synchronize:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        # Keep UPDATE: with synchronize, an UPDATE these rules do not match DELETES every downstream (README).
+        operations: ["CREATE", "UPDATE"]
+        resources: ["namespaces"]
+    namespaceSelector:
+      matchLabels:
+        preview.eliorion.fr/tier: preview
+  matchConditions:
+    - name: preview-name
+      expression: request.name.matches('^preview-(pr-[0-9]{1,6}|canary)$')
+  # Clones every object of these kinds in preview-template; a kind not listed here is never cloned.
+  generate:
+    - expression: >-
+        generator.Apply(object.metadata.name, [
+          resource.List('v1', 'resourcequotas', 'preview-template'),
+          resource.List('v1', 'limitranges', 'preview-template'),
+          resource.List('networking.k8s.io/v1', 'networkpolicies', 'preview-template'),
+          resource.List('cilium.io/v2', 'ciliumnetworkpolicies', 'preview-template')
+        ])
