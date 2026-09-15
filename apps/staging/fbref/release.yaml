@@ -41,6 +41,11 @@ spec:
         annotations:
           tailscale.com/expose: "true"
           tailscale.com/hostname: fbref-admin-ui
+    otel:
+      enabled: true
+      # OTLP/HTTP base URL: the SDKs append /v1/traces; the chart's egress opens 4318 only.
+      endpoint: http://alloy-receiver.monitoring.svc.cluster.local:4318
+      environment: staging
     engine:
       # One process drives both sources (chart default is "fbref" alone).
       sites: "fbref,transfermarkt"
