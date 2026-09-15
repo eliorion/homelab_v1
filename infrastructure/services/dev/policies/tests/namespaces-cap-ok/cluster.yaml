@@ -1,0 +1,24 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: ClusterResource
+metadata:
+  name: cluster
+spec:
+  resources:
+    - apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: preview-pr-7
+    - apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: preview-pr-8
+      status:
+        phase: Terminating
+    - apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: preview-pr-9
+    - apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: preview-canary

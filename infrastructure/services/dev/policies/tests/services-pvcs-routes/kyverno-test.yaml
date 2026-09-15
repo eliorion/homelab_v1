@@ -1,0 +1,57 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: services-pvcs-routes
+policies:
+- ../../services-pvcs-routes.yaml
+resources:
+- resources.yaml
+variables: values.yaml
+clusterResources:
+- cluster.yaml
+results:
+- isValidatingPolicy: true
+  kind: Service
+  policy: preview-services
+  resources:
+  - preview-pr-12/vcluster
+  - preview-pr-12/web
+  result: pass
+- isValidatingPolicy: true
+  kind: Service
+  policy: preview-services
+  resources:
+  - preview-pr-12/lb-no-class
+  - preview-pr-12/lb-wrong-name
+  - preview-pr-12/nodeport
+  - preview-pr-12/external-ips
+  result: fail
+- isValidatingPolicy: true
+  kind: PersistentVolumeClaim
+  policy: preview-pvcs
+  resources:
+  - preview-pr-12/data
+  result: pass
+- isValidatingPolicy: true
+  kind: PersistentVolumeClaim
+  policy: preview-pvcs
+  resources:
+  - preview-pr-12/data-ssd
+  - preview-pr-12/data-hdd
+  result: fail
+- isValidatingPolicy: true
+  kind: HTTPRoute
+  policy: preview-httproutes
+  resources:
+  - preview-pr-12/app
+  result: pass
+- isValidatingPolicy: true
+  kind: HTTPRoute
+  policy: preview-httproutes
+  resources:
+  - preview-pr-12/other-pr
+  - preview-pr-12/no-hostnames
+  - preview-pr-12/foreign-host
+  - preview-pr-12/wrong-parent
+  - preview-pr-12/cross-ns-backend
+  result: fail

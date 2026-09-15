@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev-platform
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+# Clone sources for every preview namespace; its label must NOT be tier=preview (README).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: preview-template
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    preview.eliorion.fr/tier: template

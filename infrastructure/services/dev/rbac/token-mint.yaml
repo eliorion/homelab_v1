@@ -1,0 +1,29 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: preview-token-mint
+  namespace: dev-platform
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    resourceNames: ["preview-driver"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["kube-root-ca.crt"]
+    verbs: ["get"]
+---
+# Subject is the ARC default scale set's runner SA; renaming the scale set breaks this silently.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: preview-token-mint
+  namespace: dev-platform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: preview-token-mint
+subjects:
+  - kind: ServiceAccount
+    name: self-hosted-arc-gha-rs-no-permission
+    namespace: arc-runners

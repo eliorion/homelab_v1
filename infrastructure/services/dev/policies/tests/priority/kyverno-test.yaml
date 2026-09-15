@@ -1,0 +1,17 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: priority
+policies:
+- ../../priority.yaml
+resources:
+- resources.yaml
+variables: values.yaml
+results:
+- isMutatingPolicy: true
+  kind: Pod
+  policy: preview-priority
+  resources:
+  - preview-pr-12/app
+  patchedResources: patched.yaml
+  result: pass

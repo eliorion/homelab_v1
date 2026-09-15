@@ -1,0 +1,32 @@
+# Cluster-wide read only; delete comes from preview-reaper-delete, bound per preview namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: preview-reaper
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: preview-reaper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: preview-reaper
+subjects:
+  - kind: ServiceAccount
+    name: preview-reaper
+    namespace: dev-platform
+---
+# Bound per preview namespace by policies/generate-rbac.yaml; a ClusterRoleBinding to it could delete flux-system.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: preview-reaper-delete
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["delete"]
