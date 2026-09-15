@@ -42,6 +42,25 @@ loki.process "pods" {
 		values = ["filename"]
 	}
 
+	// Trace ids from JSON app logs: structured metadata, never labels (a stream per trace).
+	stage.match {
+		selector = `{job="kubernetes-pods"} |= "\"trace_id\": \""`
+
+		stage.json {
+			expressions = {
+				trace_id = "",
+				span_id  = "",
+			}
+		}
+
+		stage.structured_metadata {
+			values = {
+				trace_id = "",
+				span_id  = "",
+			}
+		}
+	}
+
 	forward_to = [loki.write.default.receiver]
 }
 
