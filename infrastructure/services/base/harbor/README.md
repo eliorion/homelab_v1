@@ -146,6 +146,23 @@ back through staging the same way.
 because nothing pins this certificate's public key; a client that did would break at each
 renewal.
 
+## The e2e project
+
+A normal (not proxy-cache) **private** project for the asp e2e platform: proxy-cache projects
+refuse pushes. Created by hand, like the proxy projects:
+
+- project `e2e`, private, quota 50Gi;
+- tag retention: keep images pushed in the last 7 days **or** the 5 most recent per repository,
+  plus a garbage-collection schedule (retention alone frees no disk);
+- robot `e2e+ci`: push + pull on `e2e` only, with an expiry — stored in GitHub as
+  `HARBOR_E2E_ROBOT` / `HARBOR_E2E_PUSH_TOKEN`;
+- robot `e2e+pull`: pull on `e2e` only — sops-encrypted into
+  `infrastructure/services/dev/e2e-platform/harbor-e2e-pull.enc.yaml`.
+
+`e2e+ci` needs pull as well as push: a push checks for existing blobs first.
+[`infrastructure/services/dev/e2e-platform/README.md`](../../dev/e2e-platform/README.md#registry)
+explains what goes into the project.
+
 ## Proxy projects are runtime state, not manifests
 
 A chart cannot express them. After Harbor is up, create the registry endpoints and proxy-cache

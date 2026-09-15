@@ -1,6 +1,6 @@
 # Root SOPS config. Recipients selected by path (first match wins).
 # Encrypted manifests use the *.enc.yaml convention and live only in the
-# staging/ overlays -- never in base/.
+# staging/ overlays or the dev tier -- never in base/.
 #   staging key:    age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
 creation_rules:
   # talhelper cluster secret (whole file is sensitive -> encrypt all values).
@@ -8,5 +8,10 @@ creation_rules:
     age: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
 
   - path_regex: (^|/)staging/.*\.enc\.ya?ml$
+    encrypted_regex: ^(data|stringData)$
+    age: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+
+  # The dev tier (infrastructure/services/dev) has no staging/ overlay; same cluster, same key.
+  - path_regex: (^|/)infrastructure/services/dev/.*\.enc\.ya?ml$
     encrypted_regex: ^(data|stringData)$
     age: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
