@@ -64,11 +64,22 @@ spec:
         - name: harbor-ca
           configMap:
             name: dagger-harbor-ca
+        # The chart's own ConfigMap, rendered from configJson below. Name follows
+        # fullnameOverride: dagger.
+        - name: engine-config
+          configMap:
+            name: dagger-engine-config
       volumeMounts:
         # engine.json `ca` path; a missing file is a total pull outage. See README.
         - name: harbor-ca
           mountPath: /etc/dagger/harbor-ca.pem
           subPath: harbor-ca.pem
+          readOnly: true
+        # THE path the engine actually reads ($HOME/.config/dagger/engine.json, HOME=/root).
+        # The chart's own mount at /etc/dagger/engine.json is read by nothing. See README.
+        - name: engine-config
+          mountPath: /root/.config/dagger/engine.json
+          subPath: engine.json
           readOnly: true
       affinity:
         nodeAffinity:

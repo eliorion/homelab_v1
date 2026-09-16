@@ -7,7 +7,7 @@
     "minFreeSpace": "15%"
   },
   "security": {
-    "insecureRootCapabilities": true
+    "insecureRootCapabilities": false
   },
   "registries": {
     "docker.io": {
