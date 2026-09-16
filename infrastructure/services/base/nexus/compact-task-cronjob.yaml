@@ -14,6 +14,12 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
+      # Drop a finished run after a day. A failed Job is otherwise kept until a
+      # newer failure displaces it (failedJobsHistoryLimit), and KubeJobFailed
+      # fires for as long as it exists: failures from August 2026 were still
+      # alerting weeks later, after every run since had succeeded. A day is long enough
+      # for the 15m alert to fire and be read; a repeat failure re-fires it.
+      ttlSecondsAfterFinished: 86400
       backoffLimit: 3
       activeDeadlineSeconds: 300
       template:
