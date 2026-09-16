@@ -146,12 +146,20 @@ applied either. `insecureRootCapabilities: true` was equally inert, which is why
 CI green, and the nested-k3s spike that once needed it is gone (asp retired the k3d e2e
 legs).
 
-After changing anything in `config/engine.json`, verify it actually took:
+After changing anything in `config/engine.json`, verify it actually took — **with the Harbor
+log, not the cache API**:
 
 ```bash
-dagger core engine local-cache max-used-space        # must match the file, not 9.4e+10
+# the proof: an uncached pull must appear as /v2/dockerhub-proxy/... from the engine's pod IP
+dagger -m core api call container from --address=docker.io/library/python:3.12 id
 kubectl logs -n registry <harbor-nginx-pod> --since=5m | grep <engine pod IP>
 ```
+
+`dagger core engine local-cache max-used-space` is NOT that proof: with the file demonstrably
+live (mirrors working) it still reports `9.4e+10` / `1e+10` / `2.5e+10` for
+maxUsedSpace/reservedSpace/minFreeSpace, the same numbers it reported while the file was
+inert. Treat those as the engine's effective policy, not as an echo of the file; the volume
+size is what actually bounds the cache here.
 
 ## Cache sizing
 
