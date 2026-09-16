@@ -31,7 +31,10 @@ spec:
     # `runs-on: self-hosted-arc-xl` (CI_RUNNER_XL var) targets this scale set.
     # Must stay distinct from the default pool's name.
     runnerScaleSetName: self-hosted-arc-xl
-    minRunners: 2
+    # BREAK-GLASS ONLY since asp #346 moved the e2e gate to the dev-platform vcluster: the k3d
+    # legs run solely from a manual e2e-tests.yaml dispatch, so warm runners would idle forever.
+    # Scaled to zero, a dispatch pays one pod start (~30s) instead.
+    minRunners: 0
     maxRunners: 4
     # Manual dind template, NOT containerMode: dind — that one accepts no extra
     # dockerd flags, so it cannot pass --insecure-registry (see README).
