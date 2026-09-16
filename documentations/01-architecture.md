@@ -21,7 +21,7 @@ clusters/
     flux-system/             owned by Flux, do not edit
     sources.yaml             GitRepository objects for the external app charts
     infrastructure.yaml      12 Kustomizations, operators and platform services
-    apps.yaml                databases, db-migrations, apps
+    apps.yaml                databases, apps
     lab.yaml                 the lab tier
     monitoring.yaml          monitoring controllers and configs
 
@@ -85,8 +85,7 @@ flowchart LR
 
     plugin --> db["databases"]
     refl --> db
-    db --> mig["db-migrations<br/>force: true"]
-    mig --> apps["apps"]
+    db --> apps["apps"]
     db --> lab["lab"]
     refl --> lab
 
@@ -109,7 +108,7 @@ applied until that operator is genuinely Ready.
 | `infrastructure-services` to `infra-keycloak-realm` | the realm import Job authenticates with a Secret the operator generates |
 | `infra-cilium` to `infra-cilium-config` | the IP pool and Gateway objects need CRDs the chart installs |
 | `infra-reflector` to `databases` and `lab` | one central image pull secret is mirrored into several namespaces and must exist before any of them pulls a private image |
-| `databases` to `db-migrations` to `apps` | schema migrations land before new application images roll out; a failed migration Job means the apps tier never rolls |
+| `databases` to `apps` | no app reconciles against a CNPG cluster that is not Ready. Schema migrations are not a Flux tier: the asp, fbref and scraper charts each run Flyway as a Helm `pre-install,pre-upgrade` hook, so a release's schema lands before its Deployments roll and a failed migration fails that upgrade |
 
 ### Settings that carry meaning
 

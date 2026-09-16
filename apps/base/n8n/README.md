@@ -26,8 +26,7 @@ Base (`apps/base/n8n/`), listed by `kustomization.yaml` in this order:
   `# renovate:` line above it), container port `5678` named `http`. Postgres
   connection details come from the CNPG-generated `n8n-db-app` Secret
   (`host`, `port`, `dbname`, `username`, `password`) with `DB_TYPE:
-  postgresdb` — the same `secretKeyRef` idiom the Flyway migration Jobs in
-  `apps/staging/databases/db-migrations/` use; `envFrom` pulls the
+  postgresdb`; `envFrom` pulls the
   `n8n-secrets` Secret and the `n8n-config`
   ConfigMap, both from the staging overlay. Startup, readiness and liveness
   probes all hit `/healthz` on the `http` port. Requests `200m` CPU / `512Mi`
@@ -61,15 +60,15 @@ Staging overlay (`apps/staging/n8n/`):
 
 Flux: `apps/staging/kustomization.yaml` lists `n8n/`, and the `apps` Flux
 Kustomization in `clusters/staging/apps.yaml` reconciles `./apps/staging` with
-`prune: true` and `decryption.provider: sops`. It depends on `db-migrations`,
-which depends on `databases` (`wait: true`) — so a broken `n8n-db` stalls the
+`prune: true` and `decryption.provider: sops`. It depends on `databases`
+(`wait: true`) — so a broken `n8n-db` stalls the
 whole app chain, not just n8n.
 
 Not in this directory but part of the component:
 
 - `apps/base/databases/n8n/` + `apps/staging/databases/n8n/` — the `n8n`
   Namespace and the CNPG `Cluster` `n8n-db`, reconciled first by the
-  `databases` Kustomization. There is no `db-migrations` entry for `n8n-db`:
+  `databases` Kustomization. There is no Flyway migration for `n8n-db`:
   n8n runs its own TypeORM migrations on boot.
 - `monitoring/configs/staging/n8n-metrics/` — ServiceMonitor scraping
   `/metrics` on the `http` port every 60s, plus the `N8nDown` and
@@ -219,7 +218,7 @@ from datacenter IP ranges.
 kubectl kustomize apps/staging                  # must build
 grep -L ENC apps/staging/n8n/*.enc.yaml         # MUST print nothing
 
-flux get kustomizations                         # databases → db-migrations → apps Ready
+flux get kustomizations                         # databases → apps Ready
 kubectl -n n8n get cluster n8n-db               # CNPG Ready first
 kubectl -n n8n get pods,pvc,svc,ingress
 kubectl -n n8n logs deploy/n8n | head -50       # schema migrations on first boot

@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 # Explicit list so the `apps` Flux Kustomization does NOT pick up databases/
-# (owned by the `databases` and `db-migrations` Flux Kustomizations).
+# (owned by the `databases` Flux Kustomization).
 resources:
   - asp/
   - audiobookshelf/

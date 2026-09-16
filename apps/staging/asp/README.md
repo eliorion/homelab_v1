@@ -39,9 +39,9 @@ Values set here:
 
 Flux applies this through the `apps` Kustomization in
 [`../../../clusters/staging/apps.yaml`](../../../clusters/staging/apps.yaml): `path: ./apps/staging`,
-`interval: 1m0s`, `prune: true`, SOPS decryption, `dependsOn: db-migrations`. That chain is
-`databases` → `db-migrations` → `apps`, so the schema is migrated before new app images roll
-out, and `databases` itself `dependsOn` `infra-cnpg-plugin` and `infra-reflector`.
+`interval: 1m0s`, `prune: true`, SOPS decryption, `dependsOn: databases`, and `databases`
+itself `dependsOn` `infra-cnpg-plugin` and `infra-reflector`. The schema is migrated by the
+chart's own `asp-schema-migrate` Helm `pre-install,pre-upgrade` hook, before new app images roll out.
 `apps/staging/kustomization.yaml` lists `asp/` explicitly.
 
 The chart is not in this repository. GitRepository `asp`
@@ -126,7 +126,7 @@ queue. See [`../scraper/README.md`](../scraper/README.md).
 
 ```sh
 kubectl kustomize apps/staging/asp          # render check before commit
-flux get kustomizations | grep -E 'apps|db-migrations|databases'
+flux get kustomizations | grep -E 'apps|databases'
 flux get helmreleases -n asp
 flux reconcile helmrelease asp -n asp --with-source
 kubectl -n asp get pods

@@ -8,8 +8,8 @@ resources:
   # Backups are OFF. Uncomment these three AND the cluster-backup-patch entry
   # under `patches:` together, and only with a working R2 token in place: with
   # placeholder credentials the barman WAL archiver fails and degrades the
-  # cluster, and `databases` reconciles with wait:true gating db-migrations ->
-  # apps, so that stalls the whole app tier. See README.md.
+  # cluster, and `databases` reconciles with wait:true gating apps, so that
+  # stalls the whole app tier. See README.md.
   # - r2-backup-credentials.enc.yaml
   # - objectstore.yaml
   # - scheduledbackup.yaml

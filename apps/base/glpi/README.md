@@ -13,7 +13,7 @@ migrated; see
 ## How it is wired
 
 The Flux `apps` Kustomization (`clusters/staging/apps.yaml`, `path:
-./apps/staging`, `prune: true`, `dependsOn: db-migrations`, SOPS decryption)
+./apps/staging`, `prune: true`, `dependsOn: databases`, SOPS decryption)
 builds `apps/staging/kustomization.yaml`, which lists `glpi/` explicitly. That
 overlay renders nothing today, so Flux applies no GLPI object.
 

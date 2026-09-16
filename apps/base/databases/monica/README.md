@@ -28,13 +28,13 @@ R2 credential are commented out of `kustomization.yaml`.
 ## Why it is like this
 
 **The `monica` Namespace ships from the databases tier, not from `apps/base/monica`.**
-`clusters/staging/apps.yaml` orders `databases` → `db-migrations` → `apps`, each
-upstream link carrying `wait: true`, so the namespace and the Cluster are Ready
+`clusters/staging/apps.yaml` orders `databases` → `apps`, with `wait: true` on
+`databases`, so the namespace and the Cluster are Ready
 before the HelmRelease is ever applied. This is the `n8n` and `nextcloud`
 arrangement verbatim. The HelmRelease still sets `install.createNamespace: true`
 as belt-and-braces, which is a no-op against an existing namespace.
 
-**No `db-migrations` entry.** Monica owns its own schema: the v5 image's
+**No Flyway migration.** Monica owns its own schema: the v5 image's
 entrypoint runs `php artisan waitfordb` and then `artisan monica:setup --force`
 on every start. A Flyway job here would fight it. Same reasoning as
 `apps/base/databases/nextcloud/`.
@@ -50,8 +50,8 @@ recovered from an archive, so the archive prefix is the plain cluster name.
 
 - **Do not uncomment the backup entries until the R2 token exists.** With
   placeholder credentials the barman WAL archiver fails, which degrades the
-  cluster; `databases` reconciles with `wait: true` and gates `db-migrations` →
-  `apps`, so a bad credential here stalls the **whole app tier** — asp, fbref,
+  cluster; `databases` reconciles with `wait: true` and gates `apps`, so a bad
+  credential here stalls the **whole app tier** — asp, fbref,
   nextcloud, scraper included, not just Monica. The four entries
   (`r2-backup-credentials.enc.yaml`, `objectstore.yaml`, `scheduledbackup.yaml`
   and the `cluster-backup-patch.yaml` patch) must be uncommented together.
@@ -66,9 +66,8 @@ recovered from an archive, so the archive prefix is the plain cluster name.
   and changing `serverName` orphans the existing archive.
 - **The R2 token must be scoped to `monica-cnpg-staging` only.** One bucket and
   one credential per cluster is the repo rule.
-- **`imageName` is not managed by Renovate.** `renovate.json` scopes the
-  kubernetes manager to `/apps/.+/db-migrations/.+\.yaml$/`, so the Postgres
-  image pin here is bumped by hand.
+- **`imageName` is not managed by Renovate.** `renovate.json` does not enable
+  the kubernetes manager, so the Postgres image pin here is bumped by hand.
 
 ## Operating it
 

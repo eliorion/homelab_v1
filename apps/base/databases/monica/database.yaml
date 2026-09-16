@@ -25,7 +25,7 @@ spec:
     initdb:
       database: monica
       owner: app
-      # No postInit and no db-migrations entry: Monica runs its own Laravel
+      # No postInit and no Flyway migration: Monica runs its own Laravel
       # migrations on boot (`artisan monica:setup --force`). See README.md.
 
   storage:

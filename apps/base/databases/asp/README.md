@@ -8,7 +8,7 @@ bootstrap schema; the environment overlays add the barman-cloud backup wiring
 (ObjectStore, ScheduledBackup, SOPS-encrypted R2 credentials) and, in staging,
 the Longhorn storage class and the reflector permission that lets other
 namespaces read the generated connection secret. The cluster is the first link
-in the app chain: `databases` → `db-migrations` (Flyway) → `apps`.
+in the app chain: `databases` → `apps`, where the asp chart's Flyway hook migrates it.
 
 ## How it is wired
 
@@ -38,8 +38,8 @@ Flux applies this through `clusters/staging/apps.yaml`: the Kustomization
 `databases` reconciles `./apps/staging/databases` (whose kustomization lists
 `asp/`), `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, decrypts with
 SOPS and uses `wait: true`, so it is Ready only when the CNPG Cluster reports
-Ready. `db-migrations` depends on `databases` (it needs `asp-db` and the
-generated `asp-db-app` secret), `apps` depends on `db-migrations`, and
+Ready. `apps` depends on `databases` (the asp chart's migration hook needs
+`asp-db` and the generated `asp-db-app` secret), and
 `clusters/staging/lab.yaml` also depends on `databases`.
 
 ## Why it is like this
@@ -62,8 +62,8 @@ postgres-superuser-secret`, `monitoring.enablePodMonitor: true`, and a
 here as the record of what was considered, since none of them is set.
 
 `imageName` pins the PostgreSQL image to the version the operator deployed. It is
-bumped by hand: `renovate.json` scopes the kubernetes manager to
-`/apps/.+/db-migrations/.+\.yaml$/`, so Renovate never reads this file.
+bumped by hand: `renovate.json` does not enable the kubernetes manager, so
+Renovate never reads this file.
 
 **`createrole` on the `app` role.** Flyway migrations V6 (`webapp_ro`) and V8
 (`grafana_ro`) run `CREATE ROLE` while connected as `app`, which therefore needs
@@ -127,7 +127,7 @@ the `-ca` / `-server` / `-replication` secrets are never copied out of `asp`.
 The per-namespace `ghcr-pull-secret` was likewise dropped: the central reflector
 source (`infrastructure/controllers/staging/reflector`) mirrors it into `asp`,
 and the `databases` Kustomization `dependsOn` `infra-reflector` so it exists
-before the db-migration Job pulls.
+before the chart's migration hook pulls.
 
 **Recovery history.** On 2026-06-11 the HA-expansion storm reformatted the
 Longhorn volumes (doc 07 troubleshooting) and `asp-db` was pointed at a
@@ -178,8 +178,8 @@ for later.
 - `db-init-configmap.yaml` is ConfigMap *content*: the `--` lines inside
   `init.sql` are data, not YAML comments, and `postInitApplicationSQLRefs` is
   consumed only during the `initdb` bootstrap. Editing it changes nothing on an
-  already-bootstrapped cluster — schema changes go through Flyway in
-  `apps/staging/databases/db-migrations/`.
+  already-bootstrapped cluster — schema changes go through Flyway, run by the
+  asp chart's `asp-schema-migrate` hook.
 - `SET ROLE app` at the top of `init.sql`, and the `GRANT` /
   `ALTER DEFAULT PRIVILEGES` block at the bottom, are what keep the schema
   usable by `app`. Dropping either reproduces `must be owner of table`.

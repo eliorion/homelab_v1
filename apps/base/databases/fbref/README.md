@@ -66,10 +66,9 @@ Flux: the `databases` Kustomization in
 decryption. It depends on `infra-cnpg-plugin` (the barman-cloud plugin, which
 owns the `ObjectStore` CRD) and on `infra-reflector` (the central
 `ghcr-pull-secret` source in `infrastructure/controllers/staging/reflector`,
-mirrored into this namespace). The schema is then applied by the separate
-`db-migrations` Kustomization
-(`apps/staging/databases/db-migrations/fbref/`), which gates the `apps`
-Kustomization on the Flyway Job completing.
+mirrored into this namespace). The schema is then applied by the fbref chart
+under `apps`, whose `fbref-schema-migrate` Flyway Job runs as a
+Helm `pre-install,pre-upgrade` hook before any Deployment of the release rolls.
 
 ## Why it is like this
 
@@ -96,8 +95,8 @@ replica cost nothing; unbounded bloat on that primary costs the cluster. The
 price is replica lag, bounded by this value and paid only during a conflict;
 the longest observed sync query was 21.4s.
 
-**No `postInit` bootstrap.** The schema is owned by Flyway (the
-`fbref-db-migrations` Job, gated ahead of the apps tier), mirroring asp. A fresh
+**No `postInit` bootstrap.** The schema is owned by Flyway (the chart's
+`fbref-schema-migrate` hook Job), mirroring asp. A fresh
 cluster comes up empty and the Job applies V1 onward; the pre-existing cluster
 is baselined at 0 and healed by V2/V3 (which drop the stale `kind` CHECK and add
 `worker_control`).

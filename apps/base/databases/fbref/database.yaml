@@ -29,7 +29,7 @@ spec:
     initdb:
       database: fbref
       owner: app
-      # Schema is owned by Flyway (fbref-db-migrations Job) — no postInit here.
+      # Schema is owned by Flyway (the chart's fbref-schema-migrate hook) — no postInit here.
 
   # Read-only roles: Flyway creates them NOLOGIN, CNPG flips them to LOGIN with
   # the password from the basic-auth Secret in the staging overlay.

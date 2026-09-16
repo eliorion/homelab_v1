@@ -100,23 +100,19 @@ The release ordering is databases → migrations → applications:
 | name | path | interval | timeout | dependsOn | flags |
 | --- | --- | --- | --- | --- | --- |
 | `databases` | `apps/staging/databases` | 1m0s | 5m | `infra-cnpg-plugin`, `infra-reflector` | wait, sops |
-| `db-migrations` | `apps/staging/databases/db-migrations` | 1m0s | 5m | `databases` | force, wait |
-| `apps` | `apps/staging` | 1m0s | 5m | `db-migrations` | sops |
+| `apps` | `apps/staging` | 1m0s | 5m | `databases` | sops |
 
 - `databases` brings up the CNPG clusters and their secrets. `apps/staging/databases`
   currently lists `asp/`, `fbref/`, `n8n/` and `scraper/`. `wait: true` means Ready
   only once the CNPG `Cluster` objects report Ready.
-- `db-migrations` runs the Flyway Jobs (`asp/`, `fbref/`, `scraper/`). It depends on
-  `databases` because each Job reads its connection details from the CNPG-generated
-  `<name>-db-app` Secret and pulls its image with `ghcr-pull-secret` — neither exists
-  until `databases` is Ready. `wait: true` makes the Kustomization Ready only when the
-  Jobs **complete**; a failed Job is NotReady, which is what stops `apps` from rolling
-  out.
 - `apps` applies `apps/staging`, whose `kustomization.yaml` lists `asp/`,
   `audiobookshelf/`, `azuracast/`, `fbref/`, `glpi/`, `linkding/`, `n8n/`, `scraper/`.
 
-The net effect on a release: running pods keep their previous image tags while the
-migration Job runs, and the new tags only apply once the Job has completed.
+Schema migrations are not a Flux tier. The asp, fbref and scraper charts each run
+Flyway as a Helm `pre-install,pre-upgrade` hook Job (`<project>-schema-migrate`), reading the
+CNPG-generated `<name>-db-app` Secret: Helm runs it to completion before any Deployment
+of that release rolls, and a failed migration fails the upgrade, which the HelmRelease's
+remediation rolls back.
 
 Both `databases` and `lab` depend on `infra-reflector`, which gates the whole
 application chain on the central `ghcr-pull-secret` having been mirrored — no namespace
@@ -245,8 +241,7 @@ flowchart TD
 
     plugin --> db["databases"]
     refl --> db
-    db --> mig["db-migrations"]
-    mig --> apps["apps"]
+    db --> apps["apps"]
     db --> lab["lab"]
     refl --> lab
 
@@ -293,19 +288,14 @@ when a human bumps a chart version; application and service tiers run at `1m0s`.
   `sops-age` Secret, created by hand once per cluster and never committed.
 
 - **`force: true` on exactly three Kustomizations, and all need it.** A Job is
-  immutable. `db-migrations` cannot pick up an image-tag bump, and
-  `infra-keycloak-realm` and `infra-harbor-config` cannot pick up a config or script edit
-  (which changes the generated ConfigMap hash, which changes the Job spec), without a delete
-  and recreate.
+  immutable. `infra-keycloak-realm`, `infra-harbor-config` and `infra-seaweedfs-config`
+  cannot pick up a config or script edit (which changes the generated ConfigMap hash, which
+  changes the Job spec), without a delete and recreate.
 
 - **`timeout: 10m` on `infra-keycloak-realm` must stay above the Job's own wait.**
   `infrastructure/services/base/keycloak/realm/job.yaml` sets
   `KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 300s`; the Job spends up to five minutes waiting
   for Keycloak to come up before it does any work.
-
-- **`timeout: 5m` on `db-migrations` must stay above `backoffLimit(3) × migration
-  runtime`.** The Flyway Jobs under `apps/staging/databases/db-migrations/*/` are all
-  `backoffLimit: 3`.
 
 - **`prune: true` is set on every Kustomization here.** Deleting a file from the
   repository deletes the live object. This is what makes git the source of truth, and

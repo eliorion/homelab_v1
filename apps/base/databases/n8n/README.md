@@ -54,7 +54,7 @@ Flux: the `databases` Kustomization in
 `./apps/staging/databases` (which lists `n8n/`) with `wait: true` and SOPS
 decryption, after `infra-cnpg-plugin` (the barman-cloud plugin, which owns the
 `ObjectStore` CRD) and `infra-reflector`. There is **no**
-`db-migrations` entry for this cluster. The n8n application itself is a separate
+Flyway migration for this cluster. The n8n application itself is a separate
 tier (`apps/base/n8n/` + `apps/staging/n8n/`, applied by the `apps`
 Kustomization) and is documented in
 [`documentations/10-n8n-automation.md`](../../../../documentations/10-n8n-automation.md).
@@ -70,7 +70,7 @@ reconciles first, so `apps/base/n8n` lands into a namespace that already exists.
 when the replica is unavailable so they never block. This is a homelab pair,
 not real HA worth protecting a write path for.
 
-**No Flyway, no `db-migrations` entry.** n8n runs its own TypeORM migrations on
+**No Flyway.** n8n runs its own TypeORM migrations on
 every boot. A fresh cluster comes up empty and the first n8n pod creates the
 whole schema — watch the startup logs.
 
@@ -128,13 +128,13 @@ applied and must be `sops -e -i`-encrypted before it is committed; the
 - Uncomment the backup resources and `cluster-backup-patch.yaml` **together**,
   and only with a working Garage key in place. With placeholder credentials the
   barman WAL archiver fails, which degrades the CNPG cluster; `databases`
-  reconciles with `wait: true` and gates `db-migrations` → `apps`, so a broken
+  reconciles with `wait: true` and gates `apps`, so a broken
   `n8n-db` stalls the whole app tier, not just n8n.
 - The ObjectStore must not set `encryption:`. Garage supports SSE-C only, not
   SSE-S3/AES256, and AES256 would fail every WAL and base upload.
 - `AWS_REGION` and `AWS_DEFAULT_REGION` must both stay `garage`. This archive is
   empty, so a wrong or missing region fails immediately on the first WAL.
-- Do not add a `db-migrations` entry or a `postInit` bootstrap for this cluster:
+- Do not add a Flyway migration or a `postInit` bootstrap for this cluster:
   n8n owns its own schema.
 - The `ScheduledBackup` schedule is a 6-field CNPG cron, not the 5-field Unix
   form.

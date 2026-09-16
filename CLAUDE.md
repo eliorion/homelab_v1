@@ -78,8 +78,8 @@ Dagger CI telemetry).
 - Secrets: SOPS-encrypted (`*.enc.yaml`, age key, see `.sops.yaml`). Never
   commit plaintext secrets. No `.enc.yaml` lives under a `base/` path.
 - Chart versions are pinned and Renovate bumps them. Container image tags under
-  `apps/` are **not** — `renovate.json` scopes the kubernetes manager to
-  `/apps/.+/db-migrations/.+\.yaml$/`, so every other image pin is manual. The
+  `apps/` are **not** — `renovate.json` does not enable the kubernetes manager,
+  so every image pin there is manual. The
   two ARC charts (`gha-runner-scale-set-controller` and `gha-runner-scale-set`)
   must stay on the same version.
 - Node config is **talhelper**-managed: edit `bootstraping/talconfig.yaml`,

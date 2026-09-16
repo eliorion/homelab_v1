@@ -257,9 +257,8 @@ applies only what changed, with no Keycloak restart.
 the import re-run) and `wait: true` (a failed import surfaces as NotReady rather
 than as a realm that quietly does not match git). Folding `realm/` into the
 parent Kustomization would either give the Job a second owner without `force`,
-or extend `force`/`wait` to the Keycloak CR and the database. Same recipe as the
-db-migrations Flyway Job; `realm/` is nested under the staging overlay for the
-same reason `apps/staging/databases/db-migrations` is.
+or extend `force`/`wait` to the Keycloak CR and the database. Same recipe as
+`infra-harbor-config`.
 
 **`IMPORT_MANAGED_*: no-delete` everywhere.** Users are created in the admin
 console over the tailnet, not in the realm files; clients arrive by dynamic

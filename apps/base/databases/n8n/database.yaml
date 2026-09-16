@@ -25,7 +25,7 @@ spec:
     initdb:
       database: n8n
       owner: app
-      # No postInit and no db-migrations entry: n8n owns its own schema (TypeORM
+      # No postInit and no Flyway migration: n8n owns its own schema (TypeORM
       # migrations on every boot). See README.md.
 
   storage:

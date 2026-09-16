@@ -34,10 +34,9 @@ Base — `infrastructure/services/base/etcd-backup/`:
   `backoffLimit: 2`, `restartPolicy: OnFailure`.
 - `image: ghcr.io/siderolabs/talos-backup:v0.1.0-beta.3`,
   `command: [/talos-backup]`, `workingDir: /tmp`. The `# renovate:` annotation
-  above the image is present but inert: `renovate.json` scopes the kubernetes
-  manager to `/apps/.+/db-migrations/.+\.yaml$/`, so this file is out of scope
-  and the pin is bumped by hand — which is what it should be, since the two
-  ConfigMap workarounds below are tied to beta.3.
+  above the image is read by the regex custom manager in `renovate.json`, so
+  Renovate proposes bumps for it. Review them against the two ConfigMap
+  workarounds below, which are tied to beta.3.
 - `envFrom` the Secret `etcd-backup-s3` (Garage credentials) and the ConfigMap
   `etcd-backup-config` (endpoint, bucket, age recipient) — both supplied by the
   overlay, and both referenced by name, so renaming either object breaks the job.

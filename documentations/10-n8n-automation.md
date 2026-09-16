@@ -26,11 +26,11 @@ Wired into `apps/staging/databases/kustomization.yaml`,
 `clusters/staging/apps.yaml` — the `apps` Kustomization already reconciles
 `./apps/staging` with `decryption.provider: sops`.
 
-n8n runs its own TypeORM migrations on boot, so there is **no `db-migrations`
-entry** for `n8n-db`.
+n8n runs its own TypeORM migrations on boot, so there is **no Flyway
+migration** for `n8n-db`.
 
 > The `databases` Flux Kustomization has `wait: true` and gates
-> `db-migrations` → `apps`. A broken `n8n-db` stalls the whole app chain.
+> `apps`. A broken `n8n-db` stalls the whole app chain.
 
 ## One-time setup
 
@@ -88,7 +88,7 @@ Garage gateway), 30d retention.
 
 **Uncomment only after the real key is in.** With placeholder credentials the
 barman WAL archiver fails, which degrades the CNPG cluster — and `databases`
-reconciles with `wait: true` gating `db-migrations` → `apps`, so it stalls the
+reconciles with `wait: true` gating `apps`, so it stalls the
 whole app tier, not just n8n.
 
 ### 3. Reaching the UI
@@ -187,7 +187,7 @@ kubectl kustomize apps/staging                  # must build
 kubectl kustomize monitoring/configs/staging    # must build
 grep -L ENC apps/staging/n8n/*.enc.yaml         # MUST print nothing
 
-flux get kustomizations                         # databases → db-migrations → apps Ready
+flux get kustomizations                         # databases → apps Ready
 kubectl -n n8n get cluster n8n-db               # CNPG Ready first
 kubectl -n n8n get pods,pvc,svc,ingress
 kubectl -n n8n logs deploy/n8n | head -50       # schema migrations on first boot
