@@ -15,10 +15,13 @@ spec:
   secretRef:
     name: asp-deploy-key
   # Keep scoped to the chart path: the HelmRelease uses reconcileStrategy: Revision,
-  # so widening this makes unrelated asp commits trigger Helm upgrades.
+  # so widening this makes unrelated asp commits trigger Helm upgrades. k8s/charts/common is
+  # the library chart asp depends on (file://../common): it must be in the artifact, and a
+  # change to it is a change to this chart.
   ignore: |
     /*
     !/k8s/charts/asp/
+    !/k8s/charts/common/
 ---
 # Source for the fbref app Helm chart (k8s/charts/fbref in the asp repo).
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -42,6 +45,8 @@ spec:
     !/k8s/charts/
     /k8s/charts/*
     !/k8s/charts/fbref/
+    # The library chart fbref depends on (file://../common); see the asp source.
+    !/k8s/charts/common/
 ---
 # Source for the lab Helm chart (k8s/charts/lab in the asp repo).
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -84,3 +89,5 @@ spec:
     !/k8s/charts/
     /k8s/charts/*
     !/k8s/charts/scraper/
+    # The library chart scraper depends on (file://../common); see the asp source.
+    !/k8s/charts/common/
