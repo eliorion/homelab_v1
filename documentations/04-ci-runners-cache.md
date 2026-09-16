@@ -215,7 +215,7 @@ No manual UI/REST setup — repositories live in
 Target the scale set with `runs-on: self-hosted-arc`.
 
 For the heavy k3d end-to-end leg, target the dedicated XL pool with
-`runs-on: self-hosted-arc-xl` (wired via the `CI_RUNNER_XL` repo variable;
+`runs-on: self-hosted-arc-xl` (RETIRED 2026-09-16, see below; wired via the `CI_RUNNER_XL` repo variable;
 `e2e-tests.yaml` uses `vars.CI_RUNNER_XL || vars.CI_RUNNER`, so it falls back to
 the default pool until the var is set). The XL pool
 (`arc-runner-set/release-xl.yaml`) gives each runner a bigger dind sidecar
@@ -397,3 +397,12 @@ collision above):
 ```bash
 kubectl -n nexus logs job/nexus-config-<n>
 ```
+
+## 2026-09-16 — the XL pool is retired
+
+asp moved its e2e gate off k3d onto the long-lived `dev-platform` vcluster
+(`self-hosted-arc-e2e`, no dind), so the only consumer of `self-hosted-arc-xl` became a
+manual `e2e-tests.yaml` dispatch, which now runs on the default pool. `release-xl.yaml`,
+its `CI_RUNNER_XL` variable and the `runner-tier: xl` anti-affinity are gone; anything
+above that describes an XL pool is history, not current state. The e2e pool's own sizing
+lives in `infrastructure/services/staging/arc-runner-set/README.md`.

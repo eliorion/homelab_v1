@@ -6,7 +6,7 @@ the ARC CRDs and the controller Deployment into the `arc-systems` namespace, and
 creates `arc-runners`, the namespace where the ephemeral runner pods land. The
 controller does not itself register anything with GitHub — it watches
 `AutoscalingRunnerSet` resources and turns queued jobs into one-shot runner pods.
-The runner pools themselves (`self-hosted-arc` and `self-hosted-arc-xl`, both for
+The runner pools themselves (`self-hosted-arc` and `self-hosted-arc-e2e`, both for
 `Eliorion/asp`) are separate `gha-runner-scale-set` HelmReleases living in
 `infrastructure/services/staging/arc-runner-set/`, and they consume the CRDs and
 the `HelmRepository` declared here. The whole CI stack, runners plus the Nexus
@@ -53,7 +53,7 @@ renames the Deployment and the health check never resolves.
 **The chart version is pinned and moves in lockstep with the runner-set chart.**
 `gha-runner-scale-set-controller` here and `gha-runner-scale-set` in
 `infrastructure/services/staging/arc-runner-set/release.yaml` and
-`release-xl.yaml` are all `0.14.2`. Renovate bumps them; they must be merged
+are `0.14.2`. Renovate bumps them; they must be merged
 together. Beyond version skew, the runner-set releases define their dind pod
 template by hand against the `0.14.x` shape, so a chart bump also means
 re-checking that template against upstream.
@@ -97,7 +97,7 @@ applies a Kustomization atomically, so the CRD provider has to be a separate,
 - **The two ARC chart versions must match.** `gha-runner-scale-set-controller`
   `0.14.2` here and `gha-runner-scale-set` `0.14.2` in
   `infrastructure/services/staging/arc-runner-set/release.yaml` +
-  `release-xl.yaml`. Renovate bumps them separately — align them in the same
+  . Renovate bumps them separately — align them in the same
   merge.
 - **Do not change `releaseName: arc-controller`.** The Flux health check on
   `infra-arc-controller` targets the Deployment `arc-controller-gha-rs-controller`,

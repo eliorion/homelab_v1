@@ -5,9 +5,10 @@ The runner half of the self-hosted GitHub Actions stack: three
 for the `Eliorion/asp` repository. Each pool is an `AutoscalingRunnerSet`
 consumed by the ARC controller, which turns a queued job into a one-shot
 ephemeral pod in the `arc-runners` namespace and deletes it when the job ends.
-`self-hosted-arc` is the default pool for ordinary jobs; `self-hosted-arc-xl` is
-a smaller pool of bigger runners for the k3d end-to-end leg; `self-hosted-arc-e2e` runs
-the e2e lane on the dev platform, two at a time, with no dind. The operator half
+`self-hosted-arc` is the default pool for ordinary jobs; `self-hosted-arc-e2e` runs
+the e2e lane on the dev platform, two at a time, with no dind. A third pool,
+`self-hosted-arc-xl` (bigger runners for the k3d e2e leg), was deleted on 2026-09-16 — see
+"The XL pool is gone" below. The operator half
 (CRDs, controller Deployment, the `arc-systems` / `arc-runners` namespaces and
 the shared `HelmRepository/arc`) lives in
 [`infrastructure/controllers/base/arc/`](../../../controllers/base/arc/README.md).
@@ -19,13 +20,12 @@ is described in
 
 | File | What it does |
 |---|---|
-| `kustomization.yaml` | Lists `release.yaml`, `release-xl.yaml`, `release-e2e.yaml`, `github-pat.enc.yaml`. |
+| `kustomization.yaml` | Lists `release.yaml`, `release-e2e.yaml`, `github-pat.enc.yaml`. |
 | `release.yaml` | `HelmRelease/arc-runner-set-asp` in `flux-system`, `targetNamespace: arc-runners`, chart `gha-runner-scale-set` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h. Registers the scale set `self-hosted-arc`, `minRunners: 5` / `maxRunners: 25`, with a hand-written dind pod template. |
-| `release-xl.yaml` | `HelmRelease/arc-runner-set-asp-xl`, same chart and version, same namespace and secret. Registers `self-hosted-arc-xl`, `minRunners: 2` / `maxRunners: 4`, same dind template plus a `runner-tier: xl` pod label and a hard one-pod-per-node `podAntiAffinity`. |
 | `release-e2e.yaml` | `HelmRelease/arc-runner-set-asp-e2e`, same chart, namespace and secret. Registers `self-hosted-arc-e2e`, `minRunners: 0` / `maxRunners: 2` — the e2e lane's concurrency, sized to the platform quota. Runner container only (no dind, non-root, no privilege escalation): the job drives the in-cluster Dagger engine and reads Secret `dev-platform/vc-e2e-runner` (Role in `infrastructure/services/dev/dev-platform/runner-access.yaml`). |
-| `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). All three releases point at it through `githubConfigSecret`. Never commit it decrypted. |
+| `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). Both releases point at it through `githubConfigSecret`. Never commit it decrypted. |
 
-The default and XL releases carry the same pod template shape:
+The default release carries this pod template shape:
 
 - `init-dind-externals` — an init container that copies `/home/runner/externals`
   into a shared `dind-externals` emptyDir, because the dind container expects
@@ -46,7 +46,6 @@ Sizing as the manifests currently declare it:
 | Pool | Runners | runner container | dind sidecar |
 |---|---|---|---|
 | `self-hosted-arc` | min 5 / max 25 | req 2Gi, limit 4Gi | req 1Gi, limit 6Gi, no CPU limit |
-| `self-hosted-arc-xl` | min 2 / max 4 | req 500m CPU + 512Mi, limit 1Gi | req 2Gi, limit 8Gi, no CPU limit |
 | `self-hosted-arc-e2e` | min 0 / max 2 | req 100m CPU + 512Mi, limit 2Gi | none |
 
 Flux applies this directory as part of the `infrastructure-services`
@@ -62,7 +61,7 @@ There is no `base/` for this component: it exists only
 under `infrastructure/services/staging/`, listed as `arc-runner-set/` in
 `infrastructure/services/staging/kustomization.yaml`. The CI stack as a whole is
 staging-only. The three releases in this directory are the pool split —
-default, XL and e2e — not three environments.
+default and e2e — not two environments.
 
 ## Why it is like this
 
@@ -95,10 +94,10 @@ silently pulled from Docker Hub instead. Pull by full name
 that is what the `DOCKERHUB_MIRROR` / `GHCR_MIRROR` variables in the `asp` repo
 now hold.
 
-**Neither pool scales to zero.** The default pool keeps 5 warm runners for fast
-PR feedback and the XL pool keeps 2. That warm minimum is permanently resident
-memory on a 3-node cluster with roughly 50Gi total, shared between the two
-pools — the default pool's five alone reserve roughly 15Gi of it.
+**Only the default pool keeps runners warm.** It holds 5 for fast PR feedback, roughly
+15Gi permanently resident on a 3-node cluster with about 50Gi total. The e2e pool starts
+from zero: its lane runs minutes-long jobs on the dev platform, so one pod start is
+cheaper than two idle runners.
 
 **Memory is capped, CPU is not.** Each dind sidecar has a memory limit so a
 runaway build cannot consume a whole node and OOM-evict a co-located e2e pod —
@@ -109,16 +108,13 @@ parallel docker builds fast. All three nodes are control planes with no kubelet
 `system-reserved`, so if etcd shows latency under heavy e2e, the answer is to
 reserve CPU at the kubelet level rather than to cap the build here.
 
-**The XL pool is a second scale set rather than bigger defaults.** The k3d
-end-to-end stack runs entirely inside the dind container, so that container
-carries the memory budget while the runner container stays small — it only
-orchestrates. Its dind request is sized to cover the k3d steady state, so the
-pod is guaranteed that much and stays eviction-protected under node pressure.
-A hard `podAntiAffinity` on the self-owned `runner-tier: xl` label with
-`topologyKey: kubernetes.io/hostname` puts at most one XL pod per node, so
-concurrent e2e runs never share a node on this cluster. The label is set by the
-template itself rather than reusing the chart's auto-generated labels, so the
-selector does not depend on chart internals.
+**The XL pool is gone (2026-09-16).** It existed for one job: the k3d e2e leg, whose whole
+stack ran inside a dind sidecar big enough to hold a cluster, one pod per node. asp moved
+that gate to the dev-platform vcluster (`self-hosted-arc-e2e`, no dind at all), leaving the
+k3d path as a manual `e2e-tests.yaml` dispatch, which now lands on the default pool. Two
+warm XL runners for a workflow nobody triggers was the whole cost. If a break-glass k3d run
+ever OOMs the default pool's 6Gi dind, the answer is a bigger dind there or this file back
+from git history — not a permanently resident pool.
 
 **Both pools export Dagger telemetry to the in-cluster collector, not to Dagger
 Cloud.** The runner container carries `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`
@@ -167,9 +163,9 @@ bumps them separately and nothing enforces the rule but a comment and a human.
   merge, and re-check the hand-written dind template against upstream on any
   bump past `0.14.x`.
 - **`runnerScaleSetName` is the contract with the workflow files.**
-  `self-hosted-arc` and `self-hosted-arc-xl` are what `runs-on:` targets in
-  `Eliorion/asp`. The two names must also stay distinct from each other: a
-  scale set name has to be unique.
+  `self-hosted-arc` and `self-hosted-arc-e2e` are what `runs-on:` targets in
+  `Eliorion/asp` (`CI_RUNNER`, `CI_RUNNER_E2E`). The names must stay distinct: a scale set
+  name has to be unique.
 - **Re-adding a plain-HTTP registry means re-adding `--insecure-registry`.**
   `dockerd` refuses HTTP registries, and the chart's `containerMode: dind`
   accepts no extra flags — that constraint is what the hand-written template was
@@ -188,26 +184,13 @@ bumps them separately and nothing enforces the rule but a comment and a human.
   cluster-wide `baseline` enforcement fails every runner pod with
   `violates PodSecurity "baseline:latest": privileged (container "dind" must not
   set securityContext.privileged=true)`.
-- **`runner-tier: xl` appears twice in `release-xl.yaml`.** It is set as a pod
-  label and matched by the `podAntiAffinity` `labelSelector`. Change one and the
-  spreading rule silently stops applying.
-- **XL concurrency is capped by the node count, not by `maxRunners`.** The hard
-  one-pod-per-node rule means at most 3 XL pods can schedule on this cluster.
-  With `maxRunners: 4` the fourth runner is always Pending until the value is
-  lowered or the cluster gains a node. That is queued and self-healing — the
-  deliberate safe failure mode — but it is not a bug to chase.
-- **Set the `CI_RUNNER_XL` repo variable only after the XL scale set registers
-  healthy** (`kubectl -n arc-systems get pods` shows an
-  `arc-runner-set-asp-xl-...-listener`). `e2e-tests.yaml` uses
-  `vars.CI_RUNNER_XL || vars.CI_RUNNER`, so setting it early strands e2e jobs
-  with no runner.
 - **`github-pat.enc.yaml` is SOPS ciphertext.** Edit it only through `sops`, and
   never commit it decrypted.
 - **The sizing prose has drifted from the manifests.** The sizing notes in
   [04-ci-runners-cache.md](../../../../documentations/04-ci-runners-cache.md)
-  quote `maxRunners: 10` for the default pool and `minRunners: 1` /
-  `maxRunners: 3` with a 4Gi/10Gi dind for the XL pool. The values in this
-  directory are authoritative: 5/25 and 2/4, dind 1Gi/6Gi and 2Gi/8Gi.
+  quote `maxRunners: 10` for the default pool, and describe an XL pool that no longer
+  exists. The values in this directory are authoritative: default 5/25 with a 1Gi/6Gi dind,
+  e2e 0/2 with no dind.
 
 ## Operating it
 
@@ -216,7 +199,7 @@ Render check before commit, then the usual Flux status:
 ```sh
 kubectl kustomize infrastructure/services/staging/arc-runner-set
 flux get kustomizations              # infrastructure-services Ready
-flux get helmreleases -A             # arc-runner-set-asp, arc-runner-set-asp-xl Ready
+flux get helmreleases -A             # arc-runner-set-asp, arc-runner-set-asp-e2e Ready
 ```
 
 Where to look when it breaks:
@@ -228,7 +211,7 @@ kubectl -n arc-runners get pods -w   # watch a pod spawn for a queued job
 ```
 
 In GitHub: `Eliorion/asp` > Settings > Actions > Runners should list
-`self-hosted-arc` and `self-hosted-arc-xl` online.
+`self-hosted-arc` and `self-hosted-arc-e2e` online.
 
 After fixing a Pod Security or template problem, clear the stuck runners so the
 controller recreates them clean:

@@ -12,7 +12,7 @@ spec:
   chart:
     spec:
       # Must stay in lockstep with the gha-runner-scale-set chart version in
-      # infrastructure/services/staging/arc-runner-set/release.yaml + release-xl.yaml.
+      # infrastructure/services/staging/arc-runner-set/release.yaml + release-e2e.yaml.
       chart: gha-runner-scale-set-controller
       version: "0.14.2"
       sourceRef:
