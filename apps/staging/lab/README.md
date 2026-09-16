@@ -119,17 +119,31 @@ leaves the project namespace — see
   `reconcileStrategy: Revision` means a new commit to that path rolls the labs. The
   GitRepository `ignore` block is what keeps unrelated `asp` commits from doing so.
 
-- **A Helm re-apply empties the reflected pull Secret, and reflector will not refill it.** The
-  chart owns `ghcr-pull-secret` and re-applies it as `{}` while leaving the
-  `reflected-version` annotation intact, so reflector compares versions, decides the copy is
-  current, and logs `Validated 4` — leaving an empty Secret and `401 Unauthorized` on every image
-  pull. Hit on 2026-08-24 resuming the suspended release. Fix:
+- **Helm can empty or delete the reflected pull Secret, and reflector does not notice either.**
+  Two shapes of the same failure, both ending in an unusable `ghcr-pull-secret`:
+  - *While the chart still owned it* (up to asp `3dbaedd`, #325): a re-apply rewrote it as `{}`
+    while leaving the `reflected-version` annotation intact, so reflector compared versions,
+    decided the copy was current, and logged `Validated 4`. Hit 2026-08-24.
+  - *On the upgrade that dropped it from the chart*: Helm prunes what left the manifest, so the
+    Secret is **deleted** mid-upgrade. The new pods then fail with
+    `FailedToRetrieveImagePullSecret`, the upgrade times out, and remediation rolls back to the
+    chart that recreates the empty stub — a loop that ran for the seven days to 2026-09-16 and
+    burned ~2,000 Helm revisions. GHCR answers a credential-less pull for a private package with
+    `not found`, so the events read like a missing tag rather than a missing credential; the tag
+    was fine the whole time.
+
+  **Reflector only creates or refills a target at startup or when the SOURCE changes** — a
+  deleted or blanked target alone never triggers it. Restarting the controller is the reliable
+  repair:
   ```bash
-  kubectl -n lab annotate secret ghcr-pull-secret \
-    reflector.v1.k8s.emberstack.com/reflected-version- --overwrite
-  kubectl -n reflector annotate secret ghcr-pull-secret refresh-trigger="$(date -u +%s)" --overwrite
-  kubectl -n lab delete pod --all
+  kubectl -n reflector rollout restart deploy reflector-reflector
+  kubectl -n lab get secret ghcr-pull-secret \
+    -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | wc -c   # 177, not 2
+  kubectl -n lab delete pod -l component=lab
   ```
+  Since the release moved past `3dbaedd` the Secret carries no Helm labels and is in no release
+  manifest, so upgrades no longer touch it. Check that before blaming the image:
+  `kubectl -n lab get secret ghcr-pull-secret -o jsonpath='{.metadata.labels}'` must be empty.
   Check the other three namespaces the source permits (`asp`, `fbref`, `scraper`) with
   `kubectl -n <ns> get secret ghcr-pull-secret -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d`
   — an empty `{}` is the symptom, and only a namespace whose release was re-applied is affected.
