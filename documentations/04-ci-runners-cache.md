@@ -1,28 +1,72 @@
-# CI: Self-hosted GitHub runners (ARC) + Nexus dependency cache
+# CI: Self-hosted GitHub runners (ARC) + the dependency caches
 
-Staging-only. Two components:
+Staging-only. Three components:
 
 - **ARC** (actions-runner-controller, `gha-runner-scale-set` mode) — ephemeral
   GitHub Actions runners for `Eliorion/asp`, scaling 0→5 pods on demand.
-- **Nexus Repository OSS 3** — in-cluster PyPI proxy + Docker registries so
-  dependencies and images are cached locally between CI runs. Deployed with
-  the `stevehipwell/nexus3` Helm chart (StatefulSet), which provisions all
-  repos declaratively via its config Job — no manual Nexus setup.
+- **Harbor** — every container image CI pulls, cached in-cluster over TLS.
+  `infrastructure/services/base/harbor/README.md`.
+- **Nexus Repository OSS 3** — the language formats: PyPI today, maven and nuget
+  dormant. Deployed with the `stevehipwell/nexus3` Helm chart (StatefulSet).
+
+## 2026-09-16: the image cache moved from Nexus to Harbor
+
+Both had been caching `docker.io` and `ghcr.io` in parallel — Talos and the
+Dagger engine through Harbor, CI through Nexus. Measured over the three weeks of
+retained Nexus logs: 29,504 requests / 145 GiB from `docker-hub`, 8,723 / 58 GiB
+from `ghcr`, against roughly 750 requests a day reaching Harbor. One cache now
+serves both, with a publicly trusted certificate instead of plain HTTP.
+
+The switch is entirely GitHub Actions **variables** in `Eliorion/asp` — no
+pipeline code changed, because each client's mirror string was already a
+variable:
+
+| Variable | Was | Is |
+|---|---|---|
+| `DOCKERHUB_MIRROR` | `nexus.nexus.svc.cluster.local:5000` | `registry.eliorion.fr/dockerhub-proxy` |
+| `GHCR_MIRROR` | `nexus.nexus.svc.cluster.local:5001` | `registry.eliorion.fr/ghcr-public` |
+| `K3D_DOCKERHUB_MIRROR` | `http://nexus…:5000` | `https://registry.eliorion.fr/v2/dockerhub-proxy` |
+| `K3D_GHCR_MIRROR` | `http://nexus…:5001` | `https://registry.eliorion.fr/v2/ghcr-public` |
+| `MIRROR_INSECURE_HTTP` | `true` | `false` |
+| `BUILDCACHE_REGISTRY` | `nexus.nexus.svc.cluster.local:5002` | *(deleted)* |
+| `UV_INDEX_URL` | Nexus `pypi-proxy` | **unchanged** — Harbor is OCI-only |
+
+**The two spellings are not interchangeable.** BuildKit (`buildkitd.toml`, the
+Dagger engine) takes `host/project` and joins `/v2` itself; k3s and Talos take
+`https://host/v2/project`, which containerd uses verbatim because the path is
+not `/v2` and it therefore sets `override_path = true`
+(`k3s/pkg/agent/containerd/config.go`). Feed either one the other's string and
+every pull 404s. Harbor's README carries the per-client table.
+
+**`docker pull` cannot be transparently mirrored at all.** Docker's
+`registry-mirrors` is Docker-Hub-only and accepts no path: measured, `dockerd`
+turned the mirror into `/v2/dockerhub-proxy/v2/library/busybox/manifests/1.37`,
+took the 404, and pulled from Docker Hub without a word. Workflows that want the
+cache name the image in full: `registry.eliorion.fr/dockerhub-proxy/library/x`.
+
+**`BUILDCACHE_REGISTRY` was deleted, not repointed.** Nexus's hosted
+`docker-cache` answered `401` to every `GET /v2/token?account=ci` for the whole
+retention window — zero successful responses in 9,432 requests — so BuildKit's
+registry cache had silently never worked. Dagger 1.0 removed remote cache export
+entirely (dagger/dagger#11856), so there is nothing left to point at it.
+
+**Private `ghcr.io/eliorion/*` images still go straight to ghcr.io** with the
+existing pull secrets. Harbor's `ghcr-proxy` project can serve them — verified,
+an authenticated manifest fetch returns 200 — but it is private, so it would need
+a Harbor robot credential in CI for no measured gain. It stays available.
 
 ## Nexus repositories
 
 | Repo | Type | Port | Use |
 |---|---|---|---|
-| `pypi-proxy` | pypi proxy | 8081 (path) | pip cache |
-| `docker-hub` | docker proxy → registry-1.docker.io | 5000 | Docker Hub pull-through |
-| `ghcr` | docker proxy → ghcr.io | 5001 | GHCR pull-through |
-| `docker-cache` | docker hosted | 5002 | buildx `:buildcache` push/pull |
+| `pypi-proxy` | pypi proxy | 8081 (path) | pip/uv cache — the only one CI uses |
+| `docker-hub` | docker proxy → registry-1.docker.io | 5000 | kept as a fallback, idle |
+| `ghcr` | docker proxy → ghcr.io | 5001 | kept as a fallback, idle |
+| `maven-*`, `nuget-*` | maven2 / nuget | 8081 (path) | UI-created, live only in the database |
 
-Docker connector ports are plain **HTTP** (no TLS yet) — see the dind
-section below for the `--insecure-registry` consequence. Each `httpPort`
-must be unique across repos; a port collision makes the config Job fail
-with `status code 400` and the connector never opens (`connection refused`
-on pulls).
+Docker connector ports are plain **HTTP**. Each `httpPort` must be unique across
+repos; a port collision makes the config Job fail with `status code 400` and the
+connector never opens (`connection refused` on pulls).
 
 In-cluster pulls use cluster DNS, e.g.:
 
@@ -32,7 +76,7 @@ nexus.nexus.svc.cluster.local:5001/gitleaks/gitleaks:v8.30.1
 
 A separate `nexus-lb` LoadBalancer Service
 (`infrastructure/services/base/nexus/services.yaml`) exposes 8081 +
-5000-5002 on the node IP for workstation debugging.
+5000-5001 on the node IP for workstation debugging.
 
 ## How it works, end to end
 

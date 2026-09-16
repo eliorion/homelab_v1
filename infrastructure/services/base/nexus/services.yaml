@@ -1,4 +1,4 @@
-# Exposes the UI (8081) + the three docker connector ports outside the cluster,
+# Exposes the UI (8081) + the two docker connector ports outside the cluster,
 # alongside the chart-managed ClusterIP (see README.md).
 apiVersion: v1
 kind: Service
@@ -20,10 +20,6 @@ spec:
     - name: docker-ghcr
       port: 5001
       targetPort: 5001
-      protocol: TCP
-    - name: docker-cache
-      port: 5002
-      targetPort: 5002
       protocol: TCP
   selector:
     # Must match the stevehipwell/nexus3 chart's selectorLabels (release `nexus`).

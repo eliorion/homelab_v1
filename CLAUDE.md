@@ -94,8 +94,8 @@ Dagger CI telemetry).
   `documentations/17-linstor-seaweedfs-migration.md` before touching storage:
   node-3 carries no HDD, so SeaweedFS has only two data nodes and the `hdd`
   tier goes read-only — reads keep serving — if either one is lost.
-- CI is two ARC scale sets plus a Nexus proxy cache —
-  `infrastructure/services/staging/arc-runner-set/README.md`.
+- CI is two ARC scale sets; images cache in **Harbor**, language packages
+  (PyPI) in Nexus — `infrastructure/services/staging/arc-runner-set/README.md`.
 - Backups are CNPG → R2 or Garage and etcd → Garage, age-encrypted with an
   **offline** key — `infrastructure/services/base/etcd-backup/README.md`.
 

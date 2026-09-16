@@ -32,8 +32,9 @@ The default and XL releases carry the same pod template shape:
   them there.
 - `dind` — `docker:dind` running `dockerd` as a **native sidecar**
   (`restartPolicy: Always` on an entry in `initContainers`), `privileged: true`,
-  `DOCKER_GROUP_GID=123`, a `docker info` startup probe (2s period, 24 failures)
-  and six `--insecure-registry` flags for the Nexus connectors.
+  `DOCKER_GROUP_GID=123` and a `docker info` startup probe (2s period, 24
+  failures). It carried six `--insecure-registry` flags for the Nexus connectors
+  until 2026-09-16; see below.
 - `runner` — `ghcr.io/actions/actions-runner:latest` running
   `/home/runner/run.sh` with `DOCKER_HOST=unix:///var/run/docker.sock` and
   `RUNNER_WAIT_FOR_DOCKER_IN_SECONDS=120`.
@@ -67,19 +68,32 @@ default, XL and e2e — not three environments.
 
 **The dind sidecar is hand-written instead of `containerMode: dind`.** The
 chart's `containerMode: dind` injects a fixed sidecar that accepts no extra
-`dockerd` flags. The Nexus Docker connectors are plain HTTP (no TLS yet), so
-`dockerd` refuses them unless every host:port form is whitelisted with
+`dockerd` flags. The Nexus Docker connectors were plain HTTP, so `dockerd`
+refused them unless every host:port form was whitelisted with
 `--insecure-registry`. The template here reproduces what `containerMode: dind`
 would have injected — the externals init container, native sidecar semantics,
-the socket and externals volumes, the runner's `DOCKER_HOST` — and adds the six
-flags covering both the short service name and the FQDN on ports 5000, 5001 and
-5002. The cost is that the template is maintained by hand and a chart bump past
-`0.14.x` will not update the wiring. Because only `--insecure-registry` is set
-and never `--registry-mirror`, caching is opt-in per workflow line: an image
-reference that omits the Nexus prefix silently bypasses the cache. See the
-design record in
+the socket and externals volumes, the runner's `DOCKER_HOST`.
+
+**The six flags were removed on 2026-09-16.** CI pulls now go to Harbor over a
+publicly trusted certificate, which needs no whitelist, so the only reason this
+template existed is gone. Switching to `containerMode: dind` is therefore
+possible and is *not* done here: it is a separate change, and the hand-written
+template still buys the per-container memory limits and the startup probe. If it
+is taken, re-read
 [14-design-decisions.md](../../../../documentations/14-design-decisions.md)
-("A hand written dind template instead of the chart's `containerMode: dind`").
+("A hand written dind template instead of the chart's `containerMode: dind`")
+first.
+
+Caching stays opt-in per workflow line either way: `dockerd` is given no
+`--registry-mirror`, and it **cannot** usefully be given one here — Docker's
+mirror support is Docker-Hub-only and accepts no path, so a Harbor proxy-cache
+project cannot be a transparent mirror for it. Measured 2026-09-16 with
+`--registry-mirror=https://registry.eliorion.fr/v2/dockerhub-proxy`: `dockerd`
+requested `/v2/dockerhub-proxy/v2/library/busybox/manifests/1.37`, got a 404 and
+silently pulled from Docker Hub instead. Pull by full name
+(`registry.eliorion.fr/dockerhub-proxy/library/busybox:1.37`) or not at all —
+that is what the `DOCKERHUB_MIRROR` / `GHCR_MIRROR` variables in the `asp` repo
+now hold.
 
 **Neither pool scales to zero.** The default pool keeps 5 warm runners for fast
 PR feedback and the XL pool keeps 2. That warm minimum is permanently resident
@@ -156,14 +170,15 @@ bumps them separately and nothing enforces the rule but a comment and a human.
   `self-hosted-arc` and `self-hosted-arc-xl` are what `runs-on:` targets in
   `Eliorion/asp`. The two names must also stay distinct from each other: a
   scale set name has to be unique.
-- **Do not switch to `containerMode: dind`.** It accepts no extra `dockerd`
-  flags, so the `--insecure-registry` entries disappear and every pull from
-  `nexus.nexus.svc[.cluster.local]:5000|5001|5002` fails against the HTTP-only
-  connectors.
-- **Workflows must use one of the six whitelisted registry forms.** Only
-  `nexus.nexus.svc` and `nexus.nexus.svc.cluster.local` on 5000/5001/5002 are
-  passed to `dockerd`. Any other spelling either fails or silently bypasses the
-  cache.
+- **Re-adding a plain-HTTP registry means re-adding `--insecure-registry`.**
+  `dockerd` refuses HTTP registries, and the chart's `containerMode: dind`
+  accepts no extra flags — that constraint is what the hand-written template was
+  built for, and it applies again the moment a workflow points at something
+  without TLS.
+- **Workflows pull Harbor by full name.** `registry.eliorion.fr/<project>/<repo>`
+  over TLS, from the `DOCKERHUB_MIRROR` / `GHCR_MIRROR` variables in
+  `Eliorion/asp`. Any other spelling silently bypasses the cache and goes
+  upstream.
 - **`restartPolicy: Always` on the `dind` initContainer is what makes it a
   native sidecar.** Remove it and `dind` becomes a blocking init container that
   never completes.

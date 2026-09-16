@@ -52,13 +52,6 @@ spec:
               - dockerd
               - --host=unix:///var/run/docker.sock
               - --group=$(DOCKER_GROUP_GID)
-              # Nexus docker connectors are plain HTTP (no TLS yet).
-              - --insecure-registry=nexus.nexus.svc:5000
-              - --insecure-registry=nexus.nexus.svc:5001
-              - --insecure-registry=nexus.nexus.svc:5002
-              - --insecure-registry=nexus.nexus.svc.cluster.local:5000
-              - --insecure-registry=nexus.nexus.svc.cluster.local:5001
-              - --insecure-registry=nexus.nexus.svc.cluster.local:5002
             env:
               - name: DOCKER_GROUP_GID
                 value: "123"

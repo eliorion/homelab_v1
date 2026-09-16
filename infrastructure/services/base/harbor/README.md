@@ -81,6 +81,17 @@ HEAD https://registry.eliorion.fr/v2/dockerhub-proxy/library/nginx/manifests/lat
 | k3s / k3d (asp `e2e_common.py`) | full URL with `/v2/<project>` | generated `registries.yaml` |
 | Docker daemon | **cannot** be transparent | Docker's `registry-mirrors` is Docker-Hub-only and accepts no path. Pull by full name instead |
 
+Since 2026-09-16 CI is a client too: `Eliorion/asp` holds
+`DOCKERHUB_MIRROR`/`GHCR_MIRROR` in the BuildKit spelling and
+`K3D_DOCKERHUB_MIRROR`/`K3D_GHCR_MIRROR` in the containerd spelling, replacing the
+Nexus proxies ([`../../../../documentations/04-ci-runners-cache.md`](../../../../documentations/04-ci-runners-cache.md)).
+
+The Docker-daemon row is measured, not inferred: with
+`--registry-mirror=https://registry.eliorion.fr/v2/dockerhub-proxy`, `dockerd` requested
+`https://registry.eliorion.fr/v2/dockerhub-proxy/v2/library/busybox/manifests/1.37?ns=docker.io`,
+logged `trying next host after status: 404 Not Found`, and pulled from Docker Hub — a mirror
+that appears configured and caches nothing.
+
 ### Both proxy projects MUST be Public
 
 A public Harbor project grants `repository:pull` to the anonymous user. That is what makes

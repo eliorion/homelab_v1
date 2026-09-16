@@ -50,16 +50,14 @@ spec:
       # not worth the space and DRBD would double it. The node holding it going
       # down takes Nexus down until it returns.
       #
-      # 150Gi, not more: LINSTOR places this on node-1, whose SSD pool is only
-      # 223 GiB and already carries ~50 GiB of small database replicas. At 200Gi
-      # the cache alone could exhaust the thin pool and outdate every one of
-      # them; at 150Gi it cannot. node-1 is deliberate -- it is the NVMe box and
-      # the fastest storage in the cluster.
+      # 30Gi: the docker formats moved to Harbor 2026-09-16, so this holds only
+      # the PyPI/maven/nuget proxies and Nexus's own config database. node-1 is
+      # deliberate -- it is the NVMe box and the fastest storage in the cluster.
       #
       # storageClass and size are immutable once the StatefulSet exists —
-      # changing either means deleting the StatefulSet and the PVC.
+      # changing either means deleting the StatefulSet and migrating the PVC.
       storageClass: ssd-single
-      size: 150Gi
+      size: 30Gi
     # Raise -Xmx and resources.limits.memory together, never one alone.
     install4jAddVmParams: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2048m"
     resources:
@@ -92,9 +90,6 @@ spec:
         - port: 5001
           name: docker-ghcr
           containerPort: 5001
-        - port: 5002
-          name: docker-cache
-          containerPort: 5002
     config:
       enabled: true
       anonymous:
@@ -112,15 +107,6 @@ spec:
           mode: delete
           criteria:
             lastDownloaded: "1209600"
-        # docker-cache only, and keyed on lastBlobUpdated (last WRITE), NOT
-        # lastDownloaded: dangling BuildKit manifests are never pulled by tag,
-        # so a lastDownloaded policy can never match them. See README.md.
-        - name: purge-buildcache
-          notes: "docker-cache: drop manifests not rewritten in 4 days (reaps BuildKit dangling manifests)."
-          format: docker
-          mode: delete
-          criteria:
-            lastBlobUpdated: "345600"
       repos:
         - name: pypi-proxy
           format: pypi
@@ -191,17 +177,3 @@ spec:
             indexType: REGISTRY
           cleanup:
             policyNames: [purge-stale]
-        - name: docker-cache
-          format: docker
-          type: hosted
-          online: true
-          storage:
-            blobStoreName: default
-            strictContentTypeValidation: true
-            writePolicy: allow # :buildcache tag overwritten every build
-          docker:
-            v1Enabled: false
-            forceBasicAuth: false # anonymous pull (e2e cache-from has no login); push still needs auth
-            httpPort: 5002
-          cleanup:
-            policyNames: [purge-buildcache]

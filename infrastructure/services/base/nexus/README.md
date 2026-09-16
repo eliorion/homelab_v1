@@ -2,14 +2,25 @@
 
 Nexus Repository OSS 3, deployed with the `stevehipwell/nexus3` Helm chart
 (StatefulSet) in the `nexus` namespace. It is the cluster's dependency cache for
-CI: a PyPI proxy, two Docker pull-through proxies (Docker Hub and GHCR) and one
-hosted Docker registry that holds the BuildKit layer cache. Runner pods pull
-through it instead of upstream, so repeat CI runs are LAN-fast and do not burn
-Docker Hub rate limits. All repositories, plus the anonymous-access and realm
-settings, are provisioned declaratively by the chart's config Job — there is no
-manual Nexus setup. Two things sit outside it: blob store compaction, which a
-CronJob in this directory provisions, and the cleanup policies, which are live
-state the Job can no longer reprovision — both for the reason described below.
+the CI **language** formats — PyPI today, maven and nuget if they are ever
+needed again. Runner pods pull through it instead of upstream, so repeat CI runs
+are LAN-fast. Most repositories, plus the anonymous-access and realm settings,
+are provisioned declaratively by the chart's config Job. Three things sit
+outside it: blob store compaction, which a CronJob in this directory
+provisions; the cleanup policies, which are live state the Job can no longer
+reprovision; and the maven/nuget repositories, which were created in the admin
+UI and exist only in the Nexus database — the reason a migration copies that
+database rather than recreating it.
+
+**The Docker formats left on 2026-09-16.** Image pulls now go through Harbor
+([`../harbor/README.md`](../harbor/README.md)), which serves the same two
+upstreams with a publicly trusted certificate, so no client needs
+`--insecure-registry` any more. What moved, and where each client's mirror
+string lives, is in
+[`../../../../documentations/04-ci-runners-cache.md`](../../../../documentations/04-ci-runners-cache.md).
+The `docker-hub` and `ghcr` proxy repositories are **kept, unused**, as a
+one-variable fallback if Harbor ever has to be bypassed; `docker-cache` was
+deleted, see below.
 
 Full CI-stack context lives in
 [../../../../documentations/04-ci-runners-cache.md](../../../../documentations/04-ci-runners-cache.md).
@@ -30,10 +41,17 @@ Full CI-stack context lives in
 
 | Repo | Type | Port | Use |
 |---|---|---|---|
-| `pypi-proxy` | pypi proxy → `https://pypi.org` | 8081 (path) | pip cache |
-| `docker-hub` | docker proxy → `https://registry-1.docker.io` | 5000 | Docker Hub pull-through |
-| `ghcr` | docker proxy → `https://ghcr.io` | 5001 | GHCR pull-through |
-| `docker-cache` | docker hosted | 5002 | buildx `:buildcache` push/pull |
+| `pypi-proxy` | pypi proxy → `https://pypi.org` | 8081 (path) | pip/uv cache — the only repo CI still uses (`UV_INDEX_URL`) |
+| `docker-hub` | docker proxy → `https://registry-1.docker.io` | 5000 | idle since 2026-09-16; Harbor serves this |
+| `ghcr` | docker proxy → `https://ghcr.io` | 5001 | idle since 2026-09-16; Harbor serves this |
+| `maven-*`, `nuget-*` | maven2 / nuget | 8081 (path) | created in the UI, live only in the database |
+
+`docker-cache`, the hosted registry behind port 5002, was **deleted on
+2026-09-16**. It had served zero successful requests in the three weeks of
+retained logs: every `GET /v2/token?account=ci` answered `401`, so BuildKit's
+`type=registry` cache never imported or exported a layer. Dagger 1.0 removed
+registry cache export entirely (`../dagger/README.md`), so nothing would use it
+again either.
 
 In-cluster clients use cluster DNS, e.g.
 `nexus.nexus.svc.cluster.local:5001/gitleaks/gitleaks:v8.30.1`. The chart-managed
@@ -69,30 +87,40 @@ CronJob reads the same Secret for its `NEXUS_PW` env var. Both are reconciled by
 
 ## Why it is like this
 
-### Storage: 350Gi on Ceph RBD
+### Storage: 30Gi on LINSTOR, one replica
 
-The volume is `ceph-block` (350Gi), on the Rook/Ceph HDD pool. It was Longhorn at
-one replica until 2026-08-21, and the local-path provisioner on the old k3s box.
+`data-nexus-0` is `ssd-single` (LINSTOR, `placementCount: 1`, node-local), on
+node-1's NVMe. It was 350Gi on Ceph RBD, then 150Gi here, and **30Gi since
+2026-09-16**, when the Docker formats moved to Harbor: what remains is the PyPI
+proxy's blobs and the Nexus database, measured at 6.4 GB in total. One replica,
+because the artifacts are re-downloadable; losing the node holding it takes Nexus
+down until it returns, and losing the volume costs a cold cache.
 
-Everything in the volume is a cache, which is what made it the first thing moved
-to Ceph and why the migration **discarded** it rather than copying: proxied PyPI
-and Docker artifacts re-download on the next miss, and the hosted `docker-cache`
-is CI output that gets rebuilt. The cost of losing it is a cold cache and slow
-first CI runs, not data.
+The database is the part that is **not** re-downloadable. The maven and nuget
+repositories, the cleanup policies, and the accepted EULA live only there, so a
+storage migration copies the volume instead of starting empty — the opposite of
+the 2026-08-21 Ceph move, which discarded it.
 
-It was also the most expensive volume in the cluster — 350Gi provisioned against
-roughly 310Gi actual, the single largest real consumer of Longhorn space, and the
-reason routine growth elsewhere (`fbref-db`) had nowhere to go. Moving it is what
-frees node-1 for the rest of the Longhorn → Ceph migration.
+#### Resizing means migrating, and XFS never shrinks
 
-Redundancy is now a property of the pool, not the volume: `ceph-blockpool` runs
-`size: 2` on a `failureDomain: osd`, so there is no per-volume replica count to
-set or re-assert. That removes the one-replica patch this README used to carry.
+`volumeClaimTemplates` is immutable and the filesystem is XFS, which has no
+shrink operation at all. Growing is an edit of `size` plus a PVC patch; shrinking
+is a copy. The 150Gi → 30Gi move, in order:
 
-**Ceph has no backup target**, exactly as Longhorn had none. Unchanged for a pure
-cache. See
-[../../../../documentations/14-design-decisions.md](../../../../documentations/14-design-decisions.md)
-and [../../../../infrastructure/controllers/base/rook-ceph/README.md](../../../../infrastructure/controllers/base/rook-ceph/README.md).
+```bash
+flux suspend helmrelease nexus -n flux-system          # Flux must not fight the edit
+kubectl -n nexus scale statefulset nexus --replicas=0  # H2 is not safe to copy hot
+# a maintenance pod pinned to node-1 mounts the old PVC and a new 30Gi one,
+# then: cp -a /old/. /new/   (verify with du -sb and a file count on both)
+kubectl patch pv <new-pv> -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+kubectl -n nexus delete statefulset nexus              # frees the immutable template
+kubectl -n nexus delete pvc data-nexus-0               # old volume, Retain keeps it
+# clear the new PV's claimRef, then recreate PVC data-nexus-0 with volumeName: <new-pv>
+flux resume helmrelease nexus -n flux-system           # Helm recreates the StatefulSet
+```
+
+Keep the old PV `Retain`ed until the rebuilt Nexus has been verified, then delete
+it by hand — nothing else reclaims it.
 
 ### JVM and resources
 
@@ -194,9 +222,11 @@ its own config Job (it has `curl`, `jq` and `sh`).
   be removed.
 - **`storageClassName` and `volumeClaimTemplates` are immutable.** Changing the
   storage class or resizing means deleting the StatefulSet and the PVC. This is
-  what the 2026-08-21 move to `ceph-block` had to do, and what previously latched
-  the release `Stalled` for two weeks when git said 350Gi and the live template
-  still said 250Gi.
+  what the 2026-08-21 move to `ceph-block` had to do, what the 2026-09-16 shrink
+  to 30Gi had to do, and what previously latched the release `Stalled` for two
+  weeks when git said 350Gi and the live template still said 250Gi. Push the size
+  change and delete the StatefulSet in the same window: git and the live template
+  disagreeing is exactly the state that stalls the release.
 - **The blob store is a single-replica SSD volume.** It runs on `ssd-single`
   (LINSTOR `placementCount: 1`), chosen 2026-08-24: a proxy cache is rebuildable
   from upstream, so paying for a DRBD replica would double the space for nothing.
@@ -204,7 +234,7 @@ its own config Job (it has `curl`, `jq` and `sh`).
   until it returns — the volume does not follow the pod. And the `ssd` pool is
   LVM-thin and shared with every CNPG database, so a runaway cache can exhaust
   the pool and break the databases on that node; that risk, not the disk size,
-  is why it is 150Gi rather than the old 350Gi: LINSTOR places it on node-1,
+  is why it is 30Gi rather than the old 350Gi: LINSTOR places it on node-1,
   whose pool is only 223 GiB and already carries ~50 GiB of database replicas.
 - **It is not on `hdd` on purpose.** A SeaweedFS PVC's quota counts every
   replica, so `hdd` would have given half the requested size, on spindles
