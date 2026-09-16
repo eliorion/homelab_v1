@@ -170,10 +170,14 @@ hosts Nexus; `WaitForFirstConsumer` binds the volume wherever the pod first land
 - **`privileged: true` is non-negotiable.** The engine is BuildKit: it creates
   containers, manages snapshots and mounts. The chart hardcodes it, plus
   `capabilities: ALL`, `runAsUser: 0` and `fsGroup: 1001`.
-- **No CPU limit, memory limit 16Gi.** A throttled builder makes every job slower
-  for no isolation benefit on a dedicated node pair. The limit was 8Gi until the engine
-  was OOMKilled at 8.2GiB RSS during a full PR pipeline (2026-09-15): the kill aborts every
-  running CI session and left the cache at 3GB afterwards.
+- **No CPU limit, memory limit 16Gi, request 4Gi.** A throttled builder makes every job
+  slower for no isolation benefit on a dedicated node pair. The limit was 8Gi until the
+  engine was OOMKilled at 8.2GiB RSS during a full PR pipeline (2026-09-15): the kill
+  aborts every running CI session and left the cache at 3GB afterwards. The request rose
+  2Gi → 4Gi on 2026-09-16, to reserve what the engine actually holds while idle-to-warm.
+  CPU stays unbounded on measurement, not taste: over the week to 2026-09-15 the engine
+  drew more than one core for 1.25 h in total (p95 0.09 core, peak 4.4), while waiting on
+  disk up to 45% of the time. Memory and disk are the constraints; cores are not.
 - **`terminationGracePeriodSeconds: 30`**, down from the chart's 300. An engine
   restart throws away in-flight builds either way; CI should not wait for a
   graceful shutdown that cannot preserve them.

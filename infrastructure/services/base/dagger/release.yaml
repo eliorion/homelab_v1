@@ -83,7 +83,7 @@ spec:
       resources:
         requests:
           cpu: 500m
-          memory: 2Gi
+          memory: 4Gi
         limits:
           # No CPU limit on purpose. See README.
           memory: 16Gi
