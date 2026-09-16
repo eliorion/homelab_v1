@@ -57,9 +57,6 @@ subjects:
     name: self-hosted-arc-gha-rs-no-permission
     namespace: arc-runners
   - kind: ServiceAccount
-    name: self-hosted-arc-xl-gha-rs-no-permission
-    namespace: arc-runners
-  - kind: ServiceAccount
     name: self-hosted-arc-e2e-gha-rs-no-permission
     namespace: arc-runners
 # The Forgejo runner binding is added with the runner itself (Phase 5); its
