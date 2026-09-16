@@ -42,7 +42,8 @@ spec:
           resources:
             requests:
               # The claim template is immutable: resize procedure in README, Cache sizing.
-              storage: 200Gi
+              # Must stay under cp1's 223GiB thin pool, which it shares with Nexus.
+              storage: 120Gi
       # Do not enable: dataVolume shadows the PVC with a node hostPath.
       hostPath:
         dataVolume:
@@ -73,13 +74,13 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-              # cp1 excluded on purpose; ssd-single is node-local, so this decides where the cache lives. See README.
+              # ssd-single is node-local, so this decides where the cache lives, and cp1's
+              # pool is the small one (223GiB): keep `storage` under it. See README.
               - matchExpressions:
                   - key: kubernetes.io/hostname
                     operator: In
                     values:
-                      - staging-controlplane-2
-                      - staging-controlplane-3
+                      - staging-controlplane-1
       resources:
         requests:
           cpu: "2"

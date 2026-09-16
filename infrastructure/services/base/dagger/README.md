@@ -128,13 +128,27 @@ is abandoned, set it `false` — the engine is meaningfully safer without it.
 
 ## Cache sizing
 
-200Gi `ssd-single` (`data-dagger-engine-0`), with `engine.json` GC set to `maxUsedSpace: 150GB`,
-`reservedSpace: 10GB`, `minFreeSpace: 15%`. The GC ceiling is deliberately well
-under the volume size: BuildKit measures its own store, not the filesystem, and
-a full volume fails builds in confusing ways rather than evicting.
+120Gi `ssd-single` (`data-dagger-engine-0`) on **cp1**, with `engine.json` GC set to
+`maxUsedSpace: 100GB`, `reservedSpace: 10GB`, `minFreeSpace: 15%`. The GC ceiling is
+deliberately well under the volume size: BuildKit measures its own store, not the
+filesystem, and a full volume fails builds in confusing ways rather than evicting.
 
-Raised from 100Gi / 70GB on 2026-09-15: the engine metrics showed the volume 81% used
-(86 of 107GB) during full PR pipelines, with GC holding at its ceiling.
+Sized to cp1's pool, not to the cache's appetite. That pool is the cluster's smallest
+(`linstor_ssd`, 223.3GiB, ~187GiB free) because node 1's 500GB NVMe is split in half by
+`bootstraping/talconfig.yaml`: a 240GB `RawVolumeConfig linstor` beside a 240GB EPHEMERAL
+(`/var`, ~35% used). Talos only grows volumes, so rebalancing that split needs the node's
+EPHEMERAL wiped — a control-plane reset, not worth it. The pool is LVM-thin and
+over-provisioned, and a thin pool that runs out takes down every volume on it, not just
+this one: a filesystem on a thin volume reports free space the pool does not have, and
+BuildKit's `minFreeSpace` trusts the filesystem. Hence the volume itself is the guard.
+
+History: 100Gi / 70GB → 200Gi / 150GB on cp2-cp3 (2026-09-15, the volume ran 81% full during
+full PR pipelines with GC at its ceiling) → 120Gi / 100GB on cp1 (2026-09-16). The move
+traded cache room for the two things that are actually scarce here. **Disk**: cp1's pool is
+on the NVMe (`nvme0n1p5`), cp2's and cp3's on SATA SSDs (`sdc7`, `sda7`), and the engine
+waits on disk up to 45% of the time. **Contention**: cp1 has 16 cores at 16% requested
+against cp3's 8 at 54%, which is what a six-leg CI matrix competes for. Measured cache use
+before the move was 50GB of 200Gi.
 
 **Resizing.** The chart renders the claim as a StatefulSet `volumeClaimTemplate`, which
 Kubernetes refuses to change, so editing `storage` alone fails the Helm upgrade. In order:
@@ -162,22 +176,38 @@ network filesystem there is a known performance killer.
 `data-dagger-engine-0` dies, the engine stays `Pending` until it returns, and CI
 has no engine — the same outcome as before, since every run was already pinned to
 `dagger-engine-0`. Deleting the PVC lets it reschedule onto the other node with a
-cold cache. `nodeAffinity` is `required` on cp2/cp3 because cp1 has ~210GiB free and
-hosts Nexus; `WaitForFirstConsumer` binds the volume wherever the pod first lands.
+cold cache. `nodeAffinity` is `required` on cp1 for its cores (see Cache sizing);
+`WaitForFirstConsumer` binds the volume wherever the pod first lands.
+
+**Moving it to another node** is a cold move — the volume is node-local, so the cache does
+not follow (LINSTOR can replicate it live with `linstor resource create <node> <res>`, then
+drop the old replica, if a warm move is ever worth the DRBD sync):
+
+```bash
+# nothing running: gh run list --repo <repo> --status in_progress
+kubectl -n dagger delete statefulset dagger-engine --cascade=foreground
+kubectl -n dagger delete pvc data-dagger-engine-0     # the cache, deliberately
+# merge the affinity + storage edit, then reconcile infrastructure-services
+```
+
+The first pipeline afterwards is cold: every Dagger function re-runs and every image layer
+is re-pulled.
 
 ## Pod spec choices
 
 - **`privileged: true` is non-negotiable.** The engine is BuildKit: it creates
   containers, manages snapshots and mounts. The chart hardcodes it, plus
   `capabilities: ALL`, `runAsUser: 0` and `fsGroup: 1001`.
-- **No CPU limit, memory limit 16Gi, request 4Gi.** A throttled builder makes every job
-  slower for no isolation benefit on a dedicated node pair. The limit was 8Gi until the
+- **`cpu: 2` requested (no limit), memory limit 16Gi, request 4Gi.** A throttled builder makes
+  every job slower for no isolation benefit on a dedicated node. The limit was 8Gi until the
   engine was OOMKilled at 8.2GiB RSS during a full PR pipeline (2026-09-15): the kill
   aborts every running CI session and left the cache at 3GB afterwards. The request rose
   2Gi → 4Gi on 2026-09-16, to reserve what the engine actually holds while idle-to-warm.
   CPU stays unbounded on measurement, not taste: over the week to 2026-09-15 the engine
   drew more than one core for 1.25 h in total (p95 0.09 core, peak 4.4), while waiting on
-  disk up to 45% of the time. Memory and disk are the constraints; cores are not.
+  disk up to 45% of the time. Memory and disk are the constraints; cores are not — the
+  `cpu: 2` request (from `500m`, 2026-09-16) is about the SHARE the scheduler and CFS hand
+  out under contention, not about a ceiling it was hitting.
 - **`terminationGracePeriodSeconds: 30`**, down from the chart's 300. An engine
   restart throws away in-flight builds either way; CI should not wait for a
   graceful shutdown that cannot preserve them.
