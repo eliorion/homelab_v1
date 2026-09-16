@@ -82,7 +82,11 @@ spec:
                       - staging-controlplane-3
       resources:
         requests:
-          cpu: 500m
+          # The scheduler and CFS both share CPU out by REQUEST, so 500m gave the engine a
+          # sliver of a contended node while it served the CI matrix. asp raised that matrix
+          # to 6 concurrent legs (ci.yaml max-parallel), which is only real if the engine can
+          # hold ~2-3 cores; the node it is pinned to has 8.
+          cpu: "2"
           memory: 2Gi
         limits:
           # No CPU limit on purpose. See README.
