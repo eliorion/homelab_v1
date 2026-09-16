@@ -90,7 +90,7 @@ applied directly and no overlay was created.
   `keda.enabled` value; that gate is gone. See the note in
   `apps/staging/scraper/release.yaml`.)
 - **No Kustomization declares `dependsOn: infra-keda`.** The `apps` chain is
-  gated on `db-migrations` only, so on a cold bootstrap the scraper release can
+  gated on `databases` only, so on a cold bootstrap the scraper release can
   be applied before the KEDA CRDs are registered and will fail until
   `infra-keda` catches up. Add the dependency if that retry loop ever matters.
 - **`timeout: 10m` on `infra-keda` is sized for a cold image pull** (operator +

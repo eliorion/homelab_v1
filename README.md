@@ -227,8 +227,7 @@ flowchart LR
 
     plugin --> db["databases"]
     refl --> db
-    db --> mig["db-migrations"]
-    mig --> apps["apps"]
+    db --> apps["apps"]
     db --> lab["lab"]
     refl --> lab
 

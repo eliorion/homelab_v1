@@ -112,7 +112,7 @@ workload sits a tier up — the workload here *is* database tooling, so splittin
 it would buy a second directory and nothing else. `infrastructure/services/staging`
 is a **single** Flux Kustomization, so `databases/` is a plain directory here,
 not the separately-ordered unit `apps/staging/databases` is (which
-`db-migrations` and `apps` `dependsOn`).
+`apps` `dependsOn`).
 
 ### `dbtools-db`: one instance, two databases, no backup
 
@@ -444,8 +444,7 @@ basic-auth Secret has no `uri` key and its `-app` uri would point at the
   `ghcr.io/cloudnative-pg/cloudnative-pg` is the *operator* image — it must never
   be set there. The value is `ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie`,
   pinned to what the operator deployed and bumped by hand — `renovate.json`
-  scopes the kubernetes manager to `/apps/.+/db-migrations/.+\.yaml$/`, so
-  Renovate never reads this file.
+  does not enable the kubernetes manager, so Renovate never reads this file.
 - **`dbtools-db` has no backup.** Losing it costs a re-login and a re-import of
   `servers.json`, not data — but nothing will restore it.
 - **`databaseReclaimPolicy: retain` on the `pgadmin` Database CR.** Deleting the

@@ -42,7 +42,7 @@ Values set here:
 
 Flux applies this through the `apps` Kustomization in
 [`../../../clusters/staging/apps.yaml`](../../../clusters/staging/apps.yaml) (`path: ./apps/staging`,
-`prune: true`, SOPS decryption, `dependsOn: db-migrations`); `apps/staging/kustomization.yaml`
+`prune: true`, SOPS decryption, `dependsOn: databases`); `apps/staging/kustomization.yaml`
 lists `fbref/` explicitly.
 
 The chart lives in the private `asp` repository. GitRepository `fbref` is declared in
@@ -82,7 +82,7 @@ chart's `values.yaml` and CI bumps it on every fbref release; combined with
 repository.
 
 **`install.createNamespace: true` on a namespace someone else owns.** The `fbref` namespace is
-created by the databases tier, which runs first in the `databases` → `db-migrations` → `apps`
+created by the databases tier, which runs first in the `databases` → `apps`
 chain. `createNamespace` is harmless belt-and-braces in case the app tier ever races ahead.
 
 **Failure handling.** `upgrade.remediation` `retries: 3` / `strategy: rollback` means a failed

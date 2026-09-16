@@ -9,17 +9,15 @@ chart that lives in another repository.
 
 ## How it is wired
 
-Three Flux Kustomizations in
+Two Flux Kustomizations in
 [`../clusters/staging/apps.yaml`](../clusters/staging/apps.yaml) drive this tier, in order:
 
 | Kustomization | Path | Notes |
 |---|---|---|
 | `databases` | `./apps/staging/databases` | `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, `wait: true` — Ready only when the CNPG Cluster is Ready |
-| `db-migrations` | `./apps/staging/databases/db-migrations` | `dependsOn` `databases`, `force: true`, `wait: true` — Ready only when the Flyway Job completes |
-| `apps` | `./apps/staging` | `dependsOn` `db-migrations`, `prune: true`, SOPS decryption |
+| `apps` | `./apps/staging` | `dependsOn` `databases`, `prune: true`, SOPS decryption |
 
-On a release, running pods keep the previous image tags while the migration Job runs; the new
-tags only apply once the Job has completed. A fourth Kustomization, `lab`
+A third Kustomization, `lab`
 ([`../clusters/staging/lab.yaml`](../clusters/staging/lab.yaml)), reconciles `./apps/staging/lab`
 and depends on `databases` and `infra-reflector`.
 
@@ -51,7 +49,6 @@ component has a base overlay and in its own directory otherwise:
 | scraper | [`staging/scraper/README.md`](staging/scraper/README.md) — staging-only |
 | lab | [`staging/lab/README.md`](staging/lab/README.md) — staging-only, own Flux Kustomization |
 | databases | one README per cluster under `base/databases/<project>/` |
-| db-migrations | [`staging/databases/db-migrations/README.md`](staging/databases/db-migrations/README.md) — staging-only, own Flux Kustomization |
 | azuracast | [`base/azuracast/README.md`](base/azuracast/README.md) |
 | monica | [`base/monica/README.md`](base/monica/README.md) — official chart, tailnet-only, CalDAV/CardDAV |
 | n8n | [`base/n8n/README.md`](base/n8n/README.md) |
@@ -64,10 +61,11 @@ scan.** The `apps` Kustomization would otherwise pick up `databases/` and `lab/`
 by their own Flux Kustomizations with their own ordering and `wait` semantics. Two Kustomizations
 applying the same objects is drift by construction.
 
-**The chain is `databases` → `db-migrations` → `apps`.** Schema first, then images: the migration
-Job runs while the old pods are still serving, and `wait: true` on both upstream Kustomizations
-means a failed migration stops the app rollout instead of shipping code against an unmigrated
-database.
+**The chain is `databases` → `apps`.** `wait: true` on `databases` means no app reconciles
+against a CNPG cluster that is not Ready. Schema migrations are not a Flux tier: the asp, fbref
+and scraper charts each run Flyway as a Helm `pre-install,pre-upgrade` hook, so the migration runs while the
+old pods are still serving and a failed migration fails that release's upgrade instead of
+shipping code against an unmigrated database.
 
 **Some components have no `base/`.** A component that exists in exactly one environment and is
 little more than a single `HelmRelease` gains nothing from a base plus a one-line overlay.
@@ -97,6 +95,6 @@ tier-level `kustomization.yaml`) was deleted on 2026-09-15. See the open-work se
 
 ```sh
 kubectl kustomize apps/staging               # render check before commit
-flux get kustomizations | grep -E 'databases|db-migrations|apps|lab'
+flux get kustomizations | grep -E 'databases|apps|lab'
 flux get helmreleases -A
 ```

@@ -44,11 +44,10 @@ decryption. It depends on `infra-cnpg-plugin` (the barman-cloud plugin) and on
 defined in this component; it is mirrored into the `scraper` namespace from
 there.
 
-The schema is applied by the separate `db-migrations` Kustomization, which runs
-the Flyway Job `scraper-db-migrate`
-(`apps/staging/databases/db-migrations/scraper/`) against the `scraper-db-app`
-Secret and gates the `apps` Kustomization on its completion. The scraper
-service's own HelmRelease then reconciles under `apps`.
+The schema is applied by the scraper chart itself: its HelmRelease reconciles
+under `apps` and runs the Flyway Job `scraper-schema-migrate` as a
+Helm `pre-install,pre-upgrade` hook against the `scraper-db-app` Secret, before any
+Deployment of the release rolls.
 
 Consumers of the generated `scraper-db-app` Secret: pgAdmin, nao and
 `postgres-mcp-scraper` in the `database` namespace
@@ -65,8 +64,8 @@ not to this database; the API is the only project-to-scraper contract.
 when the replica is unavailable so they never block. There is no real HA here
 worth protecting a write path for.
 
-**No `postInit` bootstrap.** The schema is owned by Flyway (the
-`scraper-db-migrate` Job, gated ahead of the apps tier), mirroring asp and
+**No `postInit` bootstrap.** The schema is owned by Flyway (the chart's
+`scraper-schema-migrate` hook Job), mirroring asp and
 fbref. A fresh cluster comes up empty and the Job applies V1 onward as the `app`
 owner; an existing cluster is baselined at 0 and the idempotent V-files re-run
 as no-ops.
@@ -76,8 +75,8 @@ extra roles, so there is nothing for CNPG to manage and no role-password Secret
 in the overlay.
 
 **Pinned `imageName`.** The Postgres image is pinned to what the operator
-deployed, and it is bumped by hand: `renovate.json` scopes the kubernetes manager
-to `/apps/.+/db-migrations/.+\.yaml$/`, so Renovate never reads this file.
+deployed, and it is bumped by hand: `renovate.json` does not enable the
+kubernetes manager, so Renovate never reads this file.
 
 **No backups.** This cluster holds queues, config and health only, all
 rebuildable from the seed migrations, so it has no `ObjectStore`, no

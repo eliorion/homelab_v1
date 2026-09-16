@@ -46,7 +46,7 @@ Values set here:
 
 Flux applies this through the `apps` Kustomization in
 [`../../../clusters/staging/apps.yaml`](../../../clusters/staging/apps.yaml) (`path: ./apps/staging`,
-`prune: true`, SOPS decryption, `dependsOn: db-migrations`); `apps/staging/kustomization.yaml`
+`prune: true`, SOPS decryption, `dependsOn: databases`); `apps/staging/kustomization.yaml`
 lists `scraper/` explicitly.
 
 The chart is not in this repository. GitRepository `scraper`

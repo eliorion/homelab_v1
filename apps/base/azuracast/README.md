@@ -50,7 +50,7 @@ Flux: `apps/staging/azuracast/kustomization.yaml` pulls `../../base/azuracast/`
 and nothing else; `apps/staging/kustomization.yaml` lists `azuracast/`; the
 `apps` Flux Kustomization in `clusters/staging/apps.yaml` reconciles
 `./apps/staging` every `1m` with `prune: true` and SOPS decryption. It
-`dependsOn` `db-migrations`, which depends on `databases` (`wait: true`) — so a
+`dependsOn` `databases` (`wait: true`) — so a
 broken CNPG cluster stalls the whole app chain, azuracast included, even though
 azuracast has no CNPG database of its own (MariaDB lives inside the pod).
 
@@ -187,7 +187,7 @@ uplink was measured at ≥ 16.6 Mbps, i.e. ≥ 80 concurrent listeners at 192 kb
 
 ```bash
 kubectl kustomize apps/staging                  # must build
-flux get kustomizations                         # databases → db-migrations → apps Ready
+flux get kustomizations                         # databases → apps Ready
 kubectl -n azuracast get pods,pvc,svc
 kubectl -n azuracast logs deploy/azuracast | head -50   # first boot: MariaDB init + migrations
 kubectl -n tailscale get pods                   # ts-azuracast-stream-… proxy registered

@@ -7,7 +7,7 @@ Garage.
 
 This directory also ships the **`nextcloud` Namespace**. The `databases` Flux
 Kustomization reconciles before `apps` (`clusters/staging/apps.yaml`:
-`apps` → `dependsOn: db-migrations` → `dependsOn: databases`), so shipping the
+`apps` → `dependsOn: databases`), so shipping the
 namespace here means the app tier always lands into an existing namespace and
 never races the CNPG cluster it needs credentials from.
 
@@ -39,10 +39,10 @@ The staging overlay (`apps/staging/databases/nextcloud/`) adds:
 
 ## Why it is like this
 
-**No `db-migrations` entry.** Nextcloud owns its own schema: the container
+**No Flyway migration.** Nextcloud owns its own schema: the container
 entrypoint runs `occ maintenance:install` against an empty database on first
-boot, and `occ upgrade` after every image bump. A Flyway job in
-`apps/staging/databases/db-migrations/` would fight it. The `initdb` block
+boot, and `occ upgrade` after every image bump. A Flyway job would fight it.
+The `initdb` block
 therefore creates an *empty* `nextcloud` database and stops there.
 
 **2 instances, not 3.** Nextcloud is a single-writer application with no read
@@ -102,8 +102,7 @@ entire write path. This is the reason a cache service exists at all.
 - **No `encryption:` under `wal:` or `data:`.** Garage implements SSE-C only;
   requesting SSE-S3/AES256 fails every upload.
 - **Placeholder Garage credentials stall the whole app tier.** The `databases`
-  Flux Kustomization runs with `wait: true` and gates `db-migrations`, which
-  gates `apps`. A barman sidecar that cannot authenticate degrades the cluster,
+  Flux Kustomization runs with `wait: true` and gates `apps`. A barman sidecar that cannot authenticate degrades the cluster,
   the Kustomization never reports Ready, and every app behind it stops
   reconciling. Create the bucket and key *before* the first push.
 - **The bucket name is `cnpg-staging-nextcloud`.** `destinationPath` and the key

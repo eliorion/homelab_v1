@@ -11,7 +11,7 @@ carried over from the k3s cluster and never migrated; see
 ## How it is wired
 
 The Flux `apps` Kustomization (`clusters/staging/apps.yaml`, `path:
-./apps/staging`, `prune: true`, `dependsOn: db-migrations`, SOPS decryption)
+./apps/staging`, `prune: true`, `dependsOn: databases`, SOPS decryption)
 builds `apps/staging/kustomization.yaml`, which lists `linkding/` explicitly.
 That overlay renders nothing today, so Flux applies no linkding object.
 

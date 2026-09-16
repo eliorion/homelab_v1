@@ -70,7 +70,7 @@ encrypted `ghcr-pull-secret`.
 ## Why it is like this
 
 **Reflector runs before every application tier.** `databases` (and therefore
-`db-migrations` → `apps`, plus `lab`) `dependsOn: infra-reflector`
+`apps`, plus `lab`) `dependsOn: infra-reflector`
 (`clusters/staging/apps.yaml`, `clusters/staging/lab.yaml`). With `wait: true` on
 `infra-reflector`, no application reconciles until the reflector operator is Ready and this
 secret is applied, so the reflected `ghcr-pull-secret` exists before anything tries to pull

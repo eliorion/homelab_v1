@@ -25,7 +25,7 @@ spec:
     initdb:
       database: nextcloud
       owner: app
-      # No postInit and no db-migrations entry: Nextcloud owns its own schema
+      # No postInit and no Flyway migration: Nextcloud owns its own schema
       # (`occ maintenance:install` on first boot, `occ upgrade` after). See README.md.
 
   storage:

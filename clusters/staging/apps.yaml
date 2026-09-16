@@ -21,26 +21,6 @@ spec:
     secretRef:
       name: sops-age
 ---
-# Runs the Flyway Job and gates the `apps` Kustomization on its success.
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: db-migrations
-  namespace: flux-system
-spec:
-  interval: 1m0s
-  dependsOn:
-    - name: databases
-  retryInterval: 1m
-  timeout: 5m # > backoffLimit(3) x migration runtime
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  path: ./apps/staging/databases/db-migrations
-  prune: true
-  force: true # Job is immutable — image-tag bump must delete+recreate
-  wait: true # Ready only when the Job COMPLETES; failed Job = NotReady gates `apps`
----
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -49,7 +29,7 @@ metadata:
 spec:
   interval: 1m0s
   dependsOn:
-    - name: db-migrations
+    - name: databases
   retryInterval: 1m
   timeout: 5m
   sourceRef:
