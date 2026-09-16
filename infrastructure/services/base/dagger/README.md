@@ -126,6 +126,33 @@ The file pins the LE staging roots, so a certificate renewal does not change it.
 the e2e leg, which runs k3s nested inside a Dagger container. If that approach
 is abandoned, set it `false` — the engine is meaningfully safer without it.
 
+## engine.json is mounted twice, on purpose
+
+The chart's `engine.configJson` renders `dagger-engine-config` and mounts it at
+`/etc/dagger/engine.json`. **The engine does not read that path.** It auto-loads
+`$XDG_CONFIG_HOME/dagger/engine.json`, falling back to `$HOME/.config/dagger/engine.json`, and
+the container runs as root with `XDG_CONFIG_HOME` unset — so the file it reads is
+`/root/.config/dagger/engine.json`. `/etc/dagger/engine.toml` (the image entrypoint's
+`--config`) is the legacy BuildKit format and the chart leaves it empty. Hence the second
+mount of the same ConfigMap in `release.yaml`.
+
+Measured 2026-09-16, before that mount existed: `engine.json` was inert in full. The GC
+numbers the API reported (`maxUsedSpace` 94GB, `reservedSpace` 10GB, `minFreeSpace` 25GB)
+did not move when the file said 150GB or 100GB, nor when the volume went 200Gi → 120Gi —
+they are the documented defaults (keep under 75% of the disk, 20% free). A `docker.io` pull
+reached Docker Hub directly with nothing in Harbor's access log, so the mirrors were not
+applied either. `insecureRootCapabilities: true` was equally inert, which is why it is now
+`false` in the file: the engine has been running without it since at least 2026-09-14 with
+CI green, and the nested-k3s spike that once needed it is gone (asp retired the k3d e2e
+legs).
+
+After changing anything in `config/engine.json`, verify it actually took:
+
+```bash
+dagger core engine local-cache max-used-space        # must match the file, not 9.4e+10
+kubectl logs -n registry <harbor-nginx-pod> --since=5m | grep <engine pod IP>
+```
+
 ## Cache sizing
 
 120Gi `ssd-single` (`data-dagger-engine-0`) on **cp1**, with `engine.json` GC set to
