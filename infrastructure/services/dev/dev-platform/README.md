@@ -5,10 +5,17 @@ every asp e2e run deploys onto. It is shaped like staging where behaviour depend
 host's Cilium enforces the charts' NetworkPolicies, volumes are LINSTOR `ssd-single`, and KEDA
 and CloudNativePG run inside it at **the same chart versions as staging, from the same bases**.
 
-Runs are not Flux objects. The asp pipeline creates `e2e-<pr>-asp`, `e2e-<pr>-fbref` and
-`e2e-<pr>-scraper` inside the vcluster, installs main's charts and released images, upgrades
-the stacks the PR changed, checks, and deletes the namespaces. This directory owns the
-platform and the fence around it; it never creates a run. Design and the run lifecycle:
+Runs are not Flux objects. Most asp PR runs go to the **persistent environment**
+`e2e-0-asp`, `e2e-0-fbref` and `e2e-0-scraper`, which holds main: a run upgrades only the stacks
+the PR changed, checks, and rolls them back to main. The nightly rebuild deletes and redeploys it
+from main; between runs it doubles as a developer sandbox. A PR that changes a migration instead
+gets its own `e2e-<pr>-*` namespaces — main installed, seeded, upgraded, checked, deleted —
+because a rollback cannot undo a schema. This directory owns the platform and the fence around
+it; it never creates a run.
+
+The persistent namespaces carry no `e2e.eliorion.fr/run` label, so the reaper (which selects on
+it) never deletes them; their names still match `e2e-runner-scope` (run id `0`), so the runner
+may write them and nothing else changes here. Design and the run lifecycle:
 [`documentations/19-dev-platform.md`](../../../../documentations/19-dev-platform.md).
 
 ## How it is wired
@@ -137,7 +144,8 @@ Measured on a throwaway vcluster (2026-09-15) and from `helm template` of the th
 | one run: CNPG, 1 instance each, 2 for fbref (LimitRange defaults) | 4 | 0.2 | ~0.3Gi | 2 | 2Gi | 4 |
 | one run: migration hooks, helm tests, fixtures (transient) | ~5 | ~0.3 | ~0.4Gi | ~2.5 | ~2.5Gi | — |
 
-`dev-quota` covers the platform plus two concurrent runs: 60 pods, 7 CPU and 12Gi requested,
+`dev-quota` covers the platform plus two stack sets — the persistent environment and one
+fresh migration run: 60 pods, 7 CPU and 12Gi requested,
 30 CPU and 36Gi of limits, 16 PVCs, 40Gi `ssd-single`. Because the quota caps `limits.cpu`,
 `dev-limits` gives every container without a CPU limit a 500m default; the vcluster control plane
 sets its own 2 CPU so the API server is not throttled. The asp lane runs at most two

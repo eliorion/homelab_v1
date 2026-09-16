@@ -160,8 +160,10 @@ every policy, and the release record sits at ~92% of the 1 MiB Secret cap.
 **Why.** What an e2e run must prove is that a stack's new version works on the platform as
 staging runs it: beside the released versions of the other stacks, upgraded over existing data,
 with its NetworkPolicies enforced, on CNPG, LINSTOR and KEDA. One vcluster in `dev-platform`
-carries KEDA and CNPG from the same bases as staging; each run gets `e2e-<pr>-*` namespaces
-inside it, installs main, upgrades what the PR changed, checks and deletes. The host boundary
+carries KEDA and CNPG from the same bases as staging. A persistent environment inside it,
+`e2e-0-*`, holds main: a run upgrades what the PR changed, checks and rolls back. A migration PR
+gets its own `e2e-<pr>-*` namespaces instead (install main, upgrade, check, delete), because a
+rollback cannot undo a schema. The host boundary
 is Cilium **deny** rules, because the charts' own NetworkPolicies are synced into the one
 namespace and any namespace-wide allow would cancel them.
 
@@ -815,8 +817,9 @@ an entire downstream branch.
 ### e2e runs are created by the Dagger pipeline inside a Flux-owned vcluster
 
 **Why.** A run follows a PR's pushes and ends with its checks. Flux owns the platform — the
-vcluster, KEDA and CNPG inside it, the host fence — and the pipeline owns only the
-`e2e-<pr>-*` namespaces it creates, upgrades and deletes inside the vcluster.
+vcluster, KEDA and CNPG inside it, the host fence — and the pipeline owns what lives inside the
+vcluster: the persistent `e2e-0-*` environment it upgrades, rolls back and rebuilds nightly, and
+the `e2e-<pr>-*` namespaces of migration runs it creates and deletes.
 
 **Rejected.** Committing a Flux object per PR to this repository. Creating a namespace and a
 vcluster per PR on the host, which needs a host credential in CI that can create namespaces.

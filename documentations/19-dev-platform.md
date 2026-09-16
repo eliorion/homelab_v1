@@ -24,17 +24,42 @@ host namespace dev-platform   (Flux: infrastructure/services/dev/dev-platform)
 inside the vcluster
   keda, cnpg-system           same charts, same versions, same bases as staging
   e2e-system                  staging's CNPG Cluster specs (from Git), the reaper
-  e2e-<pr>-asp / -fbref / -scraper   one set per running PR, created and deleted by the pipeline
+  e2e-0-asp / -fbref / -scraper      the persistent environment: main, upgraded and rolled back by runs
+  e2e-<pr>-asp / -fbref / -scraper   a migration PR's own set, created and deleted by the pipeline
 ```
 
 One platform, not one vcluster per PR: operators stay warm, nothing on the host is created or
 deleted per run, and CI never holds a host credential that can create namespaces. The platform
 itself is ordinary GitOps; only the run namespaces come and go.
 
-## A run
+Most runs do not even create namespaces. The persistent environment `e2e-0-*` keeps main
+deployed, so a run pays for the stacks the PR changed, not for three stacks, three CNPG clusters
+and three migrations from scratch.
 
-1. The PR's CI job, on the e2e runner scale set (two runners, so at most two runs), reads
-   `vc-e2e-runner` and hands the kubeconfig to Dagger.
+## An in-place run (most PRs)
+
+1. The PR's CI job, on the e2e runner scale set, reads `vc-e2e-runner` and hands the kubeconfig
+   to Dagger. In-place runs and the nightly rebuild share one concurrency group: they take turns.
+2. Preflight, as for a migration run below. Releases a killed run left `pending-*` are rolled
+   back to their last deployed revision.
+3. Each persistent namespace records what it holds (`e2e.eliorion.fr/baseline` = the sha256 of
+   main's rendered chart and the Helm revision). A stack whose render or revision moved — a merge
+   to main, a killed run, a developer's own upgrade — is redeployed from main; the rest is left
+   alone.
+4. **Upgrade** the stacks the PR changed, with Helm's rollback-on-failure, after seeding.
+5. Checks: the upgraded stacks, or all three when the scraper or the harness changed.
+6. On failure, diagnostics. Then, always, every release the run moved is rolled back to the
+   revision it found; a rollback that fails fails the run, and the next run redeploys main.
+
+The nightly rebuild deletes `e2e-0-*`, deploys main into it and checks everything: the only
+fresh install of the current tree, and a daily data reset.
+
+## A migration run
+
+Flyway is forward-only and a Helm rollback never reverts a schema, so a PR that changes a
+migration never touches the persistent database.
+
+1. The PR's CI job reads `vc-e2e-runner` and hands the kubeconfig to Dagger.
 2. Preflight: KEDA and CNPG are Available, the vcluster's Kubernetes minor matches staging's,
    main's image tags exist. A failure here is reported as the platform's, not the PR's.
 3. Leftover `e2e-<pr>-*` namespaces are deleted; new ones are created, and the runner binds
