@@ -82,7 +82,7 @@ spec:
                       - staging-controlplane-3
       resources:
         requests:
-          cpu: 500m
+          cpu: "2"
           memory: 4Gi
         limits:
           # No CPU limit on purpose. See README.
