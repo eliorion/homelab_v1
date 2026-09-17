@@ -1,0 +1,59 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET, and not applied: Flux never sees a file the
+# kustomization does not list, and `asp-webapp-ro.enc.yaml` is what it lists.
+#
+# Password for the `webapp_ro` CNPG managed role (declared in
+# apps/base/databases/asp/database.yaml). CNPG creates the login from these two
+# fields and the asp chart builds the webapp's DSN from the same Secret:
+#   postgresql://$(DB_USER):$(DB_PASSWORD)@asp-db-r:5432/automarket
+#
+# `username` MUST equal the role name — CNPG matches the managed role by it, and
+# a mismatch authenticates as nobody.
+#
+# HOW TO TURN THIS INTO THE REAL FILE
+#   cd <homelab_v1>
+#   cp  apps/staging/databases/asp/asp-webapp-ro.enc.yaml.exemple \
+#       apps/staging/databases/asp/asp-webapp-ro.enc.yaml
+#   # put a generated password in it:
+#   openssl rand -base64 30
+#   sops -e -i apps/staging/databases/asp/asp-webapp-ro.enc.yaml
+#
+# No sops flags are needed: .sops.yaml matches this path on
+# `(^|/)staging/.*\.enc\.ya?ml$` and picks the staging age recipient
+# (age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3) itself. Its
+# `encrypted_regex: ^(data|stringData)$` means ONLY the two values below are
+# encrypted — apiVersion/kind/metadata stay readable in git, which is why a diff
+# on this file still shows what it is. Encrypting the whole document instead
+# would make the kustomization unable to see the Secret's name.
+#
+# THIS .exemple FILE STAYS PLAINTEXT ON PURPOSE: the sops rule is anchored on
+# `.enc.yaml` at the END of the name, so the `.exemple` suffix keeps it out of
+# both the encryption rule and the kustomization. Same convention as
+# apps/staging/databases/fbref/garage-backup-credentials.enc.yaml.exemple.
+#
+# Rotating later: put a new password in, `sops -e -i` again, commit. CNPG applies
+# it to the role and restarts nothing; the webapp picks it up on its next pod
+# start (env var), so roll the Deployment if you want it immediate.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: asp-webapp-ro
+    namespace: asp
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:xWpeRY4V6pao,iv:n5CP5AWQN0bwoAMCUYj+AJSkccRJ5EzqpVcL0SDQBOI=,tag:YXuLw5WjUlMjqMZh1XCong==,type:str]
+    password: ENC[AES256_GCM,data:xjawBpR6fncChi6fui2aLDNLCoDMXgODhEkeZLBx0KPG7rGKPAonGg==,iv:OSwOzAViAkPCDFnN0BPn7HbwnIs+FSeBC2LWgsPvAUQ=,tag:uI+Cw1JZ7NSVS8vfpe740w==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBtRndOYXYybjVYU0hkYWhj
+            dzBoZ0xONlpJQ0gvRGRXbmNDb2F2amF6OUd3Cm93SmIrdEd4NmNkWW1RVEdpZVZX
+            enNiQVZIdFRDaXIweENBMU5xYVRvek0KLS0tIGs0bDdLeCswSEEvV1ZrOEdJZ05i
+            aEt1V1IzRWtvcnhmTk9UWFZNNTMvTEUKZd1k5xwNUuNAj//tjmSJJxESdntM80cC
+            wfSL6DbQgi6ZdBlE+QrE/ez1h1B4VWoEjHvJYRiM8a4O6W4gEmCFFQ==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-17T23:09:21Z"
+    mac: ENC[AES256_GCM,data:ElNSozZPCpE2VGIoPnG2XcJK2/1sjrJQezMZ6r60lLPsAod4aqkuKplX7AUMpFMXmugLS6QnLocbqCfqtNMIyrkfw2iqJr2+l2+7kYR3X95vJEJsrrYDjv0qkEUYThYyKIskzVe/KyVPvuxWTZ0G8mXlSAo0Qf+Kw2To8SZaLIk=,iv:ywqa/OEj0mllo5i6VP57tR7p/ZyFV6+N1gYZFVUiGR8=,tag:c6chmGhuWFV8/KLBd9sreQ==,type:str]
+    version: 3.13.3

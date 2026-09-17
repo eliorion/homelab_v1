@@ -6,6 +6,8 @@ namespace: asp
 resources:
   - ../../../base/databases/asp
   - r2-backup-credentials.enc.yaml
+  # Password for the webapp_ro managed role above — the webapp's read-only login.
+  - asp-webapp-ro.enc.yaml
   - objectstore.yaml
   - scheduledbackup.yaml
   - ingestion-metrics-configmap.yaml
