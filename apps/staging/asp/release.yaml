@@ -54,4 +54,21 @@ spec:
           tailscale.com/expose: "true"
           tailscale.com/hostname: asp-admin-ui
     webapp:
-      enable: true
+      # `enabled`, not `enable` — a mistyped key path is silently ignored, so the
+      # old spelling did nothing; it only looked right because the chart defaults
+      # this to true.
+      enabled: true
+      db:
+        # READ AS webapp_ro, NOT AS THE OWNING `app` ROLE. Setting `host` makes
+        # the chart compose the DSN from the managed role's basic-auth Secret
+        # (asp-webapp-ro) instead of the read-write asp-db-app/uri every other
+        # component uses. The webapp writes nothing — the buying guide's one
+        # INSERT was removed — and under this role it cannot: asp V6 grants it
+        # SELECT on listings + price_history and nothing else.
+        #
+        # asp-db-r (any instance), never asp-db-ro: with 2 instances the
+        # replica-only service has exactly one endpoint and drops to zero
+        # mid-failover, which is what CrashLooped the fbref MCP. The role is
+        # read-only wherever it lands, so serving reads from the primary is fine.
+        host: asp-db-r
+        roSecretName: asp-webapp-ro

@@ -34,14 +34,29 @@ spec:
 
   # createrole is required: Flyway V6/V8 run CREATE ROLE as `app`. Removing it
   # breaks every migration run.
-  # Do NOT add a login role here to give webapp_ro/grafana_ro a password: its
-  # Secret lives only in the overlay. Patch the staging overlay instead (see README).
+  #
+  # A login role declared here needs its password Secret in EVERY overlay that
+  # renders this file. That is satisfied for webapp_ro: staging supplies
+  # asp-webapp-ro (sops, in the overlay) and the dev-platform e2e generates its
+  # own — the harness reads this file through the e2e-db-templates ConfigMap and
+  # creates a basic-auth Secret for each managed role it finds. Declaring it HERE
+  # rather than in the overlay is what makes the e2e run the webapp on the same
+  # role as staging. Same reason fbref keeps grafana_ro / mcp_ro in its base.
   managed:
     roles:
       - name: app
         ensure: present
         login: true
         createrole: true
+      # The asp webapp's read-only login. Flyway V6 creates webapp_ro NOLOGIN
+      # with SELECT on listings + price_history and NOTHING else (no grant on
+      # worker_control, search_requests or scrape_queue); CNPG only adds the
+      # login, because a password can never live in a migration.
+      - name: webapp_ro
+        ensure: present
+        login: true
+        passwordSecret:
+          name: asp-webapp-ro
 
   storage:
     size: 20Gi
