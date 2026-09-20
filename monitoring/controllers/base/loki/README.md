@@ -106,7 +106,8 @@ as every Prometheus alert.
 |---|---|---|---|
 | `KernelDiskIOErrors` | `{job="talos", service="kernel"}` | block-device or USB-bridge error signatures (`I/O error`, `uas_eh_`, `reset SuperSpeed USB`, `blk_update_request`, `critical medium error`) in 10m | critical |
 | `KernelHungTask` | kernel | `blocked for more than N seconds`, soft/hard lockup, RCU stall | warning |
-| `KernelOOMKill` | kernel | the node-level OOM killer ran | warning |
+| `KernelOOMKill` | kernel | a global OOM kill (`oom-kill:constraint=CONSTRAINT_NONE`) in 10m | critical |
+| `ContainerOOMKill` | kernel | > 3 cgroup OOM kills (`constraint=CONSTRAINT_MEMCG`) in 1h per node | warning |
 | `FilesystemErrors` | kernel | XFS error/corruption/shutdown, ext4 error, remount read-only | critical |
 | `VolumeMountFailing` | `{job="kubernetes-events"}` | > 10 FailedAttachVolume/FailedMount in 30m per namespace, for 15m | warning |
 | `UnexpectedPodExec` | `{job="kube-apiserver-audit"}` | a successful (`101`) exec/attach/port-forward by anyone except `admin`, `talos:admin`, `arc-runners` service accounts, the CNPG operator | warning |
@@ -124,6 +125,21 @@ reboots the day before) with zero would-be firings:
   cluster admin kubeconfig), the ARC runner service account (Dagger's `kube-pod://`
   transport), and the CNPG operator.
 
+**Why the two OOM rules are split.** The kernel writes `Memory cgroup out of memory:
+Killed process ...` when a *container* exceeds its own limit and plain `Out of memory:
+Killed process ...` when the *node* runs dry. Only the `oom-kill:constraint=` line tells
+them apart: `CONSTRAINT_MEMCG` for the cgroup case, `CONSTRAINT_NONE` for the global one.
+The first version of `KernelOOMKill` matched `out of memory|oom-kill|killed process`, so
+a container hitting its limit paged as node exhaustion — and paged about 30 times, once
+per killed process in the victim's process tree. Matching the `constraint=` line alone
+also collapses each event to a single sample.
+
+The cgroup case still needs an alert, because nothing else covers it. `KubePodCrashLooping`
+only fires on `CrashLoopBackOff`, and a pod that survives ten minutes between kills never
+enters it: `engine-worker` in the `e2e-0-scraper` vcluster was OOM-killed 47 times in 12 h
+without it firing. The `> 3 in 1h` threshold separates a crashlooping container from the
+single kill a test workload produces in normal operation.
+
 Rejected because a metric alert already covers them: DRBD split-brain and quorum loss
 (`infrastructure/controllers/base/linstor/monitoring`), etcd slow disk
 (`EtcdRequestLatencyHigh`, `etcdHighCommitDurations`), image pull failures
@@ -131,6 +147,9 @@ Rejected because a metric alert already covers them: DRBD split-brain and quorum
 
 ## Traps
 
+- **Never match `out of memory` or `killed process` in kernel lines.** Both appear in
+  cgroup kills, which are a container-limit problem and not a node problem. Match the
+  `oom-kill:constraint=` line and name the constraint explicitly.
 - **Never match bare `denied`, `error` or `drbd` in kernel lines.** node-3 logs ~2 200
   SELinux `avc: denied` lines an hour (permissive mode), and DRBD logs routine state
   changes several times an hour per node. Every kernel rule matches a specific failure

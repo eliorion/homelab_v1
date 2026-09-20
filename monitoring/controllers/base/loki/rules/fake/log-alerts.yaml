@@ -18,14 +18,24 @@ groups:
         annotations:
           summary: "Hung task or CPU lockup on {{ $labels.node }}"
           description: "The kernel reported a task blocked on I/O or a CPU lockup. On this cluster that usually means a stalled disk or DRBD device."
+      # CONSTRAINT_NONE is the only marker of a global OOM; a cgroup kill logs
+      # CONSTRAINT_MEMCG on lines that also read "out of memory: Killed process".
       - alert: KernelOOMKill
         expr: |
-          sum by (node) (count_over_time({job="talos", service="kernel"} |~ `(?i)out of memory|oom-kill|killed process` [10m])) > 0
+          sum by (node) (count_over_time({job="talos", service="kernel"} |= `oom-kill:constraint=CONSTRAINT_NONE` [10m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node-level kernel OOM kill on {{ $labels.node }}"
+          description: "{{ $labels.node }} ran out of memory as a whole and the kernel picked a victim by oom_score; it can be etcd or kubelet. Check `talosctl -n {{ $labels.node }} dmesg` for the victim and the node memory panel."
+      - alert: ContainerOOMKill
+        expr: |
+          sum by (node) (count_over_time({job="talos", service="kernel"} |= `oom-kill:constraint=CONSTRAINT_MEMCG` [1h])) > 3
         labels:
           severity: warning
         annotations:
-          summary: "Kernel OOM kill on {{ $labels.node }}"
-          description: "The kernel OOM killer ran on {{ $labels.node }}. Container-limit kills show up as OOMKilled pods; this one is node-level memory exhaustion."
+          summary: "Containers repeatedly hitting their memory limit on {{ $labels.node }}"
+          description: "{{ $value }} cgroup OOM kills in one hour on {{ $labels.node }}. The node has memory to spare; a container limit is too low. The `oom_memcg=` pod UID in `talosctl -n {{ $labels.node }} dmesg` names the pod."
       - alert: FilesystemErrors
         expr: |
           sum by (node) (count_over_time({job="talos", service="kernel"} |~ `(?i)xfs.*(error|corrupt|shutdown)|ext4-fs error|remount.*read-only` [10m])) > 0
