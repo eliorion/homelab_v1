@@ -24,7 +24,7 @@ Deeper context: [../../../../documentations/14-design-decisions.md](../../../../
 | File | What it does |
 |---|---|
 | `../../base/cloudflare/namespace.yaml` | the `cloudflare` namespace |
-| `../../base/cloudflare/deployment.yaml` | the `cloudflared` Deployment: one replica, image pinned, hardened `securityContext`, `TUNNEL_TOKEN` from a Secret, liveness on `/ready` |
+| `../../base/cloudflare/deployment.yaml` | the `cloudflared` Deployment: two replicas, image pinned, hardened `securityContext`, `TUNNEL_TOKEN` from a Secret, liveness on `/ready` |
 | `../../base/cloudflare/kustomization.yaml` | the base: namespace + deployment, `namespace: cloudflare` |
 | `kustomization.yaml` | the staging overlay: the base plus the tunnel token |
 | `tunnel-secret.enc.yaml` | SOPS-encrypted Secret `tunnel-credentials`, key `token` — the tunnel's identity and its route set |
@@ -53,8 +53,11 @@ reconciled, was deleted on 2026-09-15.
   reconciliation loop; this README is the control, and it has a measured failure
   rate of one (it claimed a hostname carried a web UI only, when the same route
   was in fact serving a continuous audio stream — see section 4).
-- **One replica.** Elastic scaling of this Deployment is possible and was not
-  done; a single connector is enough for this traffic.
+- **Two replicas.** Both connectors run the same token, so they are one tunnel
+  with two sets of edge connections, and the edge fails over between them. The
+  second exists for availability, not throughput: this is the cluster's only
+  public entry point, and with one replica a node drain or a connector restart
+  took every public hostname down with it. Elastic scaling is still not done.
 - **The image tag is pinned** rather than `:latest`, which a Radar audit flagged
   (`imageTagLatest`). Renovate bumps it. `--no-autoupdate` matches: the binary is
   updated by changing the tag in git, not by the process replacing itself under a
