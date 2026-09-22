@@ -23,6 +23,31 @@ spec:
     !/k8s/charts/asp/
     !/k8s/charts/common/
 ---
+# Source for the advisor app Helm chart (k8s/charts/advisor in the asp repo).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: advisor
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: ssh://git@github.com/Eliorion/asp
+  ref:
+    branch: main
+  secretRef:
+    name: asp-deploy-key
+  # Keep scoped to the chart path: reconcileStrategy: Revision re-reconciles on
+  # every new artifact revision.
+  ignore: |
+    /*
+    !/k8s/
+    /k8s/*
+    !/k8s/charts/
+    /k8s/charts/*
+    !/k8s/charts/advisor/
+    # The library chart advisor depends on (file://../common); see the asp source.
+    !/k8s/charts/common/
+---
 # Source for the fbref app Helm chart (k8s/charts/fbref in the asp repo).
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository

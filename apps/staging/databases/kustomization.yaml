@@ -5,6 +5,7 @@ kind: Kustomization
 # Flux Kustomization, which dependsOn this one.
 resources:
   - asp/
+  - advisor/
   - fbref/
   - monica/
   - n8n/

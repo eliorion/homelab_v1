@@ -5,6 +5,7 @@ kind: Kustomization
 # (owned by the `databases` and `db-migrations` Flux Kustomizations).
 resources:
   - asp/
+  - advisor/
   - audiobookshelf/
   - azuracast/
   - fbref/

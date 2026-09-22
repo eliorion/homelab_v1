@@ -1,0 +1,42 @@
+# Chart owned by the asp repo (k8s/charts/advisor) — values here are environment
+# overrides ONLY, never image tags (the chart's values.yaml owns those). README.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: advisor
+  namespace: flux-system
+spec:
+  targetNamespace: advisor
+  interval: 30m
+  chart:
+    spec:
+      chart: k8s/charts/advisor
+      sourceRef:
+        kind: GitRepository
+        name: advisor
+      interval: 12h
+      # Upgrade on every commit to the chart path — that is how the CI tag-bump
+      # commit rolls out without touching this repo.
+      reconcileStrategy: Revision
+  install:
+    # Belt-and-braces: the advisor ns is normally created by the databases tier.
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  test:
+    enable: true
+  values:
+    global:
+      # Private GHCR image; the Secret is mirrored into the ns by reflector (once
+      # `advisor` is added to its namespace list — see apps/staging/databases/advisor/README.md).
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+    otel:
+      enabled: true
+      # OTLP/HTTP base URL: the SDKs append /v1/traces; the chart's egress opens 4318 only.
+      endpoint: http://alloy-receiver.monitoring.svc.cluster.local:4318
+      environment: staging

@@ -1,0 +1,61 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: advisor-db
+  namespace: advisor
+spec:
+  instances: 2
+  # NOTE: field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg
+  # is the operator image and must never be used here.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      # `required` here would block writes whenever the replica is unavailable.
+      dataDurability: preferred
+
+  bootstrap:
+    initdb:
+      database: advisor
+      owner: app
+      # Schema is owned by Flyway (advisor-db-migrations chart hook) — no postInit here.
+
+  # advisor V3 creates the five advisor_* roles NOLOGIN, connected as `app` (needs CREATEROLE).
+  # CNPG then flips each to LOGIN with a password from its own Secret — see
+  # apps/staging/databases/advisor/README.md for what the owner still has to add.
+  managed:
+    roles:
+      - name: app
+        ensure: present
+        login: true
+        createrole: true
+      - name: advisor_pub
+        ensure: present
+        login: true
+        passwordSecret:
+          name: advisor-pub-login # pragma: allowlist secret
+      - name: advisor_ingest
+        ensure: present
+        login: true
+        passwordSecret:
+          name: advisor-ingest-login # pragma: allowlist secret
+      - name: advisor_seed
+        ensure: present
+        login: true
+        passwordSecret:
+          name: advisor-seed-login # pragma: allowlist secret
+      - name: advisor_review
+        ensure: present
+        login: true
+        passwordSecret:
+          name: advisor-review-login # pragma: allowlist secret
+      - name: advisor_publish
+        ensure: present
+        login: true
+        passwordSecret:
+          name: advisor-publish-login # pragma: allowlist secret
+
+  storage:
+    size: 20Gi
