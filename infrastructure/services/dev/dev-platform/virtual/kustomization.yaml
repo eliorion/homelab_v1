@@ -21,6 +21,7 @@ configMapGenerator:
       - asp-db-init.yaml=../../../../../apps/base/databases/asp/db-init-configmap.yaml
       - fbref.yaml=../../../../../apps/base/databases/fbref/database.yaml
       - scraper.yaml=../../../../../apps/base/databases/scraper/database.yaml
+      - advisor.yaml=../../../../../apps/base/databases/advisor/database.yaml
   # Keep the hash suffix: it renames the ConfigMap on a script edit, which changes the CronJob spec.
   - name: e2e-reaper-script
     namespace: e2e-system
