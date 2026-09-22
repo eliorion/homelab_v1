@@ -7,3 +7,11 @@ kind: Kustomization
 resources:
   - ../../base/reflector
   - ghcr-pull-secret.enc.yaml
+
+# Plaintext annotation patch, applied after sops decrypts the resource above —
+# see ghcr-pull-secret-namespaces.yaml.
+patches:
+  - path: ghcr-pull-secret-namespaces.yaml
+    target:
+      kind: Secret
+      name: ghcr-pull-secret
