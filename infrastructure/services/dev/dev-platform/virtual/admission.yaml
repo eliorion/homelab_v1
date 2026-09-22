@@ -20,7 +20,7 @@ spec:
           'system:serviceaccount:e2e-system:e2e-reaper']
   variables:
     - name: runNs
-      expression: "'^e2e-[0-9]{1,6}-(asp|fbref|scraper)$'"
+      expression: "'^e2e-[0-9]{1,6}-(asp|fbref|scraper|advisor)$'"
     - name: name
       expression: "request.operation == 'DELETE' ? oldObject.metadata.name : object.metadata.name"
   validations:
