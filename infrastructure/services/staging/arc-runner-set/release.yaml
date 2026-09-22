@@ -67,7 +67,7 @@ spec:
             # Memory bound, deliberately NO cpu limit (see README).
             resources:
               requests:
-                memory: 1Gi
+                memory: 500Mi
               limits:
                 memory: 6Gi
             volumeMounts:
@@ -98,7 +98,7 @@ spec:
                 value: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/metrics
             resources:
               requests:
-                memory: 2Gi
+                memory: 500Mi
               limits:
                 memory: 4Gi
             volumeMounts:

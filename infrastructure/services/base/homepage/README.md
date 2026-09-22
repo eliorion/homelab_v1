@@ -42,6 +42,13 @@ the `infrastructure-services` Flux Kustomization, which already carries the SOPS
 memory from `metrics.k8s.io`. metrics-server is installed by Talos
 (`bootstraping/talconfig.yaml`, `extraManifests`), not by Flux.
 
+**Layout** (`config/settings.yaml`) — the six service groups are columns side by
+side (`style: column`), tiles stacked inside each; bookmarks stay rows.
+`maxGroupColumns: 6` lets all six share one row and `fullWidth: true` gives them
+the window's width. Homepage applies the six-column width only at its `3xl`
+breakpoint (112rem, about 1792px); narrower windows wrap to 4 groups per row
+(from 1280px), then 3, 2 and 1.
+
 **Tiles** (`config/services.yaml`) — each carries up to three things:
 
 - `href`: what the browser opens, the tailnet or public URL.
@@ -199,6 +206,9 @@ itself and so cannot take an `emptyDir`. `/app/config` must also be writable
   pod in the namespace (a `Succeeded` Job pod counts as healthy) — for the two
   storage tiers that is the point. A tile reading "not found" means its selector
   matches nothing: check with `kubectl -n <ns> get pods --show-labels`.
+- **`maxGroupColumns` must be at least the number of service groups.** Add a
+  seventh group without raising it (max 8) and the last one wraps onto its own
+  row even on a wide screen.
 - **Mounting a new config file needs two edits**: the generator list in the
   staging `kustomization.yaml`, and a `subPath` mount in `deployment.yaml`. A file
   only in the ConfigMap is ignored; Homepage copies its skeleton instead.
