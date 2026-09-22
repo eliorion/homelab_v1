@@ -31,9 +31,15 @@ Flux Kustomization `infra-reflector` (`clusters/staging/infrastructure.yaml`) re
 
 `staging/reflector/`:
 
-- `kustomization.yaml` — `../../base/reflector` plus `ghcr-pull-secret.enc.yaml`.
+- `kustomization.yaml` — `../../base/reflector` plus `ghcr-pull-secret.enc.yaml`, plus a
+  `patches` entry applying `ghcr-pull-secret-namespaces.yaml` onto it.
 - `ghcr-pull-secret.enc.yaml` — the one central GHCR pull secret, SOPS-encrypted and
-  committed (commit `8b80d9c`, "fix: add the gh-pull-secret").
+  committed (commit `8b80d9c`, "fix: add the gh-pull-secret"). Carries only the credential
+  (`.dockerconfigjson`) and the two static `reflection-allowed`/`reflection-auto-enabled`
+  flags — never the namespace lists.
+- `ghcr-pull-secret-namespaces.yaml` — plaintext (not sops), patches the two
+  `*-namespaces` annotations onto the Secret above. This is the only file a new consumer
+  project edits.
 - `ghcr-pull-secret.enc.yaml.example` — the plaintext template it was created from, kept as
   the starting point for a new cluster (see "One-time setup").
 
@@ -79,8 +85,14 @@ their cached image if it ever blips. The dependency is also recorded in
 [`../../../../documentations/01-architecture.md`](../../../../documentations/01-architecture.md).
 
 **One secret instead of one per namespace.** Adding a project is a single edit to two
-annotation lists in one already-encrypted file, instead of creating and maintaining another
-encrypted per-namespace copy.
+annotation lists, instead of creating and maintaining another encrypted per-namespace copy.
+
+**The namespace lists are split out of the encrypted file.** They carry no secret material,
+but sops MACs the whole document, so any edit to them — even a plaintext annotation —
+needs the file re-encrypted (an age key most agents/CI don't hold). Moving them to
+`ghcr-pull-secret-namespaces.yaml`, a plain kustomize patch applied after Flux decrypts the
+Secret it targets, makes "add a project" a sops-free git edit while the credential itself
+stays sops-only.
 
 **The `securityContext` override is a full block.** The chart already drops all capabilities
 and runs non-root; only `allowPrivilegeEscalation` was unset (flagged by the Radar audit as a
@@ -93,9 +105,14 @@ Renovate raises the bump.
 ## Traps
 
 - **Both `*-namespaces` annotation lists must be updated together.** A new consumer namespace
-  has to be appended to `reflection-allowed-namespaces` *and* `reflection-auto-namespaces` on
-  `ghcr-pull-secret`, then the file re-encrypted. With only `reflection-allowed-namespaces`
-  the copy is permitted but never made.
+  has to be appended to `reflection-allowed-namespaces` *and* `reflection-auto-namespaces` in
+  `ghcr-pull-secret-namespaces.yaml`. With only `reflection-allowed-namespaces` the copy is
+  permitted but never made.
+- **The patch only reaches the Secret because Flux decrypts before running kustomize build.**
+  `infra-reflector` decrypts the raw `ghcr-pull-secret.enc.yaml` file against its own
+  committed ciphertext first (sops MAC verified against that untouched file), then kustomize
+  build merges `ghcr-pull-secret-namespaces.yaml` onto the now-plaintext result. The patch
+  never touches `stringData`, so it never needs sops and never affects the credential's MAC.
 - **This directory only decrypts because `infra-reflector` sets `decryption.provider: sops`**
   with `secretRef: sops-age` (`clusters/staging/infrastructure.yaml`). Reconciling this path
   from a Kustomization without that block leaves the ciphertext unusable.
@@ -141,16 +158,15 @@ pull secret any more.
 ### Add a project
 
 Append its namespace to **both** `reflection-allowed-namespaces` and
-`reflection-auto-namespaces` in the secret, then re-encrypt with `sops`. One secret, one
-edit — no new file to encrypt or maintain. For a lab or dbtools consumer of a database, also
-add the permit annotation to that project's CNPG cluster
-(`apps/staging/databases/<project>/cluster-reflector-patch.yaml`) and the matching `reflects`
-stub in the consumer namespace.
+`reflection-auto-namespaces` in `ghcr-pull-secret-namespaces.yaml` — plain git edit, no sops.
+For a lab or dbtools consumer of a database, also add the permit annotation to that project's
+CNPG cluster (`apps/staging/databases/<project>/cluster-reflector-patch.yaml`) and the
+matching `reflects` stub in the consumer namespace.
 
 ### Verify
 
 ```bash
 flux get kustomizations | grep -E 'infra-reflector|databases'   # reflector Ready BEFORE databases
-for ns in asp fbref lab scraper; do kubectl get secret ghcr-pull-secret -n $ns; done  # present in each
+for ns in asp fbref lab scraper advisor; do kubectl get secret ghcr-pull-secret -n $ns; done  # present in each
 kubectl -n reflector logs deploy/reflector | grep ghcr          # mirror events
 ```
