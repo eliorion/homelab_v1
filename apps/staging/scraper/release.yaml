@@ -45,6 +45,11 @@ spec:
       # Private GHCR images; the Secret is mirrored into the ns by reflector.
       imagePullSecrets:
         - name: ghcr-pull-secret
+    otel:
+      enabled: true
+      # OTLP/HTTP base URL: the SDKs append /v1/traces; the chart's egress opens 4318 only.
+      endpoint: http://alloy-receiver.monitoring.svc.cluster.local:4318
+      environment: staging
     # ONE solver per pool: a session's cf_clearance is bound to one egress IP, so
     # a shared instance cannot serve several proxies. No `replicas` knob — each
     # solver is KEDA-scaled 0<->1 alongside its pool.

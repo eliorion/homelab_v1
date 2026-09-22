@@ -796,6 +796,25 @@ dies, silence looks exactly like health. This is a gap, not a win, and it is lis
 
 **Reference.** `monitoring/controllers/base/kube-prometheus-stack/release.yaml`
 
+### Application traces come from the OpenTelemetry SDK in each service, not from Beyla
+
+**Why.** The spans worth having are units of work only the code knows about: an engine
+tick, a scraped page with its site, lane and pool, an MCP tool call. The SDK also puts
+`trace_id` into every JSON log line written inside a span, which is what links Loki to
+Tempo. Export is switched on per release from this repository (`otel.enabled`), and an
+unreachable collector only drops spans.
+
+**Rejected.** Beyla, eBPF auto-instrumentation in Alloy: no code change, but only HTTP and
+SQL spans, named after routes, with no business attributes and no log correlation, and it
+needs a privileged DaemonSet.
+
+**Cost.** Code to maintain in the `asp` repository: `telemetry.py` vendored into seven Python
+services, an `otel.ts` in both admin UIs, the webapp's instrumentation file, and a manual
+span around every webapp query because postgres.js has no instrumentation. A new service is
+untraced until someone wires it.
+
+**Reference.** [18-observability-lgtm.md](18-observability-lgtm.md), `apps/staging/fbref/README.md`
+
 ---
 
 ## 8. GitOps and developer workflow
