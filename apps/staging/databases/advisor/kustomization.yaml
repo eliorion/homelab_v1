@@ -5,7 +5,9 @@ namespace: advisor
 
 resources:
   - ../../../base/databases/advisor
-  # The five advisor_* role-login Secrets and the Garage backup wiring are NOT here yet —
+  # Password for the advisor_pub CNPG managed role (unblocks advisor-api's dbRole login).
+  - advisor-pub-login.enc.yaml
+  # The other four advisor_* role-login Secrets and the Garage backup wiring are NOT here yet —
   # see README.md. They need the owner's staging sops key and (for backups) a Garage bucket.
 
 patches:

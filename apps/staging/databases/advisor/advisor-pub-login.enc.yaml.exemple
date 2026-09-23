@@ -1,0 +1,17 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. Login for the advisor_pub CNPG managed role
+# (apps/base/databases/advisor/database.yaml references this Secret by name).
+# username MUST be the role name -- that is how CNPG's managed.roles reconciler
+# matches the login to the role. Copy this file to advisor-pub-login.enc.yaml,
+# generate a password, then encrypt in place:
+#   cp advisor-pub-login.enc.yaml.exemple advisor-pub-login.enc.yaml
+#   # replace the password below with: openssl rand -base64 32
+#   sops -e -i advisor-pub-login.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: advisor-pub-login
+  namespace: advisor
+type: kubernetes.io/basic-auth
+stringData:
+  username: advisor_pub
+  password: "<openssl rand -base64 32>"

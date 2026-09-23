@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: advisor-pub-login
+    namespace: advisor
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:w94OTEIdrkRUFzo=,iv:qD837677O5Qs3zexzzOl5iwY+ehvqboeK9p5Gur/EdI=,tag:/SXNWMjcyB0iyuwuM/Prmw==,type:str]
+    password: ENC[AES256_GCM,data:diNllzWXtq6zWK4nfdr+dSEk2YucY1dl/ek16l/pkscY3fZH6YY+6buoStU=,iv:yRUxEfby6nul+0A6/sRDgqu1XSAVE1+wkL0Gh2SeqfQ=,tag:f0cq/0vdgTy1nch4Sx4bIA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBFTHhyTlowRG9sbFVIaUpF
+            endCVnJTdXVJU0pRd0N3bmJtckJrVjN5OUIwCnpkL0dkMTdnN01IVXhuemdvZmha
+            a1d1eXIvSVZPOTFIQnFURjMxT200cTgKLS0tIFdaeDdSVjJoT1EvZi81V2dPaHAy
+            SUdOOWlyZWZXVUVjVisvMy9oRFh0VDgKzJhZu2cgdQaPPqnMnn4tGJM6RBalFeYx
+            ZWAbqcMpUUqwgdy36iH4HdvPh11Sd1WgT5AJNAfhn7iMmX0bjpiDvw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-23T02:46:54Z"
+    mac: ENC[AES256_GCM,data:vge3G7Pgj0O66n5FyZe9jwzXJbqpPRQhggh4RLREL/YhedHyRlEVPQoiW7wtEVAcAn1B1X10EeyBXMgUTtjLUySyMZOaLFzKHu5CQ5C8UWk1ApjuK8PrLHNahsA8wfVF1oicRWLaEnKkui9semTQquvxnIp5RrnmcqrgUotgeGQ=,iv:IO9agrIXESd4dRlmoeaotUt53v5o88+U+s4U21vMKx0=,tag:ZKjeivPf4JyVH7Mn2EgGBA==,type:str]
+    version: 3.13.3
