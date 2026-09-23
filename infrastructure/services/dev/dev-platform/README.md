@@ -144,12 +144,27 @@ Measured on a throwaway vcluster (2026-09-15) and from `helm template` of the th
 | one run: CNPG, 1 instance each, 2 for fbref (LimitRange defaults) | 4 | 0.2 | ~0.3Gi | 2 | 2Gi | 4 |
 | one run: migration hooks, helm tests, fixtures (transient) | ~5 | ~0.3 | ~0.4Gi | ~2.5 | ~2.5Gi | — |
 
+advisor joined as a fourth stack after the numbers above were measured (2026-09-23, `helm
+template` of `k8s/charts/advisor` with every component and role-isolation hook enabled — the
+e2e overlay's own shape). One run's worth:
+
+| | pods | requests.cpu | requests.memory | limits.cpu | limits.memory | PVCs |
+|---|---|---|---|---|---|---|
+| one run: advisor-api + advisor-engine workloads | 2 | 50m | 128Mi | 1 | 256Mi | — |
+| one run: CNPG, 1 instance (LimitRange defaults) | 1 | 50m | ~0.1Gi | 0.5 | 512Mi | 1 |
+| one run: migration hook + 7 role-isolation/db-health helm tests (transient, LimitRange defaults) | 8 | 400m | ~0.5Gi | 4 | 4Gi | — |
+
 `dev-quota` covers the platform plus two stack sets — the persistent environment and one
-fresh migration run: 60 pods, 7 CPU and 12Gi requested,
-30 CPU and 36Gi of limits, 16 PVCs, 40Gi `ssd-single`. Because the quota caps `limits.cpu`,
-`dev-limits` gives every container without a CPU limit a 500m default; the vcluster control plane
-sets its own 2 CPU so the API server is not throttled. The asp lane runs at most two
-at once (its runner scale set). Free requests on the cluster at measurement: ~18 CPU, ~37Gi.
+fresh migration run: 75 pods, 7 CPU and 12Gi requested,
+42 CPU and 36Gi of limits, 16 PVCs, 40Gi `ssd-single`. `limits.cpu` is the number that has
+actually run out in practice (E2E_dev_platform failing with `exceeded quota: dev-quota` on an
+unrelated stack's pod mid-run, `asp` PR #428) — 30 was sized for three stacks, and advisor's own
+~5.5 CPU of limits per run, times two run-slots, is where the extra 12 comes from. Requests and
+memory stayed put: advisor's own requests and memory are a small fraction of either ceiling and
+neither was ever the pod actually refused. Because the quota caps `limits.cpu`, `dev-limits`
+gives every container without a CPU limit a 500m default; the vcluster control plane sets its
+own 2 CPU so the API server is not throttled. The asp lane runs at most two at once (its runner
+scale set). Free requests on the cluster at measurement (2026-09-15, pre-advisor): ~18 CPU, ~37Gi.
 
 ## Traps
 
