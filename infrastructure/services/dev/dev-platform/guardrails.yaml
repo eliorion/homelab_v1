@@ -1,5 +1,6 @@
 # Sized for the platform (control plane, CoreDNS, KEDA, CNPG operator) plus two concurrent
-# three-stack runs with their CNPG clusters. Numbers and how they were measured: README.md.
+# FOUR-stack runs (asp, fbref, scraper, advisor) with their CNPG clusters. Numbers and how
+# they were measured: README.md.
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -7,10 +8,10 @@ metadata:
   namespace: dev-platform
 spec:
   hard:
-    pods: "60"
+    pods: "75"
     requests.cpu: "7"
     requests.memory: 12Gi
-    limits.cpu: "30"
+    limits.cpu: "42"
     limits.memory: 36Gi
     persistentvolumeclaims: "16"
     requests.storage: 40Gi
