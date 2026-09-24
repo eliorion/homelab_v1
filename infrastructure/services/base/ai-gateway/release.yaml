@@ -11,7 +11,7 @@ spec:
   chart:
     spec:
       chart: bifrost
-      version: "2.1.34"
+      version: "2.1.43"
       sourceRef:
         kind: HelmRepository
         name: bifrost
@@ -39,7 +39,7 @@ spec:
       # renovate: datasource=docker depName=docker.io/maximhq/bifrost
       # Required by the chart's values.schema.json, and DELIBERATELY ahead of
       # the chart's appVersion (1.5.12) — do not "fix" it back to appVersion.
-      tag: "v1.6.9"
+      tag: "v2.2.2"
 
     service:
       type: ClusterIP

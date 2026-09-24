@@ -44,7 +44,7 @@ Base — `infrastructure/services/base/ai-gateway/`:
 | `kustomization.yaml` | Lists the five objects below. Nothing is reflected into any other namespace. |
 | `namespace.yaml` | Namespace `ai-gateway`, labelled `name: ai-gateway` so consumer NetworkPolicies can select it by namespace label instead of pod IP. |
 | `repository.yaml` | `HelmRepository` `bifrost` in `flux-system`, `https://maximhq.github.io/bifrost/helm-charts`, 24h interval. |
-| `release.yaml` | The `HelmRelease` — chart `bifrost` 2.1.34, image `docker.io/maximhq/bifrost:v1.6.9`, one replica, external CNPG, UI-owned configuration. |
+| `release.yaml` | The `HelmRelease` — chart `bifrost` 2.1.43, image `docker.io/maximhq/bifrost:v2.2.2`, one replica, external CNPG, UI-owned configuration. |
 | `ingress-tailscale.yaml` | `Ingress` with `ingressClassName: tailscale`, `defaultBackend` → Service `ai-gateway:8080`, `tls.hosts: [ai-gateway]`. TLS on 443 with a MagicDNS certificate. |
 | `podmonitor.yaml` | `PodMonitor` scraping the pod's `http` port at `/metrics` every 30s, labelled `release: kube-prometheus-stack`. |
 
@@ -54,9 +54,9 @@ What `release.yaml` sets, block by block:
   selector labels and the chart's ServiceMonitor all read `ai-gateway` and never
   `bifrost`.
 - `replicaCount: 1` — not a capacity decision; see "Why it is like this".
-- `image.tag: "v1.6.9"` — the chart requires an explicit tag, so this (not the
+- `image.tag: "v2.2.2"` — the chart requires an explicit tag, so this (not the
   chart version) is the real version knob. Renovate tracks the image, and keeps
-  the pinned chart version (`2.1.34`) current as well.
+  the pinned chart version (`2.1.43`) current as well.
 - `service`: `ClusterIP` on 8080, with **no** Tailscale annotations.
 - `ingress.enabled: false` — the chart's own ingress template is unused.
 - `storage.mode: postgres`, `configStore` and `logsStore` enabled,
@@ -132,8 +132,8 @@ to be editing the dashboard.
 **The image tag is ahead of the chart's `appVersion`.** The chart's
 `values.schema.json` marks the tag as required and validates it at template
 render time, so it has to be set explicitly anyway. Upstream does not bump chart
-metadata per app release: chart 2.1.34 still declares `appVersion` 1.5.12, while
-chart 2.1.34 and image `v1.6.9` were published the same day. Pinning the
+metadata per app release: chart 2.1.43 still declares `appVersion` 1.5.12, well
+behind the image it ships (`v2.2.2`). Pinning the
 `appVersion` would run a months-old gateway, so Renovate tracks the image.
 
 **A Tailscale Ingress, not the `tailscale.com/expose` annotation** the admin UIs
