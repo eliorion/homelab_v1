@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-nextcloud
+    namespace: flux-system
+type: Opaque
+stringData:
+    NEXTCLOUD_S3_ACCESS_KEY: ENC[AES256_GCM,data:f28UZv9bVdI3grYAdns47v03JJi1RKXSN4hGWZ1oGC8=,iv:JIEEbczmdgwCCVmmurGNz+vgLB0HcjSnVwcHut19dx0=,tag:gSwlCkd5u/yQR1bZo5Wmfg==,type:str]
+    NEXTCLOUD_S3_SECRET_KEY: ENC[AES256_GCM,data:BEvckjbW9lotCmIFuBdyWgxwiL83kBeMGJ+Z4aqvxCd24rVaIxK0CAsDwg==,iv:ftcEUogudpW5MlqMQ3dFrFp0V8+vwAzjIGHj1Jqqta4=,tag:m23wuL6egYR4r4Xl4jUTTA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBjaWxydUJpMFM3MUJKSWFX
+            N1lpZGVSdmRBNGdRLzJBRVA5N2JVaFA5MlFJCjJlbktoZHhodmp0anVsVXl3L3lO
+            UkhRZTVEK2RvSlFnaTZDQlJKeHJEMDQKLS0tIHNabDQyWERKWHNIbzBueklTRUNX
+            VGgxQ2NwbTIzaEhLWHNzZXcrZ2NSMHMK8wXltfOOOZf41UD9HkKQQbvaj1f15nuv
+            s0UoVdgQ+VwBj6aUx67kRL7GV3pQ9/ozKFvBfvrFpuTKojS/r6w14A==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-24T01:30:22Z"
+    mac: ENC[AES256_GCM,data:cPJsbfWHM4rJBk7xjOO198M7LNfSFNu4hJMyoFra8gS56bZ98uopNve3+ZfqxLgIN+ng4WrzxT/iJRUs0F75b8RU6czTIuEqQFS2wGyRe1m1ZSG1m+N1CnBxYxt/2WOEf7p2TwXpsJXmWcvg3vzhE5qRNWp1INm6OdZ/st3ZcmM=,iv:clserpRBT4yw+LgC1IsO1t/dgci1qCBNeDKRI+wj8NY=,tag:QJfTeuRPCkjuycn261jdoA==,type:str]
+    version: 3.13.3

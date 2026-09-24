@@ -344,6 +344,52 @@ spec:
       name: seaweedfs-csi-driver
       namespace: flux-system
 ---
+# SeaweedFS S3 identities, one sops Secret per bucket (infrastructure/controllers/staging/seaweedfs-s3/README.md).
+# No dependsOn infrastructure-controllers: these only need the flux-system and seaweedfs namespaces, and
+# must not wait on an unrelated controller to rotate a key.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-seaweedfs-s3-buckets
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/staging/seaweedfs-s3/buckets
+  prune: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+---
+# Renders the gateway's one static identity file from the bucket Secrets above. Substitution is scoped to
+# this unit's single manifest on purpose: on a bigger tree it would rewrite every other ${...}.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-seaweedfs-s3-config
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+    - name: infra-seaweedfs-s3-buckets
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/staging/seaweedfs-s3/config
+  prune: true
+  postBuild:
+    substituteFrom:
+      - {kind: Secret, name: s3-advisor-corpus}
+      - {kind: Secret, name: s3-nextcloud}
+      - {kind: Secret, name: s3-tmp-backup-garage}
+---
 # force: true so the Job is deleted and recreated when its script changes.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
