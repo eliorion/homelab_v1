@@ -3,5 +3,4 @@ kind: Kustomization
 
 resources:
   - release.yaml
-  # advisor-pipeline's ai-gateway virtual key (WP2.4). Uncomment once the file exists:
-  # - advisor-ai-gateway-token.enc.yaml
+  - advisor-ai-gateway-token.enc.yaml
