@@ -1,0 +1,16 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. S3 credential for bucket nextcloud (Nextcloud's primary storage,
+# apps/staging/nextcloud/ reads the matching key pair from its own nextcloud-s3.enc.yaml -- the two
+# must agree, nothing checks it, a mismatch surfaces as 403 on every upload). Steps: ../README.md.
+#   cp nextcloud.enc.yaml.exemple nextcloud.enc.yaml
+#   # NEXTCLOUD_S3_ACCESS_KEY: openssl rand -hex 12
+#   # NEXTCLOUD_S3_SECRET_KEY: openssl rand -hex 32
+#   sops -e -i nextcloud.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-nextcloud
+  namespace: flux-system
+type: Opaque
+stringData:
+  NEXTCLOUD_S3_ACCESS_KEY: "<openssl rand -hex 12>"
+  NEXTCLOUD_S3_SECRET_KEY: "<openssl rand -hex 32>"

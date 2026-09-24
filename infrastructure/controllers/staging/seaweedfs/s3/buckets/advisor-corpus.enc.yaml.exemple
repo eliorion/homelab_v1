@@ -1,0 +1,22 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. S3 credential for bucket advisor-corpus (asp repo: advisor-engine's
+# raw document store, chart value objectStore.secretName/accessKeyKey/secretKeyKey). Steps: ../README.md.
+#   cp advisor-corpus.enc.yaml.exemple advisor-corpus.enc.yaml
+#   # ADVISOR_CORPUS_S3_ACCESS_KEY: openssl rand -hex 12
+#   # ADVISOR_CORPUS_S3_SECRET_KEY: openssl rand -hex 32
+#   sops -e -i advisor-corpus.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-advisor-corpus
+  namespace: flux-system
+  annotations:
+    # Reflector copies this Secret into the consuming namespace, so one file serves both
+    # the identity (here) and the client (there).
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: advisor
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: advisor
+type: Opaque
+stringData:
+  ADVISOR_CORPUS_S3_ACCESS_KEY: "<openssl rand -hex 12>"
+  ADVISOR_CORPUS_S3_SECRET_KEY: "<openssl rand -hex 32>"

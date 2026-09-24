@@ -4,7 +4,7 @@ resources:
   - cnpg/
   # Tailscale operator — exposes the asp/fbref admin UIs on the tailnet.
   - tailscale-operator/
-  - seaweedfs-cluster/
+  - seaweedfs/cluster/
   # LINSTOR storage pools — one `ssd` pool spanning all three nodes.
   - linstor-cluster/
   # ACME ClusterIssuers (letsencrypt-staging + -prod) and the Cloudflare

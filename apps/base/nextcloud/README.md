@@ -122,9 +122,8 @@ error.
   because the bucket comes from the `infra-seaweedfs-config` Job, which also
   sets its volume growth. The `nextcloud-data-pvc` still holds the app tree —
   only user file *content* lives in S3, under `urn:oid:<fileid>` keys.
-- **The key pair is duplicated.** It is written here and in the `nextcloud`
-  identity of
-  `infrastructure/controllers/staging/seaweedfs-cluster/s3-config.enc.yaml`.
+- **The key pair is duplicated.** It is written here and in
+  `infrastructure/controllers/staging/seaweedfs/s3/buckets/nextcloud.enc.yaml`.
   Nothing checks the two agree; a mismatch surfaces as `403` on every upload.
 - **An app tree without a `config.php` installs nothing.** The entrypoint picks
   install-vs-upgrade by comparing `version.php` in the volume against the image.

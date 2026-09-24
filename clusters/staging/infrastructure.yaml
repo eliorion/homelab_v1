@@ -344,7 +344,7 @@ spec:
       name: seaweedfs-csi-driver
       namespace: flux-system
 ---
-# SeaweedFS S3 identities, one sops Secret per bucket (infrastructure/controllers/staging/seaweedfs-s3/README.md).
+# SeaweedFS S3 identities, one sops Secret per bucket (infrastructure/controllers/staging/seaweedfs/s3/README.md).
 # No dependsOn infrastructure-controllers: these only need the flux-system and seaweedfs namespaces, and
 # must not wait on an unrelated controller to rotate a key.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -359,7 +359,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./infrastructure/controllers/staging/seaweedfs-s3/buckets
+  path: ./infrastructure/controllers/staging/seaweedfs/s3/buckets
   prune: true
   decryption:
     provider: sops
@@ -382,7 +382,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./infrastructure/controllers/staging/seaweedfs-s3/config
+  path: ./infrastructure/controllers/staging/seaweedfs/s3/config
   prune: true
   postBuild:
     substituteFrom:
@@ -405,7 +405,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./infrastructure/controllers/staging/seaweedfs-config
+  path: ./infrastructure/controllers/staging/seaweedfs/configure
   prune: true
   force: true
 ---
