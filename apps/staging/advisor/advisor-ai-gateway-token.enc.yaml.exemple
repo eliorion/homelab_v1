@@ -1,0 +1,18 @@
+# TEMPLATE — advisor's OWN ai-gateway virtual key. Procedure in README.md.
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.example`/`.exemple` matches
+# nothing and is never encrypted — NEVER put the real key here.
+#
+# The key is CREATED IN THE AI-GATEWAY DASHBOARD (Virtual Keys), against a routing-rule alias
+# scoped to a free-tier / no-cost provider, and only STORED here — nothing generates it locally.
+#   cp advisor-ai-gateway-token.enc.yaml.exemple advisor-ai-gateway-token.enc.yaml
+#   # replace AI_GATEWAY_TOKEN with the virtual key from the dashboard
+#   sops -e -i advisor-ai-gateway-token.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: advisor-ai-gateway-token
+  namespace: advisor
+type: Opaque
+stringData:
+  AI_GATEWAY_TOKEN: REPLACE_WITH_AI_GATEWAY_VIRTUAL_KEY

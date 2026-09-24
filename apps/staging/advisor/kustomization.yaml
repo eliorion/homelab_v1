@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - release.yaml
+  - advisor-ai-gateway-token.enc.yaml
