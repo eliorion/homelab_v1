@@ -1,0 +1,14 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. S3 credential for bucket tmp-backup-garage. Steps: ../README.md.
+#   cp tmp-backup-garage.enc.yaml.exemple tmp-backup-garage.enc.yaml
+#   # TMP_BACKUP_GARAGE_S3_ACCESS_KEY: openssl rand -hex 12
+#   # TMP_BACKUP_GARAGE_S3_SECRET_KEY: openssl rand -hex 32
+#   sops -e -i tmp-backup-garage.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-tmp-backup-garage
+  namespace: flux-system
+type: Opaque
+stringData:
+  TMP_BACKUP_GARAGE_S3_ACCESS_KEY: "<openssl rand -hex 12>"
+  TMP_BACKUP_GARAGE_S3_SECRET_KEY: "<openssl rand -hex 32>"

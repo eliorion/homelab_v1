@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# One sops Secret per bucket, in flux-system: that is where postBuild.substituteFrom reads them.
+resources:
+  - advisor-corpus.enc.yaml
+  - nextcloud.enc.yaml
+  - tmp-backup-garage.enc.yaml

@@ -9,7 +9,7 @@ of the storage layer; LINSTOR replaces the other half.
 This directory installs the CSI driver and the namespace both charts share. The
 cluster itself — the volume-server topology, the filer's database, the
 StorageClass, the S3 credentials — is hardware-specific and lives in
-[`../../staging/seaweedfs-cluster`](../../staging/seaweedfs-cluster). Migration
+[`../../staging/seaweedfs/cluster`](../../staging/seaweedfs/cluster). Migration
 narrative and runbook:
 [`../../../../documentations/17-linstor-seaweedfs-migration.md`](../../../../documentations/17-linstor-seaweedfs-migration.md).
 
@@ -283,7 +283,7 @@ that resolve in-cluster and nowhere else.
 `fs.configure` and `s3.bucket.create` write to the filer's metadata store, which
 here is the `seaweedfs-db` CNPG cluster — not to any Helm value. Applied by hand
 they survive pod restarts and disappear with the database. They ship instead as
-`infrastructure/controllers/staging/seaweedfs-config`, a Job carrying
+`infrastructure/controllers/staging/seaweedfs/configure`, a Job carrying
 `configure.sh`, applied by the `infra-seaweedfs-config` Flux Kustomization with
 `force: true` so a script change deletes and recreates the Job. Both commands are
 idempotent — re-creating an existing bucket is a no-op that exits 0 — so the Job

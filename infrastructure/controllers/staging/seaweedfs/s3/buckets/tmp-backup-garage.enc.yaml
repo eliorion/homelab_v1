@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-tmp-backup-garage
+    namespace: flux-system
+type: Opaque
+stringData:
+    TMP_BACKUP_GARAGE_S3_ACCESS_KEY: ENC[AES256_GCM,data:aso0RK5jKCVuKQl214wckAK0Vmg8pMwnwqu8oHk/YSY=,iv:UROeIdPSCx/gWGOYFQ3qdctEK7cla0NZ8b/dw9922JM=,tag:XrxdMtvYpNPe/lqSFvBrWw==,type:str]
+    TMP_BACKUP_GARAGE_S3_SECRET_KEY: ENC[AES256_GCM,data:Eu24N2A5YVEuJYEqFOQpHOyVPc+8/ntK+oIzX3htPMlQZ/gVYgcVL6g=,iv:jsJ/L+Jyw/BlxXe04+fz07obKyXOJE5wURHOMQdjvTo=,tag:Qshvp9z+Whz0krDo3iqYCw==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBvdVVtMkM5d09tRkczYkVM
+            LytheEpDaXlTZFBpcWF1Yk5ESFNJdHVnUWxNCkoydHo5cDB5Q3NCc0R6b2N6MVJN
+            WVAybjVYVjVPY1h3L2w3UVhoNmlndDAKLS0tIEs2eU5CZjFnN3E0bkZYbmoxc3FT
+            OWZvRDVXVnhkRWtPanN6NUNkVjdzb0EKqrvu4+JIryYSgVHfia+PHP6G/jvuRhLi
+            Y8Gtqmv0V/z/SNaZB4H5GyGWtUICKEqB1viWly+lLem2E5E4Y6AvnQ==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-24T01:30:22Z"
+    mac: ENC[AES256_GCM,data:yjtSSpPJdkMX5TJsD/v607foWiLd8md36UWbOBGPBZQ+llIjcJsm1i2HvdUdgoiesegE00sVEnWF3YPOwFoPlhuo9RXfQ48FdvKOjY9fBAlVWbJBKhLycK4gj9gv60D2c/0a2zJuMNnYVLWgiKajur1F8+o7ewkQl4kckGKhDec=,iv:HtVhA+h+rK35vyJMVvuWv6oXsn8V/NrQDkNzYIuSxOA=,tag:Abo4HJtUT6E1fowIaZG55A==,type:str]
+    version: 3.13.3

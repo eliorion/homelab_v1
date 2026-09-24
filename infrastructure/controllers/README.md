@@ -25,7 +25,7 @@ directly, one per Flux Kustomization, and only two go through the aggregate
 | Path | What it does |
 |---|---|
 | `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `kyverno/`, `linstor/` (Piraeus operator, + `linstor/monitoring/`), `reflector/`, `seaweedfs/` (namespace + CSI driver, + `seaweedfs/monitoring/`). **There is no `base/kustomization.yaml`** and there should not be one. |
-| `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. `cnpg/`, `tailscale-operator/`, `seaweedfs-cluster/` and `linstor-cluster/`. |
+| `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. `cnpg/`, `tailscale-operator/`, `seaweedfs/cluster/` and `linstor-cluster/`. |
 | `staging/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/` (the operator only — `base/cnpg/kustomization.yaml` does not include `plugin/`). |
 | `staging/tailscale-operator/` | Staging-only component, no base counterpart. Reconciled through the aggregate above. |
 | `staging/reflector/` | Lives under `staging/` but is **not** listed in `staging/kustomization.yaml`. It has its own Flux Kustomization, `infra-reflector`, pointing straight at `./infrastructure/controllers/staging/reflector`. |
@@ -41,7 +41,7 @@ From `clusters/staging/infrastructure.yaml`:
 | `infra-arc-controller` | `base/arc` | `wait: true`, health check on `arc-controller-gha-rs-controller` |
 | `infra-linstor` | `base/linstor` | `wait: true`, `timeout: 15m`, health check on the `piraeus-operator` HelmRelease |
 | `infra-seaweedfs` | `base/seaweedfs` | `wait: true`, `timeout: 15m`, health check on the `seaweedfs-csi-driver` HelmRelease; `dependsOn: infra-linstor` because the masters claim from the `ssd` class |
-| `infra-seaweedfs-config` | `staging/seaweedfs-config` | `dependsOn: infrastructure-controllers`, `force: true` so a script change deletes and recreates the Job |
+| `infra-seaweedfs-config` | `staging/seaweedfs/configure` | `dependsOn: infrastructure-controllers`, `force: true` so a script change deletes and recreates the Job |
 | `infra-linstor-monitoring` | `base/linstor/monitoring` | `dependsOn: monitoring-controllers` — needs the CRDs kube-prometheus-stack installs |
 | `infra-seaweedfs-monitoring` | `base/seaweedfs/monitoring` | `dependsOn: monitoring-controllers`, same reason |
 | `infra-cilium` | `base/cilium` | `wait: true`, `timeout: 10m` (cold agent/operator/hubble image pull) |

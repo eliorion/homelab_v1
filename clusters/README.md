@@ -54,7 +54,7 @@ so the whole tree reconciles from one clone.
 | `infra-harbor-config` | `infrastructure/services/staging/harbor/config` | 1h | 10m | `infrastructure-services` | force + wait, sops |
 | `infra-linstor` | `infrastructure/controllers/base/linstor` | 1h | 15m | — | wait + HelmRelease `piraeus-operator` |
 | `infra-seaweedfs` | `infrastructure/controllers/base/seaweedfs` | 1h | 15m | `infra-linstor` | wait + HelmRelease `seaweedfs-csi-driver` |
-| `infra-seaweedfs-config` | `infrastructure/controllers/staging/seaweedfs-config` | 1h | 15m | `infrastructure-controllers` | force |
+| `infra-seaweedfs-config` | `infrastructure/controllers/staging/seaweedfs/configure` | 1h | 15m | `infrastructure-controllers` | force |
 | `infra-linstor-monitoring` | `infrastructure/controllers/base/linstor/monitoring` | 1h | 5m | `monitoring-controllers` | — |
 | `infra-seaweedfs-monitoring` | `infrastructure/controllers/base/seaweedfs/monitoring` | 1h | 5m | `monitoring-controllers` | — |
 

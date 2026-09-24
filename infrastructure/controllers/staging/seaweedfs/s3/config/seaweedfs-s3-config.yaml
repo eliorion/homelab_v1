@@ -1,0 +1,63 @@
+# The SeaweedFS S3 gateway's static identities (chart value s3.existingConfigSecret). PLAINTEXT on purpose:
+# every credential is a ${VAR} that Flux fills from that bucket's own sops Secret (../buckets/) through
+# postBuild.substituteFrom on the infra-seaweedfs-s3-config Kustomization, so no two buckets share a file.
+#
+# The gateway reads this file at startup only: after a change, restart it
+#   kubectl -n seaweedfs rollout restart deployment seaweedfs-seaweedfs-s3
+# It must never be emptied: with no identity at all the gateway turns authentication OFF.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: seaweedfs-s3-config
+  namespace: seaweedfs
+type: Opaque
+stringData:
+  seaweedfs_s3_config: |
+    {
+      "identities": [
+        {
+          "name": "nextcloud",
+          "credentials": [
+            {
+              "accessKey": "${NEXTCLOUD_S3_ACCESS_KEY}",
+              "secretKey": "${NEXTCLOUD_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:nextcloud",
+            "Write:nextcloud",
+            "List:nextcloud",
+            "Tagging:nextcloud"
+          ]
+        },
+        {
+          "name": "tmp-backup-garage",
+          "credentials": [
+            {
+              "accessKey": "${TMP_BACKUP_GARAGE_S3_ACCESS_KEY}",
+              "secretKey": "${TMP_BACKUP_GARAGE_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:tmp-backup-garage",
+            "Write:tmp-backup-garage",
+            "List:tmp-backup-garage",
+            "Tagging:tmp-backup-garage"
+          ]
+        },
+        {
+          "name": "advisor-corpus",
+          "credentials": [
+            {
+              "accessKey": "${ADVISOR_CORPUS_S3_ACCESS_KEY}",
+              "secretKey": "${ADVISOR_CORPUS_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:advisor-corpus",
+            "Write:advisor-corpus",
+            "List:advisor-corpus"
+          ]
+        }
+      ]
+    }
