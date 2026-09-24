@@ -5,11 +5,12 @@
   },
   "customManagers": [
     {
-      "description": "Images pinned inline under infrastructure/ -- CronJob pod specs and the ARC dind pod templates embedded in HelmRelease spec.values. Neither is reachable by a built-in manager: the `kubernetes` manager above is scoped to the db-migrations Jobs, the `flux` manager only reads chart versions, and `helm-values` only reads values.yaml FILES, not values inlined in a HelmRelease CR. Without this block every `# renovate:` comment under infrastructure/ is inert -- which is how the talos-backup pin in etcd-backup/cronjob.yaml has been carrying an annotation nobody was reading. Keyed on the annotation, so a file is scanned only where the comment is present and adding one is opt-in.",
+      "description": "Images pinned inline under infrastructure/ -- CronJob pod specs and the ARC dind pod templates embedded in HelmRelease spec.values. Neither is reachable by a built-in manager: the `kubernetes` manager above is scoped to the db-migrations Jobs, the `flux` manager only reads chart versions, and `helm-values` only reads values.yaml FILES, not values inlined in a HelmRelease CR. Without this block every `# renovate:` comment under infrastructure/ is inert -- which is how the talos-backup pin in etcd-backup/cronjob.yaml has been carrying an annotation nobody was reading. Keyed on the annotation, so a file is scanned only where the comment is present and adding one is opt-in. Second matchString: same idea for a chart's `image.repository:`/`image.tag:` split across two keys (ai-gateway/release.yaml) instead of one `image: repo:tag` line -- the first pattern never matches that shape, and any explanatory comment lines between the marker and `tag:` don't break the match either. Verified against both shapes with `renovate --dry-run=full --platform=local`: the first pattern alone left ai-gateway silently untracked (`No dependencies found`) for the whole time it's been pinned.",
       "customType": "regex",
       "managerFilePatterns": ["/^infrastructure/.+\\.ya?ml$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+image: \\S+:(?<currentValue>[^\\s\"']+)"
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+image: \\S+:(?<currentValue>[^\\s\"']+)",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+(?:#[^\\n]*\\n\\s*)*tag: \"(?<currentValue>[^\\s\"']+)\""
       ]
     }
   ],
