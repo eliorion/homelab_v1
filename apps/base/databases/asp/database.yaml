@@ -57,6 +57,15 @@ spec:
         login: true
         passwordSecret:
           name: asp-webapp-ro
+      # The Vehicle Advisor's price feed (asp V11, advisor WP5.1): advisor_ro reads the
+      # REPLICA with column-level SELECT on listings + price_history — the site, the ad's
+      # id and url, each price and its day, what the car is — and never the ad's words,
+      # its seller, location, images or raw payload. CNPG only adds the login.
+      - name: advisor_ro
+        ensure: present
+        login: true
+        passwordSecret:
+          name: asp-advisor-ro
 
   storage:
     size: 20Gi
