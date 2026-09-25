@@ -71,6 +71,16 @@ votes, so writes continue — but it leaves a **single copy** of the data until 
 replica is rebuilt, and that rebuild is manual. `placementCount: 3` is what would
 keep redundancy intact through a node loss, at 1.5× the space.
 
+**Satellites on the host network.** DRBD peers are configured by IP literal, and
+a satellite registers with LINSTOR under its own address. On the pod network that
+address changes on every pod restart, so every node reboot forced every peer to
+re-adjust to a new IP. On 2026-09-24 cp3's re-adjust failed: it kept dialling cp1's
+dead pod IP, cp1's HA controller read the silence as cp3 failing, and it detached
+every volume in use there — 13 pods stuck, the `lost-quorum` taint on all three
+nodes. `satellite-host-network.yaml` puts the satellites on the node IPs, which
+only change when `talconfig.yaml` does. It carries no node selector, so a node
+added later gets it too.
+
 ## Traps
 
 - **Do not let Helm create the namespace.** The chart templates none, so a
@@ -115,6 +125,13 @@ keep redundancy intact through a node loss, at 1.5× the space.
   offline for more than `AutoEvictAfterTime` (60 min) triggers an auto-place onto
   the third node and a **full** resync, where a reboot otherwise costs only a
   bitmap-delta resync.
+- **Never mix host-network and pod-network satellites.** Cilium runs in tunnel
+  mode with masquerading, so between the two kinds each side sees the other's
+  traffic from an unexpected source IP and DRBD refuses it (`Closing unexpected
+  connection from …`). Changing the satellite network is all nodes at once, with
+  the HA controller off for the window (`LinstorCluster`
+  `spec.highAvailabilityController.enabled: false`), or it will read the brief
+  reconnect as failed nodes and detach volumes.
 - **The master passphrase is not recoverable.** `linstorPassphraseSecret` is what
   LINSTOR encrypts S3 remote credentials under; losing it makes existing remotes
   unreadable. Treat it like the offline age key for the etcd backups.
@@ -199,6 +216,13 @@ expected and correct — it is a diskless quorum vote, not a missing replica.
   `drbd.linbit.com/lost-quorum`, evict the pod and delete the `VolumeAttachment`
   within seconds. If it does not, the volume has no quorum policy, or fewer than
   two votes exist.
+- **Links stuck `Connecting` after a reboot (`DrbdConnectionStuck`)** — a peer is
+  dialling an address the node no longer has. Compare `drbdsetup show <res>`
+  (`_remote_host`) on the peer with `L node list`. `drbdadm adjust` fixes it when
+  the kernel is healthy; when a `drbdsetup disconnect` hangs in `D` state the
+  node's DRBD is wedged and only a reboot clears it — and a graceful Talos reboot
+  can itself hang on it, needing `talosctl reboot --mode powercycle`.
+  `ASSERTION … FAILED in put_ldev` in `dmesg` is the same wedge.
 - **Restoring redundancy after a node loss** is manual while auto-eviction is
   off: place a new replica with `L resource create <node> <resource> --storage-pool ssd`,
   then watch it sync with `L resource list-volumes`.
