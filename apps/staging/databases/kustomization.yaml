@@ -9,5 +9,6 @@ resources:
   - fbref/
   - monica/
   - n8n/
+  - paperclip/
   - nextcloud/
   - scraper/

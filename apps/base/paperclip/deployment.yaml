@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paperclip
+  namespace: paperclip
+spec:
+  replicas: 1
+  # RWO volume: RollingUpdate deadlocks — the old pod must release it first.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: paperclip
+  template:
+    metadata:
+      labels:
+        app: paperclip
+    spec:
+      securityContext:
+        # Must match the image's `node` user (1000) or the PVC is unwritable.
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: paperclip
+          image: ghcr.io/paperclipai/paperclip:2026.916.1
+          ports:
+            - name: http
+              containerPort: 3100
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: paperclip-db-app
+                  key: uri
+          envFrom:
+            - secretRef:
+                name: paperclip-secrets
+            - configMapRef:
+                name: paperclip-config
+          # 30 x 10s: first boot runs the full schema migration.
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            # Must stay false — agent CLIs and npm write caches outside /paperclip.
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            # Also HOME: agent CLI config and workspaces persist here.
+            - name: data
+              mountPath: /paperclip
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: paperclip-data-pvc
+        - name: tmp
+          emptyDir: {}
