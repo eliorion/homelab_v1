@@ -1,3 +1,14 @@
+# TEMPLATE — Claude subscription token for claude_local agents. Procedure in
+# ../../base/paperclip/README.md.
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.exemple` matches nothing
+# and is never encrypted — NEVER put the real token here.
+#   claude setup-token        # ~1 year validity
+#   cp paperclip-claude.enc.yaml.exemple paperclip-claude.enc.yaml
+#   # replace CLAUDE_CODE_OAUTH_TOKEN with the token
+#   sops -e -i paperclip-claude.enc.yaml
+#
+# Do NOT add ANTHROPIC_API_KEY: it overrides the subscription token.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -5,19 +16,19 @@ metadata:
     namespace: paperclip
 type: Opaque
 stringData:
-    CLAUDE_CODE_OAUTH_TOKEN: ENC[AES256_GCM,data:bSYtQxli5v42BhVFTLYIX+J2/pXQk4mesH/d7obnWQ==,iv:IhudRRtoxequwQ7dfFfUvdiMYYD9K2LHeCtiWtVFEFo=,tag:3JuZvOSe3//hIBa0/I/YaQ==,type:str]
+    CLAUDE_CODE_OAUTH_TOKEN: ENC[AES256_GCM,data:mmBBqxFL2an9VCpSN/eMyvfHEhick0Svth+d9LN1UYmUnxzjtxkdCkp80iOJlUVybXZz0DKZcsQwL3Uv73kFGVGjhVZF4DZhJUoht4HcjYxE8QZbH1BdGBp/jfTm+f80kx/WUsqDLaSGQEzM,iv:rcj+dBhAZYuIDMM8tPtjCmEa8y5z/bEzO6bxu1eFECE=,tag:iVFYGBjzMCKkoYc4t/O8Cw==,type:str]
 sops:
     age:
         - enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAxU3hDdlphZUlqYjFRT1JT
-            UXlMQXh4WUI4V3lCMmNiV0M5SUphMkx5QkcwCkdveVJUdVptbWJLNnlKemwzRlRl
-            WmlhWTFHaDVNc1ovR0NpZFp4OU1ZR2sKLS0tIGlxemVUQlNQdy9mWEJFTFdGODdz
-            bHg3TjlCOG1BeEcvTGZPdmhFKys3eTgKDWMM8+R/y1LYu+kApO6tfsJw7wBtTagG
-            zc8V8DgiuHqVziWN4S9QGY0yrGaKh9iyTlo+Z/V6DmqWdZcTXusNAA==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBuTy9XKzJFZzNuTTVKK3hW
+            Z3kxcis4dTkvZ1VKcXA5K0o4WXByUzgwS1UwCkg0SHdOb3VMajhKL2VjamZsaVZz
+            TFRxOGhlYW1kOVozYVllSTNUa1k4UEEKLS0tIGIyZXVQeXBYK1VHR3FuZGVuSTgw
+            cTExZWRGYVVYTGVleWdTOWJPV1FNcHMKQa/qtP1h3xSW5vxNaQDF94qUMGs02v36
+            eFDLYR8wD/6yjUsac0Y+geAiN96z5yNxcm6vt3Ez3gTEVYw2Q7283Q==
             -----END AGE ENCRYPTED FILE-----
           recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
     encrypted_regex: ^(data|stringData)$
-    lastmodified: "2026-09-26T03:26:33Z"
-    mac: ENC[AES256_GCM,data:q3JGhPvYnJIAwVXm6J9AXkPzLJMipteAWVcYeQpy9FkNov83N+jkp5RPEFG8tA4N4PoiFx5Upw9fvrEulRGqzf832A3mZ6IOsW4n067JO2F/f+6sCsELyd8G54CmpuK/g4Jqv1CfrTLJrRHC1DxjeVFQukvlMnYvVMQrsR9fY/4=,iv:I2mS03rNicJWfSfkMFsaPCBlNEYWekknr8FXJzr6gJA=,tag:HAnnCuub+JfV3iiyGMhVHQ==,type:str]
+    lastmodified: "2026-09-26T03:32:00Z"
+    mac: ENC[AES256_GCM,data:TRRSQ4uBgeqLryrW/lC5sr7A6q+UVDuiGQxlzQblVSgbZcFEca2bFDOUi8Bk/9Bmafv9ax+1VTNHkInYbNg2gAX/kc3ktBg7lP4csJ/7idpQRqBlYvxYUlRZDSCsItLDK7pts2vBnNW6y7WG8c25b4LqprNZGHR+Mx7q/Tfth3U=,iv:IOa7xXAILCCucVv6Ues+LxBvr6CcwKU3JYvuSP/tQsQ=,tag:deMJv4uZKQ1CBATuqC8GQg==,type:str]
     version: 3.13.3
