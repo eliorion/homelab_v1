@@ -29,7 +29,17 @@ spec:
     initdb:
       database: fbref
       owner: app
-      # Schema is owned by Flyway (fbref-db-migrations Job) — no postInit here.
+      # Schema is owned by Flyway (fbref-db-migrations Job). The one exception is a role
+      # that CNPG declares below AND a migration alters: asp fbref V31 runs
+      # `ALTER ROLE scout_ro SET ...` as `app`, and since PostgreSQL 16 only an ADMIN of a
+      # role may change its settings. On a FRESH cluster CNPG creates the managed role
+      # scout_ro before Flyway runs, as the superuser, so `app` is not its admin and V31
+      # failed ("permission denied to alter role" — the dev-platform fresh lane,
+      # 2026-09-26). Created here first, as superuser, with `app` as its admin; CNPG then
+      # only adds the login. Runs at bootstrap only: an existing cluster is unaffected.
+      postInitSQL:
+        - CREATE ROLE scout_ro NOLOGIN
+        - GRANT scout_ro TO app WITH ADMIN TRUE, INHERIT FALSE, SET FALSE
 
   # Read-only roles: Flyway creates them NOLOGIN, CNPG flips them to LOGIN with
   # the password from the basic-auth Secret in the staging overlay.
@@ -58,6 +68,10 @@ spec:
         ensure: present
         login: true
         createrole: true
+        # Keeps the bootstrap grant above: CNPG revokes any membership of a managed role
+        # that its inRoles does not list, and this one is what lets V31 alter scout_ro.
+        inRoles:
+          - scout_ro
 
   storage:
     size: 10Gi
