@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: paperclip-config
+  namespace: paperclip
+data:
+  # Must match the tls host in ../../base/paperclip/ingress-tailscale.yaml —
+  # it is the only hostname Paperclip accepts for login redirects.
+  PAPERCLIP_PUBLIC_URL: "https://paperclip.tail45b0ca.ts.net"
+  PAPERCLIP_DEPLOYMENT_MODE: "authenticated"
+  PAPERCLIP_DEPLOYMENT_EXPOSURE: "private"
+  PAPERCLIP_BIND: "lan"
+  TZ: "Europe/Paris"
