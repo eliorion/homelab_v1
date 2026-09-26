@@ -41,6 +41,9 @@ spec:
                 name: paperclip-auth
             - secretRef:
                 name: paperclip-claude
+            # Never rotate — encrypts every secret stored in paperclip-db.
+            - secretRef:
+                name: paperclip-secrets-key
             - configMapRef:
                 name: paperclip-config
           # 30 x 10s: first boot runs the full schema migration.
