@@ -30,7 +30,7 @@ Base (`apps/base/paperclip/`):
   does not watch `apps/` images), port `3100` named `http`. `DATABASE_URL`
   comes from the `uri` key of the CNPG-generated `paperclip-db-app` Secret;
   `envFrom` pulls the `paperclip-auth` and `paperclip-claude` Secrets and the
-  `paperclip-config` ConfigMap from the staging overlay. All three probes hit `/api/health`. Requests `500m` / `1Gi`, memory
+  `paperclip-config` ConfigMap from the staging overlay. All three probes hit `/api/health` with `Host: localhost`. Requests `500m` / `1Gi`, memory
   limit `4Gi` — agent runs are child processes of this pod. Runs as uid/gid
   `1000` (the image's `node` user) with `fsGroup: 1000`, seccomp
   `RuntimeDefault`, all capabilities dropped. `/tmp` is an `emptyDir`.
@@ -83,6 +83,10 @@ conservative.
   hostname gives a login/redirect loop.
 - **Never add `ANTHROPIC_API_KEY`** to any Paperclip Secret: it takes precedence
   over `CLAUDE_CODE_OAUTH_TOKEN` and silently bills the API.
+- Every probe sends `Host: localhost`. In `private` exposure Paperclip's
+  hostname guard answers 403 to any Host that is not loopback or allowlisted,
+  and kubelet probes send the pod IP — without the header the startup probe
+  never passes and the container restarts every 5 minutes (Ingress → 502).
 - Keep `readOnlyRootFilesystem: false`: the agent CLIs and npm write caches
   outside `/paperclip`.
 - The pod must run as uid `1000`. Started non-root, the image entrypoint skips
