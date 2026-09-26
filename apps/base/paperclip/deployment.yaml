@@ -38,7 +38,9 @@ spec:
                   key: uri
           envFrom:
             - secretRef:
-                name: paperclip-secrets
+                name: paperclip-auth
+            - secretRef:
+                name: paperclip-claude
             - configMapRef:
                 name: paperclip-config
           # 30 x 10s: first boot runs the full schema migration.

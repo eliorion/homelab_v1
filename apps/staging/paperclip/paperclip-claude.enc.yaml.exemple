@@ -1,0 +1,19 @@
+# TEMPLATE — Claude subscription token for claude_local agents. Procedure in
+# ../../base/paperclip/README.md.
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.exemple` matches nothing
+# and is never encrypted — NEVER put the real token here.
+#   claude setup-token        # ~1 year validity
+#   cp paperclip-claude.enc.yaml.exemple paperclip-claude.enc.yaml
+#   # replace CLAUDE_CODE_OAUTH_TOKEN with the token
+#   sops -e -i paperclip-claude.enc.yaml
+#
+# Do NOT add ANTHROPIC_API_KEY: it overrides the subscription token.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: paperclip-claude
+  namespace: paperclip
+type: Opaque
+stringData:
+  CLAUDE_CODE_OAUTH_TOKEN: REPLACE_WITH_CLAUDE_SETUP_TOKEN

@@ -1,0 +1,15 @@
+# TEMPLATE — Paperclip session-signing secret. Procedure in ../../base/paperclip/README.md.
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.exemple` matches nothing
+# and is never encrypted — NEVER put the real value here.
+#   cp paperclip-auth.enc.yaml.exemple paperclip-auth.enc.yaml
+#   # replace BETTER_AUTH_SECRET with the output of `openssl rand -hex 32`
+#   sops -e -i paperclip-auth.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: paperclip-auth
+  namespace: paperclip
+type: Opaque
+stringData:
+  BETTER_AUTH_SECRET: REPLACE_WITH_OPENSSL_RAND_HEX_32

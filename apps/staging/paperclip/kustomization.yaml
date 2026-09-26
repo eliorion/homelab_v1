@@ -6,4 +6,5 @@ namespace: paperclip
 resources:
   - ../../base/paperclip
   - configmap.yaml
-  - paperclip-secrets.enc.yaml
+  - paperclip-auth.enc.yaml
+  - paperclip-claude.enc.yaml

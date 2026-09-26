@@ -29,8 +29,8 @@ Base (`apps/base/paperclip/`):
   image `ghcr.io/paperclipai/paperclip:2026.916.1` (pinned by hand — Renovate
   does not watch `apps/` images), port `3100` named `http`. `DATABASE_URL`
   comes from the `uri` key of the CNPG-generated `paperclip-db-app` Secret;
-  `envFrom` pulls `paperclip-secrets` and `paperclip-config` from the staging
-  overlay. All three probes hit `/api/health`. Requests `500m` / `1Gi`, memory
+  `envFrom` pulls the `paperclip-auth` and `paperclip-claude` Secrets and the
+  `paperclip-config` ConfigMap from the staging overlay. All three probes hit `/api/health`. Requests `500m` / `1Gi`, memory
   limit `4Gi` — agent runs are child processes of this pod. Runs as uid/gid
   `1000` (the image's `node` user) with `fsGroup: 1000`, seccomp
   `RuntimeDefault`, all capabilities dropped. `/tmp` is an `emptyDir`.
@@ -42,8 +42,9 @@ Staging (`apps/staging/paperclip/`):
 
 - `configmap.yaml` — `PAPERCLIP_PUBLIC_URL`, deployment mode
   `authenticated` / exposure `private`, `PAPERCLIP_BIND=lan`, `TZ`.
-- `paperclip-secrets.enc.yaml` — `BETTER_AUTH_SECRET` and
-  `CLAUDE_CODE_OAUTH_TOKEN` (SOPS). Template: `paperclip-secrets.enc.yaml.example`.
+- `paperclip-auth.enc.yaml` — `BETTER_AUTH_SECRET` (SOPS).
+- `paperclip-claude.enc.yaml` — `CLAUDE_CODE_OAUTH_TOKEN` (SOPS).
+- Each has a plaintext `.exemple` template next to it.
 
 ## Why it is like this
 
@@ -64,6 +65,12 @@ in Paperclip coordinates multiple servers.
 extra infrastructure. The cost is that every agent shares this pod's CPU,
 memory and filesystem; move heavy or untrusted work to remote targets later.
 
+**One Secret per credential.** Each value is replaced wholesale from its
+`.exemple` template and encrypted with `sops -e -i`, which needs only the
+**public** age recipient in `.sops.yaml` — rotating the Claude token never
+requires the staging private key. Only editing an existing value in place
+(`sops <file>`) needs to decrypt.
+
 **Subscription token, not an API key.** `CLAUDE_CODE_OAUTH_TOKEN` (from
 `claude setup-token`) runs Claude agents on the Claude subscription. All Claude
 agents then share that subscription's rate limits — keep heartbeat intervals
@@ -74,7 +81,7 @@ conservative.
 - `PAPERCLIP_PUBLIC_URL` must equal `https://<ingress tls host>.tail45b0ca.ts.net`.
   Its hostname is the only one Paperclip adds to `allowedHostnames`; any other
   hostname gives a login/redirect loop.
-- **Never add `ANTHROPIC_API_KEY`** to `paperclip-secrets`: it takes precedence
+- **Never add `ANTHROPIC_API_KEY`** to any Paperclip Secret: it takes precedence
   over `CLAUDE_CODE_OAUTH_TOKEN` and silently bills the API.
 - Keep `readOnlyRootFilesystem: false`: the agent CLIs and npm write caches
   outside `/paperclip`.
@@ -90,18 +97,25 @@ curl https://paperclip.tail45b0ca.ts.net/api/health      # {"status":"ok"} from 
 kubectl -n paperclip logs deploy/paperclip
 ```
 
-Set or rotate a secret (pod restart picks it up):
+Set or rotate a secret — public key only, then push; restart the pod
+(`kubectl -n paperclip rollout restart deploy/paperclip`) since `envFrom` is
+read at start:
 
 ```bash
 cd apps/staging/paperclip
-SOPS_AGE_KEY_FILE=../../../clusters/staging/age.agekey sops paperclip-secrets.enc.yaml
+claude setup-token                                   # ≈1 year validity
+cp paperclip-claude.enc.yaml.exemple paperclip-claude.enc.yaml
+# replace REPLACE_WITH_CLAUDE_SETUP_TOKEN with the token
+sops -e -i paperclip-claude.enc.yaml
+grep -q 'ENC\[' paperclip-claude.enc.yaml && echo SAFE || echo PLAINTEXT
 ```
 
-- `BETTER_AUTH_SECRET` — rotating it logs everyone out, no data loss.
-- `CLAUDE_CODE_OAUTH_TOKEN` — ships as a placeholder; the board works without
-  it, Claude agent runs do not. Mint with `claude setup-token` (≈1 year).
-- Codex / OpenCode credentials (`OPENAI_API_KEY`, provider keys) go in the same
-  Secret when those agents are added.
+- `paperclip-claude` — ships as a placeholder; the board works without it,
+  Claude agent runs do not.
+- `paperclip-auth` — same procedure with `openssl rand -hex 32`; rotating it
+  logs everyone out, no data loss.
+- Future credentials (Codex `OPENAI_API_KEY`, OpenCode provider keys) each get
+  their own Secret + `.exemple`, added to the Deployment's `envFrom`.
 
 Upgrade: bump the image tag in `deployment.yaml` to a stable
 `paperclipai/paperclip` release (`vYYYY.MDD.N` → tag `YYYY.MDD.N`). Migrations
