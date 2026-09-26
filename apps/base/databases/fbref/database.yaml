@@ -45,6 +45,13 @@ spec:
         login: true
         passwordSecret:
           name: fbref-mcp-ro
+      # asp repo fbref V31: the scout webapp's reader (SELECT on the `scout` schema only,
+      # read-only + 5s statement timeout set on the role itself).
+      - name: scout_ro
+        ensure: present
+        login: true
+        passwordSecret:
+          name: fbref-scout-ro
       # Flyway V3 creates the worker-control/nocodb roles while connected as
       # app — needs CREATEROLE.
       - name: app

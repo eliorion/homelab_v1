@@ -5,9 +5,10 @@ namespace: fbref
 
 resources:
   - ../../../base/databases/fbref
-  # Passwords for the grafana_ro / mcp_ro CNPG managed roles.
+  # Passwords for the grafana_ro / mcp_ro / scout_ro CNPG managed roles.
   - fbref-grafana-ro.enc.yaml
   - fbref-mcp-ro.enc.yaml
+  - fbref-scout-ro.enc.yaml
   # CNPG -> Garage backup (bucket cnpg-staging-fbref, via the in-cluster gateway).
   - garage-backup-credentials.enc.yaml
   - objectstore.yaml
