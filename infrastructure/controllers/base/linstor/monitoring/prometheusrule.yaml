@@ -52,6 +52,25 @@ spec:
               `drbdadm secondary <res>` then `drbdadm connect --discard-my-data
               <res>` on the victim. Pick the victim deliberately.
 
+        - alert: DrbdConnectionStuck
+          # Verified live 2026-09-25 (drbd-reactor on :9942; labels `name` and
+          # `conn_name`). Backtest: 137 connections sat in Connecting through the
+          # 2026-09-24 incident, none in healthy steady state. StandAlone is
+          # excluded -- DrbdSplitBrain owns it.
+          expr: >-
+            drbd_connection_state{drbd_connection_state!~"Connected|StandAlone"} == 1
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: DRBD {{ $labels.name }} -> {{ $labels.conn_name }} is {{ $labels.drbd_connection_state }}
+            description: >-
+              A replication link has not come back. After a reboot this is a
+              peer still dialling the node's old address, or a wedged kernel
+              state change; the HA controller will read the silence as a failed
+              node and start detaching volumes. Compare `drbdsetup show <res>`
+              (`_remote_host`) with `linstor node list`.
+
         - alert: DrbdReplicaDiskless
           expr: drbd_device_unintentionaldiskless == 1
           for: 10m

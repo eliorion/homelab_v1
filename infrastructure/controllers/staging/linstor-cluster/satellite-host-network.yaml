@@ -1,0 +1,22 @@
+apiVersion: piraeus.io/v1
+kind: LinstorSatelliteConfiguration
+metadata:
+  name: host-network
+spec:
+  # DRBD peers are configured by IP literal, and a satellite registers with
+  # LINSTOR under its own address. On the pod network that address changes
+  # every time the pod restarts -- every node reboot -- and each peer has to
+  # re-adjust to the new one. 2026-09-24: cp3's re-adjust failed, cp1 was
+  # dialled on a dead IP, and the HA controller detached every volume on cp3.
+  # On the host network the address is the node IP from talconfig.yaml, which
+  # a reboot never changes. No nodeAffinity: every satellite, and every node
+  # added later, gets it.
+  #
+  # Roll out on ALL nodes at once, never one node at a time: Cilium runs in
+  # tunnel mode with masquerading, so a host-network node and a pod-network
+  # node see each other's traffic from an unexpected source IP and DRBD
+  # refuses it ("Closing unexpected connection from ...").
+  podTemplate:
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
