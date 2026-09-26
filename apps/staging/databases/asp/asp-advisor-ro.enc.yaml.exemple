@@ -1,0 +1,29 @@
+# PLAINTEXT TEMPLATE of asp-advisor-ro.enc.yaml -- copy it, never an existing .enc.yaml.
+#
+# Password for the `advisor_ro` CNPG managed role (declared in apps/base/databases/asp/database.yaml).
+# asp V11 creates advisor_ro NOLOGIN with column-level SELECT for the Vehicle Advisor's price feed;
+# CNPG gives it this login. Reflector copies the Secret into namespace `advisor`, where the price Job
+# builds its DSN against the REPLICA:
+#   ASP_DATABASE_URL=postgresql://advisor_ro:<password>@asp-db-ro.asp.svc.cluster.local:5432/automarket
+#
+# `username` MUST equal the role name — CNPG matches the managed role by it.
+#
+#   cp apps/staging/databases/asp/asp-advisor-ro.enc.yaml.exemple apps/staging/databases/asp/asp-advisor-ro.enc.yaml
+#   openssl rand -hex 24          # hex: the value goes into a URL unescaped
+#   sops -e -i apps/staging/databases/asp/asp-advisor-ro.enc.yaml
+#
+# .sops.yaml picks the staging recipient by path and encrypts only data/stringData.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: asp-advisor-ro
+  namespace: asp
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: advisor
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: advisor
+type: kubernetes.io/basic-auth
+stringData:
+  username: "advisor_ro"
+  password: "<openssl rand -hex 24>"

@@ -8,6 +8,8 @@ resources:
   - r2-backup-credentials.enc.yaml
   # Password for the webapp_ro managed role above — the webapp's read-only login.
   - asp-webapp-ro.enc.yaml
+  # Password for the advisor_ro managed role above — the advisor's price feed; reflected into `advisor`.
+  - asp-advisor-ro.enc.yaml
   - objectstore.yaml
   - scheduledbackup.yaml
   - ingestion-metrics-configmap.yaml

@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: asp-advisor-ro
+    namespace: asp
+    annotations:
+        reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+        reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: advisor
+        reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+        reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: advisor
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:qVVsO1o4NN2Vvg==,iv:zSFOS+AnQtbWX/Lp3+wW9ThEZLEsCvbyWbwnk8x77x4=,tag:rwE7ejghq1pDDep+ZeLOaQ==,type:str]
+    password: ENC[AES256_GCM,data:LX3dnvLZfOgBihDuWHmHj1DCDbDKOud6QaC3+gBIUuOaY9DjkwD42QzRKdg3Xd2J,iv:1P4HmqRUN/WSmregmS5FO5gTXQ7hAGWDdFeBPlciZ3c=,tag:JE9QDn9B/upwkZncfsgVEw==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBmSlRaRjNuS3ozd1pxMWxs
+            QlljVm9heE9QZGhwSXZwMEpLQm5uRFZpUUZrCnBrWkdxeXVxelpPbGZQcG9NcFFj
+            a3FVeCtoUVVOSWlDUWNGQVRRaUI5RXcKLS0tIEZBQldDTkQ5aXZPcVdjRWo4RXVq
+            bEw0SGQ0WGw1RWU4OHpaTXhLVUFZMDQKqSP09zdLvbqAGcX0IpA0idEGFWlMuujX
+            nX5j6DEcEB/d5yxljVCGf+ZYkSzj17DLK0gXo2ccV/7PAyNtgZ+z5g==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-25T09:18:19Z"
+    mac: ENC[AES256_GCM,data:ZoAUijMVakeK1AUNHx5WdbIAwEp0AiociJfIeVmBd5sDuX8QymeU2NVX9aVq31a9wsiaDi+AWe/RrUamE5ck4qcvfHRbBVxgXbXDQnmgjkYaXIE5sH8Cbk4El97j5zYqB6QKufq6LzHlllIKvLayzSsW5UTeWQKawU+UCDO2ATQ=,iv:qbDe3c+Ytm/NC+5KHB6zRPd5K4Yav+Pjg4oHigJ/r8M=,tag:neApMIZIkUpb3PzIOsu+rw==,type:str]
+    version: 3.13.3
