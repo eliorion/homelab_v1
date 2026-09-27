@@ -40,3 +40,10 @@ spec:
       # OTLP/HTTP base URL: the SDKs append /v1/traces; the chart's egress opens 4318 only.
       endpoint: http://alloy-receiver.monitoring.svc.cluster.local:4318
       environment: staging
+    components:
+      # The review queue, on the tailnet only (review-ingress-tailscale.yaml). The proxy's identity
+      # header names the reviewer; never set this to a header a client could send on its own.
+      advisor-review:
+        enabled: true
+        env:
+          REVIEWER_HEADER: tailscale-user-login
