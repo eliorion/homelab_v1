@@ -8,3 +8,4 @@ resources:
   - configmap.yaml
   - paperclip-auth.enc.yaml
   - paperclip-claude.enc.yaml
+  - paperclip-secrets-key.enc.yaml

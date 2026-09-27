@@ -29,8 +29,9 @@ Base (`apps/base/paperclip/`):
   image `ghcr.io/paperclipai/paperclip:2026.916.1` (pinned by hand — Renovate
   does not watch `apps/` images), port `3100` named `http`. `DATABASE_URL`
   comes from the `uri` key of the CNPG-generated `paperclip-db-app` Secret;
-  `envFrom` pulls the `paperclip-auth` and `paperclip-claude` Secrets and the
-  `paperclip-config` ConfigMap from the staging overlay. All three probes hit `/api/health` with `Host: localhost`. Requests `500m` / `1Gi`, memory
+  `envFrom` pulls the `paperclip-auth`, `paperclip-claude` and
+  `paperclip-secrets-key` Secrets and the `paperclip-config` ConfigMap from the
+  staging overlay. All three probes hit `/api/health` with `Host: localhost`. Requests `500m` / `1Gi`, memory
   limit `4Gi` — agent runs are child processes of this pod. Runs as uid/gid
   `1000` (the image's `node` user) with `fsGroup: 1000`, seccomp
   `RuntimeDefault`, all capabilities dropped. `/tmp` is an `emptyDir`.
@@ -44,6 +45,7 @@ Staging (`apps/staging/paperclip/`):
   `authenticated` / exposure `private`, `PAPERCLIP_BIND=lan`, `TZ`.
 - `paperclip-auth.enc.yaml` — `BETTER_AUTH_SECRET` (SOPS).
 - `paperclip-claude.enc.yaml` — `CLAUDE_CODE_OAUTH_TOKEN` (SOPS).
+- `paperclip-secrets-key.enc.yaml` — `PAPERCLIP_SECRETS_MASTER_KEY` (SOPS).
 - Each has a plaintext `.exemple` template next to it.
 
 ## Why it is like this
@@ -71,6 +73,14 @@ memory and filesystem; move heavy or untrusted work to remote targets later.
 requires the staging private key. Only editing an existing value in place
 (`sops <file>`) needs to decrypt.
 
+**The secrets master key comes from SOPS, not the PVC.** Paperclip encrypts
+everything it stores in `paperclip-db` (AI connections, company secrets) with a
+master key; left alone it generates one at
+`/paperclip/instances/default/secrets/master.key`. Supplying
+`PAPERCLIP_SECRETS_MASTER_KEY` instead makes git + a `paperclip-db` restore a
+complete recovery: stored connections come back readable, nobody signs in
+again, and losing the PVC costs only agent workspaces.
+
 **Subscription token, not an API key.** `CLAUDE_CODE_OAUTH_TOKEN` (from
 `claude setup-token`) runs Claude agents on the Claude subscription. All Claude
 agents then share that subscription's rate limits — keep heartbeat intervals
@@ -81,6 +91,9 @@ conservative.
 - `PAPERCLIP_PUBLIC_URL` must equal `https://<ingress tls host>.tail45b0ca.ts.net`.
   Its hostname is the only one Paperclip adds to `allowedHostnames`; any other
   hostname gives a login/redirect loop.
+- **Never rotate `PAPERCLIP_SECRETS_MASTER_KEY`** once anything is stored:
+  every stored credential becomes unreadable. Back it up with the DB backups'
+  restore procedure in mind — the DB alone is worthless without it.
 - **Never add `ANTHROPIC_API_KEY`** to any Paperclip Secret: it takes precedence
   over `CLAUDE_CODE_OAUTH_TOKEN` and silently bills the API.
 - Every probe sends `Host: localhost`. In `private` exposure Paperclip's
@@ -120,6 +133,22 @@ grep -q 'ENC\[' paperclip-claude.enc.yaml && echo SAFE || echo PLAINTEXT
   logs everyone out, no data loss.
 - Future credentials (Codex `OPENAI_API_KEY`, OpenCode provider keys) each get
   their own Secret + `.exemple`, added to the Deployment's `envFrom`.
+
+Connect the Claude subscription (onboarding's "Connect a model", Claude →
+Subscription) without an interactive `claude auth login`: the check only reads
+`claudeAiOauth.accessToken` from `.credentials.json` in the login directory the
+UI prints, validates it against Anthropic, and stores it in `paperclip-db`
+(encrypted with the master key). Seed that file from the pod's own
+`CLAUDE_CODE_OAUTH_TOKEN`, then click **Connect**:
+
+```bash
+DIR='<CLAUDE_CONFIG_DIR value shown in the UI>'
+kubectl -n paperclip exec deploy/paperclip -- sh -c \
+  'umask 077; mkdir -p "$1" && printf "{\"claudeAiOauth\":{\"accessToken\":\"%s\"}}" "$CLAUDE_CODE_OAUTH_TOKEN" > "$1/.credentials.json"' _ "$DIR"
+```
+
+The connection then lives in the database, so it survives pod and PVC loss.
+When the token is rotated, repeat this for the existing connection.
 
 Upgrade: bump the image tag in `deployment.yaml` to a stable
 `paperclipai/paperclip` release (`vYYYY.MDD.N` → tag `YYYY.MDD.N`). Migrations
