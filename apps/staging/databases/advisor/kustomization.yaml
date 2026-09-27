@@ -7,6 +7,10 @@ resources:
   - ../../../base/databases/advisor
   # Password for the advisor_pub CNPG managed role (unblocks advisor-api's dbRole login).
   - advisor-pub-login.enc.yaml
+  # Password for the advisor_review CNPG managed role (advisor-review's dbRole login). Encrypt it
+  # from the .exemple before merging: this line fails the build until the file exists, which is
+  # what keeps the review UI from being enabled without its login.
+  - advisor-review-login.enc.yaml
   # The other four advisor_* role-login Secrets and the Garage backup wiring are NOT here yet —
   # see README.md. They need the owner's staging sops key and (for backups) a Garage bucket.
 

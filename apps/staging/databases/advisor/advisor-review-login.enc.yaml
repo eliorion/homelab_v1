@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: advisor-review-login
+    namespace: advisor
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:d9VqVAN/TbcJf3uN/uM=,iv:kFIAUZc3ERZfkvf85Q8MgcKQ/DDlf8X9e48B5l2nofw=,tag:ksFCbkfxw6L1YKjS6I15tg==,type:str]
+    password: ENC[AES256_GCM,data:+q46DcaLV6RVBQ5CIstaYUSXaw2qx5eziBCVbnGVtFAB/MeStHOJYPI46Sc=,iv:mgWpzn1BDqhonf5zpCSzWq7V8wIp900BaMwmSbURyfs=,tag:VAAuG6mXZERph30wfMRoSg==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBLRDB0Wi9ITmZ6ZGxkME0y
+            cFd0RHJyTDRjTytLVlF0Q3Z3Y204Y2pWTlh3CmNQZlU5Rk56aXBQMXRNTWZNNEhZ
+            bzhHV3lHUGJOclA3a2JkT2VrUy93c28KLS0tIEtnNk9SM3FyTUV3RnN0dU00bmlz
+            RmFBby9tbVEvcVhTNkdOUjA5c0dEU0UKUgeT/PeoIxXZdSBPrp/PxRZPrCsnvWdc
+            CBSLNBPFcLajl/atkhJmX3knYyJHpCHUmqs565WBlIuk4xEyO0+LlA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-09-27T05:15:53Z"
+    mac: ENC[AES256_GCM,data:PHj2TFDha7bYdURS/kMVr2FFhIV3yOB5xh1f1joB9ARbQYwCFqcXODqsznXzt/aUerLBkVLWz5s7p2vUd44FYSjBB2CwEkEfjoRMzx+wCvJiFV4L5xViE6snFk8JGAuni+e4u4QCczzN+o+I0Ue0TQLOcxPEumPHXNBnh2ppDTE=,iv:yDKxp54C0xAvrMMMsYJSWRrsJwTpzbH0ZHRf0N7IrRY=,tag:PbAmPJw3m8BX6Zn7FJJvXw==,type:str]
+    version: 3.13.3

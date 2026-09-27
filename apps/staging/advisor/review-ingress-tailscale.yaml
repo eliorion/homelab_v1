@@ -1,0 +1,21 @@
+# The review UI (advisor-review) on the TAILNET ONLY, never on the public internet: whoever reaches it
+# can accept claims and approve extractor versions. The Tailscale proxy sets `Tailscale-User-Login`
+# from the tailnet identity of the person asking, and the release values set
+# REVIEWER_HEADER=tailscale-user-login, so every decision is attributed to a proven login (a request
+# with no identity, e.g. from a tagged device, is refused 401).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: advisor-review
+  namespace: advisor
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: advisor-review
+      port:
+        number: 8080
+  tls:
+    # Device name: https://advisor-review.<tailnet>.ts.net
+    - hosts:
+        - advisor-review

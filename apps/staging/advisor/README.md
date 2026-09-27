@@ -31,3 +31,10 @@ one-off CLI, reached from outside the cluster the same way as any other one-off 
 When it becomes a deployed component, its chart wiring needs an egress rule to the `ai-gateway`
 namespace (selected by the label `name: ai-gateway`, not by name) on port 8080, mirroring the
 `objectStore`/`scraperApi` pattern already in `k8s/charts/common`.
+
+**Public webapp and the review UI.** The customer webapp (`advisor-webapp`, enabled in the chart) is
+published by a Cloudflare tunnel route `<public hostname>` → `http://advisor-webapp.advisor.svc.cluster.local:3000`,
+created in the Cloudflare dashboard. The review UI (`advisor-review`) stays on the tailnet:
+`review-ingress-tailscale.yaml` exposes it as `https://advisor-review.<tailnet>.ts.net`, and the values
+here enable it with `REVIEWER_HEADER=tailscale-user-login`. It needs the `advisor-review-login`
+Secret (`apps/staging/databases/advisor/`) before it can start.
