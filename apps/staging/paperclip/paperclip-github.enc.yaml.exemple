@@ -1,0 +1,18 @@
+# TEMPLATE — GitHub token for project workspaces and the agents' gh/git. Procedure in
+# ../../base/paperclip/README.md.
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.exemple` matches nothing
+# and is never encrypted — NEVER put the real token here.
+#   cp paperclip-github.enc.yaml.exemple paperclip-github.enc.yaml
+#   # replace the empty value with a fine-grained PAT
+#   sops -e -i paperclip-github.enc.yaml
+#
+# Empty is valid: Paperclip treats it as "no token" and public repos still clone.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: paperclip-github
+  namespace: paperclip
+type: Opaque
+stringData:
+  GITHUB_TOKEN: ""

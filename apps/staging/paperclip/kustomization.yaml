@@ -9,3 +9,4 @@ resources:
   - paperclip-auth.enc.yaml
   - paperclip-claude.enc.yaml
   - paperclip-secrets-key.enc.yaml
+  - paperclip-github.enc.yaml
