@@ -29,8 +29,8 @@ Base (`apps/base/paperclip/`):
   image `ghcr.io/paperclipai/paperclip:2026.916.1` (pinned by hand — Renovate
   does not watch `apps/` images), port `3100` named `http`. `DATABASE_URL`
   comes from the `uri` key of the CNPG-generated `paperclip-db-app` Secret;
-  `envFrom` pulls the `paperclip-auth`, `paperclip-claude` and
-  `paperclip-secrets-key` Secrets and the `paperclip-config` ConfigMap from the
+  `envFrom` pulls the `paperclip-auth`, `paperclip-claude`, `paperclip-github`
+  and `paperclip-secrets-key` Secrets and the `paperclip-config` ConfigMap from the
   staging overlay. All three probes hit `/api/health` with `Host: localhost`. Requests `500m` / `1Gi`, memory
   limit `4Gi` — agent runs are child processes of this pod. Runs as uid/gid
   `1000` (the image's `node` user) with `fsGroup: 1000`, seccomp
@@ -45,6 +45,7 @@ Staging (`apps/staging/paperclip/`):
   `authenticated` / exposure `private`, `PAPERCLIP_BIND=lan`, `TZ`.
 - `paperclip-auth.enc.yaml` — `BETTER_AUTH_SECRET` (SOPS).
 - `paperclip-claude.enc.yaml` — `CLAUDE_CODE_OAUTH_TOKEN` (SOPS).
+- `paperclip-github.enc.yaml` — `GITHUB_TOKEN` (SOPS), empty until a PAT is set.
 - `paperclip-secrets-key.enc.yaml` — `PAPERCLIP_SECRETS_MASTER_KEY` (SOPS).
 - Each has a plaintext `.exemple` template next to it.
 
@@ -81,6 +82,15 @@ master key; left alone it generates one at
 complete recovery: stored connections come back readable, nobody signs in
 again, and losing the PVC costs only agent workspaces.
 
+**One GitHub token in the pod environment, not a company secret.** Each
+project is a Paperclip project with a `git_repo` workspace pointing at its own
+repository; separation between projects is that data model, not separate pods.
+Paperclip resolves the clone credential from a company secret first and falls
+back to the server's `GITHUB_TOKEN`, and agent runs inherit the pod environment,
+so one value in git covers both the workspace clone and the agents' own `git`
+and `gh` (pull requests). A company secret would cover the clone only, and live
+in the database instead of git.
+
 **Subscription token, not an API key.** `CLAUDE_CODE_OAUTH_TOKEN` (from
 `claude setup-token`) runs Claude agents on the Claude subscription. All Claude
 agents then share that subscription's rate limits — keep heartbeat intervals
@@ -94,6 +104,11 @@ conservative.
 - **Never rotate `PAPERCLIP_SECRETS_MASTER_KEY`** once anything is stored:
   every stored credential becomes unreadable. Back it up with the DB backups'
   restore procedure in mind — the DB alone is worthless without it.
+- **`GITHUB_TOKEN` is readable by every agent.** Use a fine-grained PAT limited to
+  the project repositories, never a classic token or your `gh auth token`. It is
+  used for `github.com` HTTPS remotes only; an empty value means "no token", so
+  private repositories fail to clone with Paperclip's "No GitHub credential is
+  configured" error.
 - **Never add `ANTHROPIC_API_KEY`** to any Paperclip Secret: it takes precedence
   over `CLAUDE_CODE_OAUTH_TOKEN` and silently bills the API.
 - Every probe sends `Host: localhost`. In `private` exposure Paperclip's
@@ -159,3 +174,24 @@ run on boot; the startup probe allows 5 minutes.
 Staging only (`apps/staging/paperclip/`), wired into
 `apps/staging/kustomization.yaml`. The database lives in
 [`../databases/paperclip/README.md`](../databases/paperclip/README.md).
+
+Add a project (repository) to the board:
+
+1. Once: create a fine-grained PAT at GitHub → Settings → Developer settings →
+   Fine-grained tokens. Repository access: *Only select repositories* (the project
+   repos). Permissions: Contents and Pull requests read/write (Metadata read is
+   implied); add Workflows read/write only if agents should edit
+   `.github/workflows/`. Then:
+   ```bash
+   cd apps/staging/paperclip
+   cp paperclip-github.enc.yaml.exemple paperclip-github.enc.yaml
+   # put the PAT in GITHUB_TOKEN
+   sops -e -i paperclip-github.enc.yaml
+   grep -q 'ENC\[' paperclip-github.enc.yaml && echo SAFE || echo PLAINTEXT
+   ```
+   Push, then `kubectl -n paperclip rollout restart deploy/paperclip`.
+2. Per project, in the UI: Projects → New project, then add a workspace with
+   source *Git repository*, URL `https://github.com/<owner>/<repo>`, default ref
+   `main`, marked primary. A project may hold several repositories; one is primary.
+3. A new repository later only needs step 2, plus adding it to the PAT's
+   repository list on GitHub.

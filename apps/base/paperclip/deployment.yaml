@@ -41,6 +41,8 @@ spec:
                 name: paperclip-auth
             - secretRef:
                 name: paperclip-claude
+            - secretRef:
+                name: paperclip-github
             # Never rotate — encrypts every secret stored in paperclip-db.
             - secretRef:
                 name: paperclip-secrets-key
