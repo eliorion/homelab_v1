@@ -58,6 +58,20 @@ stringData:
             "Write:advisor-corpus",
             "List:advisor-corpus"
           ]
+        },
+        {
+          "name": "scraper-advisor-sink",
+          "credentials": [
+            {
+              "accessKey": "${SCRAPER_ADVISOR_SINK_S3_ACCESS_KEY}",
+              "secretKey": "${SCRAPER_ADVISOR_SINK_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:advisor-corpus",
+            "Write:advisor-corpus",
+            "List:advisor-corpus"
+          ]
         }
       ]
     }

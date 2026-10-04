@@ -389,6 +389,7 @@ spec:
       - {kind: Secret, name: s3-advisor-corpus}
       - {kind: Secret, name: s3-nextcloud}
       - {kind: Secret, name: s3-tmp-backup-garage}
+      - {kind: Secret, name: s3-scraper-advisor-sink}
 ---
 # force: true so the Job is deleted and recreated when its script changes.
 apiVersion: kustomize.toolkit.fluxcd.io/v1

@@ -11,8 +11,12 @@ resources:
   # from the .exemple before merging: this line fails the build until the file exists, which is
   # what keeps the review UI from being enabled without its login.
   - advisor-review-login.enc.yaml
-  # The other four advisor_* role-login Secrets and the Garage backup wiring are NOT here yet —
-  # see README.md. They need the owner's staging sops key and (for backups) a Garage bucket.
+  # Logins for advisor_seed (the chart's seed hook), advisor_ingest (collection) and
+  # advisor_publish (the publish CronJob), the roles asp docs/16 section 4 names for data collection.
+  - advisor-seed-login.enc.yaml
+  - advisor-ingest-login.enc.yaml
+  - advisor-publish-login.enc.yaml
+  # The Garage backup wiring is NOT here yet — see README.md (it needs a Garage bucket).
 
 patches:
   # PVCs on the staging storage class. Base stays unset (dev has no storage class opinion).

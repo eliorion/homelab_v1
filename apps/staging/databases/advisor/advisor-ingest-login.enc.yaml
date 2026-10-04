@@ -1,0 +1,32 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. Login for the advisor_ingest CNPG managed role
+# (apps/base/databases/advisor/database.yaml references this Secret by name).
+# username MUST be the role name -- that is how CNPG's managed.roles reconciler
+# matches the login to the role. Copy this file to advisor-ingest-login.enc.yaml,
+# generate a password, then encrypt in place:
+#   cp advisor-ingest-login.enc.yaml.exemple advisor-ingest-login.enc.yaml
+#   # replace the password below with: openssl rand -base64 32
+#   sops -e -i advisor-ingest-login.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+    name: advisor-ingest-login
+    namespace: advisor
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:f34OIJYZN3FEaO6I/L0=,iv:Bil3708T6xdYq5JlMsqzxGZ33mrFlyGgslJaSKTigFs=,tag:7k0kX4M0+kOMf9tjDw5jHw==,type:str]
+    password: ENC[AES256_GCM,data:+K0ZYpb4CGLV5wcNvUDrz3mSbElNOnM6/7yN9/sy7rQAjTQ1fdWsNzwC5XsUfFiZK19G7AilicHRecWVFD5cQQ==,iv:FfXhh1ICAMTftCRrt6TDlDP/AFB0/JkGtDRAbEGjTCU=,tag:M+SP9tcjqgLkBjnSNghVvg==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBZd2o2dFlhOFZ3U1E2WUZk
+            dXYzdlZYWnFIbTFXR2xmdDJaci9BcFBBdUJJCkNRQk4yMmphbkRFU0NxVEh2QkNi
+            K0Vwdmx6VXpTS0ViNi9LMHJEM2VQYXMKLS0tIDZob1dLM2FqRi9LVUZHNnNOcWtS
+            dkt2UXFSTXNzSlFrQ2pJeTdoeHR6ZzAK9ifIgh+0rsTp7Uhk448aJeZmcegqAFeN
+            Zcph7YMTA+teu0DChK5uaQFaVR0+ULMxFGlXwPtDDidHkmESXltAgA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-04T14:17:51Z"
+    mac: ENC[AES256_GCM,data:V4UlQZFwt4f+pHOr2mjEEtFGXznp7O9ZSU84bHP3jmqvM38ij2XbIkDXo3AoONI81YGEZonMEmEVsR0Z9twjxMweZDWKXgP+RwSOX5r6GDL/NhHfgIhxcASZzFBbhHW20RgncjDgLED//axF7yGbnJFLONiZtwX66m8h/blLJrE=,iv:EbbCSglzVKZUPMpvYSL1VgIfn0mWqHJDNbqs5kcViw0=,tag:Ay5UK/wn1SXk7jJbgInxxw==,type:str]
+    version: 3.13.3

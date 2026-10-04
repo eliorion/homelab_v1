@@ -40,7 +40,30 @@ spec:
       # OTLP/HTTP base URL: the SDKs append /v1/traces; the chart's egress opens 4318 only.
       endpoint: http://alloy-receiver.monitoring.svc.cluster.local:4318
       environment: staging
+    # Data collection and the LLM pipeline (asp docs/16 section 4). advisor-ai-gateway-token was
+    # created on the ai-gateway routing alias ai/fast, the chart's pipeline.llm.model default.
+    seed:
+      enabled: true
+    siteConfig:
+      enabled: true
+    collection:
+      enabled: true
+    pipeline:
+      enabled: true
+      llm:
+        model: ai/fast
+    tests:
+      roleIsolation:
+        enabled: true
+        logins:
+          pub: {secretName: advisor-pub-login}  # pragma: allowlist secret
+          ingest: {secretName: advisor-ingest-login}  # pragma: allowlist secret
+          seed: {secretName: advisor-seed-login}  # pragma: allowlist secret
+          review: {secretName: advisor-review-login}  # pragma: allowlist secret
+          publish: {secretName: advisor-publish-login}  # pragma: allowlist secret
     components:
+      advisor-engine:
+        enabled: true
       # The review queue, on the tailnet only (review-ingress-tailscale.yaml). The proxy's identity
       # header names the reviewer; never set this to a header a client could send on its own.
       advisor-review:
