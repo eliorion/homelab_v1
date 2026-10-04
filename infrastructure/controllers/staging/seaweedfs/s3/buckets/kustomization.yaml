@@ -4,4 +4,7 @@ kind: Kustomization
 resources:
   - advisor-corpus.enc.yaml
   - nextcloud.enc.yaml
+  # The scraper's own identity for streaming advisor files into advisor-corpus (asp scraper
+  # chart engine.fileSinks), separate so the scraper never holds the advisor engine's key.
+  - scraper-advisor-sink.enc.yaml
   - tmp-backup-garage.enc.yaml

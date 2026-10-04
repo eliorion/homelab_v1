@@ -1,0 +1,32 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. Login for the advisor_seed CNPG managed role
+# (apps/base/databases/advisor/database.yaml references this Secret by name).
+# username MUST be the role name -- that is how CNPG's managed.roles reconciler
+# matches the login to the role. Copy this file to advisor-seed-login.enc.yaml,
+# generate a password, then encrypt in place:
+#   cp advisor-seed-login.enc.yaml.exemple advisor-seed-login.enc.yaml
+#   # replace the password below with: openssl rand -base64 32
+#   sops -e -i advisor-seed-login.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+    name: advisor-seed-login
+    namespace: advisor
+type: kubernetes.io/basic-auth
+stringData:
+    username: ENC[AES256_GCM,data:HRt1SzSYhcp9YojD,iv:6946rZMvNFl00L/yt3RjiJnveFWiYSgQLBcigTXwYcw=,tag:JhNKfdfDXjYl2o1IeTKmhA==,type:str]
+    password: ENC[AES256_GCM,data:MgpsDT2ahy1bK5v3Av0wHz/mOMDDtD3t3Y50lbuKRiOrh9y+9X4RZY2a6rShxskB1lCHsXwfyP44JcEZ6bDjdg==,iv:qYFHKI/uDLU+qVNsJUmXUH4/P9/S2a133oxEH6+lroo=,tag:gjiYg8Q6EO9nMztE8bV7Gg==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBramNGVUd0VmIxaVIvOTdu
+            UDIwYkxvZXJUemljNUliQ0NrdUttVU9XL3g0CjdKNDdpRWl0Q0k2cHF6ay90bkNV
+            U1hveFRxaFpJWWZHdEZNd2VMZ3FvSkUKLS0tIEJmSkxYM0IwR0NpcXNVN0FBTENL
+            bm5zUHcyVW91QU5ZV0JiSTlUY2VhYTQKdZVq4RN5/TVOdPe3fCI4g/ZfGlSg8reb
+            V7lmJYjv/TUMrPIGqMQyqRfEKR4NVM08Dxq0IQek7w49bM4JtHI4Lw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-04T14:17:51Z"
+    mac: ENC[AES256_GCM,data:gKZuiE5leLp1Qo5WeuWgo2SNFiO/VbKK/4zdgCsPjx8rqw1GraeMVZO4+Jlnjf3UPtkPBOL1DMsAtPFMRmrSGc9PwxQcD2CHxzb/Lb507BbaMhhd0+CFR30KlHc4xlsljxyOu9UXkP7EBpWrfl9NiSaT7jHnj6KnQUUa5IZ9ts8=,iv:p0LCG6JNPRnMU0x9+gcDoa1rq901EJthK7zCRd6LcNw=,tag:amIQE9QgwmCh3EPS4nbLrw==,type:str]
+    version: 3.13.3
