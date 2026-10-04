@@ -40,15 +40,18 @@ spec:
       # OTLP/HTTP base URL: the SDKs append /v1/traces; the chart's egress opens 4318 only.
       endpoint: http://alloy-receiver.monitoring.svc.cluster.local:4318
       environment: staging
-    # Data collection (asp docs/16 section 4). The pipeline stays OFF: its pipeline.llm.model must
-    # be the routing alias advisor-ai-gateway-token was created on, which lives only in the
-    # ai-gateway dashboard.
+    # Data collection and the LLM pipeline (asp docs/16 section 4). advisor-ai-gateway-token was
+    # created on the ai-gateway routing alias ai/fast, the chart's pipeline.llm.model default.
     seed:
       enabled: true
     siteConfig:
       enabled: true
     collection:
       enabled: true
+    pipeline:
+      enabled: true
+      llm:
+        model: ai/fast
     tests:
       roleIsolation:
         enabled: true
