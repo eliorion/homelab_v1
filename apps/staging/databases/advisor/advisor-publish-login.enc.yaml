@@ -1,32 +1,28 @@
-# PLACEHOLDER -- NOT ENCRYPTED YET. Login for the advisor_publish CNPG managed role
-# (apps/base/databases/advisor/database.yaml references this Secret by name).
-# username MUST be the role name -- that is how CNPG's managed.roles reconciler
-# matches the login to the role. Copy this file to advisor-publish-login.enc.yaml,
-# generate a password, then encrypt in place:
-#   cp advisor-publish-login.enc.yaml.exemple advisor-publish-login.enc.yaml
-#   # replace the password below with: openssl rand -base64 32
-#   sops -e -i advisor-publish-login.enc.yaml
 apiVersion: v1
 kind: Secret
 metadata:
     name: advisor-publish-login
     namespace: advisor
+    labels:
+        # CNPG re-reads a managed role's passwordSecret only on a Cluster reconcile or when the
+        # Secret carries this label; without it a login added after the Cluster stays passwordless.
+        cnpg.io/reload: "true"
 type: kubernetes.io/basic-auth
 stringData:
-    username: ENC[AES256_GCM,data:Z+un7tYWO3IpXgt+tJX8,iv:tM5pSreloPGUC4mzLP1G3oZfPBJTyZhxC9+XmxzTLvU=,tag:KeWvmld7rn215yxj/WsarA==,type:str]
-    password: ENC[AES256_GCM,data:wL1ajck0+Ew55sYJf5HtPLEoeH+OzJg3bqDsiC1cCWdj8URaoT9KP/Ow2dFC3xT+nUBJtI7FBe42Gzh4ELtQiw==,iv:BDf0asjDsUFDsvqpVGhNTu51ntrpJMA8sKHxK9Wj+zY=,tag:okifEV+We/echUIOwh0TDw==,type:str]
+    username: ENC[AES256_GCM,data:CWD2BixmTmSQgW3myChw,iv:/HwUmQSWfm59KZ/rzID84M432s+ICslQ+peHx9C6ZAw=,tag:yNekxypGSjm9MgqrKVIlag==,type:str]
+    password: ENC[AES256_GCM,data:Xw3j1/d5dB86JlZtB21+hRpmh4o68bkcvGz9B3tEMK6WIa9b7IzSBIhxku/qoOBzhxpYXhZTp8a7yOJIiWmw9w==,iv:Y9XJpx1mNZh9mK+I6l7zMD7C4lahgJhLeazr5vHXayk=,tag:2zpq/YAvzlCcP3aPBBGqSQ==,type:str]
 sops:
     age:
         - enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAyYmgzN09BMG9lcE9yODZl
-            S3BvQk14SUEvbnNhTE1RTndGckxYWFkxY3pVCk9Za2JOL3NSVmVVSytuOFZFaUc3
-            L3FSOXo5NzVmVGVydkxvVjZLaFJCRGcKLS0tIHZKcENlcmtTR1VkU2RSM0VncUJK
-            cHg0Tit4azVYaTN1VDNwSFFabklRc28KlfUOGDWPQafCFEtnmyQ9TSjiIM0vzoQq
-            BePF+wB9OIvZxiB4w3T91SSwNi66PWum0cF/XN4mjJvw/ciX+tIPNA==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBPZW9TcWVNTFpCMWlqcGhQ
+            aEFqcmRZQ2IvMkYvU1gzZC9tNzc3eU1aOEVvCnpTdldxV2U5L0ZxSmh2WldwTkwz
+            Rm1JOFZBQlBUbTVQZDFHSTdJMFhUZW8KLS0tIGoycjQrVit6KzZwUE40czA0dTUz
+            bURBQkg4Ym1pSHV0cytQRHNYMGw2dEkK8J753gmb/HR8Y5J/rnoVF/qkzO7edzB8
+            dKz7BEv+53FZpKc8uNA1K1irHi83aOexk5mntXPStpNipwB+9aFu1w==
             -----END AGE ENCRYPTED FILE-----
           recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
     encrypted_regex: ^(data|stringData)$
-    lastmodified: "2026-10-04T14:17:51Z"
-    mac: ENC[AES256_GCM,data:K7NMU0JB4rGHokORMbXcrIhHwIQTkeQtrrHzwHMSrxGSgbogjfqC1OmEifbpnBTB9FRgCh5shXKjE2AoOSBrsnVvxgaMWLe3geTF49OYguzEpc+oJ/QRhqBxmMBmwxtEGUiskHjy2I8SzGbKfDSVfv94379I1HqQ4LEVAw9bTOM=,iv:IoOu22+mynfcD8ech+dIIq3VWDuvc8Mr6E35fwWdl8I=,tag:HVezTkDSUJVbd8B1UliQTw==,type:str]
+    lastmodified: "2026-10-04T20:56:59Z"
+    mac: ENC[AES256_GCM,data:ZY1EI855wPNuxu29wVT3/KRrzjhL5aQvE4mnXeYon8moawyDRToo/9jTQBXek5FUvZFbieumoWiS+1ozfYidAblqklcKZ9iEX37dtHZmcJsBltyRS6WAWrG9jqOxom5HW8k0GBajzk1Y8T7M7ZIY9//rc5P+71boF5fzR3Top9A=,iv:MUpFujAtaFla6afi1RumXSSHXuQfRpk9iroRMFZYvjA=,tag:Q/6Xux4VdJdKnmsGwIlOLw==,type:str]
     version: 3.13.3
