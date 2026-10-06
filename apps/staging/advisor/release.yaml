@@ -40,8 +40,9 @@ spec:
       # OTLP/HTTP base URL: the SDKs append /v1/traces; the chart's egress opens 4318 only.
       endpoint: http://alloy-receiver.monitoring.svc.cluster.local:4318
       environment: staging
-    # Data collection and the LLM pipeline (asp docs/16 section 4). advisor-ai-gateway-token was
-    # created on the ai-gateway routing alias ai/fast, the chart's pipeline.llm.model default.
+    # Data collection and the LLM pipeline (asp docs/16 section 4). The ai-gateway routing aliases
+    # are ai/low, ai/normal, ai/high and ai/xhigh (ai/fast does not exist: "could not auto resolve a
+    # provider"); extraction over thousands of passages runs on ai/normal.
     seed:
       enabled: true
     siteConfig:
@@ -51,7 +52,7 @@ spec:
     pipeline:
       enabled: true
       llm:
-        model: ai/fast
+        model: ai/normal
     tests:
       roleIsolation:
         enabled: true
