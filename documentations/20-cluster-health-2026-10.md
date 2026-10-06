@@ -78,6 +78,45 @@ CPU like any other; raise its request only if it measurably misses a probe.
    **after the etcd reboots** — a re-clone writes the whole dataset (fbref 107G)
    to one 840. Procedure in `apps/base/databases/fbref/README.md`.
 
+## Rollout log, 2026-10-06
+
+- **13:55–14:25 memory limits.** All 36 pods in `piraeus-datastore` and
+  `seaweedfs` came up Burstable with limits. The operator-generated LINSTOR pods
+  only pick up the `LimitRange` when recreated, so they were deleted one at a
+  time; the SeaweedFS CSI mount and node pods node by node (node-2, node-1 with
+  the two lab pods, node-3 with AzuraCast, ~1 min of stream).
+- **SeaweedFS rolled back once.** `seaweedfs-db`'s new resources rolled the
+  database with a switchover while the filer restarted; the filer died in
+  `LoadConfiguration`, Helm marked it failed and rolled back. Flux's retry
+  succeeded. Trap recorded in `infrastructure/controllers/base/seaweedfs/README.md`.
+- **Harbor rolled back until `Recreate`.** Lowering trivy's request rolled
+  jobservice, whose RWO volume could not attach on its new node. Fixed with
+  `updateStrategy.type: Recreate` plus a one-time strategy patch
+  (`infrastructure/services/base/harbor/README.md`).
+- **CPU requests:** node-2 93% → 66%, node-3 95% → 66%.
+- **Kubelet/apiserver:** applied 14:50, no pod rejected on admission; node-1
+  allocatable 28.5 GiB against 26.8 GiB requested.
+- **Reboots 14:52–15:28**, node-1, node-3, node-2. Cordoning a node makes CNPG
+  switch every primary on it to a ready replica elsewhere within a minute, so no
+  manual `targetPrimary` patch was needed. Clusters with **both** instances on the
+  node being cordoned (paperclip-db, seaweedfs-db on node-3; nextcloud-db on
+  node-2 — replicas recreated while another node was cordoned) need the replica
+  pod deleted first so it reschedules. A `targetPrimary` patch with an empty
+  value makes CNPG restart the primary in place: paperclip-db and seaweedfs-db
+  were down ~5 s at 15:04:44 because of one.
+- **The e2e-0 vcluster stacks did not survive the reboots**: their CNPG
+  instances ended `Completed` and the apps cannot reach the database. The nightly
+  rebuild redeploys them (`documentations/19-dev-platform.md`).
+- **fbref-db and asp-db affinity (15:31–15:35)** restarted each primary in place
+  (`primaryUpdateMethod: restart`, the CNPG default) instead of switching over;
+  both primaries were on node-1, outside the new node pin, so writes stopped for
+  ~3 minutes while they were rescheduled.
+- **Re-clones onto `ssd-cnpg`**: asp-db 15:35–15:52, about 8 minutes per 16G
+  instance; fbref-db 15:53–17:24, about 45 minutes per 107G instance, each
+  switchover ~25 s. Zero etcd leader changes throughout, with WAL fsync p99 at
+  1.1–1.5 s on node-2/3 under the clone load. While fbref-db ran one instance,
+  the `databases` Kustomization (`wait: true`) held `db-migrations` and `apps`.
+
 ## How to tell it worked
 
 ```promql

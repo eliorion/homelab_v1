@@ -229,6 +229,12 @@ central reflector source.
   only; an existing instance keeps its PVC until it is destroyed and re-cloned
   (see "Operating it"). A re-clone writes the whole dataset (107G on
   2026-10-06) to one 840 — never run two at once.
+- **A spec change restarts the primary in place.** `primaryUpdateMethod` is
+  CNPG's default `restart`, not `switchover`: a change to the pod spec
+  (resources, affinity) rolls the replica, then deletes and recreates the
+  primary pod. When the primary has to move nodes it is down until it is
+  rescheduled — ~3 minutes on 2026-10-06. Switch the primary to a replica that
+  already satisfies the new spec before pushing such a change.
 - **An instance whose node is down stays `Pending`.** `ssd-cnpg` volumes do not
   follow the pod. CNPG fails over to the other instance; switch the primary away
   before draining a node.
