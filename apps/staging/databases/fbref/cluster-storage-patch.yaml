@@ -1,10 +1,19 @@
 - op: add
   path: /spec/storage/storageClass
-  value: ssd
-# Staging sizing; base stays at 10Gi. A full volume halts the primary with CNPG's
-# "Not enough disk space" and takes the whole fbref stack down with it.
-# Both Longhorn volumes are patched to numberOfReplicas: 1 — the class provisions
-# 3, which no longer fits on node-1's disk. Re-apply after any PVC recreate.
+  value: ssd-cnpg
+# Base stays at 10Gi. A full volume halts the primary and the whole fbref stack.
 - op: replace
   path: /spec/storage/size
   value: 200Gi
+# ssd-cnpg is node-local: one instance per 745GB pool. node-1's pool cannot hold 200Gi.
+- op: add
+  path: /spec/affinity
+  value:
+    podAntiAffinityType: required
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: [staging-controlplane-2, staging-controlplane-3]

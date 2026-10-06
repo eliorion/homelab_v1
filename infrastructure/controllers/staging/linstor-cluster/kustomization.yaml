@@ -8,5 +8,6 @@ resources:
   - satellite-resources.yaml
   - storageclass-ssd.yaml
   - storageclass-ssd-single.yaml
+  - storageclass-ssd-cnpg.yaml
   - linstor-passphrase.enc.yaml
   - ingress-tailscale.yaml

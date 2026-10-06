@@ -183,12 +183,35 @@ container under 120Mi.
   `/ui/` is safe, which is why every reference here carries it.
 
 ## Operating it
-- **There are two classes, and only one is safe for data.** `ssd` places two
-  diskful replicas plus a diskless tiebreaker. `ssd-single`
-  (`placementCount: 1`) places one and has no redundancy at all: lose the node
-  and the data is gone, and while that node is down the volume does not follow
-  the pod, so its consumer stays down too. It exists for the Nexus proxy cache,
-  which is rebuildable from upstream. Never point a database at it.
+- **There are three classes.** `ssd` places two diskful replicas plus a
+  diskless tiebreaker. `ssd-single` (`placementCount: 1`) places one and has no
+  redundancy at all: lose the node and the data is gone, and while that node is
+  down the volume does not follow the pod, so its consumer stays down too. It
+  exists for the Nexus proxy cache, which is rebuildable from upstream. Never
+  point a database at it. `ssd-cnpg` is the one exception, below.
+- **`ssd-cnpg` is for CNPG clusters that already replicate themselves**
+  (2026-10-06). On `ssd`, a two-instance CNPG cluster stores four copies: two
+  Postgres instances, each on a two-replica DRBD volume. With both diskful
+  replicas on node-2 and node-3 (node-1's pool is too small), every commit hit
+  each Samsung 840 twice — and etcd shares those disks, which is what drove its
+  fsync p99 to 64–95 ms and the leader-change storm
+  (`../../../../bootstraping/README.md`). `ssd-cnpg` gives each instance one
+  local replica, so Postgres replication is the redundancy and each 840 takes
+  each write once. Rules that make it safe:
+  - Only for clusters with `instances: 2` or more and
+    `affinity.podAntiAffinityType: required`, so two instances can never share
+    a node. fbref-db and asp-db also pin to node-2 and node-3 by
+    `nodeAffinity`.
+  - `allowRemoteVolumeAccess: "false"` pins the volume's PV to its node. An
+    instance whose node is down stays `Pending` instead of reading its volume
+    over the network; CNPG fails over to the other instance. A drained node's
+    instance waits for the node, too — switch the primary away first.
+  - Losing a node loses that instance's data, and CNPG rebuilds it from the
+    surviving one with `pg_basebackup`. With synchronous replication (`method:
+    any`, `number: 1`) no committed transaction is lost.
+  - CNPG never moves an existing PVC to a new class. Changing `storageClass` on
+    a cluster only applies to instances created afterwards: each old instance
+    has to be destroyed (its PVC and pod deleted) and re-cloned, one at a time.
 - **The pool is LVM-thin, so provisioned size is not reserved.** The sum of PVC
   requests already exceeds each node's pool. That is fine until it is not: if a
   thin pool fills, *every* volume on that node fails at once, not just the one

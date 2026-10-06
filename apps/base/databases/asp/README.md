@@ -6,7 +6,7 @@ control row and the orchestrator's search requests. The base layer creates the
 `asp` namespace, the `Cluster` itself and the ConfigMap holding the full
 bootstrap schema; the environment overlays add the barman-cloud backup wiring
 (ObjectStore, ScheduledBackup, SOPS-encrypted R2 credentials) and, in staging,
-the Longhorn storage class and the reflector permission that lets other
+the `ssd-cnpg` storage class with node pinning, and the reflector permission that lets other
 namespaces read the generated connection secret. The cluster is the first link
 in the app chain: `databases` → `db-migrations` (Flyway) → `apps`.
 
@@ -30,7 +30,7 @@ Staging (`apps/staging/databases/asp/`):
 | `scheduledbackup.yaml` | `ScheduledBackup` `asp-db-daily`, `0 0 3 * * *`, `method: plugin`, `immediate: true` |
 | `r2-backup-credentials.enc.yaml` | SOPS-encrypted Secret `r2-backup-credentials` (`ACCESS_KEY_ID` / `ACCESS_KEY_SECRET`) |
 | `cluster-backup-patch.yaml` | attaches the barman-cloud plugin as WAL archiver, `barmanObjectName: r2-store`, `serverName: asp-db` |
-| `cluster-storage-patch.yaml` | JSON6902 patch adding `spec.storage.storageClass: longhorn` |
+| `cluster-storage-patch.yaml` | JSON6902 patch: `spec.storage.storageClass: ssd-cnpg` and `affinity` pinning the two instances to node-2 and node-3, one per node (`podAntiAffinityType: required`). Why, and how an instance is moved onto a new class: `../fbref/README.md` and `../../../../infrastructure/controllers/base/linstor/README.md`. |
 | `cluster-reflector-patch.yaml` | `inheritedMetadata` annotations allowing kubernetes-reflector to mirror into `lab` and `database` |
 | `cluster-recovery-patch.yaml` | **not referenced** by `kustomization.yaml`; leftover from the 2026-06-11 restore (see below) |
 

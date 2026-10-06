@@ -1,0 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ssd-cnpg
+provisioner: linstor.csi.linbit.com
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+parameters:
+  # ONE diskful replica: only for CNPG clusters of >= 2 instances, one per node. See README.
+  linstor.csi.linbit.com/placementCount: "1"
+  # The volume stays on its node; a pod elsewhere would read it diskless over the network.
+  linstor.csi.linbit.com/allowRemoteVolumeAccess: "false"
+  linstor.csi.linbit.com/storagePool: ssd
+  linstor.csi.linbit.com/resourceGroup: ssd-cnpg
+  csi.storage.k8s.io/fstype: xfs

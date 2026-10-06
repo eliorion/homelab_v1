@@ -24,7 +24,8 @@ and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
 `14` design decisions, `15` node-1 spare-disk expansion,
 `16` USB disk qualification for Ceph,
 `17` LINSTOR + SeaweedFS migration, `18` observability (Loki, Tempo, Alloy,
-Dagger CI telemetry).
+Dagger CI telemetry), `20` cluster health 2026-10 (etcd timing, OOM limits,
+`ssd-cnpg`, CPU right-sizing).
 
 ## Repo layout
 

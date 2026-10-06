@@ -51,11 +51,10 @@ Staging overlay (`apps/staging/databases/fbref/`):
 - `cluster-backup-patch.yaml` — attaches the `barman-cloud.cloudnative-pg.io`
   plugin to the Cluster as the WAL archiver, `barmanObjectName: garage-store`,
   `serverName: fbref-db`.
-- `cluster-storage-patch.yaml` — JSON 6902 patch: `storageClass: longhorn`
-  (explicit, though Longhorn is also the cluster default storage class on
-  Talos) and `storage.size` replaced with `200Gi`. The two Longhorn volumes
-  behind those PVCs are patched out of band to `numberOfReplicas: 1`; the class
-  provisions 3.
+- `cluster-storage-patch.yaml` — JSON 6902 patch: `storageClass: ssd-cnpg` (one
+  local LINSTOR replica per instance), `storage.size` replaced with `200Gi`, and
+  `affinity` that pins the two instances to node-2 and node-3 with
+  `podAntiAffinityType: required`.
 - `cluster-reflector-patch.yaml` — `inheritedMetadata` annotations that permit
   kubernetes-reflector to mirror this cluster's Secrets into the `lab` and
   `database` namespaces.
@@ -143,6 +142,17 @@ largest single consumer in a 2.3TB cluster. Nexus already runs this way for the
 same reason — see
 [`../../../../infrastructure/services/base/nexus/README.md`](../../../../infrastructure/services/base/nexus/README.md).
 
+**On LINSTOR: `ssd-cnpg`, the same one-copy-per-instance model** (2026-10-06).
+The Longhorn → LINSTOR move (2026-08-24) put both volumes on `ssd`, two DRBD
+replicas each, so the cluster went back to four copies — all on node-2's and
+node-3's Samsung 840s, since node-1's pool is too small. Synchronous replication
+plus DRBD protocol C made every commit four fsyncs on the two disks etcd also
+lives on; the 10-01 failover and the heavier ingestion from 10-04 lined up with
+etcd's leader-change storm. `ssd-cnpg` restores the Longhorn design: one local
+replica per instance, `allowRemoteVolumeAccess: "false"`, instances pinned to
+node-2 and node-3, never sharing one. The class and its rules are in
+[`../../../../infrastructure/controllers/base/linstor/README.md`](../../../../infrastructure/controllers/base/linstor/README.md).
+
 **Garage instead of R2.** fbref is the one CNPG cluster archived to the
 off-cluster Garage store rather than Cloudflare R2, reached through the
 in-cluster HAProxy gateway and Tailscale egress — the same single endpoint the
@@ -215,9 +225,13 @@ central reflector source.
 - The storage size is overlay-scoped: base stays at `10Gi`, staging replaces it
   with `200Gi`. Raising it in base would apply it to a cluster whose disks are
   not this size.
-- **`numberOfReplicas: 1` lives on the Longhorn volume, not in git.** The
-  `longhorn` class provisions 3, so a recreated PVC comes back at 3 replicas and
-  will not fit. Re-apply the patch under "Operating it" after any PVC recreate.
+- **Changing `storageClass` moves nothing.** CNPG applies it to new instances
+  only; an existing instance keeps its PVC until it is destroyed and re-cloned
+  (see "Operating it"). A re-clone writes the whole dataset (107G on
+  2026-10-06) to one 840 — never run two at once.
+- **An instance whose node is down stays `Pending`.** `ssd-cnpg` volumes do not
+  follow the pod. CNPG fails over to the other instance; switch the primary away
+  before draining a node.
 - **Growing this cluster is bounded by one node, not by the cluster total.**
   `fbref-db-1`'s volume lives on node-2 and `fbref-db-3`'s on node-3, and each
   needs the full increase on its own node. Check schedulable space per node
@@ -254,25 +268,27 @@ for p in $(kubectl -n fbref get pvc -l cnpg.io/cluster=fbref-db -o name); do
 done
 ```
 
-Longhorn expands online; the filesystem grows without restarting the pods.
+LINSTOR expands online; the filesystem grows without restarting the pods.
 
-Pin the volumes back to one Longhorn replica after a PVC recreate:
+Free space per node's pool, which is what bounds `storage.size`:
 
 ```bash
-for pv in $(kubectl -n fbref get pvc -o jsonpath='{.items[*].spec.volumeName}'); do
-  kubectl -n longhorn-system patch volumes.longhorn.io "$pv" --type=merge \
-    -p '{"spec":{"numberOfReplicas":1,"dataLocality":"best-effort"}}'
-done
+kubectl -n piraeus-datastore exec deploy/linstor-controller -- linstor storage-pool list
 ```
 
-Schedulable space per node, which is what bounds `storage.size`:
+Move an instance onto the cluster's current `storageClass` (one instance at a
+time, the replica first; the primary only after a switchover). Deleting the PVC
+and the pod is what `kubectl cnpg destroy` does; CNPG then creates a new
+instance with the next serial and clones it from the primary:
 
 ```bash
-kubectl get nodes.longhorn.io -n longhorn-system -o json | jq -r '.items[]
-  | .metadata.name as $n | (.spec.disks // {}) as $s | .status.diskStatus
-  | to_entries[] | [$n, .key,
-      ((.value.storageMaximum - ($s[.key].storageReserved // 0)
-        - .value.storageScheduled) / 1073741824 | floor)] | @tsv'
+kubectl -n fbref get cluster fbref-db   # healthy, 2 ready, note the primary
+kubectl -n fbref delete pvc fbref-db-<n> --wait=false
+kubectl -n fbref delete pod fbref-db-<n>
+kubectl -n fbref get pods -w             # fbref-db-<n>-join job, then the new pod
+# switchover to the new instance once it is streaming:
+kubectl -n fbref patch cluster fbref-db --subresource=status --type=merge \
+  -p '{"status":{"targetPrimary":"fbref-db-<new>"}}'
 ```
 
 Recreate the Garage backup credential from the template. The `garage` commands
@@ -297,6 +313,6 @@ Restore procedure and the 2026-07-26 restore drill for this exact cluster
 
 Only a `staging` overlay exists (`apps/staging/databases/fbref/`). Base on its own gives the Namespace
 and a Cluster with the default storage class and `10Gi`, no backups and no
-secrets. Staging adds the Longhorn storage class and `100Gi`, the barman-cloud
+secrets. Staging adds the `ssd-cnpg` storage class, `200Gi` and the node pinning, the barman-cloud
 plugin and the Garage `ObjectStore` + `ScheduledBackup`, the two managed-role
 password Secrets, and the reflector permit annotations.
