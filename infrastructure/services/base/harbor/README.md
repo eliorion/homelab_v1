@@ -258,7 +258,14 @@ starts before the old one stops; when it lands on another node the volume cannot
 (`Multi-Attach error ... Volume is already used by pod(s)`), Helm reports the Deployment
 stalled and Flux rolls the release back. Measured 2026-10-06 on a change that only lowered
 trivy's CPU request. `Recreate` stops the old pod first: a few seconds without the registry,
-during which the Talos mirrors fall back to the upstream registries.
+during which the Talos mirrors fall back to the upstream registries. Switching an existing
+Deployment to `Recreate` through Helm's server-side apply fails (`spec.strategy.rollingUpdate:
+Forbidden`): the server-defaulted `rollingUpdate` block stays, and the chart's
+`rollingUpdate: null` does not remove it under SSA. On a fresh install it never arises; on
+the live cluster it was cleared once by hand, which does not roll the pods:
+`kubectl -n registry patch deploy harbor-jobservice --type=json -p
+'[{"op":"replace","path":"/spec/strategy","value":{"type":"Recreate"}}]'` (and the same for
+`harbor-registry`), then `flux reconcile hr harbor -n flux-system --reset`.
 
 **Chart pinned, and do not drop to app 2.15.0** — proxy-cache pulls were broken there
 (`goharbor/harbor#23025`, fixed 2026-04-13). Proxy cache is the feature this deployment exists
