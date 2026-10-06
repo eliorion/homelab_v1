@@ -174,6 +174,19 @@ Hostnames are hyphenated because Kubernetes rejects underscores in node names.
 | `controllerManager.extraArgs.bind-address: 0.0.0.0` | Talos binds kube-controller-manager to `127.0.0.1`; Prometheus scrapes `:10257` over HTTPS with a bearer token. |
 | `scheduler.extraArgs.bind-address: 0.0.0.0` | Same for kube-scheduler, `:10259`. |
 | `etcd.extraArgs.listen-metrics-urls: http://0.0.0.0:2381` | etcd metrics on every node address — **plaintext and unauthenticated**, a trade accepted deliberately. |
+| `etcd.extraArgs.heartbeat-interval: 500`, `election-timeout: 5000` | Raft timing loosened from etcd's 100/1000 ms defaults. Needs a reboot to take effect (below). |
+
+**Why the etcd timing is loosened** (2026-10-06). From 2026-10-01 the cluster logged 311–445
+leader changes a week, and every leader-elected controller (linstor-csi, linstor-controller,
+cnpg, keda, kyverno, kube-scheduler, kube-controller-manager) restarted when its lease ran out
+during the gaps. On node-2 and node-3 etcd shares a Samsung 840 SATA SSD with the LINSTOR pool,
+and WAL fsync p99 ran 64–95 ms there, with 5-minute worst cases of 1–2.8 s, against 15 ms on
+node-1's NVMe. A follower that does not hear a heartbeat within the election timeout calls an
+election, so 1 s was shorter than the stalls. 5 s covers the observed worst case. The price:
+a leader that really dies is replaced after ~5 s instead of ~1 s, and the API is unavailable
+for that long. etcd requires the election timeout to stay at least 5× the heartbeat interval.
+This treats the symptom; the cause is write contention on the 840s, addressed by the
+`ssd-cnpg` StorageClass (`../infrastructure/controllers/base/linstor/README.md`).
 
 The why, the security trade and the scrape side are in
 [`../monitoring/controllers/base/kube-prometheus-stack/README.md`](../monitoring/controllers/base/kube-prometheus-stack/README.md)

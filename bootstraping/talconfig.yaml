@@ -239,6 +239,21 @@ patches:
         disableManifestsDirectory: true
         extraArgs:
           rotate-server-certificates: true
+        extraConfig:
+          # A partial evictionHard zeroes the signals it omits: keep all five.
+          evictionHard:
+            memory.available: 1Gi
+            nodefs.available: 10%
+            nodefs.inodesFree: 5%
+            imagefs.available: 15%
+            imagefs.inodesFree: 5%
+          evictionSoft:
+            memory.available: 2Gi
+          evictionSoftGracePeriod:
+            memory.available: 30s
+          evictionMaxPodGracePeriod: 60
+          kubeReserved:
+            memory: 1Gi
       install:
         wipe: false
         grubUseUKICmdline: true
@@ -284,6 +299,12 @@ patches:
   # re-adding them here duplicates the kube-system exemption.
   - |-
     cluster:
+      # Never give the apiserver a memory limit.
+      apiServer:
+        resources:
+          requests:
+            cpu: 200m
+            memory: 2Gi
       # Cilium replaces kube-proxy -- do not deploy it.
       proxy:
         disabled: true
@@ -312,3 +333,6 @@ patches:
       etcd:
         extraArgs:
           listen-metrics-urls: http://0.0.0.0:2381
+          # election-timeout must stay >= 5x heartbeat-interval. Takes effect only on reboot.
+          heartbeat-interval: "500"
+          election-timeout: "5000"
