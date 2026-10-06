@@ -125,6 +125,13 @@ as the single highest-value hardware change available to this cluster.
   deleted** — both DaemonSets are `OnDelete`. Deleting the mount pod kills every
   `weed mount` on that node, so stop the pods using `hdd` PVCs on that node first,
   then delete the mount pod, then start them again.
+- **Never change `seaweedfs-db` and the filer in the same push.** A spec change
+  to the CNPG cluster rolls both instances with a switchover; a filer that starts
+  during it cannot reach `seaweedfs-db-rw`, dies with a `glog.Fatalf` in
+  `LoadConfiguration`, and Helm marks the filer StatefulSet failed and rolls the
+  release back. Measured 2026-10-06: the rollback put the filer on the namespace's
+  256Mi default, below its 349Mi peak, until Flux's next retry upgraded it. Push
+  the database change, wait for `Cluster in healthy state`, then the release.
 - **A container that needs more than 256Mi has to say so.** The namespace
   `LimitRange` applies to everything here, CNPG and Barman sidecars included.
   When backups are turned on for `seaweedfs-db`, size the plugin sidecar in the
