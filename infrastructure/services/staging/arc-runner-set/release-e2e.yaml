@@ -30,6 +30,14 @@ spec:
     maxRunners: 2
     template:
       spec:
+        # ScheduleAnyway: a full node must never block a CI job.
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                actions.github.com/scale-set-name: self-hosted-arc-e2e
         # The runner image's user is the NAME `runner`, which the kubelet cannot check against
         # runAsNonRoot — it needs the uid. fsGroup gives that uid the work emptyDir.
         securityContext:

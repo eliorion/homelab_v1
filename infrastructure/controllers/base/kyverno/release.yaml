@@ -32,6 +32,10 @@ spec:
     crds: CreateReplace
   values:
     admissionController:
+      container:
+        resources:
+          requests:
+            cpu: 20m
       replicas: 3
       podDisruptionBudget:
         enabled: true
@@ -39,10 +43,16 @@ spec:
       serviceMonitor:
         enabled: false
     backgroundController:
+      resources:
+        requests:
+          cpu: 10m
       replicas: 2
       serviceMonitor:
         enabled: false
     cleanupController:
+      resources:
+        requests:
+          cpu: 10m
       replicas: 2
       serviceMonitor:
         enabled: false

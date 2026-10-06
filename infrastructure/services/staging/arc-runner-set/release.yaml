@@ -35,6 +35,14 @@ spec:
     # dockerd flags, so it cannot pass --insecure-registry (see README).
     template:
       spec:
+        # ScheduleAnyway: a full node must never block a CI job.
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                actions.github.com/scale-set-name: self-hosted-arc
         initContainers:
           # Copies runner externals where the dind container expects them.
           - name: init-dind-externals

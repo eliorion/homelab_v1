@@ -32,3 +32,12 @@ transformers:
     fieldSpecs:
       - path: metadata/namespace
         create: true
+
+patches:
+  - target:
+      kind: Deployment
+      name: keycloak-operator
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 20m

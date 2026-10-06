@@ -139,6 +139,16 @@ here and `gha-runner-scale-set-controller` in
 `infrastructure/controllers/base/arc/release.yaml` are all `0.14.2`. Renovate
 bumps them separately and nothing enforces the rule but a comment and a human.
 
+**Runners spread across nodes, softly** (2026-10-06). Both templates carry a
+`topologySpreadConstraints` entry on `kubernetes.io/hostname`, keyed on
+`actions.github.com/scale-set-name`. Before it, every runner of both pools sat on
+node-1, so a burst of Rust builds (~16 `rustc` each) landed on the node already
+carrying the Dagger engine and the scraper workers, and node-1's memory pressure
+fed the Talos OOM controller (`../../../controllers/base/linstor/README.md`).
+`whenUnsatisfiable: ScheduleAnyway` makes it a scoring preference: when node-2 or
+node-3 is full, the runner still schedules wherever it fits rather than leaving a
+CI job pending.
+
 ## Traps
 
 - **`OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` must be set explicitly, with the full

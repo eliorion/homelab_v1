@@ -62,7 +62,7 @@ spec:
     install4jAddVmParams: "-Xms1g -Xmx2g -XX:MaxDirectMemorySize=2048m"
     resources:
       requests:
-        cpu: 500m
+        cpu: 50m
         memory: 2Gi
       limits:
         cpu: 10
