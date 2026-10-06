@@ -251,6 +251,15 @@ authentication failures that look like a broken registry.
 is reproducible, so a single node-local replica is the right trade; `ssd` would replicate every
 layer over DRBD on the hottest write path.
 
+**`updateStrategy.type: Recreate`, for jobservice and registry.** Both Deployments mount a
+ReadWriteOnce `ssd-single` volume, and the chart regenerates jobservice's secret on every Helm
+upgrade, so every upgrade rolls them. Under the chart's default `RollingUpdate` the new pod
+starts before the old one stops; when it lands on another node the volume cannot attach
+(`Multi-Attach error ... Volume is already used by pod(s)`), Helm reports the Deployment
+stalled and Flux rolls the release back. Measured 2026-10-06 on a change that only lowered
+trivy's CPU request. `Recreate` stops the old pod first: a few seconds without the registry,
+during which the Talos mirrors fall back to the upstream registries.
+
 **Chart pinned, and do not drop to app 2.15.0** — proxy-cache pulls were broken there
 (`goharbor/harbor#23025`, fixed 2026-04-13). Proxy cache is the feature this deployment exists
 for, so treat a working pull through each project as a release gate, not an assumption.

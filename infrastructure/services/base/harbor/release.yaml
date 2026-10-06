@@ -74,6 +74,10 @@ spec:
           cpu: 10m
       enabled: true
 
+    # Must stay Recreate: jobservice and registry hold RWO volumes. See README.
+    updateStrategy:
+      type: Recreate
+
     persistence:
       enabled: true
       persistentVolumeClaim:
