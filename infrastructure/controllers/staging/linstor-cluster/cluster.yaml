@@ -6,3 +6,28 @@ spec:
   # Without this Secret `linstor remote create s3` fails: LINSTOR stores remote
   # credentials encrypted under it. Losing it makes existing remotes unreadable.
   linstorPassphraseSecret: linstor-passphrase
+  controller:
+    podTemplate:
+      spec:
+        # The image defaults to java -Xmx8G. JAVA_OPTS is appended after it, so -Xmx2G
+        # here wins; the limit must stay above it plus ~1Gi off-heap.
+        initContainers:
+          - name: run-migration
+            env:
+              - name: JAVA_OPTS
+                value: -Djdk.tls.acknowledgeCloseNotify=true -Xmx2G
+            resources:
+              requests:
+                memory: 256Mi
+              limits:
+                memory: 3Gi
+        containers:
+          - name: linstor-controller
+            env:
+              - name: JAVA_OPTS
+                value: -Djdk.tls.acknowledgeCloseNotify=true -Xmx2G
+            resources:
+              requests:
+                memory: 1Gi
+              limits:
+                memory: 3Gi

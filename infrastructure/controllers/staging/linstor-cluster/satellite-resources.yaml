@@ -1,0 +1,15 @@
+apiVersion: piraeus.io/v1
+kind: LinstorSatelliteConfiguration
+metadata:
+  name: resources
+spec:
+  podTemplate:
+    spec:
+      containers:
+        # The image runs java -Xmx2G: the limit must stay above that plus ~1Gi off-heap.
+        - name: linstor-satellite
+          resources:
+            requests:
+              memory: 512Mi
+            limits:
+              memory: 3Gi

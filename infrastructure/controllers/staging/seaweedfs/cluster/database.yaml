@@ -5,6 +5,11 @@ metadata:
   namespace: seaweedfs
 spec:
   instances: 2
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 1Gi
   imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
   postgresql:
     synchronous:

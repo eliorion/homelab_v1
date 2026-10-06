@@ -19,7 +19,8 @@ narrative and runbook:
 | --- | --- |
 | `namespace.yaml` | Creates `seaweedfs` with `pod-security.kubernetes.io/enforce\|audit\|warn: privileged`. |
 | `repository.yaml` | Two `HelmRepository`s in `flux-system`: `seaweedfs` (`https://seaweedfs.github.io/seaweedfs/helm`) and `seaweedfs-csi` (`https://seaweedfs.github.io/seaweedfs-csi-driver/helm`). |
-| `release-csi.yaml` | `HelmRelease` `seaweedfs-csi-driver` (chart `0.2.35`, app `v1.4.29`) pointed at the filer, creating no StorageClass of its own, with `node.updateStrategy.type: OnDelete`. |
+| `limitrange.yaml` | Gives every container in the namespace that declares none a 32Mi memory request and a 256Mi limit, init containers and CNPG pods included. |
+| `release-csi.yaml` | `HelmRelease` `seaweedfs-csi-driver` (chart `0.2.35`, app `v1.4.29`) pointed at the filer, creating no StorageClass of its own, with `node.updateStrategy.type: OnDelete` and a 2Gi limit on the mount service. |
 | `monitoring/` | The tier's `PrometheusRule`, applied by its own Flux `Kustomization` `infra-seaweedfs-monitoring` -- NOT by `infra-seaweedfs`, whose `wait: true` would deadlock a cold bootstrap on a CRD the monitoring chart has not installed yet. |
 
 The overlay adds the `seaweedfs` HelmRelease (chart `4.44.0`), the `seaweedfs-db`
@@ -77,6 +78,18 @@ multipart state lives in the filer.
 *asymmetrically* would split one pool into two, drop the tagged pool to fewer
 racks, and break `010` growth outright.
 
+**Every pod here carries a memory limit, so the Talos OOM controller never picks
+it** (2026-10-06). Talos ranks OOM victims by memory use and scores any cgroup
+with a memory limit zero. With the whole namespace BestEffort, node-1's memory
+pressure — caused by workloads that all have limits — was paid by the volume
+server, master, S3 gateway and FUSE mount pods, which pauses `hdd` writes and
+breaks every mount on the node. The mechanism and the init-container rule are in
+[`../linstor/README.md`](../linstor/README.md). Sizes are from 7-day peaks:
+`volume-node-1` 2.5Gi (limit 4Gi, applied to both volume servers through the
+chart's `volume:` block), S3 1.6Gi (3Gi), filer 349Mi (1Gi), mount 337Mi (2Gi),
+master 105Mi (512Mi), `seaweedfs-db` 125Mi (1Gi). The worker's 500m CPU request
+is the chart default; it used none, so the request is 10m.
+
 ## What this does not survive
 
 **Losing node-1 or node-2 stops writes to this tier.** Volume growth is
@@ -101,6 +114,21 @@ as the single highest-value hardware change available to this cluster.
   as the wrong role against an empty database — the non-`app` owner makes this
   the failing variant, not the silently-empty one. See
   [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md).
+- **`WEED_LEVELDB2_ENABLED` must be set to the string `"false"`.** Leaving it
+  out does not disable LevelDB2: the chart's default turns it back on and it wins
+  over `postgres2`, putting the two filers back on an eventually consistent
+  embedded store.
+- **The CSI chart's `storageClassName` must stay `""`.** Any name makes the chart
+  create its own StorageClass next to the overlay's `hdd` class, without the
+  parameters the overlay sets.
+- **A memory change to the CSI mount or node pods applies only once the pod is
+  deleted** — both DaemonSets are `OnDelete`. Deleting the mount pod kills every
+  `weed mount` on that node, so stop the pods using `hdd` PVCs on that node first,
+  then delete the mount pod, then start them again.
+- **A container that needs more than 256Mi has to say so.** The namespace
+  `LimitRange` applies to everything here, CNPG and Barman sidecars included.
+  When backups are turned on for `seaweedfs-db`, size the plugin sidecar in the
+  `ObjectStore`'s `instanceSidecarConfiguration.resources`.
 - **`weed volume -max` defaults to `8`, not to auto.** Left alone every server
   caps at 8 × 30 GB = 240 GB and the 2 TB disks are invisible. `maxVolumes: 0`
   per `dataDirs` entry is what sets `-max 0`. A count mismatch between `-dir` and

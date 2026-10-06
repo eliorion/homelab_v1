@@ -17,6 +17,7 @@ narrative and runbook:
 | File | What it does |
 | --- | --- |
 | `namespace.yaml` | Creates `piraeus-datastore` with `pod-security.kubernetes.io/enforce\|audit\|warn: privileged`. |
+| `limitrange.yaml` | Gives every container in the namespace that declares none a 32Mi memory request and a 256Mi limit, init containers included. |
 | `repository.yaml` | `HelmRepository` `piraeus` in `flux-system`, **`type: oci`**, `oci://ghcr.io/piraeusdatastore/piraeus-operator`. |
 | `release.yaml` | `HelmRelease` `piraeus-operator` (chart `piraeus` `2.11.0`) into `piraeus-datastore`, with `installCRDs: true`. |
 | `monitoring/` | The tier's `ServiceMonitor` and `PrometheusRule`, applied by their own Flux `Kustomization` `infra-linstor-monitoring` -- NOT by `infra-linstor`, whose `wait: true` would deadlock a cold bootstrap on a CRD the monitoring chart has not installed yet. |
@@ -27,8 +28,10 @@ on the HelmRelease). `infra-seaweedfs` depends on it, because SeaweedFS's master
 claim from the `ssd` class this provides.
 
 The overlay adds the `LinstorCluster`, the Talos loader override and the storage
-pools, the two StorageClasses, the SOPS passphrase Secret, and the tailnet
-`Ingress` that publishes the controller's GUI.
+pools, the satellite memory settings (`satellite-resources.yaml`), the
+StorageClasses, the SOPS passphrase Secret, and the tailnet `Ingress` that
+publishes the controller's GUI. The controller's memory settings are in the
+`LinstorCluster` itself (`spec.controller.podTemplate`).
 
 The operator deploys, from the `LinstorCluster` CR: the LINSTOR controller, the
 satellite DaemonSet, the CSI controller and node plugin, the **HA controller**,
@@ -81,8 +84,35 @@ nodes. `satellite-host-network.yaml` puts the satellites on the node IPs, which
 only change when `talconfig.yaml` does. It carries no node selector, so a node
 added later gets it too.
 
+**Every pod here carries a memory limit, so the Talos OOM controller never
+picks it** (2026-10-06). Talos's default OOM ranking is
+`memory_max.hasValue() ? 0.0 : <QoS weight> * memory_current`: a cgroup with a
+memory limit scores zero and is never chosen, and every other cgroup is ranked by
+how much it uses. Everything in this namespace used to be BestEffort, so when
+node-1 ran short of memory — dagger, the scraper's browser workers and CI builds
+all carry limits and therefore score zero — Talos killed the storage stack
+instead: 1346 OOM actions on node-1 in a week, among them 84 SIGKILLs in 7 minutes
+to a satellite, leaving node-1 `OFFLINE` with 46 resources `Unknown`. A pod gets a
+cgroup `memory.max` only when **every** container in it, init containers
+included, has a limit; the operator generates up to seven containers per pod, so
+`limitrange.yaml` gives all of them a default and only the two JVMs are sized by
+hand. Sizes are from 7-day peaks: satellite 623Mi, controller 884Mi, every other
+container under 120Mi.
+
 ## Traps
 
+- **The LINSTOR images hard-code the JVM heap, not the container limit.** The
+  satellite runs `java -Xmx2G` and the controller and its `run-migration` init
+  container `java -Xmx8G`, whatever the cgroup allows. The JVM grows its heap
+  until it hits `-Xmx`, so a limit below `-Xmx` + ~1Gi off-heap eventually ends in
+  a kernel OOM kill of a JVM that thought it had room. The controller's
+  `JAVA_OPTS` carries `-Xmx2G` — it is appended after the image's flag, and the
+  last `-Xmx` wins — and both limits are 3Gi. Lowering a limit means lowering
+  `-Xmx` with it. `JAVA_OPTS` must keep `-Djdk.tls.acknowledgeCloseNotify=true`,
+  which the operator sets and the override replaces.
+- **A new container in this namespace gets 256Mi unless it says otherwise.**
+  Anything that needs more (a new operator sidecar, a JVM) has to declare its own
+  limit, or it is OOM-killed by the `LimitRange` default.
 - **Do not let Helm create the namespace.** The chart templates none, so a
   Helm-created one carries no PSA labels and every satellite is rejected.
 - **The DRBD extension is version-locked to the Talos patch release**

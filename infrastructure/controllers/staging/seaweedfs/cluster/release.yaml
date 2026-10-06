@@ -26,38 +26,41 @@ spec:
       seaweedfs:
         monitoring:
           enabled: true
-          # Prometheus selects on this label; without it the chart's
-          # ServiceMonitors are applied and then silently ignored.
+          # Without this label Prometheus silently ignores the chart's ServiceMonitors.
           additionalLabels:
             release: kube-prometheus-stack
         enableReplication: true
-        # Two copies, always in different racks. rack is set per volume group
-        # below and rack == node, so the copies are always cross-node.
+        # Cross-node only because rack == node below.
         replicationPlacement: "010"
 
     master:
       replicas: 3
-      # Chart default is 1000, which would carve the 4.4TB tier into ~4200
-      # volumes. 30000 is the upstream default and what documentations/17 assumes.
+      # Chart default is 1000. Only cheap to change while the tier is empty.
       volumeSizeLimitMB: 30000
       data:
-        # NOT hostPath: -mdir holds the raft log and the cluster's topology
-        # UUID, and a rescheduled master on a hostPath comes back as a brand
-        # new cluster. volumeClaimTemplates are immutable -- this must be right
-        # on the FIRST install.
+        # NOT hostPath, and immutable after the first install. See README.
         type: persistentVolumeClaim
         storageClass: ssd
         size: 5Gi
       logs:
-        # Chart default is hostPath /storage, which is read-only on Talos.
         type: emptyDir
+      resources:
+        requests:
+          memory: 64Mi
+        limits:
+          memory: 512Mi
 
-    # One StatefulSet per HDD node instead of the single default one: rack is a
-    # per-StatefulSet value, and rack == node is what makes 010 cross-node.
+    # Merged into every entry of `volumes:`. volume-node-1 peaked at 2.5Gi.
     volume:
       enabled: false
       logs:
         type: emptyDir
+      resources:
+        requests:
+          memory: 512Mi
+        limits:
+          memory: 4Gi
+    # One StatefulSet per HDD node: rack is per-StatefulSet and must equal the node.
     volumes:
       node-1:
         replicas: 1
@@ -65,9 +68,7 @@ spec:
         nodeSelector: |
           kubernetes.io/hostname: staging-controlplane-1
         dataDirs:
-          # maxVolumes 0 means "auto from free disk space". The chart default of
-          # 8 would cap each disk at 8 x 30GB = 240GB and hide the rest from the
-          # master, which weights placement by free volume SLOTS, not bytes.
+          # maxVolumes 0 = auto. The chart default of 8 hides most of each disk.
           - name: usb1000
             type: hostPath
             hostPathPrefix: /var/mnt/hdd-usb-1000
@@ -101,10 +102,13 @@ spec:
         type: emptyDir
       logs:
         type: emptyDir
+      resources:
+        requests:
+          memory: 256Mi
+        limits:
+          memory: 1Gi
       extraEnvironmentVars:
-        # Must be explicitly false: the chart default re-enables LevelDB2 and it
-        # wins over the intended store. Two filers on an embedded store are only
-        # EVENTUALLY consistent, which an S3 endpoint cannot tolerate.
+        # Must stay explicitly "false": the chart default re-enables LevelDB2 and it wins.
         WEED_LEVELDB2_ENABLED: "false"
         WEED_POSTGRES2_ENABLED: "true"
         WEED_POSTGRES2_HOSTNAME: "seaweedfs-db-rw.seaweedfs.svc.cluster.local"
@@ -128,11 +132,24 @@ spec:
       existingConfigSecret: seaweedfs-s3-config
       logs:
         type: emptyDir
+      resources:
+        requests:
+          memory: 128Mi
+        limits:
+          memory: 3Gi
 
-    # Without these, an under-replicated volume stays read-only until someone
-    # runs `volume.fix.replication` by hand. The admin's default 17-minute
-    # maintenance script runs it.
+    # Runs volume.fix.replication; without it under-replicated volumes stay read-only.
     admin:
       enabled: true
+      resources:
+        requests:
+          memory: 64Mi
+        limits:
+          memory: 512Mi
     worker:
       enabled: true
+      # Deep-merged over the chart default (500m/512Mi, limits 2/2Gi).
+      resources:
+        requests:
+          cpu: 10m
+          memory: 64Mi

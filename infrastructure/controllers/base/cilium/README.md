@@ -139,6 +139,13 @@ chart's namespace dashboards filter on those labels. `dashboards.enabled` (agent
 Hubble) renders six Grafana dashboard ConfigMaps into `kube-system`, which the Grafana
 sidecar picks up from every namespace.
 
+**Why `cilium-envoy` has a memory limit (512Mi, 7-day peak 57Mi).** It was BestEffort, and
+the Talos OOM controller ranks victims by memory use while skipping any cgroup with a memory
+limit, so on node-1 it was among the pods killed whenever other workloads ran the node short
+— taking the Gateway API data path on that node with it. Mechanism in
+[`../linstor/README.md`](../linstor/README.md). Changing `envoy.resources` rolls the
+`cilium-envoy` DaemonSet, which drops in-flight L7 connections on each node as it goes.
+
 ## Traps
 
 - **Never enable `prometheus.serviceMonitor`, `operator.prometheus.serviceMonitor`,

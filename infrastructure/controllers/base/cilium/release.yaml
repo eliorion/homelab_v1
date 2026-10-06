@@ -96,3 +96,9 @@ spec:
       requests:
         cpu: 100m
         memory: 256Mi
+    envoy:
+      resources:
+        requests:
+          memory: 32Mi
+        limits:
+          memory: 512Mi

@@ -18,26 +18,24 @@ spec:
   install:
     createNamespace: false
   upgrade:
-    # Both DaemonSets are OnDelete (see node.updateStrategy below), so their
-    # updated pods never appear on their own and a waiting upgrade hangs the
-    # full timeout, then rolls back. Rotate the node and mount pods by hand
-    # after a chart bump.
+    # Required: both DaemonSets are OnDelete, so a waiting upgrade times out and rolls back.
     disableWait: true
     remediation:
       retries: 3
       strategy: rollback
   values:
-    # -client, not the peer service: the peer one sets publishNotReadyAddresses
-    # and would hand the CSI driver a filer that is still starting. The name is
-    # seaweedfs-seaweedfs- because the chart prefixes release name AND chart name.
+    # The -client Service, with the doubled seaweedfs-seaweedfs- prefix. See README.
     seaweedfsFiler: "seaweedfs-seaweedfs-filer-client.seaweedfs.svc.cluster.local:8888"
-    # Empty means the chart creates no StorageClass. The `hdd` class ships from
-    # infrastructure/controllers/staging/seaweedfs/cluster so it can carry
-    # parameters the chart does not expose.
+    # Empty: the `hdd` class ships from the overlay. A name here makes the chart create one.
     storageClassName: ""
     node:
-      # RollingUpdate would recreate the node plugin under running pods, and
-      # recreating it breaks EVERY pod using a SeaweedFS PVC on that node.
-      # OnDelete makes a chart bump a deliberate, drained operation.
+      # RollingUpdate would break every pod using a SeaweedFS PVC on the node.
       updateStrategy:
         type: OnDelete
+    # OnDelete in the chart too: a new limit applies only once the pod is deleted by hand.
+    mountService:
+      resources:
+        requests:
+          memory: 256Mi
+        limits:
+          memory: 2Gi

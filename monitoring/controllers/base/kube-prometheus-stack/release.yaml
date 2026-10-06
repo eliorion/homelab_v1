@@ -168,6 +168,11 @@ spec:
           cpu: 20m
           memory: 128Mi
     prometheus-node-exporter:
+      resources:
+        requests:
+          memory: 32Mi
+        limits:
+          memory: 128Mi
       # Do NOT harden further: hostPID + host mounts are required for node metrics.
       containerSecurityContext:
         allowPrivilegeEscalation: false

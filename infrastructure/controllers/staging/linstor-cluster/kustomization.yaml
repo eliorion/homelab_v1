@@ -5,6 +5,7 @@ resources:
   - satellite-talos.yaml
   - satellite-pools.yaml
   - satellite-host-network.yaml
+  - satellite-resources.yaml
   - storageclass-ssd.yaml
   - storageclass-ssd-single.yaml
   - linstor-passphrase.enc.yaml

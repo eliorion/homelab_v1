@@ -54,6 +54,12 @@ Values in `release.yaml`, block by block:
 - **`prometheus-node-exporter.containerSecurityContext`** —
   `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`,
   `capabilities.drop: ["ALL"]`.
+- **`prometheus-node-exporter.resources`** — 32Mi request, 128Mi limit (7-day
+  peak 28Mi). The limit is what keeps the Talos OOM controller from choosing it:
+  Talos ranks victims by memory use and skips any cgroup with a memory limit, so
+  a BestEffort node-exporter was killed on node-1 whenever other workloads ran
+  the node short. Mechanism in
+  [`../../../../infrastructure/controllers/base/linstor/README.md`](../../../../infrastructure/controllers/base/linstor/README.md).
 - **`prometheus.prometheusSpec.enableRemoteWriteReceiver`, `enableOTLPReceiver`,
   `enableFeatures: [exemplar-storage]`** — Prometheus accepts pushes as well as
   scrapes: Tempo's metrics-generator remote-writes span metrics and service graphs
