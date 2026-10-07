@@ -24,7 +24,7 @@ directly, one per Flux Kustomization, and only two go through the aggregate
 
 | Path | What it does |
 |---|---|
-| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `keda/`, `keycloak-operator/`, `kyverno/`, `linstor/` (Piraeus operator, + `linstor/monitoring/`), `reflector/`, `seaweedfs/` (namespace + CSI driver, + `seaweedfs/monitoring/`). **There is no `base/kustomization.yaml`** and there should not be one. |
+| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `descheduler/`, `keda/`, `keycloak-operator/`, `kyverno/`, `linstor/` (Piraeus operator, + `linstor/monitoring/`), `reflector/`, `seaweedfs/` (namespace + CSI driver, + `seaweedfs/monitoring/`). **There is no `base/kustomization.yaml`** and there should not be one. |
 | `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. `cnpg/`, `tailscale-operator/`, `seaweedfs/cluster/` and `linstor-cluster/`. |
 | `staging/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/` (the operator only — `base/cnpg/kustomization.yaml` does not include `plugin/`). |
 | `staging/tailscale-operator/` | Staging-only component, no base counterpart. Reconciled through the aggregate above. |
@@ -47,6 +47,7 @@ From `clusters/staging/infrastructure.yaml`:
 | `infra-cilium` | `base/cilium` | `wait: true`, `timeout: 10m` (cold agent/operator/hubble image pull) |
 | `infra-cilium-config` | `base/cilium/config` | `dependsOn: infra-cilium` — needs the CRDs the chart installs |
 | `infra-keda` | `base/keda` | `wait: true`, `timeout: 10m` |
+| `infra-descheduler` | `base/descheduler` | `wait: true`, `timeout: 5m` |
 | `infra-kyverno` | `base/kyverno` | `wait: true`, `timeout: 10m`, health checks on `kyverno-admission-controller` and `kyverno-background-controller` |
 | `infra-keycloak-operator` | `base/keycloak-operator` | `wait: true`, health check on `keycloak-operator` in `identity` |
 | `infra-reflector` | `staging/reflector` | `wait: true`, sops `decryption`, health check on the `reflector` Deployment |
@@ -74,9 +75,9 @@ directory sit under `staging/`. `reflector/` does have a base counterpart:
 
 ## Why it is like this
 
-**No aggregate kustomization at `base/`.** Twelve paths under `base/` are named directly by
+**No aggregate kustomization at `base/`.** Thirteen paths under `base/` are named directly by
 their own Flux Kustomization — `cert-manager`, `cnpg/plugin`, `arc`, `cilium`,
-`cilium/config`, `keda`, `keycloak-operator`, `kyverno`, `linstor`, `linstor/monitoring`,
+`cilium/config`, `descheduler`, `keda`, `keycloak-operator`, `kyverno`, `linstor`, `linstor/monitoring`,
 `seaweedfs`, `seaweedfs/monitoring` — deliberately separate so that cert-manager can
 gate the CNPG plugin, the Cilium chart can gate its IP pool and Gateway objects, and the
 storage tiers can have their own 15m cold-pull timeouts and their own CRD ordering.

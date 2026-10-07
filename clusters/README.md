@@ -45,6 +45,7 @@ so the whole tree reconciles from one clone.
 | `infra-cilium` | `infrastructure/controllers/base/cilium` | 1h | 10m | — | wait + HelmRelease `cilium` |
 | `infra-cilium-config` | `infrastructure/controllers/base/cilium/config` | 1h | 5m | `infra-cilium` | — |
 | `infra-keda` | `infrastructure/controllers/base/keda` | 1h | 10m | — | wait + Deployment `keda-operator` (ns `keda`) |
+| `infra-descheduler` | `infrastructure/controllers/base/descheduler` | 1h | 5m | — | wait (HelmRelease `descheduler`, a CronJob in ns `descheduler`) |
 | `infra-kyverno` | `infrastructure/controllers/base/kyverno` | 1h | 10m | — | wait + Deployments `kyverno-admission-controller`, `kyverno-background-controller` (ns `kyverno`) |
 | `infra-reflector` | `infrastructure/controllers/staging/reflector` | 1h | 5m | — | wait + Deployment `reflector` (ns `reflector`), sops |
 | `infra-keycloak-operator` | `infrastructure/controllers/base/keycloak-operator` | 1h | 5m | — | wait + Deployment `keycloak-operator` (ns `identity`) |
@@ -223,6 +224,7 @@ flowchart TD
     root --> cil["infra-cilium"]
     root --> refl["infra-reflector"]
     root --> keda["infra-keda"]
+    root --> desch["infra-descheduler"]
     root --> kyv["infra-kyverno"]
     root --> kco["infra-keycloak-operator"]
     root --> lin["infra-linstor"]
