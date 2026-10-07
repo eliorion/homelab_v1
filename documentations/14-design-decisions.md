@@ -912,7 +912,8 @@ reviewable in a diff and only the secret values become ciphertext. Encrypted fil
 confined to the `staging/` overlays and never appear in `base/`, so a base kustomization
 is always plaintext safe.
 
-**Rejected.** Sealed Secrets. An external secrets operator. Whole file encryption.
+**Rejected.** Sealed Secrets. An external secrets operator (reversed on 2026-10-07 for
+application credentials — see the next entry). Whole file encryption.
 
 **Cost.** Metadata (secret names, namespaces, key names) is public in git. And the failure
 mode is silent: a new encrypted Secret in a path whose Kustomization has no `decryption`
@@ -920,6 +921,27 @@ block gets applied with the literal ciphertext string as its value, and nothing 
 apply time. That has happened, and the diagnosis is commented inline where it bit.
 
 **Reference.** `.sops.yaml`, `clusters/staging/infrastructure.yaml`
+
+### OpenBao for application credentials, SOPS for what OpenBao depends on
+
+**Why.** SOPS left every credential a static value committed forever, readable in full by
+the age key, with no record of who read it. OpenBao adds a server-enforced boundary per
+namespace (each namespace's ServiceAccount reads only `kv/<namespace>/*`), an audit log of
+every read, and room for short-lived credentials. External Secrets delivers the values as
+plain Kubernetes Secrets, so workloads do not change. SOPS stays for the secrets OpenBao,
+cluster recovery, data decryption and the alerting path depend on.
+
+**Rejected.** Infisical (its own Postgres and Redis, weaker on short-lived credentials). A
+`ClusterSecretStore` (one identity for every namespace). Shamir unsealing (a human after
+every reboot). A multi-node Raft cluster at the start (self-initialization bootstraps a
+single node only).
+
+**Cost.** One more critical component to back up and drill. The unseal key sits in SOPS, so
+the age key alone can unseal OpenBao; the separation is from people without it, not from
+whoever holds it. Two places to look for a secret, and a rule to learn about which one.
+
+**Reference.** [`infrastructure/services/base/openbao/README.md`](../infrastructure/services/base/openbao/README.md),
+[`infrastructure/controllers/base/external-secrets/README.md`](../infrastructure/controllers/base/external-secrets/README.md)
 
 ### One repository, one branch, one cluster
 

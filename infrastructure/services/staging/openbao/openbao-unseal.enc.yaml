@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: openbao-unseal
+    namespace: openbao
+type: Opaque
+data:
+    unseal-20261007.key: ENC[AES256_GCM,data:SS6KcCR4Shg4PFQMWRMsJ8ZnzCNwSynzD9cUlyYevmvd0ThkChcRo3zW9Y8=,iv:qQgC8JntUaOurZFWYqfrKavRY0bv0jNH02J8PXbjF/0=,tag:PoI2t3ZwV0UFtpk5xhWSKQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBacjNxbC9sRUdhNENOTDZ2
+            NU93ZjdBQVJYamNSdnJmR3lRa1ZXYkRWVVFVCmtEZWVXTWxzMmpuLzNYWHBBeE10
+            bSthL2gxOEhqdm5LS0RvMlh5OG5ocXMKLS0tIHNxa2E1bWU1aTNCekdwQmpvZmJH
+            cjgyZm14NEF0ZG1IOStoM1FJSGRhdkUKcMkrLoAQi2/XlXqIymIEOIilSHfcxOZS
+            WqJYuJpcrO7h89ba6XBDVqdH4QjvtYmy/jDRaP67qgBasioX13udXA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-07T21:45:10Z"
+    mac: ENC[AES256_GCM,data:RmfGXNhLk0iER7XpEoXQr3tgG52YYm0bdjLckl14f0G3dCyStiQTf8lcr/DRWRPvBnoa+5e8ru7TUsJpqOs/7EtHq6jU2wwTcGSJAZYPtuFYaW8/u4z5VX4nBklZkZQ/0FMJjQsllczGfSTaXEYBemftMnMlRUySyRW03LitXAI=,iv:pfK0rzUohxGX9KLEeMGLq9IyJdtJGcPMtcn/yyqgqxk=,tag:GVvaUJe8BhwsbMCFs2A5xg==,type:str]
+    version: 3.13.3

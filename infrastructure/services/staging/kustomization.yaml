@@ -18,3 +18,4 @@ resources:
   - radar/
   - ai-gateway/
   - homepage/
+  - openbao/

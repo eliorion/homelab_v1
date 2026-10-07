@@ -99,6 +99,7 @@ spec:
     - name: infrastructure-controllers
     - name: infra-arc-controller
     - name: infra-keycloak-operator
+    - name: infra-external-secrets
   retryInterval: 1m
   timeout: 5m
   sourceRef:
@@ -210,6 +211,42 @@ spec:
     name: flux-system
   path: ./infrastructure/controllers/base/descheduler
   prune: true
+  wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-external-secrets
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/base/external-secrets
+  prune: true
+  wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-openbao-config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  # Must outlast the Job backoff while OpenBao starts (backoffLimit 6).
+  timeout: 10m
+  dependsOn:
+    - name: infrastructure-services
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/services/base/openbao/config
+  prune: true
+  force: true # Job is immutable — a policy or namespace edit must delete+recreate
   wait: true
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1

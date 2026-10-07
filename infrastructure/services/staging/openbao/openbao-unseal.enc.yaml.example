@@ -1,0 +1,10 @@
+# openssl rand -out unseal.key 32 ; then put base64 -w0 < unseal.key below.
+# The key file name must match current_key in base/openbao/release.yaml.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openbao-unseal
+  namespace: openbao
+type: Opaque
+data:
+  unseal-20261007.key: <base64 of 32 random bytes>

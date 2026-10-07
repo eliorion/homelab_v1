@@ -1,0 +1,15 @@
+# openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout ca.key -out ca.crt \
+#   -days 3650 -subj "/O=homelab/CN=Homelab OpenBao CA" \
+#   -addext "basicConstraints=critical,CA:TRUE,pathlen:0" -addext "keyUsage=critical,keyCertSign,cRLSign"
+# ca.crt must also replace base/openbao/ca.crt and the caBundle in base/openbao/consumer/secretstore.yaml.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openbao-ca
+  namespace: openbao
+type: kubernetes.io/tls
+stringData:
+  tls.crt: |
+    <ca.crt>
+  tls.key: |
+    <ca.key>

@@ -76,7 +76,11 @@ Dagger CI telemetry), `20` cluster health 2026-10 (etcd timing, OOM limits,
 
 ## Conventions
 
-- Secrets: SOPS-encrypted (`*.enc.yaml`, age key, see `.sops.yaml`). Never
+- Secrets: two systems. Application credentials live in **OpenBao** and reach pods
+  through a namespaced External Secrets `SecretStore`; bootstrap, recovery,
+  alerting-path and data-encryption keys stay SOPS-encrypted (`*.enc.yaml`, age
+  key, see `.sops.yaml`). The rule and the list are in
+  `infrastructure/services/base/openbao/README.md`. Never
   commit plaintext secrets. No `.enc.yaml` lives under a `base/` path.
 - Chart versions are pinned and Renovate bumps them. Container image tags under
   `apps/` are **not** — `renovate.json` scopes the kubernetes manager to

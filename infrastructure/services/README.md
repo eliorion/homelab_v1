@@ -40,7 +40,7 @@ graph as a whole is described in
 `staging/` is the live environment and the only one deployed. Its
 `kustomization.yaml` currently lists `databases/`, `renovate/`, `keycloak/`,
 `cloudflare/`, `arc-runner-set/`, `nexus/`, `harbor/`, `dagger/`,
-`etcd-backup/`, `garage-gateway/`, `radar/` and `ai-gateway/`. Note that `arc-runner-set/` exists only under
+`etcd-backup/`, `garage-gateway/`, `radar/`, `ai-gateway/`, `homepage/` and `openbao/`. Note that `arc-runner-set/` exists only under
 `staging/` — it has no `base/` half, so its manifests live entirely in the
 overlay.
 

@@ -1,0 +1,204 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openbao
+  namespace: flux-system
+spec:
+  targetNamespace: openbao
+  # Without it Flux names the release openbao-openbao and every Service follows.
+  releaseName: openbao
+  interval: 30m
+  chart:
+    spec:
+      chart: openbao
+      version: "0.30.2"
+      sourceRef:
+        kind: HelmRepository
+        name: openbao
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: false
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    global:
+      tlsDisable: false
+    injector:
+      enabled: false
+    csi:
+      enabled: false
+    ui:
+      enabled: false
+    server:
+      # Chart default is OnDelete, which never rolls a single replica on its own.
+      updateStrategyType: RollingUpdate
+      resources:
+        requests:
+          cpu: 20m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+      statefulSet:
+        securityContext:
+          container:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      dataStorage:
+        enabled: true
+        storageClass: ssd
+        size: 2Gi
+      extraEnvironmentVars:
+        BAO_CACERT: /openbao/tls/ca.crt
+      extraSecretEnvironmentVars:
+        # Read once, by self-initialization on the very first start. See README.
+        - envName: INITIAL_ADMIN_PASSWORD
+          secretName: openbao-admin
+          secretKey: INITIAL_ADMIN_PASSWORD
+      volumes:
+        - name: tls
+          secret:
+            secretName: openbao-tls
+        - name: unseal
+          secret:
+            secretName: openbao-unseal
+            defaultMode: 0400
+      volumeMounts:
+        - name: tls
+          mountPath: /openbao/tls
+          readOnly: true
+        - name: unseal
+          mountPath: /openbao/unseal
+          readOnly: true
+      ha:
+        enabled: true
+        # One replica: self-initialization cannot bootstrap a multi-node cluster. See README.
+        replicas: 1
+        disruptionBudget:
+          enabled: false
+        raft:
+          enabled: true
+          setNodeId: true
+          # Self-initialization runs ONCE, on the first start against an empty volume.
+          # Editing an `initialize` block afterwards changes nothing. See README.
+          config: |
+            ui = true
+
+            listener "tcp" {
+              address         = "[::]:8200"
+              cluster_address = "[::]:8201"
+              tls_cert_file   = "/openbao/tls/tls.crt"
+              tls_key_file    = "/openbao/tls/tls.key"
+              telemetry {
+                unauthenticated_metrics_access = true
+              }
+            }
+
+            storage "raft" {
+              path = "/openbao/data"
+            }
+
+            # The key id must change whenever the key does; the old pair moves to previous_key.
+            seal "static" {
+              current_key_id = "20261007"
+              current_key    = "file:///openbao/unseal/unseal-20261007.key"
+            }
+
+            service_registration "kubernetes" {}
+
+            # Declared here: OpenBao rejects audit devices created through self-initialization.
+            audit "file" "stdout" {
+              description = "Audit log to the pod output, collected into Loki."
+              options {
+                file_path = "stdout"
+              }
+            }
+
+            telemetry {
+              prometheus_retention_time = "30s"
+              disable_hostname          = true
+            }
+
+            initialize "engines" {
+              request "kv" {
+                operation = "update"
+                path      = "sys/mounts/kv"
+                data = {
+                  type        = "kv"
+                  description = "Application secrets, kv/<namespace>/<name>"
+                  options = {
+                    version = "2"
+                  }
+                }
+              }
+            }
+
+            initialize "auth" {
+              request "kubernetes" {
+                operation = "update"
+                path      = "sys/auth/kubernetes"
+                data = {
+                  type = "kubernetes"
+                }
+              }
+              request "kubernetes-config" {
+                operation = "update"
+                path      = "auth/kubernetes/config"
+                data = {
+                  kubernetes_host = "https://kubernetes.default.svc:443"
+                }
+              }
+              request "userpass" {
+                operation = "update"
+                path      = "sys/auth/userpass"
+                data = {
+                  type = "userpass"
+                }
+              }
+            }
+
+            initialize "policies" {
+              request "admin" {
+                operation = "update"
+                path      = "sys/policies/acl/admin"
+                data = {
+                  policy = "path \"*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\", \"sudo\"] }"
+                }
+              }
+              request "config" {
+                operation = "update"
+                path      = "sys/policies/acl/config"
+                data = {
+                  policy = "path \"sys/policies/acl/*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"] }\npath \"auth/kubernetes/role/*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"] }\npath \"sys/auth\" { capabilities = [\"read\"] }\npath \"sys/auth/kubernetes\" { capabilities = [\"read\", \"sudo\"] }"
+                }
+              }
+            }
+
+            initialize "identities" {
+              request "admin" {
+                operation = "update"
+                path      = "auth/userpass/users/admin"
+                data = {
+                  token_policies = "admin"
+                  password = {
+                    eval_source     = "env"
+                    eval_type       = "string"
+                    env_var         = "INITIAL_ADMIN_PASSWORD"
+                    require_present = true
+                  }
+                }
+              }
+              request "config" {
+                operation = "update"
+                path      = "auth/kubernetes/role/config"
+                data = {
+                  bound_service_account_names      = "openbao-config"
+                  bound_service_account_namespaces = "openbao"
+                  token_policies                   = "config"
+                  token_ttl                        = "15m"
+                }
+              }
+            }

@@ -1,0 +1,9 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: openbao-ca
+  namespace: openbao
+spec:
+  ca:
+    # The offline CA from the overlay. Its public half is ca.crt, inlined in consumer/.
+    secretName: openbao-ca

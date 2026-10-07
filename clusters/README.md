@@ -46,11 +46,13 @@ so the whole tree reconciles from one clone.
 | `infra-cilium-config` | `infrastructure/controllers/base/cilium/config` | 1h | 5m | `infra-cilium` | — |
 | `infra-keda` | `infrastructure/controllers/base/keda` | 1h | 10m | — | wait + Deployment `keda-operator` (ns `keda`) |
 | `infra-descheduler` | `infrastructure/controllers/base/descheduler` | 1h | 5m | — | wait (HelmRelease `descheduler`, a CronJob in ns `descheduler`) |
+| `infra-external-secrets` | `infrastructure/controllers/base/external-secrets` | 1h | 5m | — | wait (HelmRelease `external-secrets`, ns `external-secrets`) |
 | `infra-kyverno` | `infrastructure/controllers/base/kyverno` | 1h | 10m | — | wait + Deployments `kyverno-admission-controller`, `kyverno-background-controller` (ns `kyverno`) |
 | `infra-reflector` | `infrastructure/controllers/staging/reflector` | 1h | 5m | — | wait + Deployment `reflector` (ns `reflector`), sops |
 | `infra-keycloak-operator` | `infrastructure/controllers/base/keycloak-operator` | 1h | 5m | — | wait + Deployment `keycloak-operator` (ns `identity`) |
 | `infrastructure-controllers` | `infrastructure/controllers/staging` | 1m0s | 5m | `infra-cnpg-plugin` | sops |
-| `infrastructure-services` | `infrastructure/services/staging` | 1m0s | 5m | `infrastructure-controllers`, `infra-arc-controller`, `infra-keycloak-operator` | sops |
+| `infrastructure-services` | `infrastructure/services/staging` | 1m0s | 5m | `infrastructure-controllers`, `infra-arc-controller`, `infra-keycloak-operator`, `infra-external-secrets` | sops |
+| `infra-openbao-config` | `infrastructure/services/base/openbao/config` | 1h | 10m | `infrastructure-services` | force + wait |
 | `infra-keycloak-realm` | `infrastructure/services/staging/keycloak/realm` | 1h | 10m | `infrastructure-services` | force + wait, sops |
 | `infra-harbor-config` | `infrastructure/services/staging/harbor/config` | 1h | 10m | `infrastructure-services` | force + wait, sops |
 | `infra-linstor` | `infrastructure/controllers/base/linstor` | 1h | 15m | — | wait + HelmRelease `piraeus-operator` |
@@ -225,6 +227,8 @@ flowchart TD
     root --> refl["infra-reflector"]
     root --> keda["infra-keda"]
     root --> desch["infra-descheduler"]
+    root --> eso["infra-external-secrets"]
+    eso --> svc
     root --> kyv["infra-kyverno"]
     root --> kco["infra-keycloak-operator"]
     root --> lin["infra-linstor"]
@@ -239,6 +243,7 @@ flowchart TD
     kco --> svc
     svc --> realm["infra-keycloak-realm"]
     svc --> harborcfg["infra-harbor-config"]
+    svc --> baocfg["infra-openbao-config"]
     ctrl --> swcfg["infra-seaweedfs-config"]
 
     ctrl --> mon["monitoring-controllers"]

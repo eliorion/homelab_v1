@@ -1,0 +1,2 @@
+# Namespaces whose ServiceAccount openbao-eso may log in as role `eso`. One per line.
+homepage
