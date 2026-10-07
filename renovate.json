@@ -5,11 +5,11 @@
   },
   "customManagers": [
     {
-      "description": "Images pinned inline under infrastructure/ -- CronJob pod specs and the ARC dind pod templates embedded in HelmRelease spec.values. Neither is reachable by a built-in manager: the `kubernetes` manager above is scoped to the db-migrations Jobs, the `flux` manager only reads chart versions, and `helm-values` only reads values.yaml FILES, not values inlined in a HelmRelease CR. Without this block every `# renovate:` comment under infrastructure/ is inert -- which is how the talos-backup pin in etcd-backup/cronjob.yaml has been carrying an annotation nobody was reading. Keyed on the annotation, so a file is scanned only where the comment is present and adding one is opt-in.",
+      "description": "Images pinned inline under infrastructure/ -- CronJob pod specs and the ARC dind pod templates embedded in HelmRelease spec.values. Neither is reachable by a built-in manager: the `kubernetes` manager above is scoped to the db-migrations Jobs, the `flux` manager only reads chart versions, and `helm-values` only reads values.yaml FILES, not values inlined in a HelmRelease CR. Without this block every `# renovate:` comment under infrastructure/ is inert -- which is how the talos-backup pin in etcd-backup/cronjob.yaml has been carrying an annotation nobody was reading. Keyed on the annotation, so a file is scanned only where the comment is present and adding one is opt-in. An image may carry an @sha256 digest after its tag; Renovate then bumps both.",
       "customType": "regex",
       "managerFilePatterns": ["/^infrastructure/.+\\.ya?ml$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+image: \\S+:(?<currentValue>[^\\s\"']+)"
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+image: [^\\s@]+?:(?<currentValue>[^\\s\"'@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
       ]
     }
   ],

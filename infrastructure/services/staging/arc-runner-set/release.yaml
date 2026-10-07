@@ -31,8 +31,7 @@ spec:
     runnerScaleSetName: self-hosted-arc
     minRunners: 5
     maxRunners: 25
-    # Manual dind template, NOT containerMode: dind — that one accepts no extra
-    # dockerd flags, so it cannot pass --insecure-registry (see README).
+    # Manual dind template, NOT containerMode: dind (see README).
     template:
       spec:
         # ScheduleAnyway: a full node must never block a CI job.
@@ -55,7 +54,9 @@ spec:
                 mountPath: /home/runner/tmpDir
           # Native sidecar (restartPolicy: Always on an initContainer).
           - name: dind
-            image: docker:dind
+            # Privileged: pinned by digest, never a floating tag.
+            # renovate: datasource=docker depName=docker
+            image: docker:29.8.2-dind@sha256:7dcdfc4a20246236f558175182ccace1eb15a41bd3eb119dd2284f393498b7c1
             args:
               - dockerd
               - --host=unix:///var/run/docker.sock

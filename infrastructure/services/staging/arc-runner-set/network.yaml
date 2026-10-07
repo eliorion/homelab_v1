@@ -1,0 +1,94 @@
+# Deny boundaries for the runner namespaces: PR code runs here. Deny-only on purpose, the
+# dev-platform pattern (enableDefaultDeny false): the open internet stays reachable, the LAN,
+# the tailnet, node host ports and every namespace a job has no business in do not. See README.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: runner-boundary
+  namespace: arc-runners
+spec:
+  endpointSelector: {}
+  # Required: without it this deny-only policy would put every runner into default-deny.
+  enableDefaultDeny:
+    ingress: false
+    egress: false
+  egressDeny:
+    # Outside-the-cluster private ranges only: CIDR rules never select pods, nodes or a
+    # Service's translated backend, so cluster traffic is untouched.
+    - toCIDRSet:
+        - cidr: 10.0.0.0/8
+        - cidr: 172.16.0.0/12
+        - cidr: 192.168.0.0/16
+        - cidr: 100.64.0.0/10
+        - cidr: 169.254.0.0/16
+    # kubelet, Talos apid/trustd, etcd. NOT the whole node entities: the API server is on
+    # them, and kube-pod:// reaches the Dagger engine through it.
+    - toEntities: [host, remote-node]
+      toPorts:
+        - ports:
+            - port: "10250"
+              protocol: TCP
+            - port: "50000"
+              protocol: TCP
+            - port: "50001"
+              protocol: TCP
+            - port: "2379"
+              protocol: TCP
+            - port: "2380"
+              protocol: TCP
+    # DNS, the OTLP collector, Harbor and Nexus are all a job may reach in-cluster.
+    - toEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: NotIn
+              values: [arc-runners, kube-system, monitoring, registry, nexus]
+  ingressDeny:
+    - fromEntities: [world]
+    - fromEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: NotIn
+              values: [arc-runners]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: runner-boundary
+  namespace: arc-dagger
+spec:
+  endpointSelector: {}
+  enableDefaultDeny:
+    ingress: false
+    egress: false
+  egressDeny:
+    - toCIDRSet:
+        - cidr: 10.0.0.0/8
+        - cidr: 172.16.0.0/12
+        - cidr: 192.168.0.0/16
+        - cidr: 100.64.0.0/10
+        - cidr: 169.254.0.0/16
+    - toEntities: [host, remote-node]
+      toPorts:
+        - ports:
+            - port: "10250"
+              protocol: TCP
+            - port: "50000"
+              protocol: TCP
+            - port: "50001"
+              protocol: TCP
+            - port: "2379"
+              protocol: TCP
+            - port: "2380"
+              protocol: TCP
+    - toEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: NotIn
+              values: [arc-dagger, kube-system, monitoring, registry, nexus]
+  ingressDeny:
+    - fromEntities: [world]
+    - fromEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: NotIn
+              values: [arc-dagger]

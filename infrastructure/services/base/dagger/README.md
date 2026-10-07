@@ -85,6 +85,21 @@ Kubernetes, and it drives three rules:
 3. **Fork pull requests must never run on runners bound to this Role.** Gate on
    `github.event.pull_request.head.repo.full_name == github.repository`.
 
+## Network boundary
+
+`network.yaml` puts one deny-only CiliumNetworkPolicy, `engine-boundary`, around the namespace —
+the same pattern as the runner pools (`../../staging/arc-runner-set/README.md`). The engine runs
+PR code as root in a privileged pod, so what it can reach is the blast radius of a malicious PR.
+Denied: private ranges outside the cluster (LAN, tailnet, link-local), the kubelet, Talos and
+etcd ports on the nodes, and every namespace except `kube-system` (DNS), `registry` (Harbor),
+`nexus` (PyPI) and `dev-platform` (the e2e lane's vcluster API); ingress from the world and from
+everything but `monitoring` (the metrics scrape). The open internet stays reachable: base images,
+PyPI, npm, crates.io and GitHub releases are what a build is. Clients never connect to the pod —
+`kube-pod://` is an exec through the API server.
+
+The RoleBinding now names three runner ServiceAccounts: the default pool, the e2e pool and the
+lean pool `self-hosted-arc-dagger` in `arc-dagger`.
+
 ## Engine config
 
 `config/engine.json` stays a plain JSON file. A kustomize `replacement` copies it into

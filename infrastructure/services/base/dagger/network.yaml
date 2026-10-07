@@ -1,0 +1,47 @@
+# Deny boundary for the engine: it runs PR code as root in a privileged pod. Deny-only, as for
+# the runners (arc-runner-set/network.yaml): base images, PyPI, npm, crates and GitHub stay
+# reachable; the LAN, the tailnet, node host ports and unrelated namespaces do not. See README.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: engine-boundary
+  namespace: dagger
+spec:
+  endpointSelector: {}
+  enableDefaultDeny:
+    ingress: false
+    egress: false
+  egressDeny:
+    - toCIDRSet:
+        - cidr: 10.0.0.0/8
+        - cidr: 172.16.0.0/12
+        - cidr: 192.168.0.0/16
+        - cidr: 100.64.0.0/10
+        - cidr: 169.254.0.0/16
+    - toEntities: [host, remote-node]
+      toPorts:
+        - ports:
+            - port: "10250"
+              protocol: TCP
+            - port: "50000"
+              protocol: TCP
+            - port: "50001"
+              protocol: TCP
+            - port: "2379"
+              protocol: TCP
+            - port: "2380"
+              protocol: TCP
+    # Harbor (image mirror), Nexus (PyPI) and the dev platform's vcluster API (the e2e lane).
+    - toEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: NotIn
+              values: [dagger, kube-system, registry, nexus, dev-platform]
+  ingressDeny:
+    - fromEntities: [world]
+    # Prometheus scrapes the metrics port; clients arrive through the API server's exec stream.
+    - fromEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: NotIn
+              values: [dagger, monitoring]
