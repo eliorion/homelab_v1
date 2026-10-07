@@ -22,10 +22,10 @@ Staging — `infrastructure/services/staging/homepage/`: what this cluster's pag
 
 | File | What it does |
 |---|---|
-| `kustomization.yaml` | The base, the Ingress and the Secret, plus two generators: `homepage-config` from `config/*.yaml`, and `homepage-env` carrying `HOMEPAGE_ALLOWED_HOSTS`. |
+| `kustomization.yaml` | The base, the Ingress, the ExternalSecret and the `openbao/consumer` component, plus two generators: `homepage-config` from `config/*.yaml`, and `homepage-env` carrying `HOMEPAGE_ALLOWED_HOSTS`. |
 | `ingress-tailscale.yaml` | `Ingress` with `ingressClassName: tailscale`, `defaultBackend` → `homepage:3000`, `tls.hosts: [homepage]`. HTTPS on 443 with a MagicDNS certificate. |
-| `homepage-secrets.enc.yaml` | SOPS Secret: the Cloudflare account ID as `HOMEPAGE_VAR_CF_ACCOUNT_ID`, used by the bookmarks. No API tokens. |
-| `homepage-secrets.enc.yaml.example` | Its plaintext template. |
+| `externalsecret.yaml` | `ExternalSecret` `homepage-secrets`: the Cloudflare account ID as `HOMEPAGE_VAR_CF_ACCOUNT_ID`, used by the bookmarks, read from OpenBao at `kv/homepage/homepage-secrets` through the namespace's SecretStore `openbao`. No API tokens. The first workload moved off SOPS (2026-10-07); see `../openbao/README.md`. |
+| (component) `../../base/openbao/consumer` | ServiceAccount `openbao-eso` and SecretStore `openbao`, which `externalsecret.yaml` uses. |
 | `config/settings.yaml` | Title, theme, and the group order and column layout. |
 | `config/services.yaml` | Every tile: link, health check, pod status, and the Grafana tile's alert counts. |
 | `config/widgets.yaml` | The header: cluster and per-node CPU and memory. |
@@ -33,8 +33,8 @@ Staging — `infrastructure/services/staging/homepage/`: what this cluster's pag
 | `config/kubernetes.yaml` | `mode: cluster` (the ServiceAccount), every discovery source off. |
 
 Wired from `infrastructure/services/staging/kustomization.yaml`, reconciled by
-the `infrastructure-services` Flux Kustomization, which already carries the SOPS
-`decryption` block.
+the `infrastructure-services` Flux Kustomization. `homepage` must stay listed in
+`infrastructure/services/base/openbao/config/eso-namespaces.txt`, or the SecretStore cannot log in.
 
 ### What the page shows
 
@@ -213,7 +213,9 @@ itself and so cannot take an `emptyDir`. `/app/config` must also be writable
   staging `kustomization.yaml`, and a `subPath` mount in `deployment.yaml`. A file
   only in the ConfigMap is ignored; Homepage copies its skeleton instead.
 - **A Secret change does not roll the pod.** `envFrom` is read at start; after
-  editing `homepage-secrets.enc.yaml` and letting Flux apply it, run
+  changing the value in OpenBao (`bao kv put kv/homepage/homepage-secrets ...`)
+  and waiting for the `ExternalSecret` to refresh (1h, or `kubectl -n homepage
+  annotate externalsecret homepage-secrets force-sync=$(date +%s) --overwrite`), run
   `kubectl -n homepage rollout restart deploy/homepage`.
 
 ## Operating it
