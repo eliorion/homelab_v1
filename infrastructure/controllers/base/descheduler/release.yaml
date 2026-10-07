@@ -24,11 +24,10 @@ spec:
       strategy: rollback
   values:
     kind: CronJob
+    fullnameOverride: descheduler
     schedule: "*/20 * * * *"
     cmdOptions:
       v: 3
-      # First rollout only logs what it would evict. See README before removing.
-      dry-run: true
     resources:
       requests:
         cpu: 20m
@@ -40,6 +39,9 @@ spec:
       seccompProfile:
         type: RuntimeDefault
     deschedulerPolicy:
+      # Caps per run (every 20 min): the rebalance happens in steps, never all at once.
+      maxNoOfPodsToEvictPerNode: 5
+      maxNoOfPodsToEvictTotal: 10
       profiles:
         - name: rebalance
           pluginConfig:

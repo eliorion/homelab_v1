@@ -11,7 +11,7 @@ is created and never moves it afterwards; the descheduler is the part that does.
 | --- | --- |
 | `namespace.yaml` | Namespace `descheduler`, PodSecurity `restricted` (enforce, audit, warn). The chart's pod already satisfies it once `podSecurityContext.seccompProfile` is set. |
 | `repository.yaml` | `HelmRepository` `descheduler`, `https://kubernetes-sigs.github.io/descheduler/`. |
-| `release.yaml` | `HelmRelease` `descheduler`, chart `0.36.0`, as a **CronJob every 20 minutes**, one profile with one strategy, `LowNodeUtilization`. |
+| `release.yaml` | `HelmRelease` `descheduler`, chart `0.36.0`, as a **CronJob every 20 minutes**, one profile with one strategy, `LowNodeUtilization`, at most 5 evictions per node and 10 in total per run. `fullnameOverride` keeps the objects named `descheduler` instead of the chart's doubled `descheduler-descheduler`. |
 
 Flux drives it from `clusters/staging/infrastructure.yaml`, Kustomization
 `infra-descheduler` (`wait: true`, 5 minute timeout, no dependencies).
@@ -61,6 +61,8 @@ similar stateless pods.
 scraper's workers use `emptyDir` scratch space; protecting them would leave nothing
 worth moving. An `emptyDir` is lost on eviction by definition.
 
+**At most 10 evictions per run, 5 per node** (`maxNoOfPodsToEvictTotal`, `maxNoOfPodsToEvictPerNode`). A large skew is undone in steps, 20 minutes apart, so a wrong guess about a workload costs a few pods rather than a node's worth, and each step lets the scheduler see the previous one.
+
 **A PodDisruptionBudget is respected.** Evictions go through the Eviction API, so a
 workload with a PDB is never taken below it.
 
@@ -75,9 +77,11 @@ taint and topology strategies. None of them addresses a problem this cluster has
 - **The chart version must track the Kubernetes minor.** Descheduler `0.N` is built
   and tested against Kubernetes `1.N`. Bump it with the Talos/Kubernetes upgrade,
   not on its own.
-- **`dry-run: true` was the first rollout.** The first run only logged what it
-  would evict; it was removed once the log matched expectations. Re-enable it to
-  preview a policy change.
+- **`--dry-run` does not preview this policy in 0.36.** Run on 2026-10-07, it
+  built its cached copy of the cluster with 3, 1 and 2 pods on the three nodes
+  (node-2's single "pod" was the descheduler job itself) against a real 108, 50
+  and 99, classified every node as under-utilized and evicted nothing. Do not read
+  a quiet dry run as "the policy is safe"; the per-run caps are the guard instead.
 - **The thresholds are percentages of allocatable**, which the kubelet's
   `kubeReserved` and eviction thresholds shrink (`bootstraping/README.md`). A
   change there moves every node's percentages.
