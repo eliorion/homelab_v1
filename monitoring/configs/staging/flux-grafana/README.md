@@ -1,10 +1,17 @@
 # flux-grafana — where is Flux reconciling, and what is failing
 
 Two Grafana dashboards that answer "what is Flux doing right now, and is any of
-it broken?" from the Flux metrics Prometheus already holds. No Prometheus object
-lives here: the scrape is [`../flux-am/`](../flux-am/podmonitor.yaml), the
-alert on the same condition is `../flux-am/prometheusrule.yaml`. This directory
-adds only the two ConfigMaps Grafana's sidecar loads.
+it broken?". No Prometheus object lives here. They read two metric sources:
+
+- the Flux controllers' own `gotk_*` metrics, scraped by
+  [`../flux-am/`](../flux-am/podmonitor.yaml) (which also owns the alerts), for
+  state, history, durations and controller health;
+- `gotk_resource_info` and `gotk_helmrelease_*` from kube-state-metrics' custom
+  resource state, configured in the `kube-prometheus-stack` HelmRelease
+  ([README](../../../controllers/base/kube-prometheus-stack/README.md#flux-objects-as-metrics-kube-state-metrics-custom-resource-state)),
+  for the failure message, since-when, revisions and chart versions.
+
+This directory adds only the two ConfigMaps Grafana's sidecar loads.
 
 | Dashboard | uid | Question |
 |---|---|---|
@@ -33,8 +40,9 @@ the two log panels filter on). `time: now-6h`, `refresh: 30s`.
 | Row | Panels | Source |
 |---|---|---|
 | Right now | Ready, NOT Ready, Reconciling, Suspended, Controllers down, Objects tracked | `gotk_reconcile_condition`, `gotk_suspend_status`, `up` |
-| What needs attention | Table of every object that is NOT READY, reconciling or suspended | the same, unioned with `label_replace(... "state" ...)` |
+| What needs attention | Table of every object that is NOT READY, reconciling or suspended; below it, the Ready message and since-when of each failing object | the same, unioned with `label_replace(... "state" ...)`; `gotk_resource_info` |
 | Reconciliation history | State timeline: one row per object, green/yellow/red/purple | state code `0` ready, `1` reconciling, `2` not ready, `+4` suspended |
+| What is deployed | Revision applied vs revision attempted for every Kustomization, stored revision of every source, with URL, path and source | `gotk_resource_info` |
 | Reconcile duration and rate | p95 by kind, slowest 10 objects, reconciles per second | `gotk_reconcile_duration_seconds_{bucket,count}` |
 | Controllers | Errors/s, results/s, work queue depth per controller | `controller_runtime_reconcile_*`, `workqueue_depth` |
 | What went wrong | Error lines per controller over time; Warning events; raw error logs | Loki |
@@ -46,8 +54,8 @@ Variables: `$namespace`, `$release` (both multi, default All), `$search`.
 | Row | Panels |
 |---|---|
 | Right now | HelmReleases, Ready, NOT Ready, Reconciling, Suspended, helm-controller down |
-| Releases | Table of every HelmRelease, worst first; state timeline over time |
-| Behaviour | p95 reconcile duration (top 10), reconciles/s (top 10), Ready flips in the last hour |
+| Releases | Table of every HelmRelease, worst first; state timeline over time; **Chart versions** (attempted vs deployed chart version, app version, Helm status and revision, last deployed); the Ready message of each failing release |
+| Behaviour | p95 reconcile duration (top 10), reconciles/s (top 10), Ready flips in the last hour, consecutive failed reconciles, failed installs and upgrades |
 | helm-controller | Errors/s, results/s, queue depth (`controller="helmrelease"`) |
 | Sources feeding the releases | Table of HelmRepository / HelmChart / OCIRepository / GitRepository / Bucket not Ready (includes `flux-system`); source reconcile p95 |
 | What went wrong | `helm-controller` Warning events and error logs |
@@ -78,11 +86,13 @@ of several instant queries would need a join transformation across frames. The
 three states share the same label set apart from a synthetic `state` label, so
 one union query gives one frame.
 
-**No chart version column.** `helm-controller` does not export the chart version
-or the last applied revision as a metric. Showing them needs kube-state-metrics
-`customResourceState` for the Flux CRDs, which is a change to the
-`kube-prometheus-stack` values, not to this directory. Until then use
-`flux get helmreleases -A`.
+**The state panels do not depend on kube-state-metrics; the detail panels do.**
+The attention tables, timelines and stat tiles read only the controllers'
+metrics. The message, revision and version tables read `gotk_resource_info`. If
+the custom resource state is missing or kube-state-metrics has not been restarted
+since a config change, the detail tables go empty while the failure is still
+shown by the table above them. That separation is deliberate: a broken
+enrichment must never hide a failing object.
 
 ## Traps
 
@@ -101,6 +111,17 @@ or the last applied revision as a metric. Showing them needs kube-state-metrics
   to kube-state-metrics (`gotk_resource_info`), the alerts in `flux-am` and
   every state panel here go empty together. Check
   `gotk_reconcile_condition` in Prometheus after a Flux upgrade.
+- **Every `gotk_resource_info` panel hangs off the kube-state-metrics config.**
+  The panels select on `customresource_kind` (not `kind`) because that is the
+  label kube-state-metrics adds. Remove a kind from the config, forget its
+  `rbac.extraRules` entry, or skip the kube-state-metrics restart after a config
+  edit, and its rows disappear from those tables with no error. The checklist is
+  in the stack README.
+- **`Attempted` and `Deployed` are different things.** For a HelmRelease,
+  Attempted is `status.lastAttemptedRevision`, Deployed is the newest entry of the
+  Helm release history. A failed upgrade shows both side by side; that mismatch
+  is the point of the column pair. `Deployed` is blank for a release that has
+  never installed.
 - **The controller panels hard-code controller names.** `controller="helmrelease"`
   and `name="helmrelease"` (work queue) are controller-runtime's lowercase Kind
   names. A renamed controller leaves those three panels empty.

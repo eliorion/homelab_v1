@@ -627,6 +627,360 @@ data:
         },
         {
           "id": 10,
+          "type": "table",
+          "title": "Chart versions",
+          "description": "Attempted is the chart version Flux last tried; Deployed is what Helm actually has installed (the newest entry in the release history). They differ while an upgrade is failing or rolled back. Helm status is that history entry's status.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 18,
+            "w": 24,
+            "h": 12
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max by (exported_namespace, name, chart, attempted_version, deployed_version, app_version, release_status, release_revision, last_action, last_deployed, ready, source_name) (gotk_resource_info{customresource_kind=\"HelmRelease\", exported_namespace=~\"$namespace\", name=~\"$release\"})",
+              "legendFormat": "",
+              "instant": true,
+              "range": false,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "exported_namespace",
+                    "name",
+                    "chart",
+                    "attempted_version",
+                    "deployed_version",
+                    "app_version",
+                    "release_status",
+                    "release_revision",
+                    "last_action",
+                    "last_deployed",
+                    "ready",
+                    "source_name"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "convertFieldType",
+              "options": {
+                "conversions": [
+                  {
+                    "targetField": "last_deployed",
+                    "destinationType": "time"
+                  }
+                ],
+                "fields": {}
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "exported_namespace": 0,
+                  "name": 1,
+                  "chart": 2,
+                  "attempted_version": 3,
+                  "deployed_version": 4,
+                  "app_version": 5,
+                  "release_status": 6,
+                  "release_revision": 7,
+                  "last_action": 8,
+                  "last_deployed": 9,
+                  "ready": 10,
+                  "source_name": 11
+                },
+                "renameByName": {
+                  "exported_namespace": "Namespace",
+                  "name": "Release",
+                  "chart": "Chart",
+                  "attempted_version": "Attempted",
+                  "deployed_version": "Deployed",
+                  "app_version": "App version",
+                  "release_status": "Helm status",
+                  "release_revision": "Helm revision",
+                  "last_action": "Last action",
+                  "last_deployed": "Last deployed",
+                  "ready": "Ready",
+                  "source_name": "Source"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Release",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Last deployed"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "dateTimeFromNow"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Ready"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "True": {
+                            "text": "True",
+                            "color": "green",
+                            "index": 0
+                          },
+                          "False": {
+                            "text": "False",
+                            "color": "red",
+                            "index": 1
+                          },
+                          "Unknown": {
+                            "text": "Unknown",
+                            "color": "yellow",
+                            "index": 2
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm"
+          }
+        },
+        {
+          "id": 11,
+          "type": "table",
+          "title": "Why: Ready condition of failing releases",
+          "description": "The message helm-controller wrote on each release that is not Ready (the Helm error text), and when it last changed state.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 30,
+            "w": 24,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max by (exported_namespace, name, ready, last_transition, message) (gotk_resource_info{customresource_kind=\"HelmRelease\", exported_namespace=~\"$namespace\", name=~\"$release\", ready=~\"False|Unknown\"})",
+              "legendFormat": "",
+              "instant": true,
+              "range": false,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "exported_namespace",
+                    "name",
+                    "ready",
+                    "last_transition",
+                    "message"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "convertFieldType",
+              "options": {
+                "conversions": [
+                  {
+                    "targetField": "last_transition",
+                    "destinationType": "time"
+                  }
+                ],
+                "fields": {}
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "exported_namespace": 0,
+                  "name": 1,
+                  "ready": 2,
+                  "last_transition": 3,
+                  "message": 4
+                },
+                "renameByName": {
+                  "exported_namespace": "Namespace",
+                  "name": "Release",
+                  "ready": "Ready",
+                  "last_transition": "Since",
+                  "message": "Message"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Since",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Since"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "dateTimeFromNow"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Ready"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "True": {
+                            "text": "True",
+                            "color": "green",
+                            "index": 0
+                          },
+                          "False": {
+                            "text": "False",
+                            "color": "red",
+                            "index": 1
+                          },
+                          "Unknown": {
+                            "text": "Unknown",
+                            "color": "yellow",
+                            "index": 2
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Message"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 560
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "auto",
+                      "wrapText": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm"
+          }
+        },
+        {
+          "id": 12,
           "type": "state-timeline",
           "title": "Ready state over time",
           "description": "Green Ready, yellow reconciling, red NOT READY, purple suspended. A release that flips red then green is retrying or remediating.",
@@ -636,7 +990,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 18,
+            "y": 38,
             "w": 24,
             "h": 12
           },
@@ -726,7 +1080,7 @@ data:
           }
         },
         {
-          "id": 11,
+          "id": 13,
           "type": "row",
           "title": "Behaviour",
           "collapsed": false,
@@ -734,12 +1088,12 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 30
+            "y": 50
           },
           "panels": []
         },
         {
-          "id": 12,
+          "id": 14,
           "type": "timeseries",
           "title": "Upgrade/reconcile duration p95 (top 10)",
           "description": "Slowest releases. Compare against spec.timeout: a release close to it is one slow node away from a failed upgrade.",
@@ -749,7 +1103,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 31,
+            "y": 51,
             "w": 8,
             "h": 8
           },
@@ -794,7 +1148,7 @@ data:
           }
         },
         {
-          "id": 13,
+          "id": 15,
           "type": "timeseries",
           "title": "Reconciles per second (top 10)",
           "description": "A release reconciling far more often than its interval is retrying after failures.",
@@ -804,7 +1158,7 @@ data:
           },
           "gridPos": {
             "x": 8,
-            "y": 31,
+            "y": 51,
             "w": 8,
             "h": 8
           },
@@ -849,7 +1203,7 @@ data:
           }
         },
         {
-          "id": 14,
+          "id": 16,
           "type": "bargauge",
           "title": "Ready flips in the last hour",
           "description": "How many times a release changed Ready state: each failure and recovery counts once. High values mean flapping.",
@@ -859,7 +1213,7 @@ data:
           },
           "gridPos": {
             "x": 16,
-            "y": 31,
+            "y": 51,
             "w": 8,
             "h": 8
           },
@@ -911,7 +1265,126 @@ data:
           }
         },
         {
-          "id": 15,
+          "id": 17,
+          "type": "timeseries",
+          "title": "Consecutive failed reconciles",
+          "description": "helm-controller's failure counter per release: it counts failures against the latest desired state and resets on success. Only releases above zero are drawn.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 59,
+            "w": 12,
+            "h": 7
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max by (exported_namespace, name) (gotk_helmrelease_failures{exported_namespace=~\"$namespace\", name=~\"$release\"}) > 0",
+              "legendFormat": "{{exported_namespace}}/{{name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 18,
+          "type": "timeseries",
+          "title": "Failed installs and upgrades",
+          "description": "Cumulative failure counters from the HelmRelease status, per action. Only releases above zero are drawn.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 59,
+            "w": 12,
+            "h": 7
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max by (exported_namespace, name) (gotk_helmrelease_install_failures{exported_namespace=~\"$namespace\", name=~\"$release\"}) > 0",
+              "legendFormat": "install {{exported_namespace}}/{{name}}"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max by (exported_namespace, name) (gotk_helmrelease_upgrade_failures{exported_namespace=~\"$namespace\", name=~\"$release\"}) > 0",
+              "legendFormat": "upgrade {{exported_namespace}}/{{name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 19,
           "type": "row",
           "title": "helm-controller",
           "collapsed": false,
@@ -919,12 +1392,12 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 39
+            "y": 66
           },
           "panels": []
         },
         {
-          "id": 16,
+          "id": 20,
           "type": "timeseries",
           "title": "Reconcile errors per second",
           "description": "helm-controller errors.",
@@ -934,7 +1407,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 40,
+            "y": 67,
             "w": 8,
             "h": 8
           },
@@ -979,7 +1452,7 @@ data:
           }
         },
         {
-          "id": 17,
+          "id": 21,
           "type": "timeseries",
           "title": "Reconcile results per second",
           "description": "Outcome of every HelmRelease reconcile.",
@@ -989,7 +1462,7 @@ data:
           },
           "gridPos": {
             "x": 8,
-            "y": 40,
+            "y": 67,
             "w": 8,
             "h": 8
           },
@@ -1038,7 +1511,7 @@ data:
           }
         },
         {
-          "id": 18,
+          "id": 22,
           "type": "timeseries",
           "title": "Work queue depth",
           "description": "HelmReleases waiting for a worker.",
@@ -1048,7 +1521,7 @@ data:
           },
           "gridPos": {
             "x": 16,
-            "y": 40,
+            "y": 67,
             "w": 8,
             "h": 8
           },
@@ -1093,7 +1566,7 @@ data:
           }
         },
         {
-          "id": 19,
+          "id": 23,
           "type": "row",
           "title": "Sources feeding the releases",
           "collapsed": false,
@@ -1101,12 +1574,12 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 48
+            "y": 75
           },
           "panels": []
         },
         {
-          "id": 20,
+          "id": 24,
           "type": "table",
           "title": "Sources not Ready",
           "description": "HelmRepository, HelmChart, OCIRepository, GitRepository and Bucket objects that are failing, reconciling or suspended. A HelmRelease cannot upgrade while its chart source is down. Includes flux-system.",
@@ -1116,7 +1589,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 49,
+            "y": 76,
             "w": 12,
             "h": 8
           },
@@ -1227,7 +1700,7 @@ data:
           }
         },
         {
-          "id": 21,
+          "id": 25,
           "type": "timeseries",
           "title": "Source reconcile duration p95 by kind",
           "description": "Slow chart or repository fetches delay every release that depends on them.",
@@ -1237,7 +1710,7 @@ data:
           },
           "gridPos": {
             "x": 12,
-            "y": 49,
+            "y": 76,
             "w": 12,
             "h": 8
           },
@@ -1282,7 +1755,7 @@ data:
           }
         },
         {
-          "id": 22,
+          "id": 26,
           "type": "row",
           "title": "What went wrong",
           "collapsed": false,
@@ -1290,12 +1763,12 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 57
+            "y": 84
           },
           "panels": []
         },
         {
-          "id": 23,
+          "id": 27,
           "type": "logs",
           "title": "helm-controller Warning events",
           "description": "Warning events from helm-controller: failed upgrades, rollback, test failures, chart fetch errors. Filter with the Contains box.",
@@ -1305,7 +1778,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 58,
+            "y": 85,
             "w": 24,
             "h": 10
           },
@@ -1330,7 +1803,7 @@ data:
           }
         },
         {
-          "id": 24,
+          "id": 28,
           "type": "logs",
           "title": "helm-controller error logs",
           "description": "Raw error-level lines from helm-controller, including the Helm error text.",
@@ -1340,7 +1813,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 68,
+            "y": 95,
             "w": 24,
             "h": 10
           },

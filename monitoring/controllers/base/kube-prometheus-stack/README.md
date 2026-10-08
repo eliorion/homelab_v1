@@ -9,7 +9,7 @@ monitor and alert rule elsewhere in this repository is written against.
 
 No alert rule, dashboard or scrape target lives in this directory. Those are in
 `monitoring/configs/staging/` (`cnpg-alerts`, `etcd-backup-alerts`, `flux-am`,
-`flux-alerts`, `fbref-grafana`, `n8n-metrics`) and are applied by a separate
+`flux-alerts`, `flux-grafana`, `fbref-grafana`, `n8n-metrics`) and are applied by a separate
 Flux Kustomization — see [monitoring/configs/README.md](../../../configs/README.md).
 What is configured here is the stack itself: the Grafana
 admin credentials and ingress, the Alertmanager routing and Telegram receiver,
@@ -289,6 +289,93 @@ BestEffort is indefensible for it either way. No memory limit, because its memor
 scales with the number of cluster objects and a fixed ceiling turns growth into an
 OOMKill loop in the component needed to see it. Measured 27Mi / 3m; 128Mi is ~5×
 headroom.
+
+## Flux objects as metrics (kube-state-metrics custom resource state)
+
+**What it is.** `kube-state-metrics` is told to read the Flux custom resources and
+turn their `status` into metrics. The Flux controllers already export
+`gotk_reconcile_condition` / `gotk_suspend_status` / `gotk_reconcile_duration_seconds`
+(scraped by
+[`flux-am`](../../../configs/staging/flux-am/podmonitor.yaml), the source of the
+alerts), but those carry no versions, no revisions and no error text. This adds:
+
+| Metric | Value | Labels worth knowing |
+|---|---|---|
+| `gotk_resource_info` | always `1` | `customresource_kind`, `exported_namespace`, `name`, `ready` (`True`/`False`/`Unknown`), `message` (the Ready condition text), `last_transition`, `suspended` |
+| `gotk_resource_info` (Kustomization) | | `revision` (applied), `attempted_revision`, `path`, `source_kind`, `source_name` |
+| `gotk_resource_info` (HelmRelease) | | `chart`, `source_name`, `chart_ref`, `attempted_version` (`status.lastAttemptedRevision`), `deployed_version`, `app_version`, `release_status`, `release_revision`, `last_deployed` (all from `status.history[0]`), `last_action` |
+| `gotk_resource_info` (sources) | | `revision` (stored artifact), `url`, plus `branch` (GitRepository), `type` (HelmRepository), `chart` / `source_*` (HelmChart), `tag` (OCIRepository) |
+| `gotk_helmrelease_failures`, `_install_failures`, `_upgrade_failures` | counts | `exported_namespace`, `name` |
+
+Covered kinds: `Kustomization`, `HelmRelease`, `GitRepository`, `HelmRepository`,
+`HelmChart`, `OCIRepository`. The notification kinds have no Ready condition,
+`Bucket`/`ExternalArtifact` are unused here, and no image-automation CRDs are
+installed. The consumer is the pair of dashboards in
+[`monitoring/configs/staging/flux-grafana/`](../../../configs/staging/flux-grafana/README.md).
+
+**How it is wired.** Two blocks under `kube-state-metrics:` in `release.yaml`:
+`rbac.extraRules` (list/watch on the six Flux resources) and
+`customResourceState.{enabled,config}`. The subchart (`kube-state-metrics`
+`8.4.2`, app `2.20.0`) renders the config into a ConfigMap, mounts it, passes
+`--custom-resource-state-config-file`, and adds the `customresourcedefinitions`
+list/watch rule itself. Every resource uses `metricNamePrefix: gotk`, so the
+series are `gotk_*` like the controllers' own, and defines `exported_namespace`
+itself so the object's namespace is under the same label name as in
+`gotk_reconcile_condition`.
+
+**Why kube-state-metrics.** The Flux controllers do not export status fields such
+as revisions, chart versions or condition messages, and kube-state-metrics can read
+any CRD from its config. It also rides the scrape that already exists: no new
+ServiceMonitor and no new Deployment. The `gotk_` prefix keeps the series beside
+the controllers' own.
+
+**Checked.** The block was compiled with kube-state-metrics v2.20.0 (the chart's
+app version) and run against sample Kustomization, HelmRelease and GitRepository
+objects: every label above comes out, including the `history["0"]` indexing, and
+every path exists in the Flux CRD schemas in
+[`clusters/staging/flux-system/gotk-components.yaml`](../../../../clusters/staging/flux-system/gotk-components.yaml).
+It was **not** applied to the live cluster.
+
+### Traps
+
+- **Editing the config does not roll kube-state-metrics.** The chart has no
+  checksum annotation on its Pod template, so Helm updates the ConfigMap and the
+  running Pod keeps the old config until it restarts:
+  `kubectl -n monitoring rollout restart deploy/kube-prometheus-stack-kube-state-metrics`.
+  Adding the `rbac` / `enabled` values the first time does roll it, because the
+  args change.
+- **`rbac.extraRules` must list every kind in the config.** A kind in the config
+  without a rule is never listed and there is no error. The reverse is harmless.
+- **A kind or API version that the cluster does not serve is skipped, not
+  failed.** kube-state-metrics logs `no matching CRD found for configured GVK,
+  skipping` and carries on. A Flux API bump (for example HelmRelease `v3`) makes
+  that resource's metrics vanish quietly; grep for that line after a Flux upgrade.
+- **`type: Info` and `Gauge` are capitalised in the docs and lower-cased by
+  kube-state-metrics itself.** Copy the spelling; do not "fix" it.
+- **A label whose path is absent is omitted, not empty.** `suspended` only
+  appears when `spec.suspend` is set, so never select on `suspended="false"`. Use
+  `gotk_suspend_status` from the controllers for suspension.
+- **`message` is high-churn text.** A Kustomization's Ready message contains the
+  applied revision, so every commit replaces that series for every Kustomization.
+  At about a hundred objects this is negligible; it is the reason the label is
+  not on the `gotk_helmrelease_*` gauges. Messages can be long and contain
+  newlines; Prometheus stores them fine, panels must wrap them.
+- **`history[0]` is the newest Helm release entry.** `deployed_version` and
+  friends are wrong if Flux ever stops writing newest-first.
+- **kube-state-metrics has no memory limit by design** (above). The extra
+  six watches are small next to the core collectors, but this is the component to
+  look at if its memory climbs after a change here.
+
+### Operating it
+
+```bash
+# Series exist, per kind (empty = config not loaded or Pod not restarted)
+kubectl -n monitoring exec sts/prometheus-kube-prometheus-stack-prometheus -c prometheus -- \
+  promtool query instant http://localhost:9090 'count by (customresource_kind) (gotk_resource_info)'
+
+# Did kube-state-metrics load it, and skip nothing?
+kubectl -n monitoring logs deploy/kube-prometheus-stack-kube-state-metrics | grep -i "custom resource state\|no matching CRD"
+```
 
 ## Upgrade 66.2.2 → 91.2.1 (2026-09)
 
