@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - flux-alerts
   - flux-am
+  - flux-grafana
   - fbref-grafana
   - etcd-backup-alerts
   - cnpg-alerts

@@ -1,0 +1,1228 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flux-grafana-dashboard
+  namespace: monitoring
+  labels:
+    # Picked up by the kube-prometheus-stack grafana dashboards sidecar.
+    grafana_dashboard: "1"
+data:
+  flux-reconciliation.json: |
+    {
+      "uid": "flux-reconciliation",
+      "title": "Flux reconciliation",
+      "tags": [
+        "flux",
+        "gitops"
+      ],
+      "schemaVersion": 39,
+      "version": 1,
+      "editable": true,
+      "graphTooltip": 1,
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "refresh": "30s",
+      "timezone": "browser",
+      "templating": {
+        "list": [
+          {
+            "name": "kind",
+            "label": "Kind",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "query": {
+              "query": "label_values(gotk_reconcile_condition, kind)",
+              "qryType": 1,
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "definition": "label_values(gotk_reconcile_condition, kind)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "allValue": ".*"
+          },
+          {
+            "name": "namespace",
+            "label": "Namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "query": {
+              "query": "label_values(gotk_reconcile_condition{kind=~\"$kind\"}, exported_namespace)",
+              "qryType": 1,
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "definition": "label_values(gotk_reconcile_condition{kind=~\"$kind\"}, exported_namespace)",
+            "refresh": 2,
+            "sort": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "allValue": ".*"
+          },
+          {
+            "name": "search",
+            "label": "Contains (regex)",
+            "type": "textbox",
+            "query": "",
+            "current": {
+              "text": "",
+              "value": ""
+            },
+            "options": [
+              {
+                "selected": true,
+                "text": "",
+                "value": ""
+              }
+            ]
+          }
+        ]
+      },
+      "annotations": {
+        "list": []
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "row",
+          "title": "Right now",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "panels": []
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Ready",
+          "description": "Flux objects whose Ready condition is True.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 1,
+            "w": 4,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "count(max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"True\", kind=~\"$kind\", exported_namespace=~\"$namespace\"}) == 1) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "NOT Ready",
+          "description": "Ready=False: the last reconcile failed. Same condition as the FluxHelmReleaseFailed / FluxKustomizationFailed alerts, without their 5 minute delay.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 4,
+            "y": 1,
+            "w": 4,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "count(max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"False\", kind=~\"$kind\", exported_namespace=~\"$namespace\"}) == 1) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Reconciling",
+          "description": "Ready=Unknown: a reconcile is in progress. Stuck above zero for long means a hung Helm upgrade or a health check that never passes.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 8,
+            "y": 1,
+            "w": 4,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "count(max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"Unknown\", kind=~\"$kind\", exported_namespace=~\"$namespace\"}) == 1) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "stat",
+          "title": "Suspended",
+          "description": "Objects with spec.suspend=true. Flux ignores them, so they do not reconcile and do not alert.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 1,
+            "w": 4,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "count(max by (kind, exported_namespace, name) (gotk_suspend_status{kind=~\"$kind\", exported_namespace=~\"$namespace\"}) == 1) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "purple",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 6,
+          "type": "stat",
+          "title": "Controllers down",
+          "description": "Flux controller pods Prometheus cannot scrape. While this is above zero every other panel on the board is stale.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 16,
+            "y": 1,
+            "w": 4,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "count(up{namespace=\"flux-system\", pod=~\".+-controller-.+\"} == 0) or vector(0)",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 7,
+          "type": "stat",
+          "title": "Objects tracked",
+          "description": "Every Flux object exporting a Ready condition within the current filters.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 20,
+            "y": 1,
+            "w": 4,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "count(max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"True\", kind=~\"$kind\", exported_namespace=~\"$namespace\"}))",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "value",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 8,
+          "type": "row",
+          "title": "What needs attention",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+          },
+          "panels": []
+        },
+        {
+          "id": 9,
+          "type": "table",
+          "title": "Not Ready, reconciling or suspended",
+          "description": "One row per object that is not plainly healthy. Empty means every filtered object is Ready and not suspended. The error text is in the panels at the bottom.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 6,
+            "w": 24,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "label_replace(max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"False\", kind=~\"$kind\", exported_namespace=~\"$namespace\"}) == 1, \"state\", \"NOT READY\", \"\", \"\")\n or \nlabel_replace(max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"Unknown\", kind=~\"$kind\", exported_namespace=~\"$namespace\"}) == 1, \"state\", \"reconciling\", \"\", \"\")\n or \nlabel_replace(max by (kind, exported_namespace, name) (gotk_suspend_status{kind=~\"$kind\", exported_namespace=~\"$namespace\"}) == 1, \"state\", \"suspended\", \"\", \"\")",
+              "legendFormat": "",
+              "instant": true,
+              "range": false,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true,
+                  "__name__": true
+                },
+                "indexByName": {
+                  "state": 0,
+                  "kind": 1,
+                  "exported_namespace": 2,
+                  "name": 3
+                },
+                "renameByName": {
+                  "kind": "Kind",
+                  "exported_namespace": "Namespace",
+                  "name": "Name",
+                  "state": "State"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "State",
+                    "desc": false
+                  }
+                ]
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "State"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "NOT READY": {
+                            "text": "NOT READY",
+                            "color": "red",
+                            "index": 0
+                          },
+                          "reconciling": {
+                            "text": "reconciling",
+                            "color": "yellow",
+                            "index": 1
+                          },
+                          "suspended": {
+                            "text": "suspended",
+                            "color": "purple",
+                            "index": 2
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm"
+          }
+        },
+        {
+          "id": 10,
+          "type": "row",
+          "title": "Reconciliation history",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 14
+          },
+          "panels": []
+        },
+        {
+          "id": 11,
+          "type": "state-timeline",
+          "title": "Ready state per object",
+          "description": "Green Ready, yellow reconciling, red NOT READY, purple suspended. Read left to right to see when an object broke and whether it recovered.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 15,
+            "w": 24,
+            "h": 12
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "(max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"False\", kind=~\"$kind\", exported_namespace=~\"$namespace\"}) * 2 + max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"Unknown\", kind=~\"$kind\", exported_namespace=~\"$namespace\"})) + (max by (kind, exported_namespace, name) (gotk_suspend_status{kind=~\"$kind\", exported_namespace=~\"$namespace\"}) * 4 or (max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"False\", kind=~\"$kind\", exported_namespace=~\"$namespace\"}) * 2 + max by (kind, exported_namespace, name) (gotk_reconcile_condition{type=\"Ready\", status=\"Unknown\", kind=~\"$kind\", exported_namespace=~\"$namespace\"})) * 0)",
+              "legendFormat": "{{kind}} {{exported_namespace}}/{{name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "fillOpacity": 80,
+                "lineWidth": 0
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "Ready",
+                      "color": "green",
+                      "index": 0
+                    },
+                    "1": {
+                      "text": "Reconciling",
+                      "color": "yellow",
+                      "index": 1
+                    },
+                    "2": {
+                      "text": "NOT READY",
+                      "color": "red",
+                      "index": 2
+                    },
+                    "4": {
+                      "text": "Suspended",
+                      "color": "purple",
+                      "index": 3
+                    },
+                    "5": {
+                      "text": "Suspended, reconciling",
+                      "color": "purple",
+                      "index": 4
+                    },
+                    "6": {
+                      "text": "Suspended, NOT READY",
+                      "color": "red",
+                      "index": 5
+                    }
+                  }
+                }
+              ],
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showValue": "never",
+            "mergeValues": true,
+            "rowHeight": 0.85,
+            "alignValue": "left",
+            "legend": {
+              "showLegend": true,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 12,
+          "type": "row",
+          "title": "Reconcile duration and rate",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 27
+          },
+          "panels": []
+        },
+        {
+          "id": 13,
+          "type": "timeseries",
+          "title": "Reconcile duration p95 by kind",
+          "description": "95th percentile of a single reconcile, per object kind.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 28,
+            "w": 8,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "histogram_quantile(0.95, sum by (le, kind) (rate(gotk_reconcile_duration_seconds_bucket{kind=~\"$kind\", exported_namespace=~\"$namespace\"}[5m])))",
+              "legendFormat": "{{kind}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 14,
+          "type": "timeseries",
+          "title": "Slowest objects (p95, top 10)",
+          "description": "Which objects dominate reconcile time.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 8,
+            "y": 28,
+            "w": 8,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "topk(10, histogram_quantile(0.95, sum by (le, kind, exported_namespace, name) (rate(gotk_reconcile_duration_seconds_bucket{kind=~\"$kind\", exported_namespace=~\"$namespace\"}[10m]))))",
+              "legendFormat": "{{kind}} {{exported_namespace}}/{{name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 15,
+          "type": "timeseries",
+          "title": "Reconciles per second by kind",
+          "description": "A kind reconciling far more often than its interval allows is retrying or being triggered in a loop.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 16,
+            "y": 28,
+            "w": 8,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (kind) (rate(gotk_reconcile_duration_seconds_count{kind=~\"$kind\", exported_namespace=~\"$namespace\"}[5m]))",
+              "legendFormat": "{{kind}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 16,
+          "type": "row",
+          "title": "Controllers",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 36
+          },
+          "panels": []
+        },
+        {
+          "id": 17,
+          "type": "timeseries",
+          "title": "Reconcile errors per second",
+          "description": "controller-runtime errors by Flux controller. Non-zero is a failing reconcile; the object is in the table above.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 37,
+            "w": 8,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (controller) (rate(controller_runtime_reconcile_errors_total{namespace=\"flux-system\"}[5m]))",
+              "legendFormat": "{{controller}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 18,
+          "type": "timeseries",
+          "title": "Reconcile results per second",
+          "description": "Outcome of every reconcile by controller: success, error, requeue, requeue_after.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 8,
+            "y": 37,
+            "w": 8,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (controller, result) (rate(controller_runtime_reconcile_total{namespace=\"flux-system\"}[5m]))",
+              "legendFormat": "{{controller}} {{result}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 15,
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 19,
+          "type": "timeseries",
+          "title": "Work queue depth",
+          "description": "Objects waiting for a worker. A queue that stays above zero means the controller is saturated.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 16,
+            "y": 37,
+            "w": 8,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (name) (workqueue_depth{namespace=\"flux-system\"})",
+              "legendFormat": "{{name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 20,
+          "type": "row",
+          "title": "What went wrong",
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 45
+          },
+          "panels": []
+        },
+        {
+          "id": 21,
+          "type": "timeseries",
+          "title": "Controller error log lines (5m)",
+          "description": "Error-level log lines per Flux controller, from Loki.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 46,
+            "w": 24,
+            "h": 6
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "sum by (container) (count_over_time({namespace=\"flux-system\", container=~\".+-controller\"} |= \"\\\"level\\\":\\\"error\\\"\" [5m]))",
+              "queryType": "range"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "drawStyle": "bars",
+                "lineWidth": 1,
+                "fillOpacity": 0,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 22,
+          "type": "logs",
+          "title": "Flux Warning events",
+          "description": "Kubernetes Warning events emitted by the Flux controllers. This is where the failure reason is: build errors, failed Helm upgrades, health-check timeouts. Filter with the Contains box.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 52,
+            "w": 24,
+            "h": 10
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "{job=\"kubernetes-events\"} |~ \"(kustomize|helm|source|notification)-controller\" |= \"type=Warning\" |~ \"(?i)$search\"",
+              "queryType": "range"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          }
+        },
+        {
+          "id": 23,
+          "type": "logs",
+          "title": "Controller error logs",
+          "description": "Raw error-level JSON lines from the Flux controller pods. Filter with the Contains box.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 62,
+            "w": 24,
+            "h": 10
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "{namespace=\"flux-system\", container=~\".+-controller\"} |= \"\\\"level\\\":\\\"error\\\"\" |~ \"(?i)$search\"",
+              "queryType": "range"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          }
+        }
+      ]
+    }

@@ -37,9 +37,9 @@ This README documents the four alerting directories:
 | `staging/blackbox-probes/` | Public and internal endpoint probes, endpoint TLS expiry — own README |
 | `staging/cert-manager-metrics/` | cert-manager scrape, certificate readiness and expiry — own README |
 
-The other siblings are outside the scope of this file. `fbref-grafana/`
-(dashboards + datasource) and `n8n-metrics/` are not alerting at all. The
-component-specific alert directories
+The other siblings are outside the scope of this file. `flux-grafana/` and
+`fbref-grafana/` (dashboards, the latter with its datasource) and
+`n8n-metrics/` are not alerting at all. The component-specific alert directories
 — `node-capacity-alerts/`, `control-plane-alerts/`, `ingestion-alerts/` — follow
 the same wiring as the four above and document themselves **inline**: their
 `PrometheusRule` files carry the metric-encoding notes and the reasoning behind
