@@ -21,9 +21,11 @@ is described in
 | File | What it does |
 |---|---|
 | `kustomization.yaml` | Lists `release.yaml`, `release-e2e.yaml`, `github-pat.enc.yaml`. |
-| `release.yaml` | `HelmRelease/arc-runner-set-asp` in `flux-system`, `targetNamespace: arc-runners`, chart `gha-runner-scale-set` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h. Registers the scale set `self-hosted-arc`, `minRunners: 5` / `maxRunners: 16`, with a hand-written dind pod template. |
+| `release.yaml` | `HelmRelease/arc-runner-set-asp` in `flux-system`, `targetNamespace: arc-runners`, chart `gha-runner-scale-set` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h. Registers the scale set `self-hosted-arc`, `minRunners: 5` / `maxRunners: 25`, with a hand-written dind pod template. |
 | `release-e2e.yaml` | `HelmRelease/arc-runner-set-asp-e2e`, same chart, namespace and secret. Registers `self-hosted-arc-e2e`, `minRunners: 0` / `maxRunners: 2` — the e2e lane's concurrency, sized to the platform quota. Runner container only (no dind, non-root, no privilege escalation): the job drives the in-cluster Dagger engine and reads Secret `dev-platform/vc-e2e-runner` (Role in `infrastructure/services/dev/dev-platform/runner-access.yaml`). |
-| `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). Both releases point at it through `githubConfigSecret`. Never commit it decrypted. |
+| `release-dagger.yaml` | `HelmRelease/arc-runner-set-asp-dagger`, same chart, `targetNamespace: arc-dagger`. Registers `self-hosted-arc-dagger`, `minRunners: 6` / `maxRunners: 10` — the **lean pool**: runner container only, non-root, seccomp `RuntimeDefault`, in a namespace that enforces PSA `restricted`. Every asp job that only drives the remote Dagger engine or reads git runs here (asp variable `CI_RUNNER_DAGGER`). |
+| `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). Every release points at it through `githubConfigSecret`. Never commit it decrypted. |
+| `github-pat-reflection.yaml` | Plaintext patch adding reflector annotations to `arc-github-pat`, so reflector mirrors it into `arc-dagger` (the chart reads the secret from its own namespace). The `ghcr-pull-secret-namespaces.yaml` pattern: a metadata patch, no sops edit. |
 
 The default release carries this pod template shape:
 
@@ -45,8 +47,9 @@ Sizing as the manifests currently declare it:
 
 | Pool | Runners | runner container | dind sidecar |
 |---|---|---|---|
-| `self-hosted-arc` | min 5 / max 16 | req 2Gi, limit 4Gi | req 1Gi, limit 6Gi, no CPU limit |
+| `self-hosted-arc` | min 5 / max 16 | req 500Mi, limit 4Gi | req 500Mi, limit 6Gi, no CPU limit |
 | `self-hosted-arc-e2e` | min 0 / max 2 | req 100m CPU + 512Mi, limit 2Gi | none |
+| `self-hosted-arc-dagger` | min 6 / max 10 | req 100m CPU + 384Mi, limit 2Gi | none |
 
 Flux applies this directory as part of the `infrastructure-services`
 Kustomization (`clusters/staging/infrastructure.yaml`, `path:
@@ -149,6 +152,42 @@ fed the Talos OOM controller (`../../../controllers/base/linstor/README.md`).
 node-3 is full, the runner still schedules wherever it fits rather than leaving a
 CI job pending.
 
+**The lean pool (2026-10-08).** A runner in the default pool reserves ~1Gi and may grow to 10Gi
+with a privileged dind sidecar, yet nearly every asp job runs only `dagger call` against the
+in-cluster engine: the sidecar is memory and privilege spent on nothing. `self-hosted-arc-dagger`
+is the e2e pool's shape (no dind, uid 1001, all capabilities dropped) plus seccomp
+`RuntimeDefault`, in its own namespace `arc-dagger` labelled PSA `restricted` (enforce, audit,
+warn) — `arc-runners` stays `privileged` only for the dind pool. Six warm runners match asp's
+matrix `max-parallel: 6`, for ~2.3Gi of requests instead of the default pool's ~5Gi for five.
+The engine's exec RoleBinding names its ServiceAccount (`../../base/dagger/rbac.yaml`).
+
+**The two pools share one session budget.** Every runner that calls `dagger` holds a
+`kubectl exec` stream through node-1's kubelet into `dagger-engine-0`, and node-1 running out of
+memory drops all of them at once (`../../base/dagger/README.md`, the `unexpected EOF` entry).
+The default pool's `maxRunners: 16` (2026-10-10) is that budget. The lean pool's 10 plus the
+default pool's 6 after cutover keeps it at 16; raising either is raising the engine's load, and
+waits on the engine's memory. Its runners prefer node-2 and node-3 (soft node affinity), so the
+warm pool does not reserve memory on the node the engine needs.
+Fork pull requests never land here (asp routes them to `CI_RUNNER`): they get an ephemeral
+engine, which needs Docker.
+
+**Cutover, in order.** (1) Merge; check `arc-runner-set-asp-dagger` registered (a listener in
+`arc-systems`, the scale set online under the repo's runners) and `arc-github-pat` was reflected
+into `arc-dagger`. (2) Set `CI_RUNNER_DAGGER=self-hosted-arc-dagger` in `Eliorion/asp`, and in
+the same change shrink the default pool to what still needs Docker — secrets-scan,
+pipeline-audit, the release workflows, fork PRs, the break-glass k3d run: `minRunners: 1`,
+`maxRunners: 6`, so the session budget stays 16. Unset, asp uses `CI_RUNNER` exactly as before
+and the lean pool only holds its warm runners. (3) If the lean pool misbehaves, unset the
+variable and restore the default pool's 5/16.
+
+**The baked runner image.** asp publishes `ghcr.io/eliorion/ci-runner` (workflow
+`ci-runner-image.yaml`): this runner plus dagger, kubectl, gh, yq and jq at asp's
+`versions.env` pins, each checksum-verified, trivy-gated and cosign-signed. Pin its **digest**
+(the workflow's summary prints it) in place of `actions-runner` in any pool; `arc-dagger` already
+has the `ghcr-pull-secret` it needs (reflector). A job still runs `ensure-tool.sh`, which now keeps
+a CLI on PATH only at the pinned version, so an image older than a pin bump costs one download,
+never a stale CLI. Keep the stock image's version in step with `ACTIONS_RUNNER_VERSION` there.
+
 ## Traps
 
 - **`OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` must be set explicitly, with the full
@@ -195,11 +234,15 @@ CI job pending.
   `violates PodSecurity "baseline:latest": privileged (container "dind" must not
   set securityContext.privileged=true)`.
 - **`github-pat.enc.yaml` is SOPS ciphertext.** Edit it only through `sops`, and
-  never commit it decrypted.
+  never commit it decrypted. Its reflector annotations live in `github-pat-reflection.yaml`,
+  a plaintext patch: a pool in a new namespace needs that namespace added there.
+- **`arc-dagger` enforces PSA `restricted`.** A template field it forbids (a privileged or
+  root container, a hostPath, a missing seccomp profile) fails every runner pod at admission,
+  silently from GitHub's side: jobs just queue. Watch `kubectl -n arc-dagger get ephemeralrunner`.
 - **The sizing prose has drifted from the manifests.** The sizing notes in
   [04-ci-runners-cache.md](../../../../documentations/04-ci-runners-cache.md)
   quote `maxRunners: 10` for the default pool, and describe an XL pool that no longer
-  exists. The values in this directory are authoritative: default 5/16 with a 1Gi/6Gi dind,
+  exists. The values in this directory are authoritative: default 5/16 with a 500Mi/6Gi dind, dagger 6/10,
   e2e 0/2 with no dind.
 
 ## Operating it
