@@ -1,0 +1,107 @@
+# The first toFQDNs and the first default-deny on this cluster (Phase 0 test 4).
+# A CNP selecting a pod puts that pod into default-deny for each direction it has rules for.
+#
+# Boxes: ingress only from p0-api on sandboxd's ports (sandboxd has NO auth); egress DNS
+# (through Cilium's DNS proxy, so toFQDNs can learn the IPs) and the Anthropic API only.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: p0-box
+spec:
+  endpointSelector:
+    matchLabels:
+      app: p0-box
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: p0-api
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+            - port: "9090"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*"
+    # Phase 0 test 3 adds names here only with a recorded reason (phase0/README.md).
+    - toFQDNs:
+        - matchName: api.anthropic.com
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# browser=on: the public web, never the LAN, the tailnet or the cluster. CIDR rules only ever
+# match the `world` identity, so pods and nodes stay out regardless; the except list is for the
+# LAN and tailnet addresses that would otherwise count as world.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: p0-box-browser
+spec:
+  endpointSelector:
+    matchLabels:
+      app: p0-box
+      browser: "on"
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+            - 100.64.0.0/10
+            - 169.254.0.0/16
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# p0-api: reaches the boxes' sandboxd and the npm registry (the probe installs its deps).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: p0-api
+spec:
+  endpointSelector:
+    matchLabels:
+      app: p0-api
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: p0-box
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+            - port: "9090"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toFQDNs:
+        - matchName: registry.npmjs.org
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
