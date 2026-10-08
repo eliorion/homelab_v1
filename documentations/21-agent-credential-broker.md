@@ -9,6 +9,9 @@ and ends in a recommendation:
 > holds the secret on the agent's behalf. What should that something be, and is a
 > credential-holding MCP server the right shape for it?
 
+The platform around it (managing agents, SSH, agent-to-agent paths, tool grants) is
+[22](22-agent-platform.md).
+
 Tool facts were checked against upstream repositories and docs on 2026-10-08. Anything that
 could not be confirmed is listed in [§9](#9-not-verified-yet). Check it before you build on it.
 

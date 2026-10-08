@@ -26,7 +26,8 @@ and HA, `08` Cilium CNI and ingress, `09` etcd backup and DR, `10` n8n,
 `17` LINSTOR + SeaweedFS migration, `18` observability (Loki, Tempo, Alloy,
 Dagger CI telemetry), `20` cluster health 2026-10 (etcd timing, OOM limits,
 `ssd-cnpg`, CPU right-sizing), `21` credential brokering for sandboxed AI
-agents (design study).
+agents (design study), `22` agent platform: boxes, SSH, inter-agent paths,
+tool grants (design).
 
 ## Repo layout
 
