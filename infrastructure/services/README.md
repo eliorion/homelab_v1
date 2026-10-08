@@ -49,13 +49,13 @@ encoding a shared bucket layout that staging deliberately moved away from, was
 deleted on 2026-09-15 — see the open-work section of
 [`../../documentations/14-design-decisions.md`](../../documentations/14-design-decisions.md).
 
-### Supply-chain policies
+### App admission policies
 
-`base/supply-chain/` is applied by its own Flux Kustomization, `infra-supply-chain`, which
+`base/app-policies/` is applied by its own Flux Kustomization, `infra-app-policies`, which
 `dependsOn` `infra-kyverno` and `infra-reflector` — **not** through `staging/kustomization.yaml`
 (`infrastructure-services` does not depend on Kyverno). It holds the Audit-mode image signature,
-provenance and registry policies for the app namespaces:
-[`base/supply-chain/README.md`](base/supply-chain/README.md).
+provenance, registry and Pod Security policies for the app namespaces:
+[`base/app-policies/README.md`](base/app-policies/README.md).
 
 ### The dev tier
 

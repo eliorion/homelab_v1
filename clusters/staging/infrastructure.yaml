@@ -274,12 +274,12 @@ spec:
       name: kyverno-background-controller
       namespace: kyverno
 ---
-# Supply-chain admission policies for the app namespaces (Kyverno CEL types): image signature,
-# SBOM and SLSA provenance from asp's release workflow, and a registry allowlist. Audit only.
+# Admission policies for the app namespaces (Kyverno CEL types): image signature, SBOM and SLSA
+# provenance from asp's release workflow, a registry allowlist, Pod Security restricted. Audit.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: infra-supply-chain
+  name: infra-app-policies
   namespace: flux-system
 spec:
   interval: 1h
@@ -291,7 +291,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./infrastructure/services/base/supply-chain
+  path: ./infrastructure/services/base/app-policies
   prune: true
   wait: true
 ---

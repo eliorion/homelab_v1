@@ -1,0 +1,67 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: app-pod-security-restricted
+spec:
+  # Audit until the asp charts' restricted helm test pods are deployed, then Deny. README.
+  validationActions: ["Audit"]
+  failurePolicy: Ignore
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [asp, fbref, scraper, advisor]
+  # CNPG mints its pods from a template that is not in git: never block a database pod.
+  matchConditions:
+    - name: not-cnpg
+      expression: >-
+        !has(object.metadata.labels) || !('cnpg.io/cluster' in object.metadata.labels)
+  variables:
+    - name: containers
+      expression: >-
+        object.spec.containers + object.spec.?initContainers.orValue([])
+        + object.spec.?ephemeralContainers.orValue([])
+    - name: podSc
+      expression: object.spec.?securityContext.orValue({})
+  validations:
+    - expression: >-
+        !object.spec.?hostNetwork.orValue(false) && !object.spec.?hostPID.orValue(false)
+        && !object.spec.?hostIPC.orValue(false)
+      message: host namespaces are not allowed
+    - expression: >-
+        object.spec.?volumes.orValue([]).all(v, v.?hostPath.orValue(null) == null)
+      message: hostPath volumes are not allowed
+    - expression: >-
+        variables.containers.all(c, !c.?securityContext.privileged.orValue(false))
+      message: privileged containers are not allowed
+    - expression: >-
+        variables.containers.all(c, c.?securityContext.allowPrivilegeEscalation.orValue(true) == false)
+      message: every container must set allowPrivilegeEscalation false
+    - expression: >-
+        variables.containers.all(c, 'ALL' in c.?securityContext.capabilities.drop.orValue([])
+        && c.?securityContext.capabilities.add.orValue([]).all(a, a == 'NET_BIND_SERVICE'))
+      message: every container must drop ALL capabilities and add none but NET_BIND_SERVICE
+    - expression: >-
+        variables.containers.all(c, c.?securityContext.runAsNonRoot.orValue(
+        variables.podSc.?runAsNonRoot.orValue(false)) == true)
+      message: every container must run as non-root (runAsNonRoot)
+    - expression: >-
+        variables.containers.all(c, c.?securityContext.runAsUser.orValue(
+        variables.podSc.?runAsUser.orValue(1)) != 0)
+      message: no container may run as uid 0
+    - expression: >-
+        variables.containers.all(c, c.?securityContext.seccompProfile.type.orValue(
+        variables.podSc.?seccompProfile.type.orValue('')) in ['RuntimeDefault', 'Localhost'])
+      message: every container needs seccompProfile RuntimeDefault or Localhost
+    - expression: >-
+        variables.containers.all(c, c.?ports.orValue([]).all(p, p.?hostPort.orValue(0) == 0))
+      message: hostPort is not allowed

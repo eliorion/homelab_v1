@@ -4,3 +4,4 @@ resources:
   - image-signatures.yaml
   - image-provenance.yaml
   - image-registries.yaml
+  - pod-security.yaml
