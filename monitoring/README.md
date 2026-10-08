@@ -55,7 +55,7 @@ kustomization below is not deployed at all.
 | `monitoring/` | Container only. **There is no `monitoring/kustomization.yaml`** and there should not be one — Flux names the overlay directories directly, so a kustomization here would be reconciled by nobody. |
 | `controllers/base/` | Holds `kube-prometheus-stack/`, `loki/`, `tempo/`, `alloy/` and `blackbox-exporter/`. **No `controllers/base/kustomization.yaml`**, same convention as `infrastructure/controllers/base/`: overlays reference the component directory, not the tier. |
 | `controllers/staging/kustomization.yaml` | The aggregate Flux reconciles as `monitoring-controllers` in staging. Five resources: `kube-prometheus-stack`, `loki`, `tempo`, `alloy`, `blackbox-exporter`. |
-| `configs/staging/kustomization.yaml` | The aggregate Flux reconciles as `monitoring-configs`. Thirteen resources, listed below. No namespace transformer — every component names its own namespace. |
+| `configs/staging/kustomization.yaml` | The aggregate Flux reconciles as `monitoring-configs`. Fourteen resources, listed below. No namespace transformer — every component names its own namespace. |
 
 `configs/` has no `base/`: `staging/` is the only overlay,
 so its components hard-code their staging values.
@@ -80,6 +80,7 @@ so its components hard-code their staging values.
 |---|---|
 | `flux-alerts/` | notification-controller → Telegram (the event path): `Provider`, `Alert` and bot token, all in `flux-system`. |
 | `flux-am/` | Flux metrics → Prometheus → Alertmanager → Telegram (the metric path): `PodMonitor`, `PrometheusRule`, and the Alertmanager token Secret in `monitoring`. |
+| `flux-grafana/` | Two Grafana dashboards, **Flux reconciliation** and **Flux HelmReleases**: which Flux objects are Ready, reconciling, failing or suspended, with the Warning events and controller errors beside them — [`configs/staging/flux-grafana/README.md`](configs/staging/flux-grafana/README.md). |
 | `fbref-grafana/` | The SOPS-encrypted Grafana datasource for `fbref-db` plus two dashboard ConfigMaps (`fbref-grafana-dashboard`, `fbref-grafana-dashboard-audit`), picked up by the Grafana sidecar through the label `grafana_dashboard: "1"`. |
 | `etcd-backup-alerts/` | `PrometheusRule` `etcd-backup` — job failure and snapshot staleness. |
 | `cnpg-alerts/` | `PodMonitor` `cnpg-instances` (every CNPG pod in the cluster) and `PrometheusRule` `cnpg-alerts` (WAL archiving + volume usage). |
