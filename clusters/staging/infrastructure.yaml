@@ -295,6 +295,42 @@ spec:
   prune: true
   wait: true
 ---
+# Tetragon (eBPF runtime security), exporting only CI-namespace attack tooling and pod
+# kernel-module loads. Its TracingPolicies apply after it, once its CRDs exist.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-tetragon
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/base/tetragon
+  prune: true
+  wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-tetragon-policies
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+    - name: infra-tetragon
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/base/tetragon/policies
+  prune: true
+  wait: true
+---
 # Vendored Keycloak operator manifests (CRDs + RBAC + Deployment) + the `identity` namespace.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

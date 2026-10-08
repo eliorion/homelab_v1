@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tetragon
+  labels:
+    # The agent is an eBPF loader: privileged, host PID and network.
+    pod-security.kubernetes.io/enforce: privileged

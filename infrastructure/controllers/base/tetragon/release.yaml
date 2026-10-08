@@ -1,0 +1,66 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tetragon
+  namespace: flux-system
+spec:
+  targetNamespace: tetragon
+  releaseName: tetragon
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: tetragon
+      version: "1.7.1"
+      sourceRef:
+        kind: HelmRepository
+        name: cilium
+        namespace: flux-system
+      interval: 12h
+  install:
+    crds: Create
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    # CRDs from the chart, not the operator: the policies Kustomization applies TracingPolicies
+    # right after this release is Ready.
+    crds:
+      installMethod: helm
+    tetragon:
+      # A memory limit keeps the agent out of the Talos OOM controller's reach (documentations/20).
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 1Gi
+      # Export is default-deny once an allowlist exists. See README for why each line.
+      exportAllowList: |-
+        {"event_set":["PROCESS_EXEC"],"namespace":["arc-runners","arc-dagger","dagger"],"binary_regex":["(^|/)(nc|ncat|netcat|socat|nmap|masscan|zmap|xmrig|nsenter|insmod|modprobe)$"]}
+        {"event_set":["PROCESS_KPROBE"],"policy_names":["pod-kernel-module-load"]}
+      exportDenyList: |-
+        {"health_check":true}
+        {"namespace":["", "kube-system", "cilium", "piraeus-datastore"]}
+      prometheus:
+        serviceMonitor:
+          enabled: false
+    tetragonOperator:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
+    export:
+      mode: stdout
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 128Mi

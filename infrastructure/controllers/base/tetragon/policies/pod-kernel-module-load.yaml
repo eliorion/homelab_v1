@@ -1,0 +1,46 @@
+# Monitor only (no matchActions): a kernel module loaded explicitly from inside any pod.
+# Upstream examples/tracingpolicy/modules-nohost.yaml, minus its Override/Sigkill. See README.
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: pod-kernel-module-load
+spec:
+  kprobes:
+    - call: security_kernel_read_file
+      syscall: false
+      return: true
+      args:
+        - index: 0
+          type: file
+        - index: 1
+          type: int
+      returnArg:
+        index: 0
+        type: int
+      selectors:
+        - matchArgs:
+            - index: 1
+              operator: Equal
+              values: ["2"] # READING_MODULE
+          matchNamespaces:
+            - namespace: Pid
+              operator: NotIn
+              values: ["host_ns"]
+    - call: security_kernel_load_data
+      syscall: false
+      return: true
+      args:
+        - index: 0
+          type: int
+      returnArg:
+        index: 0
+        type: int
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: Equal
+              values: ["2"] # READING_MODULE
+          matchNamespaces:
+            - namespace: Pid
+              operator: NotIn
+              values: ["host_ns"]

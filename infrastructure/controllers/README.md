@@ -24,7 +24,7 @@ directly, one per Flux Kustomization, and only two go through the aggregate
 
 | Path | What it does |
 |---|---|
-| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `descheduler/`, `external-secrets/`, `keda/`, `keycloak-operator/`, `kyverno/`, `linstor/` (Piraeus operator, + `linstor/monitoring/`), `reflector/`, `seaweedfs/` (namespace + CSI driver, + `seaweedfs/monitoring/`). **There is no `base/kustomization.yaml`** and there should not be one. |
+| `base/` | The environment-independent component manifests: `arc/`, `cert-manager/`, `cilium/` (+ `cilium/config/`), `cnpg/` (+ `cnpg/plugin/`), `descheduler/`, `external-secrets/`, `keda/`, `keycloak-operator/`, `kyverno/`, `linstor/` (Piraeus operator, + `linstor/monitoring/`), `reflector/`, `seaweedfs/` (namespace + CSI driver, + `seaweedfs/monitoring/`), `tetragon/` (+ `tetragon/policies/`). **There is no `base/kustomization.yaml`** and there should not be one. |
 | `staging/kustomization.yaml` | The aggregate Flux reconciles as `infrastructure-controllers`. `cnpg/`, `tailscale-operator/`, `seaweedfs/cluster/` and `linstor-cluster/`. |
 | `staging/cnpg/kustomization.yaml` | Thin overlay, one resource: `../../base/cnpg/` (the operator only — `base/cnpg/kustomization.yaml` does not include `plugin/`). |
 | `staging/tailscale-operator/` | Staging-only component, no base counterpart. Reconciled through the aggregate above. |
@@ -50,6 +50,8 @@ From `clusters/staging/infrastructure.yaml`:
 | `infra-descheduler` | `base/descheduler` | `wait: true`, `timeout: 5m` |
 | `infra-external-secrets` | `base/external-secrets` | `wait: true`, `timeout: 5m`; `infrastructure-services` depends on it |
 | `infra-kyverno` | `base/kyverno` | `wait: true`, `timeout: 10m`, health checks on `kyverno-admission-controller` and `kyverno-background-controller` |
+| `infra-tetragon` | `base/tetragon` | `wait: true`, `timeout: 10m` |
+| `infra-tetragon-policies` | `base/tetragon/policies` | `dependsOn: infra-tetragon` (its CRDs), `wait: true` |
 | `infra-keycloak-operator` | `base/keycloak-operator` | `wait: true`, health check on `keycloak-operator` in `identity` |
 | `infra-reflector` | `staging/reflector` | `wait: true`, sops `decryption`, health check on the `reflector` Deployment |
 | `infrastructure-controllers` | `staging` | `interval: 1m0s`, `dependsOn: infra-cnpg-plugin`, sops `decryption`, **no `wait: true`** |
@@ -168,6 +170,7 @@ See [`../../documentations/00-bootstrap-cluster.md`](../../documentations/00-boo
 - [`base/cilium/README.md`](base/cilium/README.md)
 - [`base/cnpg/README.md`](base/cnpg/README.md) and [`base/cnpg/plugin/README.md`](base/cnpg/plugin/README.md)
 - [`base/keda/README.md`](base/keda/README.md)
+- [`base/tetragon/README.md`](base/tetragon/README.md)
 - [`base/keycloak-operator/README.md`](base/keycloak-operator/README.md)
 - [`base/kyverno/README.md`](base/kyverno/README.md)
 - [`base/linstor/README.md`](base/linstor/README.md)

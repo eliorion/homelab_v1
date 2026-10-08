@@ -58,9 +58,39 @@ groups:
           description: "More than 10 FailedAttachVolume/FailedMount events in 30 minutes, sustained for 15 minutes. Node reboots produce short bursts (up to 7 in 15 minutes); this is past that."
       - alert: UnexpectedPodExec
         expr: |
-          sum by (user_username, objectRef_namespace, objectRef_subresource) (count_over_time({job="kube-apiserver-audit"} | json | objectRef_subresource=~"exec|attach|portforward" and responseStatus_code="101" and user_username!~"admin|talos:admin|system:serviceaccount:arc-runners:.+|system:serviceaccount:cnpg-system:cnpg-system-cnpg-cloudnative-pg" [10m])) > 0
+          sum by (user_username, objectRef_namespace, objectRef_subresource) (count_over_time({job="kube-apiserver-audit"} | json | objectRef_subresource=~"exec|attach|portforward" and responseStatus_code="101" and user_username!~"admin|talos:admin|system:serviceaccount:arc-(runners|dagger):.+|system:serviceaccount:cnpg-system:cnpg-system-cnpg-cloudnative-pg" [10m])) > 0
         labels:
           severity: warning
         annotations:
           summary: "{{ $labels.user_username }} ran {{ $labels.objectRef_subresource }} in {{ $labels.objectRef_namespace }}"
-          description: "A successful exec, attach or port-forward by an identity outside the allowlist (admin, talos:admin, ARC runners, CNPG operator). Exec into a pod is code execution in it."
+          description: "A successful exec, attach or port-forward by an identity outside the allowlist (admin, talos:admin, CNPG operator; runner identities have their own rule). Exec into a pod is code execution in it."
+      # Runner identities run PR code. Their ONE legitimate exec is kube-pod:// into the engine.
+      - alert: RunnerExecOutsideEngine
+        expr: |
+          sum by (user_username, objectRef_namespace, objectRef_name, objectRef_subresource) (count_over_time({job="kube-apiserver-audit"} | json | objectRef_subresource=~"exec|attach|portforward" and responseStatus_code="101" and user_username=~"system:serviceaccount:arc-(runners|dagger):.+" and (objectRef_namespace!="dagger" or objectRef_name!="dagger-engine-0" or objectRef_subresource!="exec") [10m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "CI runner {{ $labels.user_username }} ran {{ $labels.objectRef_subresource }} on {{ $labels.objectRef_namespace }}/{{ $labels.objectRef_name }}"
+          description: "A runner ServiceAccount may only exec into dagger/dagger-engine-0 (Dagger's kube-pod:// transport). Anything else is PR code using the runner's identity: check the job that ran, and the RBAC that allowed it."
+  - name: runtime-security.log-rules
+    interval: 1m
+    rules:
+      # Tetragon exports only allowlisted events (infrastructure/controllers/base/tetragon): any
+      # process_exec line is already a hit.
+      - alert: CIAttackToolExecuted
+        expr: |
+          sum by (pod_namespace, pod_name, binary) (count_over_time({namespace="tetragon", container="export-stdout"} |= "process_exec" | json binary="process_exec.process.binary", pod_namespace="process_exec.process.pod.namespace", pod_name="process_exec.process.pod.name" [10m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.binary }} ran in {{ $labels.pod_namespace }}/{{ $labels.pod_name }}"
+          description: "Tetragon saw a network-scanning, tunnelling, mining or namespace-escape tool executed in a CI namespace (arc-runners, arc-dagger, dagger). No pipeline uses any of them."
+      - alert: PodKernelModuleLoad
+        expr: |
+          sum by (pod_namespace, pod_name, function) (count_over_time({namespace="tetragon", container="export-stdout"} |= "process_kprobe" | json function="process_kprobe.function_name", pod_namespace="process_kprobe.process.pod.namespace", pod_name="process_kprobe.process.pod.name" [10m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "A kernel module was loaded from pod {{ $labels.pod_namespace }}/{{ $labels.pod_name }}"
+          description: "Tetragon policy pod-kernel-module-load: an explicit module load ({{ $labels.function }}) from outside the host PID namespace. A container loading kernel code is a container escape until shown otherwise."

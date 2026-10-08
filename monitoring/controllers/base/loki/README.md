@@ -110,7 +110,10 @@ as every Prometheus alert.
 | `ContainerOOMKill` | kernel | > 3 cgroup OOM kills (`constraint=CONSTRAINT_MEMCG`) in 1h per node | warning |
 | `FilesystemErrors` | kernel | XFS error/corruption/shutdown, ext4 error, remount read-only | critical |
 | `VolumeMountFailing` | `{job="kubernetes-events"}` | > 10 FailedAttachVolume/FailedMount in 30m per namespace, for 15m | warning |
-| `UnexpectedPodExec` | `{job="kube-apiserver-audit"}` | a successful (`101`) exec/attach/port-forward by anyone except `admin`, `talos:admin`, `arc-runners` service accounts, the CNPG operator | warning |
+| `UnexpectedPodExec` | `{job="kube-apiserver-audit"}` | a successful (`101`) exec/attach/port-forward by anyone except `admin`, `talos:admin`, the CNPG operator and the runner service accounts (next rule) | warning |
+| `RunnerExecOutsideEngine` | `{job="kube-apiserver-audit"}` | a runner service account (`arc-runners`, `arc-dagger`) doing anything but `exec` into `dagger/dagger-engine-0` | critical |
+| `CIAttackToolExecuted` | `{namespace="tetragon", container="export-stdout"}` | Tetragon exported a `process_exec`: an attack tool run in a CI namespace (the export allowlist IS the condition) | critical |
+| `PodKernelModuleLoad` | same | Tetragon policy `pod-kernel-module-load` fired: a kernel module loaded from inside a pod | critical |
 
 **Why these, and not more.** Each targets a failure that metrics do not see or see late,
 and each was backtested over 24 hours of real logs (2026-09-15, including three node
@@ -124,6 +127,14 @@ reboots the day before) with zero would-be firings:
 - `UnexpectedPodExec`'s allowlist is exactly the identities seen in 24 h: `admin` (the
   cluster admin kubeconfig), the ARC runner service account (Dagger's `kube-pod://`
   transport), and the CNPG operator.
+- The runner service accounts were allowlisted *everywhere*, though their one legitimate exec
+  is Dagger's `kube-pod://` into `dagger-engine-0` — the privileged, node-root-equivalent pod.
+  PR code holds that identity, so `RunnerExecOutsideEngine` alerts (critical) on anything else a
+  runner identity execs, attaches to or port-forwards into. Checked with Loki's own pipeline
+  (v3.5.3) over sample audit lines: exec into the engine from either pool stays silent; an exec
+  into an app pod, a port-forward to the engine, or an exec into any other `dagger` pod alerts.
+- The two Tetragon rules read events that Tetragon's export allowlist already narrowed to hits
+  (`infrastructure/controllers/base/tetragon/README.md`), so any line is an alert.
 
 **Why the two OOM rules are split.** The kernel writes `Memory cgroup out of memory:
 Killed process ...` when a *container* exceeds its own limit and plain `Out of memory:
