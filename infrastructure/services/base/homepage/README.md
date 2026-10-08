@@ -236,3 +236,5 @@ kubectl -n homepage logs deploy/homepage --tail=50   # widget and host-check err
 ```
 
 Then open `https://homepage.tail45b0ca.ts.net`.
+
+(2026-10-08) Added tiles: OpenBao (tailnet UI), Scout, Auto advisor, Advisor review.

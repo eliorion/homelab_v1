@@ -6,3 +6,4 @@ resources:
   - issuer.yaml
   - certificate.yaml
   - release.yaml
+  - ingress-tailscale.yaml

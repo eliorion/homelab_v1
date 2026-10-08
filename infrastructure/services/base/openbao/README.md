@@ -14,6 +14,7 @@ OpenBao itself, cluster recovery and alerting depend on (below).
 | `repository.yaml` | `HelmRepository` `openbao`, `https://openbao.github.io/openbao-helm`. |
 | `issuer.yaml` | cert-manager `Issuer` `openbao-ca` (namespaced, type CA) signing with the offline CA in Secret `openbao-ca`. |
 | `certificate.yaml` | `Certificate` `openbao-tls`: the server certificate for `openbao.openbao.svc`, the pod name and `127.0.0.1`, two years, ECDSA. |
+| `ingress-tailscale.yaml` | `Ingress` `openbao-ui` (device `openbao`): the UI at `https://openbao.tail45b0ca.ts.net/ui/`, tailnet only. Backend is `openbao-active` port `https` (the operator proxies a port named `https` as https+insecure, so the private CA is not needed); it follows the leader via `service_registration`. Needs HTTPS Certificates enabled in Tailscale. |
 | `release.yaml` | `HelmRelease` `openbao` (chart `0.30.2`, OpenBao `2.7.1`), release name `openbao`: one replica, Raft storage on a 2Gi `ssd` volume, TLS from `openbao-tls`, static auto-unseal from `openbao-unseal`, declarative audit to stdout, and the self-initialization blocks. |
 | `ca.crt` | The public half of the offline CA. Its base64 is inlined in `consumer/secretstore.yaml`. |
 | `consumer/` | A Kustomize **Component** a consuming namespace includes: ServiceAccount `openbao-eso` and SecretStore `openbao`. |
@@ -176,7 +177,7 @@ bao kv put kv/homepage/homepage-secrets HOMEPAGE_VAR_CF_ACCOUNT_ID=-   # value o
 bao kv get kv/homepage/homepage-secrets
 ```
 
-The UI is the same address in a browser. Health and state:
+The UI is at `https://openbao.tail45b0ca.ts.net/ui/` (tailnet), or the port-forward address in a browser. Health and state:
 
 ```bash
 kubectl -n openbao exec openbao-0 -- bao status

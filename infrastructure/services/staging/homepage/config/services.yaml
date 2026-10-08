@@ -41,6 +41,14 @@
         namespace: ai-gateway
         app: ai-gateway
         podSelector: app.kubernetes.io/name=ai-gateway,app.kubernetes.io/component=server
+    - OpenBao:
+        icon: openbao.png
+        href: https://openbao.tail45b0ca.ts.net/ui/
+        description: Secrets admin UI
+        siteMonitor: https://openbao.openbao.svc:8200/v1/sys/health?standbyok=true
+        namespace: openbao
+        app: openbao
+        podSelector: app.kubernetes.io/name=openbao
     - pgAdmin:
         icon: pgadmin.png
         href: https://pgadmin.tail45b0ca.ts.net
@@ -184,3 +192,15 @@
         href: https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration
         description: Realm endpoints only, no console
         siteMonitor: https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration
+    - Scout:
+        icon: mdi-radar
+        href: https://scout.eliorion.fr
+        description: Public app
+    - Auto advisor:
+        icon: mdi-car-search
+        href: https://auto-advisor.eliorion.fr
+        description: Public app
+    - Advisor review:
+        icon: mdi-clipboard-check-outline
+        href: https://advisor-review.tail45b0ca.ts.net
+        description: Tailnet only
