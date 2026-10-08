@@ -88,6 +88,10 @@ spec:
                     - asp
                     - advisor
                     - descheduler
+                    # Agent sandboxes: a warm-pool or claimed box without a PVC is still a live session.
+                    - agent-platform
+                    - agent-sandboxes
+                    - agent-p0
           plugins:
             balance:
               enabled:
