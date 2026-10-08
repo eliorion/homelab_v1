@@ -3,6 +3,9 @@ kind: Kustomization
 # One sops Secret per bucket, in flux-system: that is where postBuild.substituteFrom reads them.
 resources:
   - advisor-corpus.enc.yaml
+  # fbref-vision's transient player photos: written by the scraper (tenant fbref-vision), read and
+  # deleted by fbref-vision once scored, so the bucket stays near-empty. No expiry, by design.
+  - fbref-vision-tmp.enc.yaml
   - nextcloud.enc.yaml
   # The scraper's own identity for streaming advisor files into advisor-corpus (asp scraper
   # chart engine.fileSinks), separate so the scraper never holds the advisor engine's key.

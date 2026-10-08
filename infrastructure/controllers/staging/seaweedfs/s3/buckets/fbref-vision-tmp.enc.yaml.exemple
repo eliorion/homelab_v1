@@ -1,0 +1,23 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. S3 credential for bucket fbref-vision-tmp (asp repo: the
+# scraper's file_download sink for tenant fbref-vision, and fbref-vision's own read+delete of each
+# photo; chart values engine.fileSinks / objectStore). Steps: ../README.md.
+#   cp fbref-vision-tmp.enc.yaml.exemple fbref-vision-tmp.enc.yaml
+#   # FBREF_VISION_TMP_S3_ACCESS_KEY: openssl rand -hex 12
+#   # FBREF_VISION_TMP_S3_SECRET_KEY: openssl rand -hex 32
+#   sops -e -i fbref-vision-tmp.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-fbref-vision-tmp
+  namespace: flux-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: fbref,scraper
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: fbref,scraper
+type: Opaque
+stringData:
+  FBREF_VISION_TMP_S3_ENDPOINT: "http://seaweedfs-seaweedfs-s3.seaweedfs.svc.cluster.local:8333"
+  FBREF_VISION_TMP_S3_BUCKET: "fbref-vision-tmp"
+  FBREF_VISION_TMP_S3_ACCESS_KEY: "<openssl rand -hex 12>"
+  FBREF_VISION_TMP_S3_SECRET_KEY: "<openssl rand -hex 32>"
