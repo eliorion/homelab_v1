@@ -180,6 +180,31 @@ NetworkPolicies are widened in exactly one way — DNS and API ports inside the 
 
 **Reference.** [`infrastructure/services/dev/dev-platform/README.md`](../infrastructure/services/dev/dev-platform/README.md)
 
+### gVisor as a RuntimeClass on every node, for the agent sandboxes
+
+**Why.** The agent platform (asp repo, `services/agent-platform/`) runs code an LLM wrote, in
+pods next to the cluster's databases and storage stack. `runc` shares the node kernel, so one
+kernel bug is a node takeover. gVisor serves the sandbox's syscalls from a user-space kernel. It is
+one Talos extension in the existing schematics, plus a RuntimeClass, and a pod opts in by name.
+It is on all three nodes so that a sandbox can schedule wherever there is memory.
+
+**Rejected.** Kata Containers: a micro-VM and a guest kernel per pod, and it needs
+`/dev/kvm` on every node. That is too much memory on a cluster at 67-85% memory requests, and
+the Intel nodes would need their nested virtualisation checked. Plain `runc` with only
+seccomp and NetworkPolicy: the isolation would be exactly what every other pod has, for the
+least trusted workload in the cluster. gVisor on one node only: every sandbox would compete for
+that one node's memory.
+
+**Cost.** Each node needs an extension, i.e. an installer image swap and a reboot.
+`user.max_user_namespaces` is raised from Talos's KSPP 0 to 11255 on every node, which makes
+unprivileged user namespaces reachable cluster-wide; the `RuntimeDefault` seccomp profile still
+refuses them to a container without `CAP_SYS_ADMIN`. gVisor costs syscall compatibility
+and I/O speed, and each pod pays for the Sentry in memory. The agent platform's Phase 0 measures that,
+along with in-place resize under runsc, before anything depends on it.
+
+**Reference.** [`infrastructure/controllers/base/gvisor/README.md`](../infrastructure/controllers/base/gvisor/README.md),
+[`bootstraping/README.md`](../bootstraping/README.md) ("Adding gVisor")
+
 ---
 
 ## 2. Networking and exposure

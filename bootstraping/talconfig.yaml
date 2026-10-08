@@ -26,7 +26,7 @@ nodes:
     ipAddress: 192.168.1.101
     controlPlane: true
     installDisk: /dev/nvme0n1
-    talosImageURL: factory.talos.dev/installer/11928acc918f7c25902bba02422dd200004f11d29f18ab9410d4863e7c3047e7
+    talosImageURL: factory.talos.dev/installer/54a5f422871af4c35624f58a6fea87b3c58d7859fd6754bde6732348f5a6a7ec
     # These must NOT become cluster-wide patches: the sata selector below would
     # match node-2's and node-3's install disks.
     # Adding a kubelet extraMounts bind for /var/mnt/* here re-triggers
@@ -109,7 +109,7 @@ nodes:
     ipAddress: 192.168.1.102
     controlPlane: true
     installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/b86969a5f5abcc3e3be770b80c8cbf963af64f5d6d1000a2a88366943b272671
+    talosImageURL: factory.talos.dev/installer/98559b2575b328fe44684928c8faf3e592391568fe12ee6fb1bed2a8154e2789
     patches:
       # by-path, not WWID: both dock bays report the same WWID. LUN 0 is the
       # 2.0TB, LUN 1 the 320GB. The 250GB disk on pci-0000:00:1d.0 is excluded
@@ -175,7 +175,7 @@ nodes:
     ipAddress: 192.168.1.103
     controlPlane: true
     installDisk: /dev/sda
-    talosImageURL: factory.talos.dev/installer/b86969a5f5abcc3e3be770b80c8cbf963af64f5d6d1000a2a88366943b272671
+    talosImageURL: factory.talos.dev/installer/98559b2575b328fe44684928c8faf3e592391568fe12ee6fb1bed2a8154e2789
     patches:
       # Same r-linstor label as node-1 and node-2, so a single
       # LinstorSatelliteConfiguration covers all three nodes. Was Ceph's
@@ -234,6 +234,10 @@ patches:
               - usermode_helper=disabled
           - name: drbd_transport_tcp
           - name: dm-thin-pool
+      # gVisor (runsc) needs unprivileged user namespaces; Talos sets 0 (KSPP).
+      # Removing this breaks every runtimeClassName: gvisor pod at sandbox start.
+      sysctls:
+        user.max_user_namespaces: "11255"
       kubelet:
         defaultRuntimeSeccompProfileEnabled: true
         disableManifestsDirectory: true

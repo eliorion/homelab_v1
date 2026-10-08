@@ -200,6 +200,22 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: infra-gvisor
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 2m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  # RuntimeClass only; the runsc handler comes from the Talos gvisor extension.
+  path: ./infrastructure/controllers/base/gvisor
+  prune: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: infra-descheduler
   namespace: flux-system
 spec:
