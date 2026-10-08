@@ -82,7 +82,7 @@ broken thing.
 | `hostname` | `staging-controlplane-1` | `staging-controlplane-2` | `staging-controlplane-3` |
 | `ipAddress` | `192.168.1.101` | `192.168.1.102` | `192.168.1.103` |
 | `installDisk` | `/dev/nvme0n1` | `/dev/sda` | `/dev/sda` |
-| `talosImageURL` schematic | `11928acc…` (AMD box, amd-ucode + amdgpu) | `b86969a5…` (Intel, intel-ucode) | `b86969a5…` |
+| `talosImageURL` schematic | `54a5f422…` (AMD box, amd-ucode + amdgpu) | `98559b25…` (Intel, intel-ucode) | `98559b25…` |
 | `patches` | three `UserVolumeConfig` + `RawVolumeConfig` + `EPHEMERAL` sizing + Longhorn disk annotation | two `UserVolumeConfig` + `RawVolumeConfig` + `EPHEMERAL` sizing | `RawVolumeConfig` + `EPHEMERAL` sizing |
 
 node-1 carries per-node `patches` for its 640 GB SATA HDD: an `xfs` user volume at
@@ -149,6 +149,7 @@ Hostnames are hyphenated because Kubernetes rejects underscores in node names.
 | `kubelet.defaultRuntimeSeccompProfileEnabled: true` | Pods with no seccomp profile get `RuntimeDefault` instead of unconfined. |
 | `kubelet.disableManifestsDirectory: true` | Turns off the static-pod directory, so the only way to run something on a node is through the API. |
 | `kubelet.extraArgs.rotate-server-certificates: true` | The kubelet requests its serving certificate from the cluster CA by CSR. Paired with the `kubelet-serving-cert-approver` manifest below. |
+| `sysctls.user.max_user_namespaces: "11255"` | gVisor (`runsc`) creates unprivileged user namespaces; Talos defaults this to 0 (KSPP). The trade is argued in `../infrastructure/controllers/base/gvisor/README.md`. |
 | `install.wipe: false` | Applying a config does not wipe the install disk. |
 | `install.grubUseUKICmdline: true` | GRUB boots with the kernel command line carried in the UKI. |
 | `features.diskQuotaSupport: true` | XFS project quotas for ephemeral storage limits. |
@@ -268,7 +269,8 @@ anything.
 
 **Why the two nodes have different installer schematics.** Both factory images carry
 `siderolabs/drbd` (LINSTOR) plus `siderolabs/iscsi-tools` and
-`siderolabs/util-linux-tools` (Longhorn, kept until it is uninstalled); they differ in the
+`siderolabs/util-linux-tools` (Longhorn, kept until it is uninstalled) and
+`siderolabs/gvisor` (the `runsc` runtime behind the `gvisor` RuntimeClass); they differ in the
 microcode extension (amd-ucode for the AMD box, intel-ucode for the two Intel ones) and
 node-1 additionally carries `amdgpu`. Booting a stock Talos image instead gives a cluster
 where Longhorn fails with `failed to execute iscsiadm: No such file or directory`.
@@ -307,6 +309,61 @@ router with the Tailscale operator's in-cluster egress proxies — the scraper d
 gateway — and Phase 5 wiped that host and rebuilt it as bare-metal `192.168.1.101`. Removing
 the route block from all three node configs is a Phase 4 step that was never carried out, so
 it is still in `talconfig.yaml`.
+
+## Adding gVisor (2026-10)
+
+The two schematics above replaced `11928acc…` (AMD) and `b86969a5…` (Intel). They are the
+same extension lists plus `siderolabs/gvisor`, registered at factory.talos.dev, which is
+content-addressed, so the IDs are reproducible from the lists:
+
+```bash
+curl -s https://factory.talos.dev/schematics/54a5f422871af4c35624f58a6fea87b3c58d7859fd6754bde6732348f5a6a7ec
+curl -s https://factory.talos.dev/schematics/98559b2575b328fe44684928c8faf3e592391568fe12ee6fb1bed2a8154e2789
+```
+
+An extension needs `talosctl upgrade`, which reboots, and the sysctl rides the same render.
+Same Talos version, so this is an image swap, not a version bump. One node at a time,
+node-2 → node-3 → node-1 (node-1 last, it carries the most memory requests):
+
+```bash
+cd bootstraping
+SOPS_AGE_KEY_FILE=../clusters/staging/age.agekey talhelper genconfig
+for n in 1 2 3; do
+  talosctl validate --config clusterconfig/Homelab_staging-staging-controlplane-$n.yaml --mode metal
+done
+
+# per node, <ip> = .102, then .103, then .101; <id> = its schematic above
+# 1. any CNPG primary on it: switch over first (kubectl cnpg promote, or status.targetPrimary)
+# 2. config first, without a reboot: the sysctl is applied live
+talosctl -n <ip> apply-config --file clusterconfig/Homelab_staging-<node>.yaml --mode=no-reboot --dry-run
+talosctl -n <ip> apply-config --file clusterconfig/Homelab_staging-<node>.yaml --mode=no-reboot
+# 3. then the image, which reboots
+kubectl drain <node> --ignore-daemonsets --delete-emptydir-data
+talosctl -n <ip> upgrade --image factory.talos.dev/installer/<id>:v1.13.4 --wait
+kubectl uncordon <node>
+```
+
+Print only the `+`/`-` lines of the dry-run, as above: its context lines carry secrets.
+
+Before the next node:
+
+```bash
+talosctl -n <ip> get extensions | grep -E 'gvisor|drbd'      # both present
+talosctl -n <ip> read /proc/modules | grep drbd              # module loaded
+talosctl -n <ip> read /proc/sys/user/max_user_namespaces     # 11255
+kubectl get node <node> -o jsonpath='{.status.runtimeHandlers[*].name}'   # includes runsc
+```
+
+Then check etcd membership, that every DRBD resource is `UpToDate` (and the `DrbdConnectionStuck`
+alert is silent), and that every CNPG cluster is healthy.
+
+Smoke test, once the RuntimeClass has reconciled (`infra-gvisor`):
+
+```bash
+kubectl run gvisor-smoke --rm -it --restart=Never --image=busybox \
+  --overrides='{"spec":{"runtimeClassName":"gvisor"}}' -- dmesg | head -3
+# gVisor's dmesg starts with "Starting gVisor..."
+```
 
 ## Traps
 
