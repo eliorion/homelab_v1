@@ -533,3 +533,4 @@ sections are the parts worth reading.
 | 13 | [AzuraCast load test](documentations/13-azuracast-load-test.md) | What a listener actually costs, and the two measurement traps avoided |
 | 18 | [Observability: logs, traces, CI](documentations/18-observability-lgtm.md) | Loki, Tempo and Alloy beside kube-prometheus-stack, Dagger CI in Grafana, and the gap analysis against a production-grade setup |
 | 19 | [The dev platform](documentations/19-dev-platform.md) | One long-lived vcluster shaped like staging, where each PR installs main, upgrades what it changed, and checks |
+| 21 | [Credential brokering for AI agents](documentations/21-agent-credential-broker.md) | Design study: sandboxed agents holding only their own repo token, MCP gateway vs injecting proxy vs scoped identity, and a phased recommendation |
