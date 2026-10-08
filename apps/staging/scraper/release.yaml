@@ -88,6 +88,14 @@ spec:
           bucketKey: SCRAPER_ADVISOR_SINK_S3_BUCKET
           accessKeyKey: SCRAPER_ADVISOR_SINK_S3_ACCESS_KEY
           secretKeyKey: SCRAPER_ADVISOR_SINK_S3_SECRET_KEY
+        # fbref-vision's player photos (bucket fbref-vision-tmp): streamed here, read then deleted by
+        # fbref-vision. Same Secret as fbref-vision's own objectStore, Reflector-copied to both.
+        - tenant: fbref-vision
+          secretName: s3-fbref-vision-tmp
+          endpointKey: FBREF_VISION_TMP_S3_ENDPOINT
+          bucketKey: FBREF_VISION_TMP_S3_BUCKET
+          accessKeyKey: FBREF_VISION_TMP_S3_ACCESS_KEY
+          secretKeyKey: FBREF_VISION_TMP_S3_SECRET_KEY
     poolctl:
       # Chart default is false: the controller runs the BACKEND image, so enabling
       # it before images.backend.tag names an image carrying src/poolctl.py

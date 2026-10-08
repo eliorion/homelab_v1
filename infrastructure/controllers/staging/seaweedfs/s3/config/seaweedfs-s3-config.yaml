@@ -72,6 +72,20 @@ stringData:
             "Write:advisor-corpus",
             "List:advisor-corpus"
           ]
+        },
+        {
+          "name": "fbref-vision-tmp",
+          "credentials": [
+            {
+              "accessKey": "${FBREF_VISION_TMP_S3_ACCESS_KEY}",
+              "secretKey": "${FBREF_VISION_TMP_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:fbref-vision-tmp",
+            "Write:fbref-vision-tmp",
+            "List:fbref-vision-tmp"
+          ]
         }
       ]
     }
