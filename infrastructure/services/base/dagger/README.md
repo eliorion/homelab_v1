@@ -93,7 +93,8 @@ PR code as root in a privileged pod, so what it can reach is the blast radius of
 Denied: private ranges outside the cluster (LAN, tailnet, link-local), the kubelet, Talos and
 etcd ports on the nodes, and every namespace except `kube-system` (DNS), `registry` (Harbor),
 `nexus` (PyPI) and `dev-platform` (the e2e lane's vcluster API); ingress from the world and from
-everything but `monitoring` (the metrics scrape). The open internet stays reachable: base images,
+everything but `monitoring` (the metrics scrape). The LB-IPAM pool is excepted from the private
+ranges and every `NotIn` carries an `Exists`, for the reasons the runner README gives. The open internet stays reachable: base images,
 PyPI, npm, crates.io and GitHub releases are what a build is. Clients never connect to the pod —
 `kube-pod://` is an exec through the API server.
 

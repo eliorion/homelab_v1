@@ -187,12 +187,20 @@ not denied changes, and a deny wins over every allow. Denied:
 - private ranges outside the cluster — `10/8`, `172.16/12`, `192.168/16`, the tailnet's
   `100.64/10`, link-local. CIDR rules never select pods, nodes or a Service's translated backend
   (Cilium translates the Harbor and Nexus LoadBalancer IPs at the socket), so this takes out the
-  router, the NAS and every tailnet admin surface and nothing a job uses;
+  router, the NAS and every tailnet admin surface and nothing a job uses. The LB-IPAM pool
+  (`192.168.1.110-130`, `../../../controllers/base/cilium/config/pool.yaml`) is excepted all the
+  same: those VIPs are the cluster's own LAN-published services, and the except keeps Harbor and
+  Nexus reachable on a path socket-LB does not translate (a nested container's netns, a Gateway
+  VIP). Move the pool, move the except;
 - node host ports: kubelet `10250`, Talos `50000`/`50001`, etcd `2379`/`2380`. Not the whole
   `host`/`remote-node` entities: the API server runs on them, and `kube-pod://` reaches the engine
   through it;
 - every namespace but the runners' own, `kube-system` (DNS), `monitoring` (the OTLP receiver),
-  `registry` (Harbor) and `nexus`;
+  `registry` (Harbor) and `nexus`. Each `NotIn` sits beside an `Exists` on the same key: a
+  `NotIn` alone also matches identities with no namespace label — `world`, `host`,
+  `kube-apiserver` — and only Cilium 1.19's `clustermesh.policyDefaultLocalCluster: true` (an
+  implicit local-cluster term those identities lack) keeps it from cutting every job off GitHub
+  and the API server. `Exists` makes that independent of the default;
 - ingress from the world and from every other namespace.
 
 A job that newly needs an in-cluster service is a one-word change to the `NotIn` list. Find

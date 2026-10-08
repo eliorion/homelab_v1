@@ -14,11 +14,13 @@ spec:
     egress: false
   egressDeny:
     # Outside-the-cluster private ranges only: CIDR rules never select pods, nodes or a
-    # Service's translated backend, so cluster traffic is untouched.
+    # Service's translated backend, so cluster traffic is untouched. The except is the
+    # LB-IPAM pool (cilium/config/pool.yaml): Harbor and Nexus VIPs, LAN-published anyway.
     - toCIDRSet:
         - cidr: 10.0.0.0/8
         - cidr: 172.16.0.0/12
         - cidr: 192.168.0.0/16
+          except: [192.168.1.110/31, 192.168.1.112/28, 192.168.1.128/31, 192.168.1.130/32]
         - cidr: 100.64.0.0/10
         - cidr: 169.254.0.0/16
     # kubelet, Talos apid/trustd, etcd. NOT the whole node entities: the API server is on
@@ -36,12 +38,15 @@ spec:
               protocol: TCP
             - port: "2380"
               protocol: TCP
-    # DNS, the OTLP collector, Harbor and Nexus are all a job may reach in-cluster.
+    # DNS, the OTLP collector, Harbor and Nexus are all a job may reach in-cluster. Exists
+    # keeps NotIn off world, host and the API server, which carry no namespace label.
     - toEndpoints:
         - matchExpressions:
             - key: k8s:io.kubernetes.pod.namespace
               operator: NotIn
               values: [arc-runners, kube-system, monitoring, registry, nexus]
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: Exists
   ingressDeny:
     - fromEntities: [world]
     - fromEndpoints:
@@ -49,6 +54,8 @@ spec:
             - key: k8s:io.kubernetes.pod.namespace
               operator: NotIn
               values: [arc-runners]
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: Exists
 ---
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -65,6 +72,7 @@ spec:
         - cidr: 10.0.0.0/8
         - cidr: 172.16.0.0/12
         - cidr: 192.168.0.0/16
+          except: [192.168.1.110/31, 192.168.1.112/28, 192.168.1.128/31, 192.168.1.130/32]
         - cidr: 100.64.0.0/10
         - cidr: 169.254.0.0/16
     - toEntities: [host, remote-node]
@@ -85,6 +93,8 @@ spec:
             - key: k8s:io.kubernetes.pod.namespace
               operator: NotIn
               values: [arc-dagger, kube-system, monitoring, registry, nexus]
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: Exists
   ingressDeny:
     - fromEntities: [world]
     - fromEndpoints:
@@ -92,3 +102,5 @@ spec:
             - key: k8s:io.kubernetes.pod.namespace
               operator: NotIn
               values: [arc-dagger]
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: Exists
