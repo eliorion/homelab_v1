@@ -1,0 +1,62 @@
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+metadata:
+  name: eliorion-images-provenance
+spec:
+  # Separate from the signature policy on purpose: only releases cut after asp's build-push.yaml
+  # started attesting SLSA provenance carry it, so this one stays Audit longer. See README.
+  validationActions: ["Audit"]
+  failurePolicy: Ignore
+  webhookConfiguration:
+    timeoutSeconds: 15
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [asp, fbref, scraper, advisor, lab]
+  matchImageReferences:
+    - glob: "ghcr.io/eliorion/*"
+  validationConfigurations:
+    mutateDigest: false
+    verifyDigest: false
+    required: false
+  credentials:
+    secrets: [ghcr-pull-secret]
+  attestors:
+    - name: release
+      cosign:
+        keyless:
+          identities:
+            - issuer: https://token.actions.githubusercontent.com
+              subjectRegExp: ^https://github\.com/(?i:eliorion)/asp/\.github/workflows/build-push\.yaml@refs/tags/.+$
+        ctlog:
+          url: https://rekor.sigstore.dev
+  attestations:
+    - name: slsa
+      intoto:
+        type: https://slsa.dev/provenance/v1
+  variables:
+    - name: released
+      expression: >-
+        (images.containers + images.?initContainers.orValue([]))
+        .filter(image, image.startsWith('ghcr.io/eliorion/'))
+  validations:
+    - expression: >-
+        variables.released.map(image,
+        verifyAttestationSignatures(image, attestations.slsa, [attestors.release])).all(e, e > 0)
+      message: an ghcr.io/eliorion image carries no SLSA provenance from asp's build-push.yaml
+    # The provenance must name this repository's release workflow, not merely be signed by it.
+    - expression: >-
+        variables.released.all(image,
+        extractPayload(image, attestations.slsa).predicate.buildDefinition.externalParameters.workflow.path
+        == '.github/workflows/build-push.yaml')
+      message: SLSA provenance does not name .github/workflows/build-push.yaml as the build

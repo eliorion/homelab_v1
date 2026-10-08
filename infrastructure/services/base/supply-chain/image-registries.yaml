@@ -1,0 +1,38 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: app-image-registries
+spec:
+  validationActions: ["Audit"]
+  failurePolicy: Ignore
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [asp, fbref, scraper, advisor, lab]
+  variables:
+    - name: images
+      expression: >-
+        (object.spec.containers + object.spec.?initContainers.orValue([])
+        + object.spec.?ephemeralContainers.orValue([])).map(c, c.image)
+    # Our releases, Harbor, and the third-party images the charts and CNPG run, by name.
+    - name: allowed
+      expression: >-
+        ['ghcr.io/eliorion/', 'registry.eliorion.fr/', 'ghcr.io/cloudnative-pg/',
+        'ghcr.io/flaresolverr/flaresolverr:', 'postgres:', 'docker.io/library/postgres:',
+        'curlimages/curl:', 'docker.io/curlimages/curl:']
+  validations:
+    - expression: >-
+        variables.images.all(image, variables.allowed.exists(prefix, image.startsWith(prefix)))
+      messageExpression: >-
+        'image not from an allowed registry: ' + variables.images.filter(image,
+        !variables.allowed.exists(prefix, image.startsWith(prefix))).join(', ')

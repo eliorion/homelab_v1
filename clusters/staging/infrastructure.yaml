@@ -274,6 +274,27 @@ spec:
       name: kyverno-background-controller
       namespace: kyverno
 ---
+# Supply-chain admission policies for the app namespaces (Kyverno CEL types): image signature,
+# SBOM and SLSA provenance from asp's release workflow, and a registry allowlist. Audit only.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-supply-chain
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  dependsOn:
+    - name: infra-kyverno
+    - name: infra-reflector
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/services/base/supply-chain
+  prune: true
+  wait: true
+---
 # Vendored Keycloak operator manifests (CRDs + RBAC + Deployment) + the `identity` namespace.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
