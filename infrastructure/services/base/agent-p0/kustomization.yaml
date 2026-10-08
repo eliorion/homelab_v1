@@ -6,6 +6,4 @@ resources:
   - quota.yaml
   - api.yaml
   - network.yaml
-  - sandbox-a.yaml
-  - sandbox-b.yaml
   - warmpool.yaml

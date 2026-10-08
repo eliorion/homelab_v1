@@ -19,6 +19,20 @@ this directory and `../../staging/agent-p0/`. Flux prunes the namespace, and wit
 `../../base/openbao/config/eso-namespaces.txt`, from the descheduler excludes and from the
 reflector lists.
 
+## Agents are not in git
+
+This directory is the **frame**: namespace, quota, template, warm pool, policies, and the
+agent-api stand-in. An agent is a `SandboxClaim` against the warm pool. It is created, suspended
+and deleted at runtime:
+- in Phase 0, by `services/agent-platform/phase0/scripts/agent.sh` in the asp repo;
+- later, by agent-api.
+
+A claim adopts a warm box at once, and the pool refills behind it. Claims are not in this
+Kustomization's inventory, so adding or removing an agent needs no commit, and Flux never
+prunes one. The namespace's lifetime does bound them: deleting the namespace deletes every agent.
+
+The quota (8 pods) bounds how many can run: the 2 warm boxes, `p0-api`, and up to 5 claimed agents.
+
 ## How it is wired
 
 | File | What it does |
@@ -26,8 +40,7 @@ reflector lists.
 | `namespace.yaml` | `agent-p0`, PodSecurity `restricted`. |
 | `quota.yaml` | 24Gi memory, 4 CPU, 8 pods, 20Gi storage. Sized for test 1's 20Gi resize request, so that request is judged by a *node*, not refused here. |
 | `api.yaml` | `p0-api`, the agent-api stand-in. It runs the box image on runc and does nothing (`sleep infinity`). It holds the token in its env, the way the broker will. |
-| `sandbox-a.yaml`, `sandbox-b.yaml` | `Sandbox p0-a` and `p0-b` (`agents.x-k8s.io/v1beta1`). Each is the box image on `runtimeClassName: gvisor`, 1Gi memory with `resizePolicy NotRequired`, and a 2Gi `ssd` workspace. Each pod is named after its Sandbox. |
-| `warmpool.yaml` | `SandboxTemplate p0-box` plus `SandboxWarmPool p0-box` (1 replica), for test 5's warm-claim timing. |
+| `warmpool.yaml` | `SandboxTemplate p0-box` plus `SandboxWarmPool p0-box` with 2 replicas. Every box is the box image on `runtimeClassName: gvisor`, with 1Gi memory (`resizePolicy NotRequired`) and a 2Gi `ssd` workspace. |
 | `network.yaml` | Three CiliumNetworkPolicies, below. |
 | `kustomization.yaml` | The files above, `namespace: agent-p0`. |
 
@@ -81,6 +94,7 @@ confirm the token is absent.
 - **The boxes need the gVisor Talos upgrade on the node they land on.** On a node without it,
   the pod fails with `no runtime for "runsc" is configured`. Run the runbook in
   `bootstraping/README.md` ("Adding gVisor") first.
-- **Changing a Sandbox's `operatingMode` here is test 5.** Setting `Suspended` deletes the pod
-  and keeps the PVC.
-- **Removing the Kustomization deletes the PVCs.** They are owned by their Sandbox.
+- **Suspending an agent is a patch on its Sandbox, not a commit.** `operatingMode: Suspended`
+  deletes the pod and keeps the PVC (`agent.sh suspend`). The claim controller never resets it.
+- **Removing the Kustomization deletes every agent.** Pruning the namespace takes the claims,
+  their Sandboxes and the Sandboxes' PVCs with it.

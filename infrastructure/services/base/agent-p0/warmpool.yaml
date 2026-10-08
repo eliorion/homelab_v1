@@ -1,4 +1,8 @@
-# Test 5's warm path. networkPolicyManagement MUST be Unmanaged: the default (Managed, no
+# The frame agents are claimed from. Agents themselves are NOT here: they are SandboxClaims
+# created and deleted at runtime (asp phase0/scripts/agent.sh, later agent-api), outside Flux's
+# inventory, so no git change is needed per agent and Flux never prunes one.
+# Two warm boxes: a claim adopts one instantly, and test 4 needs two tenants.
+# networkPolicyManagement MUST be Unmanaged: the default (Managed, no
 # rules) makes the controller create a NetworkPolicy allowing ALL public egress, which Cilium
 # unions with the CNPs here, silently widening the Anthropic-only egress.
 apiVersion: extensions.agents.x-k8s.io/v1beta1
@@ -70,6 +74,6 @@ kind: SandboxWarmPool
 metadata:
   name: p0-box
 spec:
-  replicas: 1
+  replicas: 2
   sandboxTemplateRef:
     name: p0-box
