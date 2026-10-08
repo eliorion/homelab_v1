@@ -1,0 +1,15 @@
+# Upstream publishes no Helm repository: the chart only exists in-tree at ./helm.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: agent-sandbox
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://github.com/kubernetes-sigs/agent-sandbox
+  ref:
+    # Must match images.tag in release.yaml: the CRDs come from this tree, the controller from that tag.
+    tag: v1.0.5
+  ignore: |
+    /*
+    !/helm/

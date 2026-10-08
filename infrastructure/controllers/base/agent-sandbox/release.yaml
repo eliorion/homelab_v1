@@ -1,0 +1,60 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: agent-sandbox
+  namespace: flux-system
+spec:
+  targetNamespace: agent-sandbox-system
+  releaseName: agent-sandbox
+  interval: 30m
+  chart:
+    spec:
+      chart: ./helm
+      sourceRef:
+        kind: GitRepository
+        name: agent-sandbox
+        namespace: flux-system
+      interval: 12h
+  install:
+    # namespace.yaml carries the restricted PSA labels.
+    createNamespace: false
+    crds: Create
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+    # The chart's CRDs live in crds/, which Helm itself never upgrades.
+    crds: CreateReplace
+  values:
+    namespace:
+      create: false
+      name: agent-sandbox-system
+    image:
+      # Same tag as repository.yaml's ref.
+      tag: v1.0.5
+    controller:
+      # SandboxTemplate, SandboxWarmPool, SandboxClaim.
+      extensions: true
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+    # NEVER enable: the ServiceMonitor CRD comes from the monitoring tier (kyverno/README.md).
+    metrics:
+      serviceMonitor:
+        enabled: false
