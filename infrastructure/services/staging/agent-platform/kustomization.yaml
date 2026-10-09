@@ -1,0 +1,6 @@
+# NOT listed in ../kustomization.yaml: reconciled by its own Flux Kustomization, infra-agent-platform,
+# which waits for the agent-sandbox CRDs and the gvisor RuntimeClass the chart's objects need.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base/agent-platform
