@@ -38,9 +38,9 @@ Two things this component depends on but does **not** own, both at the Talos lay
 
 - `cluster.proxy.disabled: true` and `machine.features.kubePrism.port: 7445` — KubePrism is
   the host-network local apiserver load balancer the agents talk to once kube-proxy is gone.
-- `cluster.extraManifests` fetching the gateway-api **v1.4.1** CRDs (`standard-install.yaml`
-  plus the experimental `tlsroutes.yaml`). Cilium 1.19 requires v1.4.1; the older v1.2 set
-  is wrong.
+- `cluster.extraManifests` fetching the gateway-api **v1.6.1** CRDs: the six standard
+  per-CRD files Cilium lists (GatewayClass, Gateway, HTTPRoute, ReferenceGrant, GRPCRoute,
+  BackendTLSPolicy) plus the **experimental** `tlsroutes.yaml`. Cilium 1.20 requires v1.6.1.
 
 ### Overlays
 
@@ -170,7 +170,19 @@ limit, so on node-1 it was among the pods killed whenever other workloads ran th
   true` makes the chart create a `cilium` GatewayClass, which needs the CRDs Talos ships via
   `extraManifests`. Apply the Talos config first; if the manifests are already pushed,
   `flux suspend kustomization infra-cilium infra-cilium-config` until the CRDs are up.
-- **The version must be gateway-api v1.4.1** — the version Cilium 1.19 requires.
+- **The version must be gateway-api v1.6.1, and TLSRoute must be the experimental CRD** —
+  what Cilium 1.20 requires. v1.6 promoted TLSRoute to `v1`; the *standard* v1.6 TLSRoute
+  serves only `v1`, so any TLSRoute stored as `v1alpha2` would become unreadable. The
+  experimental one still serves `v1alpha2`/`v1alpha3` beside `v1`. (There are no TLSRoute
+  objects today; the requirement still holds the day one is added.)
+- **Do not switch the extraManifests to v1.6's `standard-install.yaml`.** That bundle now
+  carries TLSRoute (standard) and the `safe-upgrades.gateway.networking.k8s.io`
+  ValidatingAdmissionPolicy, which rejects installing an experimental CRD over a standard
+  one — the experimental TLSRoute after it would fail to apply. Hence the per-CRD files.
+- **A changed CRD list reaches the cluster only through `talosctl upgrade-k8s`** (to the
+  current version is fine): `apply-config` alone does not re-apply `extraManifests`.
+  Dry-run it first — it also prunes manifests Talos no longer owns and rolls CoreDNS,
+  metrics-server and the cert approver to whatever their URLs now serve.
 - **Apply order is load-bearing** at the Flux layer too: `infra-cilium-config` `dependsOn`
   `infra-cilium` because the CRs need CRDs the chart installs. Do not merge the two
   Kustomizations.

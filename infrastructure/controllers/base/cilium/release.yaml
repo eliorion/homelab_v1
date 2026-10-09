@@ -47,7 +47,7 @@ spec:
     # A migration-era safe default, not a topology requirement. See README.md.
     routingMode: tunnel
     tunnelProtocol: vxlan
-    # Needs the gateway-api v1.4.1 CRDs from extraManifests in bootstraping/patches/common.yaml.
+    # Needs the gateway-api v1.6.1 CRDs (experimental TLSRoute) from extraManifests in bootstraping/patches/common.yaml.
     gatewayAPI:
       enabled: true
     # Bare-metal LoadBalancer; the IP pool and L2 policy are CRs in ./config.

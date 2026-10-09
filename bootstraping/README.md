@@ -170,7 +170,7 @@ Hostnames are hyphenated because Kubernetes rejects underscores in node names.
 | `discovery.registries.kubernetes.disabled: true`, `service: {}` | Node discovery goes through the Talos discovery service, not through the Kubernetes registry. |
 | `extraManifests` → `kubelet-serving-cert-approver` | Approves the kubelet serving CSRs produced by `rotate-server-certificates`. Nothing in core Kubernetes approves them. |
 | `extraManifests` → `metrics-server` | The cluster's only metrics-server. It is a Talos manifest, not a Flux HelmRelease — `kubectl top` depends on this layer. |
-| `extraManifests` → gateway-api `v1.4.1` `standard-install.yaml` + experimental `tlsroutes.yaml` | The Gateway API CRDs Cilium 1.19 needs. Plain CRDs with no secret material in them, so fetching them by URL at boot is safe. TLSRoute is included only so the Cilium operator stops logging a missing CRD. |
+| `extraManifests` → gateway-api `v1.6.1`: six per-CRD standard files + the experimental `tlsroutes.yaml` | The Gateway API CRDs Cilium 1.20 needs. Plain CRDs with no secret material in them, so fetching them by URL at boot is safe. A changed list reaches a running cluster only through `talosctl upgrade-k8s` (same version is fine), which also prunes manifests Talos no longer owns. |
 
 ### The control-plane metrics patch
 
@@ -393,8 +393,8 @@ kubectl run gvisor-smoke --rm -it --restart=Never --image=busybox \
 - **Do not remove the `kubelet-serving-cert-approver` manifest** while
   `rotate-server-certificates` is on, and do not remove `rotate-server-certificates` while
   metrics-server is expected to scrape over verified TLS. The two are a pair.
-- **The gateway-api CRDs must stay at `v1.4.1`.** That is what Cilium 1.19 requires; the
-  older v1.2 set is wrong. They also have to exist *before* the Cilium chart installs, which
+- **The gateway-api CRDs must stay at `v1.6.1`, with the experimental TLSRoute.** That is what Cilium 1.20 requires; the
+  standard `standard-install.yaml` bundle cannot be used (see the cilium README). They also have to exist *before* the Cilium chart installs, which
   is why the Talos config is applied before Flux reconciles.
 - **Do not enable Cilium's `bpf.masquerade`** while `hostDNS.forwardKubeDNSToHost` is `true`
   here. That combination breaks CoreDNS.
