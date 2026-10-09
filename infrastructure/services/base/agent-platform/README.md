@@ -49,10 +49,12 @@ The HelmRelease stays suspended until all of these hold:
    from it.
 2. `agent-platform-control` is released, so `images.control.tag` in the chart is set by asp's
    `bump-chart`. With an empty tag, the Deployments render an unpullable `agent-platform-control:`.
-3. The Keycloak `staging-apps` realm has an `agent-platform` client whose audience mapper sits
-   on a **default** scope, plus the three groups `agent-platform-{viewers,operators,admins}`.
-   This arrives with the web UI (asp Phase 1b). Until then a token carries no
-   `aud: agent-platform`, and every call answers 401.
+3. Someone is in an `agent-platform-*` group. The `agent-platform` client (device flow,
+   `aud: agent-platform`, a flat `groups` claim) and the three groups are declared in
+   `../keycloak/realm/realm-apps.yaml`. Membership is set in the admin console, never in git.
+   An operator gets a token from a shell with the device grant:
+   `POST https://staging-keycloak.eliorion.fr/realms/staging-apps/protocol/openid-connect/auth/device`
+   with `client_id=agent-platform`, then approves in a browser.
 
 To turn it on, delete the `suspend: true` line in a PR.
 

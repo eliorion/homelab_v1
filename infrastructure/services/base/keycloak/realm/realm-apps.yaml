@@ -198,6 +198,59 @@ clients:
           "access.token.claim": "true"
           "userinfo.token.claim": "true"
 
+  # The agent platform's API (asp docs/22-agent-platform.md). agent-api is a RESOURCE SERVER: it
+  # verifies tokens this client gets and never issues one. Public, because the callers are
+  # a terminal now and a browser SPA later (asp Phase 1b), neither of which can keep a secret.
+  # Device flow only for now: an operator runs the device grant from a shell, approves in a
+  # browser, and gets a 5-minute access token. The SPA adds standardFlow + PKCE + its
+  # redirect URI when it exists; nothing redirects anywhere until then.
+  - clientId: agent-platform
+    name: Agent platform
+    description: agent-api (asp services/agent-platform) — roles from the agent-platform-* groups
+    protocol: openid-connect
+    enabled: true
+    publicClient: true
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    attributes:
+      "oauth2.device.authorization.grant.enabled": "true"
+    redirectUris: []
+    webOrigins: []
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    fullScopeAllowed: false
+    consentRequired: false
+    protocolMappers:
+      # agent-api requires aud=agent-platform (AUTH_AUDIENCE). On the CLIENT, not on an
+      # optional scope: a token requested with no scope must still carry it.
+      - name: agent-platform-audience
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        consentRequired: false
+        config:
+          "included.client.audience": agent-platform
+          "id.token.claim": "false"
+          "access.token.claim": "true"
+      # Flat names: agent-api matches the group name (it also strips a leading "/").
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          "claim.name": groups
+          "full.path": "false"
+          "id.token.claim": "false"
+          "access.token.claim": "true"
+          "userinfo.token.claim": "false"
+
 # THE ACCESS CATALOGUE. One group per application; membership is the grant.
 # Kept by IMPORT_MANAGED_GROUP=no-delete, so a group added by hand in the admin
 # console survives the next import — but anything not listed here is undocumented
@@ -215,6 +268,12 @@ groups:
   # policy is changed from an email list to a group rule, this group is
   # documentation and grants nothing.
   - name: nao-users
+  # ENFORCED by agent-api (asp services/agent-platform/control): viewers read agents,
+  # operators create/suspend/resume/delete them, admins add what later phases bring
+  # (ModelProvider). Highest group wins. No group = 403 on every route but /healthz.
+  - name: agent-platform-viewers
+  - name: agent-platform-operators
+  - name: agent-platform-admins
 
 # NO `users:` BLOCK, DELIBERATELY — same rule as realm-mcp.yaml. Accounts are
 # created in the admin console over the tailnet, and the import Job's
