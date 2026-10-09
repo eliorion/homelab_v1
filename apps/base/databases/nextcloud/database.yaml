@@ -5,8 +5,6 @@ metadata:
   namespace: nextcloud
 spec:
   instances: 2
-  # TEMPORARY for the Talos 1.14 node-3 drain; revert right after.
-  enablePDB: false
   # Field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg is the
   # operator image and must never be used here.
   imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
