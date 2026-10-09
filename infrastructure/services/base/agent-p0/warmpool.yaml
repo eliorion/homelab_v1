@@ -1,0 +1,79 @@
+# The frame agents are claimed from. Agents themselves are NOT here: they are SandboxClaims
+# created and deleted at runtime (asp phase0/scripts/agent.sh, later agent-api), outside Flux's
+# inventory, so no git change is needed per agent and Flux never prunes one.
+# Two warm boxes: a claim adopts one instantly, and test 4 needs two tenants.
+# networkPolicyManagement MUST be Unmanaged: the default (Managed, no
+# rules) makes the controller create a NetworkPolicy allowing ALL public egress, which Cilium
+# unions with the CNPs here, silently widening the Anthropic-only egress.
+apiVersion: extensions.agents.x-k8s.io/v1beta1
+kind: SandboxTemplate
+metadata:
+  name: p0-box
+spec:
+  networkPolicyManagement: Unmanaged
+  podTemplate:
+    metadata:
+      labels:
+        app: p0-box
+    spec:
+      runtimeClassName: gvisor
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: box
+          image: ghcr.io/eliorion/agent-platform-box:agent-platform-box-v0.1.0
+          ports:
+            - name: rest
+              containerPort: 8080
+            - name: grpc
+              containerPort: 9090
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+            limits:
+              memory: 1Gi
+          # Phase 0 test 1: memory changes in place, no restart.
+          resizePolicy:
+            - resourceName: memory
+              restartPolicy: NotRequired
+          readinessProbe:
+            httpGet:
+              path: /v1/health
+              port: rest
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: ssd
+        resources:
+          requests:
+            storage: 2Gi
+---
+apiVersion: extensions.agents.x-k8s.io/v1beta1
+kind: SandboxWarmPool
+metadata:
+  name: p0-box
+spec:
+  replicas: 2
+  sandboxTemplateRef:
+    name: p0-box

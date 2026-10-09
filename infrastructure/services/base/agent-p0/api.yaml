@@ -1,0 +1,52 @@
+# The agent-api stand-in. Same image as the boxes (it needs node for the ACP probe), on runc,
+# holding the subscription token the way the broker will: in its own env, from the Secret.
+# The token crosses into a box only as StartRequest.config.env_vars (phase0/scripts/probe-in-cluster.sh).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p0-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p0-api
+  template:
+    metadata:
+      labels:
+        app: p0-api
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: ghcr.io/eliorion/agent-platform-box:agent-platform-box-v0.1.0
+          command: ["/usr/bin/tini", "--", "sleep", "infinity"]
+          env:
+            - name: CLAUDE_CODE_OAUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: claude-subscription
+                  key: CLAUDE_CODE_OAUTH_TOKEN
+                  # The pod starts before the token is written to OpenBao.
+                  optional: true
+            - name: CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+              value: "1"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
