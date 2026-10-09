@@ -21,6 +21,7 @@ machine:
     extraArgs:
       rotate-server-certificates: true
     extraConfig:
+      maxPods: 150
       # A partial evictionHard zeroes the signals it omits: keep all five.
       evictionHard:
         memory.available: 1Gi

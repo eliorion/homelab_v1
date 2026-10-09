@@ -152,6 +152,7 @@ Hostnames are hyphenated because Kubernetes rejects underscores in node names.
 |---|---|
 | `kubelet.defaultRuntimeSeccompProfileEnabled: true` | Pods with no seccomp profile get `RuntimeDefault` instead of unconfined. |
 | `kubelet.disableManifestsDirectory: true` | Turns off the static-pod directory, so the only way to run something on a node is through the API. |
+| `kubelet.extraConfig.maxPods: 150` | Kubelet default is 110. Nodes were pod-bound at ~20% real CPU (`Too many pods` failing dev-platform e2e runs, 2026-10-09). Each node's podCIDR is a `/24` (254 IPs), so 150 fits; going above ~250 would not. |
 | `kubelet.extraArgs.rotate-server-certificates: true` | The kubelet requests its serving certificate from the cluster CA by CSR. Paired with the `kubelet-serving-cert-approver` manifest below. |
 | `sysctls.user.max_user_namespaces: "11255"` | gVisor (`runsc`) creates unprivileged user namespaces; Talos defaults this to 0 (KSPP). The trade is argued in `../infrastructure/controllers/base/gvisor/README.md`. |
 | `install.wipe: false` | Applying a config does not wipe the install disk. |
