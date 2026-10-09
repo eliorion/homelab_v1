@@ -1,0 +1,20 @@
+# Harbor proxy-cache mirrors. See infrastructure/services/base/harbor/README.md.
+# registry-tls must verify against the system trust store, or containerd rejects every pull on every node.
+# Standalone documents, NOT machine.registries.mirrors: there overridePath also strips /v2 from the fallback.
+# Never add skipFallback (Harbor runs inside this cluster: cold-start deadlock) and never a '*' mirror.
+apiVersion: v1alpha1
+kind: RegistryMirrorConfig
+name: docker.io
+endpoints:
+  - url: https://registry.eliorion.fr/v2/dockerhub-proxy
+    overridePath: true
+  - url: https://registry-1.docker.io
+---
+apiVersion: v1alpha1
+kind: RegistryMirrorConfig
+name: ghcr.io
+endpoints:
+  # ghcr-public, NOT ghcr-proxy: ghcr-proxy is private and the nodes hold no Harbor credentials.
+  - url: https://registry.eliorion.fr/v2/ghcr-public
+    overridePath: true
+  - url: https://ghcr.io

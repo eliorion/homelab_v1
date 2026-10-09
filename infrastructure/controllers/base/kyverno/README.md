@@ -62,7 +62,7 @@ own at runtime, and with zero policies they are:
 
 Images: `reg.kyverno.io/kyverno/*:v1.19.1` for the controllers and the migration
 hook, `ghcr.io/kyverno/readiness-checker` for the pre-delete hooks. `reg.kyverno.io`
-has no Harbor mirror in `bootstraping/talconfig.yaml`, so those pulls go direct.
+has no Harbor mirror in `bootstraping/patches/registry-mirrors.yaml`, so those pulls go direct.
 
 ### Overlays
 

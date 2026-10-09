@@ -163,7 +163,7 @@ error.
   `http://` asset URLs behind the tunnel and the browser blocks them as mixed
   content — the page loads unstyled and the client apps fail to connect.
 - **`TRUSTED_PROXIES` is the pod CIDR `10.244.0.0/16`** (from
-  `bootstraping/talconfig.yaml`). Wrong value and every login, rate limit, and
+  `bootstraping/patches/common.yaml`). Wrong value and every login, rate limit, and
   audit entry records the cloudflared pod IP instead of the real client.
 - **The OIDC backchannel goes out through the internet and back.** Keycloak's
   `networkPolicy.https` admits only the `cloudflare` and `identity` namespaces,

@@ -1,0 +1,50 @@
+# Intel box. Same r-linstor label as node-1 and node-2, so a single
+# LinstorSatelliteConfiguration covers all three nodes.
+apiVersion: v1alpha1
+kind: HostnameConfig
+auto: "off"
+hostname: staging-controlplane-3
+---
+apiVersion: v1alpha1
+kind: ResolverConfig
+nameservers:
+  - address: 192.168.1.1
+---
+apiVersion: v1alpha1
+kind: LinkAliasConfig
+name: ethSel0
+selector:
+  match: link.type == 1
+---
+apiVersion: v1alpha1
+kind: Layer2VIPConfig
+name: 192.168.1.100
+link: ethSel0
+---
+apiVersion: v1alpha1
+kind: LinkConfig
+name: ethSel0
+addresses:
+  - address: 192.168.1.103/24
+routes:
+  - gateway: 192.168.1.1
+  - destination: 100.64.0.0/10
+    gateway: 192.168.1.200
+---
+apiVersion: v1alpha1
+kind: RawVolumeConfig
+name: linstor
+provisioning:
+  diskSelector:
+    match: system_disk
+  minSize: 745GB
+  maxSize: 745GB
+---
+# 250 + 745 + ~2.3GB of system partitions must fit the 1000GB disk.
+apiVersion: v1alpha1
+kind: VolumeConfig
+name: EPHEMERAL
+provisioning:
+  diskSelector:
+    match: system_disk
+  maxSize: 250GB

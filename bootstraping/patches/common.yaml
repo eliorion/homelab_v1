@@ -1,0 +1,104 @@
+# Shared by all three nodes; strategic merge into the v1alpha1 document. See README.md.
+machine:
+  certSANs:
+    - 192.168.1.100
+  # The factory schematic ships the DRBD modules; nothing loads them without this
+  # block (piraeus-operator#692). usermode_helper=disabled: Talos has no systemd.
+  kernel:
+    modules:
+      - name: drbd
+        parameters:
+          - usermode_helper=disabled
+      - name: drbd_transport_tcp
+      - name: dm-thin-pool
+  # gVisor (runsc) needs unprivileged user namespaces; Talos sets 0 (KSPP).
+  # Removing this breaks every runtimeClassName: gvisor pod at sandbox start.
+  sysctls:
+    user.max_user_namespaces: "11255"
+  kubelet:
+    defaultRuntimeSeccompProfileEnabled: true
+    disableManifestsDirectory: true
+    extraArgs:
+      rotate-server-certificates: true
+    extraConfig:
+      # A partial evictionHard zeroes the signals it omits: keep all five.
+      evictionHard:
+        memory.available: 1Gi
+        nodefs.available: 10%
+        nodefs.inodesFree: 5%
+        imagefs.available: 15%
+        imagefs.inodesFree: 5%
+      evictionSoft:
+        memory.available: 2Gi
+      evictionSoftGracePeriod:
+        memory.available: 30s
+      evictionMaxPodGracePeriod: 60
+      kubeReserved:
+        memory: 1Gi
+  install:
+    wipe: false
+    grubUseUKICmdline: true
+  features:
+    diskQuotaSupport: true
+    kubePrism:
+      enabled: true
+      port: 7445
+    hostDNS:
+      enabled: true
+      forwardKubeDNSToHost: true
+    # Removing this block breaks the etcd-backup CronJob.
+    kubernetesTalosAPIAccess:
+      enabled: true
+      allowedRoles:
+        - os:etcd:backup
+      allowedKubernetesNamespaces:
+        - etcd-backup
+  nodeLabels:
+    node.kubernetes.io/exclude-from-external-load-balancers: ""
+cluster:
+  allowSchedulingOnControlPlanes: true
+  network:
+    # Talos installs no CNI; Cilium comes from Flux.
+    cni:
+      name: none
+    podSubnets:
+      - 10.244.0.0/16
+    serviceSubnets:
+      - 10.96.0.0/12
+  # Never give the apiserver a memory limit.
+  apiServer:
+    certSANs:
+      - 192.168.1.100
+    resources:
+      requests:
+        cpu: 200m
+        memory: 2Gi
+  # Cilium replaces kube-proxy -- do not deploy it.
+  proxy:
+    disabled: true
+  discovery:
+    enabled: true
+    registries:
+      kubernetes:
+        disabled: true
+      service: {}
+  extraManifests:
+    - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml
+    - https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+    # Cilium 1.19 requires the gateway-api v1.4.1 standard channel.
+    - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+    - https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.4.1/config/crd/experimental/gateway.networking.k8s.io_tlsroutes.yaml
+  # Control-plane metrics for kube-prometheus-stack. etcd's listener is plaintext
+  # and unauthenticated: see monitoring/controllers/base/kube-prometheus-stack/README.md.
+  controllerManager:
+    extraArgs:
+      bind-address: 0.0.0.0
+  scheduler:
+    extraArgs:
+      bind-address: 0.0.0.0
+  etcd:
+    extraArgs:
+      listen-metrics-urls: http://0.0.0.0:2381
+      # election-timeout must stay >= 5x heartbeat-interval. Takes effect only on reboot.
+      heartbeat-interval: "500"
+      election-timeout: "5000"

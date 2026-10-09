@@ -242,7 +242,7 @@ chart's scrapes reached nothing and `KubeControllerManagerDown`,
 or structurally inert. They are now scraped, which took a node-config change and
 a trade:
 
-| Job | Talos change (`bootstraping/talconfig.yaml`) | Scrape |
+| Job | Talos change (`bootstraping/patches/common.yaml`) | Scrape |
 |---|---|---|
 | kube-controller-manager | `cluster.controllerManager.extraArgs.bind-address: 0.0.0.0` | HTTPS `:10257`, Prometheus SA bearer token, `insecureSkipVerify` (self-signed serving cert); Service selects the static pods by `component` |
 | kube-scheduler | `cluster.scheduler.extraArgs.bind-address: 0.0.0.0` | HTTPS `:10259`, same |

@@ -26,7 +26,7 @@ spec:
   values:
     ipam:
       mode: kubernetes # reuse the per-node podCIDR Talos allocates (10.244.0.0/16)
-    # 7445 must match machine.features.kubePrism.port in bootstraping/talconfig.yaml.
+    # 7445 must match machine.features.kubePrism.port in bootstraping/patches/common.yaml.
     kubeProxyReplacement: true
     k8sServiceHost: localhost
     k8sServicePort: 7445
@@ -47,7 +47,7 @@ spec:
     # A migration-era safe default, not a topology requirement. See README.md.
     routingMode: tunnel
     tunnelProtocol: vxlan
-    # Needs the gateway-api v1.4.1 CRDs from extraManifests in bootstraping/talconfig.yaml.
+    # Needs the gateway-api v1.4.1 CRDs from extraManifests in bootstraping/patches/common.yaml.
     gatewayAPI:
       enabled: true
     # Bare-metal LoadBalancer; the IP pool and L2 policy are CRs in ./config.

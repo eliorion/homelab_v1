@@ -201,7 +201,7 @@ Two halves:
 
 1. `mise trust` + `mise install` — installs the whole declared toolchain
    (`kubectl`, `k9s`, `kubens`, `cloudflared`, `flux2`, `sops`, `age`, `helm`,
-   `shellcheck`, `talosctl`, `talhelper`, `aws`, `gh`) from
+   `shellcheck`, `talosctl`, `aws`, `gh`) from
    [`../mise.toml`](../mise.toml). `mise` itself is not installed here: the
    Dockerfile put it at `/usr/local/bin/mise`, which is the absolute path this
    script calls. Everything else the drills need — `zstd`,

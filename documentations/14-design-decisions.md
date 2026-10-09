@@ -45,7 +45,7 @@ reusing Linux muscle memory. Node extensions (`iscsi-tools`, `util-linux-tools`,
 required by Longhorn) live in a factory schematic that must be passed explicitly on every
 upgrade, which is a trap documented in [section 9](#9-incident-index).
 
-**Reference.** [06-k3s-retirement.md](06-k3s-retirement.md), `bootstraping/talconfig.yaml`
+**Reference.** [06-k3s-retirement.md](06-k3s-retirement.md), `bootstraping/patches/`
 
 ### All three nodes are control planes and all three run workloads
 
@@ -96,20 +96,26 @@ removed or renumbered.
 
 **Reference.** [07-talos-ha-expansion.md](07-talos-ha-expansion.md)
 
-### One talhelper `talconfig.yaml` renders all three machine configs
+### `talosctl gen config` plus patches renders all three machine configs
 
-**Why.** Per node hardware differences are `nodes[]` fields; everything shared lives in one
-block that cannot drift between nodes. The alternative in practice was three near identical
-25 KB files kept in sync by hand.
+**Why.** Per node hardware differences live in one patch per node and everything shared
+lives in `patches/common.yaml`, which cannot drift between nodes. The alternative in
+practice was three near identical 25 KB files kept in sync by hand. Plain `talosctl` is
+maintained with Talos, so the render cannot fall behind the OS.
 
 **Rejected.** Copying `controlplane.yaml` per node and editing four fields, which is how
-Phase 2 of the HA expansion actually started.
+Phase 2 of the HA expansion actually started. talhelper (`talconfig.yaml`), used June to
+October 2026: archived upstream on 2026-08-26 and unable to render Talos 1.14, it was
+replaced on 2026-10-09. topf and talstomize, its suggested successors: both pre-1.0, and
+either would trade one external generator for another.
 
 **Cost.** The rendered output is gitignored, so what is actually on the nodes can only be
-inferred from the input. Rendering requires the offline age key, so nobody without that key
-can produce a node config at all.
+inferred from the input or read with `apply-config --dry-run`. Rendering requires the
+offline age key, so nobody without that key can produce a node config at all. The per-node
+facts talhelper kept in `nodes[]` are now variables in `render.sh`, and the config stays on
+the 1.13 contract until `common.yaml` is rewritten as 1.14 documents.
 
-**Reference.** `bootstraping/talconfig.yaml`, [08-cilium-cni-ingress-migration.md](08-cilium-cni-ingress-migration.md)
+**Reference.** `bootstraping/render.sh`, `bootstraping/patches/`, [../bootstraping/README.md](../bootstraping/README.md)
 
 ### `talsecret.sops.yaml` was extracted once from the live cluster and must never be regenerated
 
@@ -119,9 +125,10 @@ new PKI, so existing node certificates stop validating, existing `talosconfig` a
 depends on the opposite property: rebuilding node configs from the *same* secret keeps
 every existing certificate working.
 
-**Rejected.** A clean `talhelper gensecret`. talhelper was retrofitted onto an already
-running cluster with `gensecret -f` against the live PKI rather than rebuilding the cluster
-to fit the tool.
+**Rejected.** A clean `talhelper gensecret` (or `talosctl gen secrets`). The render was
+retrofitted onto an already running cluster with `gensecret -f` against the live PKI rather
+than rebuilding the cluster to fit the tool; the bundle format is the one `talosctl gen
+config --with-secrets` reads, which is what made dropping talhelper possible.
 
 **Cost.** The cluster PKI is now a single artifact in git that is unrotatable in practice
 and protected by one age key. Losing `clusters/staging/age.agekey` means the cluster cannot

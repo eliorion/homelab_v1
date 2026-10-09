@@ -4,7 +4,7 @@ Cilium is the cluster's CNI. It replaces the Talos default (Flannel + kube-proxy
 eBPF datapath running in kube-proxy replacement mode, and it also supplies the two things
 this bare-metal cluster had no other source for: external IPs for `type: LoadBalancer`
 Services (LB-IPAM + L2/ARP announcement) and L7 ingress (Gateway API). Talos installs no
-CNI at all (`cniConfig.name: none` in `bootstraping/talconfig.yaml`) — the chart in this
+CNI at all (`cni.name: none` in `bootstraping/patches/common.yaml`) — the chart in this
 directory is the datapath. Chart version `1.19.4`, pinned and bumped by Renovate.
 
 Deep detail, the live migration runbook and the 2026-06-12 incident write-up live in
@@ -34,7 +34,7 @@ Two Flux Kustomizations in `clusters/staging/infrastructure.yaml` consume this d
   `CiliumL2AnnouncementPolicy`) exist before the CRs are applied.
 
 Two things this component depends on but does **not** own, both at the Talos layer in
-`bootstraping/talconfig.yaml`:
+`bootstraping/patches/common.yaml`:
 
 - `cluster.proxy.disabled: true` and `machine.features.kubePrism.port: 7445` — KubePrism is
   the host-network local apiserver load balancer the agents talk to once kube-proxy is gone.
@@ -159,7 +159,7 @@ limit, so on node-1 it was among the pods killed whenever other workloads ran th
   service-map churn per node.
 
 - **`k8sServiceHost: localhost` / `k8sServicePort: 7445` must match
-  `machine.features.kubePrism.port` in `bootstraping/talconfig.yaml`.** Without them,
+  `machine.features.kubePrism.port` in `bootstraping/patches/common.yaml`.** Without them,
   removing kube-proxy strands Cilium with no API path: service VIPs never get programmed,
   CoreDNS at `10.96.0.10:53` returns `connection refused`, cluster DNS dies, every Flux
   controller `CrashLoopBackOff`s and source-controller can no longer fetch git — a self-heal

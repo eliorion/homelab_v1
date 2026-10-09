@@ -40,7 +40,7 @@ the `infrastructure-services` Flux Kustomization. `homepage` must stay listed in
 
 **Header** — the `kubernetes` info widget: cluster-wide and per-node CPU and
 memory from `metrics.k8s.io`. metrics-server is installed by Talos
-(`bootstraping/talconfig.yaml`, `extraManifests`), not by Flux.
+(`bootstraping/patches/common.yaml`, `extraManifests`), not by Flux.
 
 **Layout** (`config/settings.yaml`) — the six service groups are columns side by
 side (`style: column`), tiles stacked inside each; bookmarks stay rows.

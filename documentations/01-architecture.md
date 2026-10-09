@@ -12,7 +12,7 @@ For the reasoning behind these choices, see
 
 ```
 bootstraping/                Talos layer, applied with talosctl, not with Flux
-  talconfig.yaml             single source of truth for all three machine configs
+  render.sh + patches/       single source of truth for all three machine configs
   talsecret.sops.yaml        the cluster PKI, encrypted, committed, never regenerated
   clusterconfig/             rendered per node configs (gitignored)
 

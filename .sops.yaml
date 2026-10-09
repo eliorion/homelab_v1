@@ -3,7 +3,7 @@
 # staging/ overlays or the dev tier -- never in base/.
 #   staging key:    age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
 creation_rules:
-  # talhelper cluster secret (whole file is sensitive -> encrypt all values).
+  # Talos secrets bundle (whole file is sensitive -> encrypt all values).
   - path_regex: (^|/)talsecret\.sops\.ya?ml$
     age: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
 

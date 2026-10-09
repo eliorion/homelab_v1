@@ -171,7 +171,7 @@ Details: [documentations/07-talos-ha-expansion.md](documentations/07-talos-ha-ex
 |---|---|---|---|---|
 | Host OS | Talos Linux | `v1.14.2` | No SSH and no shell means the machine config is the only way to change a node, so node state is as reviewable as application state | Debian on Proxmox |
 | Kubernetes | upstream via Talos | `v1.36.1` | Three member etcd survives one node leaving | single node k3s |
-| Node config | talhelper | rendered | One `talconfig.yaml` renders all three machine configs, so the shared block cannot drift between nodes | three hand copied 25 KB files |
+| Node config | `talosctl gen config` + patches | rendered | `bootstraping/render.sh` renders all three machine configs from shared and per-node patches, so the shared block cannot drift between nodes (talhelper until 2026-10-09, archived upstream) | three hand copied 25 KB files |
 | CNI | Cilium | `1.19.4` | eBPF service load balancing lets kube-proxy be removed entirely; Hubble gives flow visibility | Flannel plus kube-proxy |
 | Load balancer | Cilium LB-IPAM plus L2 announcements | in chart | Bare metal `type: LoadBalancer` with no extra controller | k3s ServiceLB, which does not exist on Talos |
 | L7 ingress | Gateway API | `v1.4.1` | The chart already provides a GatewayClass; no second ingress controller to own | Traefik, retired with k3s |
@@ -482,7 +482,7 @@ yet enforce it.
 ## Repository layout
 
 ```
-bootstraping/        Talos layer. talconfig.yaml renders all three machine configs
+bootstraping/        Talos layer. render.sh + patches/ render all three machine configs
 clusters/staging/    Flux entrypoints: the Kustomizations and their dependency graph
 infrastructure/
   controllers/       Operators: cilium, cert-manager, cnpg, longhorn, arc, keda, keycloak
@@ -496,7 +496,7 @@ scripts/             Helper scripts, including the read only etcd restore drill
 Every tier uses a `base/` plus `staging/` kustomize overlay pair.
 
 The developer environment is a devcontainer with a `mise.toml` toolchain, so the whole
-tool set (`talosctl`, `talhelper`, `flux`, `sops`, `age`, `helm`, `kubectl`) comes up with
+tool set (`talosctl`, `flux`, `sops`, `age`, `helm`, `kubectl`) comes up with
 one command.
 
 **Verifying a change before it is committed:**

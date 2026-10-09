@@ -33,7 +33,7 @@ spec:
         # every shipped etcd rule. The whole diagnosis had to be rebuilt from
         # apiserver logs.
         #
-        # The real fix is to scrape etcd (talconfig `listen-metrics-urls`, then
+        # The real fix is to scrape etcd (`listen-metrics-urls` in bootstraping/patches/common.yaml, then
         # kubeEtcd re-enabled). These rules are deliberately NOT that. They read
         # only apiserver metrics, which are always present, so the cluster keeps
         # this coverage even if the etcd target is broken, misconfigured or
@@ -128,7 +128,7 @@ spec:
         # WHY THIS METRIC AND NOT etcd's OWN. There is no
         # etcd_disk_wal_fsync_duration_seconds on this cluster: Talos does not
         # enable etcd's metrics listener (nothing binds :2381, verified), and
-        # turning it on means listen-metrics-urls in talconfig plus rolling all
+        # turning it on means listen-metrics-urls in bootstraping/patches/common.yaml plus rolling all
         # three control planes. etcd_request_duration_seconds is the apiserver's
         # OWN view of how long etcd takes to answer it, so it needs no etcd
         # scrape and still moves for the same underlying cause.

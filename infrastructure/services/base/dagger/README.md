@@ -170,7 +170,7 @@ filesystem, and a full volume fails builds in confusing ways rather than evictin
 
 Sized to cp1's pool, not to the cache's appetite. That pool is the cluster's smallest
 (`linstor_ssd`, 223.3GiB, ~187GiB free) because node 1's 500GB NVMe is split in half by
-`bootstraping/talconfig.yaml`: a 240GB `RawVolumeConfig linstor` beside a 240GB EPHEMERAL
+`bootstraping/patches/staging-controlplane-1.yaml`: a 240GB `RawVolumeConfig linstor` beside a 240GB EPHEMERAL
 (`/var`, ~35% used). Talos only grows volumes, so rebalancing that split needs the node's
 EPHEMERAL wiped — a control-plane reset, not worth it. The pool is LVM-thin and
 over-provisioned, and a thin pool that runs out takes down every volume on it, not just

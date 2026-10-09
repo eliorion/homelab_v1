@@ -19,7 +19,7 @@ Snapshots run **every 6 hours** via a Flux-managed CronJob, are encrypted with
 Longhorn currently has **no `backupTarget` configured**
 (`infrastructure/controllers/base/longhorn/release.yaml`). `/var/lib/longhorn` is
 a bind mount whose backing storage is on the **EPHEMERAL** partition — there is
-no separate disk for it in `talconfig.yaml` — so a node reset **does** wipe that
+no separate disk for it in `bootstraping/patches/` — so a node reset **does** wipe that
 node's replicas. Volume data survives a *single*-node reset only because the
 other two nodes keep their replicas and Longhorn rebuilds the wiped one:
 resilience, not backup. A **full** wipe of all three nodes destroys every replica
@@ -56,7 +56,7 @@ graph TD
 
 ### Why `kubernetesTalosAPIAccess` instead of a mounted `talosconfig`
 
-`bootstraping/talconfig.yaml` enables:
+`bootstraping/patches/common.yaml` enables:
 
 ```yaml
       features:
@@ -117,7 +117,7 @@ the age **private** key is stored outside the cluster entirely. Full 3-2-1
 
 | Concern | Path |
 |---|---|
-| Talos API access feature | `bootstraping/talconfig.yaml` (machine patch) |
+| Talos API access feature | `bootstraping/patches/common.yaml` (machine patch) |
 | Namespace, ServiceAccount CR, CronJob | `infrastructure/services/base/etcd-backup/` |
 | S3 + age config (SOPS) | `infrastructure/services/staging/etcd-backup/etcd-backup-s3.enc.yaml` |
 | Overlay wiring | `infrastructure/services/staging/kustomization.yaml` |
@@ -208,7 +208,7 @@ existing `talosconfig` and certs keep working):
 
 ```bash
 cd bootstraping
-SOPS_AGE_KEY_FILE=../clusters/staging/age.agekey talhelper genconfig
+./render.sh
 ```
 
 **Never regenerate `talsecret.sops.yaml`** — new PKI means a dead cluster.
@@ -436,7 +436,7 @@ Tier 1 proves the data. Only a full restore proves the *procedure*. Two ways:
 - **Ephemeral cluster (recommended).** Provision three throwaway Talos nodes
   (VMs) from the **same `talsecret.sops.yaml`** — the snapshot's ServiceAccount
   tokens and etcd member certs only validate against the original PKI, so a fresh
-  `talsecret` would fail (adjust node IPs/VIP in a copy of `talconfig.yaml`). Then
+  `talsecret` would fail (adjust node IPs/VIP in a copy of `render.sh` and `patches/`). Then
   run the **Case 2** restore flow — retrieve and decrypt the snapshot,
   `bootstrap --recover-from` on one node, let the others rejoin, verify — against
   those nodes, point a kubeconfig at their VIP, and confirm
@@ -514,7 +514,7 @@ real test of whether a control plane can be lost and recovered.
 
 > **Why it's safe — and the one rule that keeps it safe.** Longhorn keeps three
 > replicas, one per node. This node's `/var/lib/longhorn` is on the EPHEMERAL
-> partition (no separate disk in `talconfig.yaml`), so the reset **destroys this
+> partition (no separate disk in `bootstraping/patches/`), so the reset **destroys this
 > node's replicas** — but the other two survive and Longhorn rebuilds this node
 > from them. That safety holds ONLY while two nodes are intact. **Never reset a
 > second node until the first is fully back (Gate C).** Wiping two nodes'

@@ -23,7 +23,7 @@ Base — `infrastructure/services/base/etcd-backup/`:
 | File | What it does |
 |---|---|
 | `kustomization.yaml` | Lists the three objects below. |
-| `namespace.yaml` | Namespace `etcd-backup`. The name is not free: it is the one namespace `bootstraping/talconfig.yaml` lets Talos issue API credentials into. |
+| `namespace.yaml` | Namespace `etcd-backup`. The name is not free: it is the one namespace `bootstraping/patches/common.yaml` lets Talos issue API credentials into. |
 | `talos-serviceaccount.yaml` | `talos.dev/v1alpha1` `ServiceAccount` `etcd-backup-talos-secrets` with `roles: [os:etcd:backup]`. Talos watches this CR and materialises a Secret of the same name holding a short-lived, auto-rotated client cert. |
 | `cronjob.yaml` | The `CronJob etcd-backup` itself. |
 
@@ -53,7 +53,7 @@ Base — `infrastructure/services/base/etcd-backup/`:
 
 Three things this component depends on but does not own:
 
-- `bootstraping/talconfig.yaml` — `machine.features.kubernetesTalosAPIAccess`
+- `bootstraping/patches/common.yaml` — `machine.features.kubernetesTalosAPIAccess`
   with `allowedRoles: [os:etcd:backup]` and
   `allowedKubernetesNamespaces: [etcd-backup]`. Without it the ServiceAccount CR
   never produces a Secret.
@@ -143,7 +143,7 @@ snapshots/day). See the retention section of
 - **The age private key is offline and irreplaceable.** Lose it and every
   snapshot is permanently unrecoverable. So is `clusters/staging/age.agekey`,
   which decrypts `talsecret.sops.yaml` and every `.enc.yaml`.
-- **`talos-serviceaccount.yaml` only works if `talconfig.yaml` agrees.** The
+- **`talos-serviceaccount.yaml` only works if `bootstraping/patches/common.yaml` agrees.** The
   role `os:etcd:backup` must be in `allowedRoles` and the namespace
   `etcd-backup` in `allowedKubernetesNamespaces`; otherwise Talos never
   materialises `etcd-backup-talos-secrets` and the pod has no credential.

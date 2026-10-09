@@ -29,8 +29,9 @@ Dagger CI telemetry), `20` cluster health 2026-10 (etcd timing, OOM limits,
 
 ## Repo layout
 
-- `bootstraping/` — Talos layer: `talconfig.yaml` (talhelper) renders the 3
-  node configs to `clusterconfig/`; secrets in `talsecret.sops.yaml`
+- `bootstraping/` — Talos layer: `render.sh` runs `talosctl gen config` with
+  `patches/` to render the 3 node configs to `clusterconfig/`; secrets in
+  `talsecret.sops.yaml`
 - `clusters/staging/` — Flux entrypoints pointing at the tiers below
 - `infrastructure/controllers/` — operators; `infrastructure/services/` —
   platform workloads; `apps/`, `monitoring/` — application and monitoring tiers
@@ -87,9 +88,11 @@ Dagger CI telemetry), `20` cluster health 2026-10 (etcd timing, OOM limits,
   `/apps/.+/db-migrations/.+\.yaml$/`, so every other image pin is manual. The
   two ARC charts (`gha-runner-scale-set-controller` and `gha-runner-scale-set`)
   must stay on the same version.
-- Node config is **talhelper**-managed: edit `bootstraping/talconfig.yaml`,
-  render (`SOPS_AGE_KEY_FILE=clusters/staging/age.agekey talhelper genconfig`),
-  `talosctl apply-config`. Never regenerate `talsecret` (new PKI = dead cluster).
+- Node config is rendered by **plain `talosctl`** (talhelper was archived and
+  removed 2026-10-09): edit `bootstraping/patches/` (versions and per-node facts in
+  `bootstraping/render.sh`), run `bootstraping/render.sh`, review
+  `talosctl apply-config --dry-run`, then apply. Never regenerate `talsecret`
+  (new PKI = dead cluster).
 - CNI is **Cilium** `1.19.4`, kube-proxy-free, with LB-IPAM (`192.168.1.110-130`)
   + L2 announce and Gateway API — `infrastructure/controllers/base/cilium/README.md`.
 - Storage: **LINSTOR/DRBD** (Piraeus) is the block tier — class `ssd`, the
@@ -112,9 +115,10 @@ flux get kustomizations
 flux get helmreleases -A
 ```
 
-For Talos node-config changes (`bootstraping/talconfig.yaml`):
+For Talos node-config changes (`bootstraping/patches/`, `bootstraping/render.sh`):
 
 ```bash
-cd bootstraping && SOPS_AGE_KEY_FILE=../clusters/staging/age.agekey talhelper genconfig
-talosctl validate --config clusterconfig/Homelab_staging-staging-controlplane-1.yaml --mode metal
+bootstraping/render.sh   # renders + validates all three
+talosctl -n 192.168.1.101 apply-config --mode=no-reboot --dry-run \
+  --file bootstraping/clusterconfig/Homelab_staging-staging-controlplane-1.yaml
 ```

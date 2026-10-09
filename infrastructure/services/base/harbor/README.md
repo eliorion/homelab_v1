@@ -101,7 +101,7 @@ requirement.
 
 ## Talos mirror config
 
-Lives in `bootstraping/talconfig.yaml` as standalone `RegistryMirrorConfig` documents, **not**
+Lives in `bootstraping/patches/registry-mirrors.yaml` as standalone `RegistryMirrorConfig` documents, **not**
 `machine.registries.mirrors`. That matters: in the legacy block `overridePath` is a
 *mirror-level* bool fanned onto every endpoint, which would strip `/v2` from the upstream
 fallback too and break it. In document form it is per-endpoint. (`machine.registries` is also

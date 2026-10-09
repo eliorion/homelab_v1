@@ -34,7 +34,7 @@ bootstraping/controlplane.yaml
 bootstraping/controlplane-*.yaml
 bootstraping/worker.yaml
 bootstraping/talosconfig
-# talhelper: plaintext secret + rendered configs (talsecret.sops.yaml IS committed)
+# Talos: plaintext secrets + rendered configs (talsecret.sops.yaml IS committed)
 bootstraping/talsecret.yaml
 bootstraping/clusterconfig/
 # dead helm render from the rejected inlineManifest approach (embeds a Hubble CA)

@@ -39,8 +39,8 @@ and the affinity controller. The four CRDs are `LinstorCluster`,
 `LinstorSatelliteConfiguration`, `LinstorNodeConnection` and the read-only
 operator-generated `LinstorSatellite`.
 
-The host side is not in this directory. `bootstraping/talconfig.yaml` carries the
-factory schematic with `siderolabs/drbd` and the `machine.kernel.modules` block
+The host side is not in this directory. `bootstraping/render.sh` carries the
+factory schematic with `siderolabs/drbd`, and `bootstraping/patches/common.yaml` the `machine.kernel.modules` block
 that loads it.
 
 ## Why it is like this
@@ -81,7 +81,7 @@ re-adjust to a new IP. On 2026-09-24 cp3's re-adjust failed: it kept dialling cp
 dead pod IP, cp1's HA controller read the silence as cp3 failing, and it detached
 every volume in use there — 13 pods stuck, the `lost-quorum` taint on all three
 nodes. `satellite-host-network.yaml` puts the satellites on the node IPs, which
-only change when `talconfig.yaml` does. It carries no node selector, so a node
+only change when `bootstraping/render.sh` and the node patches do. It carries no node selector, so a node
 added later gets it too.
 
 **Every pod here carries a memory limit, so the Talos OOM controller never
@@ -116,8 +116,8 @@ container under 120Mi.
 - **Do not let Helm create the namespace.** The chart templates none, so a
   Helm-created one carries no PSA labels and every satellite is rejected.
 - **The DRBD extension is version-locked to the Talos patch release**
-  (`ghcr.io/siderolabs/drbd:9.3.2-v1.13.4`). `talosImageURL` carries no tag and
-  talhelper appends `:${talosVersion}`, so bumping `talosVersion` needs a
+  (`ghcr.io/siderolabs/drbd:9.3.4-v1.14.2`). `bootstraping/render.sh` appends
+  `:${TALOS_VERSION}` to each schematic, so bumping `TALOS_VERSION` needs a
   schematic whose DRBD build matches. This is the same trap that used to cost
   `iscsi-tools`, except the consequence is now **every local replica going
   Diskless**, not a failed mount. Upgrade one node at a time and verify before

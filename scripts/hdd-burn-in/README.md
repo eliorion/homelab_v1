@@ -177,7 +177,7 @@ disqualifying. `watch-dmesg.sh` prints them as they appear.
 If resets appear on an ASMedia dock, the one remedy worth trying is dropping UAS
 for that bridge and re-running phase 3: `usb-storage.quirks=174c:55aa:u` in
 `extraKernelArgs` under the relevant `nodes[]` entry of
-`bootstraping/talconfig.yaml` (per-node — the same blast-radius rule as the user
+`bootstraping/patches/staging-controlplane-N.yaml` (per-node — the same blast-radius rule as the user
 volumes), then re-render and `talosctl apply-config`. Confirm the rebind in
 `dmesg`: `scsi hostN: usb-storage` replaces `scsi hostN: uas`.
 

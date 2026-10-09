@@ -9,7 +9,6 @@ age = "latest"
 helm = "latest"
 shellcheck = "latest"
 talosctl = "latest"
-talhelper = "latest"
 aws = { version = "latest", symlink_bins = "true" }
 gh = "latest"
 "github:nklmilojevic/sofka" = "latest"
@@ -23,7 +22,7 @@ run = "scripts/sops-updatekeys"
 
 [tasks.lint]
 description = "shellcheck all scripts"
-run = "shellcheck scripts/sops-updatekeys scripts/fetch-keycloak-operator scripts/etcd-restore-drill scripts/setup"
+run = "shellcheck scripts/sops-updatekeys scripts/fetch-keycloak-operator scripts/etcd-restore-drill scripts/setup bootstraping/render.sh"
 
 [tasks.etcd-drill]
 description = "Read-only etcd restore drill (doc 09): fetch newest Garage snapshot, decrypt with the offline age key, restore + verify. Pass -- --offline-key PATH [--keep]"

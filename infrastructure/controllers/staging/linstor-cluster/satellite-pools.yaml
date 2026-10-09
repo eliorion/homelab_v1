@@ -6,7 +6,7 @@ spec:
   storagePools:
       # One object, no nodeAffinity: every node carrying r-linstor gets the
       # pool, and all three report the same pool name so the StorageClass sees
-      # a single `ssd` pool. bootstraping/talconfig.yaml owns the partitions.
+      # a single `ssd` pool. bootstraping/patches/ owns the partitions.
     - name: ssd
       lvmThinPool: {}
       source:

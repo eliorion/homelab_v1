@@ -4,15 +4,17 @@ The Talos layer. Flux does not reconcile any of it: nothing here is applied by a
 it is pushed to the nodes by hand with `talosctl`, and only when the machine configuration
 itself changes.
 
-One file is the source of truth — **`talconfig.yaml`**, a [talhelper](https://github.com/budimanjojo/talhelper)
-config that renders the three machine configs for `staging-controlplane-1/2/3`. Cluster
-`Homelab_staging`, Talos `v1.14.2` on the nodes (`talosVersion` still renders `v1.13.4`, see
-the table below), Kubernetes `v1.36.1`, API endpoint
-`https://192.168.1.100:6443` (the VIP).
+The source of truth is **`render.sh` plus `patches/`**: plain `talosctl gen config` with the
+committed secrets bundle and a set of config patches, rendering the three machine configs
+for `staging-controlplane-1/2/3`. Cluster `Homelab_staging`, Talos `v1.14.2`, Kubernetes
+`v1.36.1`, API endpoint `https://192.168.1.100:6443` (the VIP).
 
-> This directory was originally driven by raw `talosctl gen config`, and this README used to
-> document that flow. It does not apply anymore: `controlplane.yaml` is no longer hand
-> written or hand copied per node. Everything is rendered from `talconfig.yaml`.
+> From June to October 2026 the render was [talhelper](https://github.com/budimanjojo/talhelper)
+> (`talconfig.yaml`). talhelper was archived on 2026-08-26 with v3.1.17, before Talos 1.14
+> shipped, and cannot render a 1.14 config. It was replaced on 2026-10-09 by the native flow
+> below; the switch was proven with `apply-config --dry-run` against all three nodes (only
+> the installer tag changed). The numbered documents written before that date still show
+> `talhelper genconfig`; read `./render.sh` wherever they do.
 
 The end-to-end runbook — hardware, factory image, the two Secrets Flux does not create, the
 manual `cilium install`, `flux bootstrap` — is
@@ -23,68 +25,69 @@ This README covers the input file and the render/validate/apply loop around it.
 
 | Path | What it is |
 |---|---|
-| `talconfig.yaml` | **Committed. The only thing to edit.** talhelper input: cluster-wide settings, a `nodes[]` entry per machine, and two raw `patches`. |
-| `talsecret.sops.yaml` | **Committed, SOPS-encrypted.** The cluster PKI (etcd CA, machine CA, Kubernetes CA). Read by talhelper at render time. Never regenerate it. |
+| `render.sh` | **Committed.** Pins the Talos version, the config contract, the Kubernetes version and the two factory schematics, lists the nodes (hostname, IP, install disk, schematic), and runs `talosctl gen config` once per node. |
+| `patches/common.yaml` | **Committed.** Strategic-merge patch into the v1alpha1 document, shared by all three nodes: kernel modules, sysctls, kubelet, features, cluster network, apiserver, discovery, extra manifests, control-plane metrics, etcd timing. |
+| `patches/registry-mirrors.yaml` | **Committed.** The two Harbor `RegistryMirrorConfig` documents, shared. |
+| `patches/staging-controlplane-{1,2,3}.yaml` | **Committed.** Per node: `HostnameConfig`, `ResolverConfig`, the link/VIP documents, and the volume documents (`UserVolumeConfig`, `RawVolumeConfig`, `EPHEMERAL`). |
+| `talsecret.sops.yaml` | **Committed, SOPS-encrypted.** The cluster PKI (etcd CA, machine CA, Kubernetes CA) in the `talosctl gen secrets` bundle format. `render.sh` decrypts it to a temp file for `--with-secrets`. Never regenerate it. |
 | `clusterconfig/` | **Generated, gitignored.** `Homelab_staging-staging-controlplane-{1,2,3}.yaml` plus a `talosconfig`. Overwritten on every render — never hand edit. |
 | `talosconfig`, `kubeconfig` | Gitignored credentials for `talosctl` / `kubectl` against this cluster. |
-| `controlplane-1/2/3.yaml`, `worker.yaml` | Gitignored leftovers from before talhelper was adopted (June 2026). Not inputs, not outputs — talhelper writes the `Homelab_staging-`-prefixed files under `clusterconfig/` instead. Stale; the `worker.yaml` still names the retired Proxmox VM endpoint. |
-| `.envrc` | Local direnv helper, gitignored. Exports `TALOSCONFIG`/`KUBECONFIG` for the shell; talhelper does not read it (its `--env-file` default is `talenv*.yaml`, which this repo does not use). |
+| `controlplane-1/2/3.yaml`, `worker.yaml` | Gitignored leftovers from the first raw `talosctl gen config` era (before June 2026). Not inputs, not outputs. Stale; the `worker.yaml` still names the retired Proxmox VM endpoint. |
+| `.envrc` | Local direnv helper, gitignored. Exports `TALOSCONFIG`/`KUBECONFIG` for the shell. |
 
 ## Rendering, validating, applying
 
 ```bash
-cd bootstraping
-SOPS_AGE_KEY_FILE=../clusters/staging/age.agekey talhelper genconfig
+bootstraping/render.sh      # SOPS_AGE_KEY_FILE defaults to clusters/staging/age.agekey
 ```
 
-Without `SOPS_AGE_KEY_FILE` the render fails: `talsecret.sops.yaml` cannot be decrypted.
-`--offline-mode` skips the POST to the image factory (it derives the schematic ID locally)
-and is what the migration runbooks use. `--dry-run` prints a diff instead of writing —
-useful before a change, but the diff carries the same key material the rendered files do,
-so do not paste it anywhere.
+The script needs `talosctl` and `sops` on the PATH (both in `mise.toml`) and the age
+key; without the key `talsecret.sops.yaml` cannot be decrypted. It validates each rendered
+file with `talosctl validate --mode metal` and writes a `talosconfig` whose endpoints are the
+three node IPs.
 
-Validate before applying:
-
-```bash
-talosctl validate --config clusterconfig/Homelab_staging-staging-controlplane-1.yaml --mode metal
-```
-
-Apply per node. `--insecure` is only for a node still in maintenance mode with no PKI of
-its own; a node already in the cluster is applied over the authenticated Talos API:
+Before every apply, diff against the live node. The diff is the review: it must show only
+the change you meant.
 
 ```bash
-talosctl apply-config --insecure -n 192.168.1.101 \
+talosctl -n 192.168.1.101 apply-config --mode=no-reboot --dry-run \
+  --file clusterconfig/Homelab_staging-staging-controlplane-1.yaml
+talosctl -n 192.168.1.101 apply-config --mode=no-reboot \
   --file clusterconfig/Homelab_staging-staging-controlplane-1.yaml
 ```
+
+Print only the `+`/`-` lines of the dry-run and filter out `crt`/`key`/`secret`/`token`: its
+context lines carry key material. `--insecure` is only for a node still in maintenance mode
+with no PKI of its own.
 
 `talosctl` must address nodes by their real IPs. The Talos API is deliberately not behind
 the VIP — the VIP is an etcd lease, and `talosctl` has to keep working when etcd is the
 broken thing.
 
-## What `talconfig.yaml` declares
+## What the render declares
 
-### Cluster-wide
+### In `render.sh`
 
-| Field | Value | Note |
+| Variable | Value | Note |
 |---|---|---|
-| `clusterName` | `Homelab_staging` | Also the filename prefix under `clusterconfig/`. |
-| `talosVersion` | `v1.13.4` | Appended as the tag to each node's `talosImageURL` at render time. **Behind the nodes, on purpose:** they run `v1.14.2` since 2026-10-09, but talhelper 3.1.16 cannot render 1.14 (it emits discovery/hostDNS/apiServer/controllerManager/scheduler/KubeProxyConfig documents that collide with the v1alpha1 patches here). The 1.13.4 render is valid on 1.14 nodes; only `machine.install.image` carries the old tag, which matters solely for the next `talosctl upgrade` — always pass `--image` explicitly. Bump this when talhelper supports 1.14, or after migrating the patches to the new documents. |
-| `kubernetesVersion` | `v1.36.1` | Drives the `registry.k8s.io/kube-*` image tags. |
-| `endpoint` | `https://192.168.1.100:6443` | The Kubernetes API through the VIP. |
-| `allowSchedulingOnControlPlanes` | `true` | All three nodes run workloads; there is no worker. |
-| `additionalMachineCertSans` / `additionalApiServerCertSans` | `192.168.1.100` | Without the VIP in both SAN lists, TLS to the VIP fails hostname verification. |
-| `clusterPodNets` / `clusterSvcNets` | `10.244.0.0/16` / `10.96.0.0/12` | Cilium reuses the per-node podCIDR Talos allocates out of this range (`ipam.mode: kubernetes`). |
-| `cniConfig.name` | `none` | Talos installs no CNI at all. |
+| `CLUSTER` | `Homelab_staging` | Also the filename prefix under `clusterconfig/`. |
+| `ENDPOINT` | `https://192.168.1.100:6443` | The Kubernetes API through the VIP. |
+| `TALOS_VERSION` | `v1.14.2` | The installer tag, `factory.talos.dev/installer/<schematic>:<TALOS_VERSION>`. Bumping it changes `machine.install.image` on all three nodes; the nodes only move when `talosctl upgrade` runs. |
+| `CONFIG_CONTRACT` | `v1.13` | `talosctl gen config --talos-version`: the config *layout*, not the OS version. The 1.14 contract splits the v1alpha1 document into ~27 dedicated documents (`KubeAPIServerConfig`, `KubeProxyConfig`, `DiscoveryServiceConfig`, …) and the v1alpha1 fields in `patches/common.yaml` then collide with them. 1.14 nodes accept the 1.13 layout. Moving to the 1.14 contract means rewriting `common.yaml` as those documents — a change of its own. |
+| `KUBERNETES_VERSION` | `1.36.1` | Drives the `registry.k8s.io/kube-*` image tags. |
+| `SCHEMATIC_AMD` / `SCHEMATIC_INTEL` | `54a5f422…` / `98559b25…` | Factory schematics; see "Why the two nodes have different installer schematics". |
+| `NODES` | hostname, IP, install disk, schematic | `/dev/nvme0n1` on node-1, `/dev/sda` on node-2 and node-3. |
 
-### Per node
+### In `patches/`
 
-| Field | node-1 | node-2 | node-3 |
-|---|---|---|---|
-| `hostname` | `staging-controlplane-1` | `staging-controlplane-2` | `staging-controlplane-3` |
-| `ipAddress` | `192.168.1.101` | `192.168.1.102` | `192.168.1.103` |
-| `installDisk` | `/dev/nvme0n1` | `/dev/sda` | `/dev/sda` |
-| `talosImageURL` schematic | `54a5f422…` (AMD box, amd-ucode + amdgpu) | `98559b25…` (Intel, intel-ucode) | `98559b25…` |
-| `patches` | three `UserVolumeConfig` + `RawVolumeConfig` + `EPHEMERAL` sizing + Longhorn disk annotation | two `UserVolumeConfig` + `RawVolumeConfig` + `EPHEMERAL` sizing | `RawVolumeConfig` + `EPHEMERAL` sizing |
+| Setting | File | Note |
+|---|---|---|
+| `allowSchedulingOnControlPlanes: true` | `common.yaml` | All three nodes run workloads; there is no worker. |
+| `192.168.1.100` in `machine.certSANs` and `cluster.apiServer.certSANs` | `common.yaml` | Without the VIP in both SAN lists, TLS to the VIP fails hostname verification. |
+| pod / service subnets `10.244.0.0/16` / `10.96.0.0/12` | `common.yaml` | Cilium reuses the per-node podCIDR Talos allocates out of this range (`ipam.mode: kubernetes`). |
+| `cni.name: none` | `common.yaml` | Talos installs no CNI at all. |
+| hostname, nameserver, static address, routes, VIP | `staging-controlplane-N.yaml` | One `LinkAliasConfig` (`ethSel0`, the physical link) carries the `LinkConfig` and the `Layer2VIPConfig`. |
+| volumes | `staging-controlplane-N.yaml` | node-1: three `UserVolumeConfig` + `RawVolumeConfig` + `EPHEMERAL`; node-2: two `UserVolumeConfig` + `RawVolumeConfig` + `EPHEMERAL`; node-3: `RawVolumeConfig` + `EPHEMERAL`. |
 
 node-1 carries per-node `patches` for its 640 GB SATA HDD: an `xfs` user volume at
 `/var/mnt/hdd-sata-640`, registered with Longhorn. The selector matches
@@ -239,17 +242,23 @@ silently rebooting when a change needs one.
 
 ## Why it is like this
 
-**Why talhelper rather than three machine configs.** Per-node hardware differences are
-`nodes[]` fields and everything shared lives in one block that cannot drift between nodes.
-The alternative, which is how the HA expansion actually started, was three near-identical
-25 KB files kept in sync by hand — the stale `controlplane-1/2/3.yaml` in this directory are
-what that looked like. The cost is that the rendered output is gitignored, so what is
-actually on the nodes can only be inferred from the input, and rendering needs the offline
-age key.
+**Why a render rather than three machine configs.** Per-node hardware differences live in
+one patch per node and everything shared lives in `patches/common.yaml`, which cannot drift
+between nodes. The alternative, which is how the HA expansion actually started, was three
+near-identical 25 KB files kept in sync by hand — the stale `controlplane-1/2/3.yaml` in this
+directory are what that looked like. The cost is that the rendered output is gitignored, so
+what is actually on the nodes can only be inferred from the input (or read with
+`apply-config --dry-run`), and rendering needs the offline age key.
 
-**Why `talsecret.sops.yaml` is committed and frozen.** talhelper was retrofitted onto an
-already-running cluster: the secret was extracted from the live PKI with `gensecret -f`
-rather than rebuilding the cluster to fit the tool. It has to stay because disaster recovery
+**Why plain `talosctl` rather than a generator.** talhelper did the same job until it was
+archived (2026-08-26) and could not follow Talos to 1.14. `talosctl gen config` with patches
+is maintained with Talos itself, so the render can never lag the OS; the price is
+`render.sh` holding the per-node facts talhelper kept in `nodes[]`. topf and talstomize were
+the suggested successors; both were pre-1.0 when this was decided.
+
+**Why `talsecret.sops.yaml` is committed and frozen.** It was extracted from the live PKI of
+an already-running cluster (talhelper `gensecret -f`, same format as `talosctl gen secrets`)
+rather than rebuilding the cluster to fit a tool. It has to stay because disaster recovery
 means rebuilding node configs from the *same* CAs. It is encrypted with the age key in
 `clusters/staging/age.agekey`, which is also the only thing that can decrypt it — etcd
 snapshots do not cover the Talos machine PKI, so losing that key means the cluster cannot be
@@ -309,7 +318,7 @@ router with the Tailscale operator's in-cluster egress proxies — the scraper d
 `tailscale-proxy-*.tailscale.svc`, and Garage is reached through the `garage-s3` HAProxy
 gateway — and Phase 5 wiped that host and rebuilt it as bare-metal `192.168.1.101`. Removing
 the route block from all three node configs is a Phase 4 step that was never carried out, so
-it is still in `talconfig.yaml`.
+it is still in `patches/staging-controlplane-{1,2,3}.yaml`.
 
 ## Adding gVisor (2026-10)
 
@@ -330,11 +339,7 @@ Same Talos version, so this is an image swap, not a version bump. One node at a 
 node-2 → node-3 → node-1 (node-1 last, it carries the most memory requests):
 
 ```bash
-cd bootstraping
-SOPS_AGE_KEY_FILE=../clusters/staging/age.agekey talhelper genconfig
-for n in 1 2 3; do
-  talosctl validate --config clusterconfig/Homelab_staging-staging-controlplane-$n.yaml --mode metal
-done
+bootstraping/render.sh   # was: talhelper genconfig + validate
 
 # per node, <ip> = .102, then .103, then .101; <id> = its schematic above
 # 1. any CNPG primary on it: switch over first (kubectl cnpg promote, or status.targetPrimary)
@@ -375,10 +380,10 @@ kubectl run gvisor-smoke --rm -it --restart=Never --image=busybox \
   Kubernetes CA. A new secret is a new PKI: node certificates stop validating, `talosconfig`
   and `kubeconfig` stop authenticating, etcd members cannot re-form. There is no undo.
 - **Never hand edit anything under `clusterconfig/`.** It is regenerated and overwritten on
-  the next `talhelper genconfig`, and it is gitignored, so the edit is invisible in review
+  the next `render.sh`, and it is gitignored, so the edit is invisible in review
   and silently lost.
-- **Do not re-add `admissionControl` / `auditPolicy` to the cluster patch.** talhelper emits
-  both by default and the defaults already match the live cluster (`enforce: baseline`,
+- **Do not re-add `admissionControl` / `auditPolicy` to `patches/common.yaml`.** `talosctl gen
+  config` emits both by default and the defaults already match the live cluster (`enforce: baseline`,
   `audit`/`warn: restricted`, `kube-system` exempt). Adding them here appends a second
   `kube-system` entry to the exemptions list.
 - **Do not remove the `kubernetesTalosAPIAccess` block** — it looks unused from inside this
@@ -441,17 +446,24 @@ kubectl run gvisor-smoke --rm -it --restart=Never --image=busybox \
   deadlocked the live cluster on 2026-06-12.
 - **Keep the Talos API off the VIP.** Point `talosconfig` endpoints at `192.168.1.101–103`,
   never at `.100`, or the recovery tool depends on the thing being recovered.
-- **`talosImageURL` carries no tag on purpose.** talhelper appends `:${talosVersion}`. Bumping
-  `talosVersion` therefore changes the installer image on all three nodes at once, and the
-  schematic must still carry the Longhorn extensions.
+- **`TALOS_VERSION` is appended to both schematics.** Bumping it changes the installer image
+  on all three nodes at once, and each schematic must still carry `drbd` and `gvisor` for that
+  version (check `https://factory.talos.dev/version/<version>/extensions/official`).
+- **Do not raise `CONFIG_CONTRACT` without rewriting `patches/common.yaml`.** With the 1.14
+  contract `gen config` emits dedicated documents for the apiserver, controller-manager,
+  scheduler, kube-proxy, discovery and host DNS, and the v1alpha1 fields in `common.yaml`
+  then fail the render with "already set in v1alpha1 config".
+- **`render.sh` decrypts the PKI to a temp file** (mode 600, removed on exit). Do not change
+  it to write the plaintext bundle anywhere inside the repo.
 
 ## Verifying
 
 ```bash
-cd bootstraping
-SOPS_AGE_KEY_FILE=../clusters/staging/age.agekey talhelper genconfig
-for n in 1 2 3; do
-  talosctl validate --config clusterconfig/Homelab_staging-staging-controlplane-$n.yaml --mode metal
+bootstraping/render.sh          # renders and validates all three
+for n in 1 2 3; do               # must show only the change you meant
+  talosctl -n 192.168.1.10$n apply-config --mode=no-reboot --dry-run \
+    --file bootstraping/clusterconfig/Homelab_staging-staging-controlplane-$n.yaml \
+    | grep -E '^[+-] ' | grep -v -E 'crt|key|secret|token'
 done
 ```
 
