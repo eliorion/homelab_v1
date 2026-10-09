@@ -12,7 +12,7 @@ This directory is the cluster wiring only.
 | File | What it does |
 |---|---|
 | `namespace.yaml` | Two namespaces, both PodSecurity `restricted`. `agent-platform` holds the control plane (agent-api and the Agent controller). `agent-sandboxes` holds the agents: one gVisor box per `Agent`, plus the chart's templates, warm pools, quota and CiliumNetworkPolicies. |
-| `release.yaml` | `HelmRelease agent-platform`, chart `k8s/charts/agent-platform` from the `agent-platform` GitRepository, with `reconcileStrategy: Revision` like the other asp-repo charts. It sets `crds: Create` / `upgrade.crds: CreateReplace` (the Agent CRD is in the chart's `crds/`), `retries: 3` and helm tests. Its values are environment overrides only: `ghcr-pull-secret`, and the Keycloak issuer and audience. **It starts `suspend: true`.** |
+| `release.yaml` | `HelmRelease agent-platform`, chart `k8s/charts/agent-platform` from the `agent-platform` GitRepository, with `reconcileStrategy: Revision` like the other asp-repo charts. It sets `crds: Create` / `upgrade.crds: CreateReplace` (the Agent CRD is in the chart's `crds/`), `retries: 3` and helm tests. Its values are environment overrides only: `ghcr-pull-secret`, and the Keycloak issuer and audience. |
 | `kustomization.yaml` | The two files above. |
 
 The overlay is `../../staging/agent-platform/`. It has its own Flux Kustomization,
@@ -40,23 +40,19 @@ runtime. The controller turns it into a `SandboxClaim` on a warm pool and owns t
 deleting the Agent deletes the claim, the box and its workspace. None of those objects is in this
 repo, and Flux never prunes them.
 
-## Turning it on
+## History: turning it on
 
-The HelmRelease stays suspended until all of these hold:
+The HelmRelease started suspended. It was turned on 2026-10-09, once three conditions held:
+- the agent platform's Phase 0 had passed on staging (results in asp
+  `services/agent-platform/phase0/README.md`);
+- `agent-platform-control-v0.1.0` was released;
+- the Keycloak `agent-platform` client and groups were in place
+  (`../keycloak/realm/realm-apps.yaml`).
 
-1. The agent platform's Phase 0 has passed, with results in asp
-   `services/agent-platform/phase0/README.md`. The profile sizes and the egress list may change
-   from it.
-2. `agent-platform-control` is released, so `images.control.tag` in the chart is set by asp's
-   `bump-chart`. With an empty tag, the Deployments render an unpullable `agent-platform-control:`.
-3. Someone is in an `agent-platform-*` group. The `agent-platform` client (device flow,
-   `aud: agent-platform`, a flat `groups` claim) and the three groups are declared in
-   `../keycloak/realm/realm-apps.yaml`. Membership is set in the admin console, never in git.
-   An operator gets a token from a shell with the device grant:
-   `POST https://staging-keycloak.eliorion.fr/realms/staging-apps/protocol/openid-connect/auth/device`
-   with `client_id=agent-platform`, then approves in a browser.
-
-To turn it on, delete the `suspend: true` line in a PR.
+**Who can call agent-api** is decided by membership of `agent-platform-{viewers,operators,admins}`,
+set in the Keycloak admin console. An operator gets a token from a shell with the device grant:
+`POST https://staging-keycloak.eliorion.fr/realms/staging-apps/protocol/openid-connect/auth/device`
+with `client_id=agent-platform`.
 
 ## Traps
 

@@ -6,10 +6,6 @@ metadata:
   name: agent-platform
   namespace: flux-system
 spec:
-  # SUSPENDED until (1) the agent platform's Phase 0 passes and (2) agent-platform-control has
-  # a released tag in the chart (an empty tag renders an unpullable image). Unsuspend = delete
-  # this line in a PR.
-  suspend: true
   targetNamespace: agent-platform
   interval: 30m
   chart:
