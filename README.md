@@ -14,7 +14,7 @@ prove work because I restored them rather than because I configured them.
 | **Nodes** | 3 bare metal boxes, `192.168.1.101` to `.103`, all control planes, all schedulable |
 | **OS** | Talos Linux `v1.13.4`, immutable, no SSH, no package manager, API driven |
 | **Kubernetes** | `v1.36.1`, API VIP `192.168.1.100` elected through an etcd lease |
-| **GitOps** | Flux `v2.8.8`, 18 Kustomizations with an explicit dependency graph, `prune: true` everywhere |
+| **GitOps** | Flux `v2.9.6`, 18 Kustomizations with an explicit dependency graph, `prune: true` everywhere |
 | **Network** | Cilium `1.19.4` without kube-proxy, LB-IPAM pool `.110` to `.130`, Gateway API `v1.4.1` |
 | **Storage** | Longhorn `1.12.0`, 3 replicas by default, one per node |
 | **Databases** | 7 CloudNativePG Postgres clusters, 4 with continuous WAL shipped off cluster |
