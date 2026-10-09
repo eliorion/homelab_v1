@@ -6,7 +6,8 @@ itself changes.
 
 One file is the source of truth — **`talconfig.yaml`**, a [talhelper](https://github.com/budimanjojo/talhelper)
 config that renders the three machine configs for `staging-controlplane-1/2/3`. Cluster
-`Homelab_staging`, Talos `v1.13.4`, Kubernetes `v1.36.1`, API endpoint
+`Homelab_staging`, Talos `v1.14.2` on the nodes (`talosVersion` still renders `v1.13.4`, see
+the table below), Kubernetes `v1.36.1`, API endpoint
 `https://192.168.1.100:6443` (the VIP).
 
 > This directory was originally driven by raw `talosctl gen config`, and this README used to
@@ -67,7 +68,7 @@ broken thing.
 | Field | Value | Note |
 |---|---|---|
 | `clusterName` | `Homelab_staging` | Also the filename prefix under `clusterconfig/`. |
-| `talosVersion` | `v1.13.4` | Appended as the tag to each node's `talosImageURL` at render time. |
+| `talosVersion` | `v1.13.4` | Appended as the tag to each node's `talosImageURL` at render time. **Behind the nodes, on purpose:** they run `v1.14.2` since 2026-10-09, but talhelper 3.1.16 cannot render 1.14 (it emits discovery/hostDNS/apiServer/controllerManager/scheduler/KubeProxyConfig documents that collide with the v1alpha1 patches here). The 1.13.4 render is valid on 1.14 nodes; only `machine.install.image` carries the old tag, which matters solely for the next `talosctl upgrade` — always pass `--image` explicitly. Bump this when talhelper supports 1.14, or after migrating the patches to the new documents. |
 | `kubernetesVersion` | `v1.36.1` | Drives the `registry.k8s.io/kube-*` image tags. |
 | `endpoint` | `https://192.168.1.100:6443` | The Kubernetes API through the VIP. |
 | `allowSchedulingOnControlPlanes` | `true` | All three nodes run workloads; there is no worker. |
@@ -276,11 +277,11 @@ node-1 additionally carries `amdgpu`. Booting a stock Talos image instead gives 
 where Longhorn fails with `failed to execute iscsiadm: No such file or directory`.
 
 **The DRBD extension is version-locked to the Talos patch release**, currently
-`ghcr.io/siderolabs/drbd:9.3.2-v1.13.4`. This makes the `install.image` trap below sharper
+`ghcr.io/siderolabs/drbd:9.3.4-v1.14.2`. This makes the `install.image` trap below sharper
 than it was: with Longhorn a missing extension cost a failed mount, but with LINSTOR the
 satellite comes up with no DRBD module and **every local replica goes Diskless**. An
 extension cannot be added with `apply-config` — it is baked into the image, so it takes
-`talosctl upgrade --image factory.talos.dev/installer/<id>:v1.13.4`, which reboots. Upgrade
+`talosctl upgrade --image factory.talos.dev/installer/<id>:v1.14.2`, which reboots. Upgrade
 one node at a time and verify before touching the next:
 
 ```bash
@@ -311,6 +312,9 @@ the route block from all three node configs is a Phase 4 step that was never car
 it is still in `talconfig.yaml`.
 
 ## Adding gVisor (2026-10)
+
+Applied 2026-10-09 together with the Talos 1.13.4 → 1.14.2 upgrade (one reboot per node,
+installer `<id>:v1.14.2` instead of `:v1.13.4` below); `runsc` verified on all three nodes.
 
 The two schematics above replaced `11928acc…` (AMD) and `b86969a5…` (Intel). They are the
 same extension lists plus `siderolabs/gvisor`, registered at factory.talos.dev, which is

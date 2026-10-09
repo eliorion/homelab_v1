@@ -2,7 +2,7 @@
 
 3-node bare-metal **Talos Linux** cluster (`Homelab_staging`:
 `staging-controlplane-1/2/3` at `192.168.1.101-103`, API VIP `192.168.1.100`;
-Talos `v1.13.4`, k8s `v1.36.1`, all control planes also run workloads) managed
+Talos `v1.14.2`, k8s `v1.36.1`, all control planes also run workloads) managed
 entirely by **Flux GitOps** — never `kubectl apply` resources by hand; change
 the YAML, commit, push, let Flux reconcile. (Migrated from a single-node k3s
 box — the repo name is historical; see `documentations/06`–`08`.)

@@ -12,7 +12,7 @@ prove work because I restored them rather than because I configured them.
 | | |
 |---|---|
 | **Nodes** | 3 bare metal boxes, `192.168.1.101` to `.103`, all control planes, all schedulable |
-| **OS** | Talos Linux `v1.13.4`, immutable, no SSH, no package manager, API driven |
+| **OS** | Talos Linux `v1.14.2`, immutable, no SSH, no package manager, API driven |
 | **Kubernetes** | `v1.36.1`, API VIP `192.168.1.100` elected through an etcd lease |
 | **GitOps** | Flux `v2.9.6`, 18 Kustomizations with an explicit dependency graph, `prune: true` everywhere |
 | **Network** | Cilium `1.19.4` without kube-proxy, LB-IPAM pool `.110` to `.130`, Gateway API `v1.4.1` |
@@ -169,7 +169,7 @@ Details: [documentations/07-talos-ha-expansion.md](documentations/07-talos-ha-ex
 
 | Layer | Choice | Version | Why this one | What it replaced |
 |---|---|---|---|---|
-| Host OS | Talos Linux | `v1.13.4` | No SSH and no shell means the machine config is the only way to change a node, so node state is as reviewable as application state | Debian on Proxmox |
+| Host OS | Talos Linux | `v1.14.2` | No SSH and no shell means the machine config is the only way to change a node, so node state is as reviewable as application state | Debian on Proxmox |
 | Kubernetes | upstream via Talos | `v1.36.1` | Three member etcd survives one node leaving | single node k3s |
 | Node config | talhelper | rendered | One `talconfig.yaml` renders all three machine configs, so the shared block cannot drift between nodes | three hand copied 25 KB files |
 | CNI | Cilium | `1.19.4` | eBPF service load balancing lets kube-proxy be removed entirely; Hubble gives flow visibility | Flannel plus kube-proxy |
