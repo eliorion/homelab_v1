@@ -13,7 +13,16 @@ This directory is the cluster wiring only.
 |---|---|
 | `namespace.yaml` | Two namespaces, both PodSecurity `restricted`. `agent-platform` holds the control plane (agent-api and the Agent controller). `agent-sandboxes` holds the agents: one gVisor box per `Agent`, plus the chart's templates, warm pools, quota and CiliumNetworkPolicies. |
 | `release.yaml` | `HelmRelease agent-platform`, chart `k8s/charts/agent-platform` from the `agent-platform` GitRepository, with `reconcileStrategy: Revision` like the other asp-repo charts. It sets `crds: Create` / `upgrade.crds: CreateReplace` (the Agent CRD is in the chart's `crds/`), `retries: 3` and helm tests. Its values are environment overrides only: `ghcr-pull-secret`, and the Keycloak issuer and audience. |
-| `kustomization.yaml` | The two files above. |
+| `ingress-tailscale.yaml` | `Ingress agent-web` (`ingressClassName: tailscale`): the web UI at `https://agent-platform.tail45b0ca.ts.net`, which is one of the Keycloak client's redirect URIs. The chart's `agent-web` nginx serves the SPA and proxies `/api` to agent-api. |
+| `kustomization.yaml` | The three files above. |
+
+The staging overlay adds `secrets/`, namespaced to `agent-platform`. It holds the `openbao` consumer
+component and `ExternalSecret claude-subscription`, which reads OpenBao
+`kv/agent-platform/claude-subscription` (property `CLAUDE_CODE_OAUTH_TOKEN`). That is the
+subscription token the **broker** injects into an agent process. Only the broker mounts it, and
+`agent-platform` is listed in `eso-namespaces.txt`. **Write it by hand** with the OpenBao README's
+`bao kv put` procedure. A token stored for the Phase 0 test bed at `kv/agent-p0/...` is not
+visible from this namespace: each namespace reads only its own folder.
 
 The overlay is `../../staging/agent-platform/`. It has its own Flux Kustomization,
 `infra-agent-platform` (`clusters/staging/infrastructure.yaml`), which depends on:

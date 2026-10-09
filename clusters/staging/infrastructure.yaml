@@ -388,32 +388,6 @@ spec:
     secretRef:
       name: sops-age
 ---
-# Agent platform Phase 0 test bed (asp repo services/agent-platform/phase0/README.md).
-# THROWAWAY: removing this block prunes the whole agent-p0 namespace, PVCs included.
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: infra-agent-p0
-  namespace: flux-system
-spec:
-  interval: 10m
-  retryInterval: 1m
-  timeout: 5m
-  dependsOn:
-    # The openbao SecretStore + ESO.
-    - name: infrastructure-services
-    # The Sandbox CRDs, and the RuntimeClass the boxes run on.
-    - name: infra-agent-sandbox
-    - name: infra-gvisor
-    - name: infra-reflector
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  path: ./infrastructure/services/staging/agent-p0
-  prune: true
-  # No wait: a box that fails to start IS a Phase 0 result, not a reconcile failure.
-  wait: false
----
 # The agent platform (asp docs/22-agent-platform.md): namespaces + the chart's HelmRelease.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization

@@ -1,0 +1,17 @@
+# The web UI on the tailnet: https://agent-platform.tail45b0ca.ts.net (the Keycloak client's
+# redirect URI). Its nginx serves the SPA and proxies /api to agent-api.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agent-web
+  namespace: agent-platform
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: agent-web
+      port:
+        number: 8080
+  tls:
+    - hosts:
+        - agent-platform
