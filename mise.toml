@@ -15,6 +15,7 @@ gh = "latest"
 "github:nklmilojevic/sofka" = "latest"
 popeye = "latest"
 trivy = "latest"
+"github:openbao/openbao" = "latest"
 
 [tasks.sops-updatekeys]
 description = "Rewrap *.enc.yaml secrets to recipients in .sops.yaml (pass -- -k FILE [--check])"
