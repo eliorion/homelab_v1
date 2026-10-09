@@ -4,3 +4,10 @@ metadata:
   name: gvisor
 # The containerd handler the siderolabs/gvisor extension registers.
 handler: runsc
+# The Sentry's own memory, measured by the agent platform's Phase 0 (asp
+# services/agent-platform/phase0): an idle box costs 47Mi under runsc and 7Mi under runc.
+# The scheduler and the ResourceQuota count this on top of the pod's requests.
+overhead:
+  podFixed:
+    memory: 40Mi
+    cpu: 10m

@@ -44,11 +44,6 @@ graph as a whole is described in
 `staging/` — it has no `base/` half, so its manifests live entirely in the
 overlay.
 
-`staging/agent-p0/` (the agent platform's throwaway Phase 0 test bed) is deliberately **not**
-in that list. It has its own Flux Kustomization, `infra-agent-p0`, which depends on
-`infra-agent-sandbox` for the `Sandbox` CRDs. Listing it would make the whole tier wait on that
-controller. See [`base/agent-p0/README.md`](base/agent-p0/README.md).
-
 `staging/agent-platform/` is deliberately **not** in that list. It has its own Flux Kustomization,
 `infra-agent-platform`, which depends on `infra-agent-sandbox`, so that controller's CRDs never gate
 the whole tier. See [`base/agent-platform/README.md`](base/agent-platform/README.md).

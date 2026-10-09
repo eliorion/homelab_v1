@@ -23,10 +23,11 @@ CRDs only: no `Sandbox`, template or pool lives here.
 Flux applies it through `infra-agent-sandbox` (`clusters/staging/infrastructure.yaml`):
 `wait: true`, with a health check on the HelmRelease.
 
-The same PR added the agent platform's namespaces (`agent-platform`, `agent-sandboxes`, and the
-Phase 0 test bed `agent-p0`) to two lists:
+The same PR added the agent platform's namespaces (`agent-platform` and `agent-sandboxes`) to two lists:
 - the descheduler's `evictableNamespaces.exclude` (`../descheduler/`);
 - the `ghcr-pull-secret` reflection lists (`../../staging/reflector/`).
+
+The Phase 0 test bed `agent-p0` was on those lists too, until it was removed on 2026-10-09.
 
 ## Why it is like this
 

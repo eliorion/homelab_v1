@@ -39,3 +39,10 @@ spec:
         # Public issuer: the in-cluster Keycloak's NetworkPolicy refuses other namespaces.
         issuerUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps
         audience: agent-platform
+    broker:
+      # The ExternalSecret in ../../staging/agent-platform/secrets.
+      secretName: claude-subscription
+    web:
+      auth:
+        issuerUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps
+        clientId: agent-platform

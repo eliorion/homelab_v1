@@ -52,7 +52,7 @@ nothing.
   (`dev-platform`, whose pods belong to the vcluster syncer), and the public or
   single-replica front ends (`identity`, `cloudflare`, `azuracast`, `fbref`, `asp`,
   `advisor`), where an eviction is a visible outage, and the agent platform (`agent-platform`,
-  `agent-sandboxes`, `agent-p0`), where an evicted sandbox is a killed agent session.
+  `agent-sandboxes`), where an evicted sandbox is a killed agent session.
 
 What remains movable is mostly the scraper (engine-workers and solvers — the bulk
 of the skew), kyverno, keda, the database tools, ai-gateway, n8n's renderer and

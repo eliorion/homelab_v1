@@ -201,23 +201,36 @@ clients:
   # The agent platform's API (asp docs/22-agent-platform.md). agent-api is a RESOURCE SERVER: it
   # verifies tokens this client gets and never issues one. Public, because the callers are
   # a terminal now and a browser SPA later (asp Phase 1b), neither of which can keep a secret.
-  # Device flow only for now: an operator runs the device grant from a shell, approves in a
-  # browser, and gets a 5-minute access token. The SPA adds standardFlow + PKCE + its
-  # redirect URI when it exists; nothing redirects anywhere until then.
+  # Two flows. The device grant, for a shell: run it, approve in a browser, get a 5-minute
+  # access token. And the authorization code flow with PKCE (S256, REQUIRED) for the web UI:
+  # a public client cannot keep a secret, so PKCE is what binds the code to the browser that
+  # asked for it. The redirect URIs are the UI's three origins: the tailnet (staging), and
+  # the devcontainer's dev server, both directly (localhost:3000) and through its Cloudflare
+  # dev tunnel. The dev hostname is shared with the asp webapp's dev loop, so a token can be
+  # obtained from anything served there; agent-api still checks the group on every call.
   - clientId: agent-platform
     name: Agent platform
     description: agent-api (asp services/agent-platform) — roles from the agent-platform-* groups
     protocol: openid-connect
     enabled: true
     publicClient: true
-    standardFlowEnabled: false
+    standardFlowEnabled: true
     implicitFlowEnabled: false
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
     attributes:
       "oauth2.device.authorization.grant.enabled": "true"
-    redirectUris: []
-    webOrigins: []
+      "pkce.code.challenge.method": "S256"
+      "post.logout.redirect.uris": "https://agent-platform.tail45b0ca.ts.net/*##https://dev-automarket-webapp.eliorion.fr/*##http://localhost:3000/*"
+    redirectUris:
+      - https://agent-platform.tail45b0ca.ts.net/*
+      - https://dev-automarket-webapp.eliorion.fr/*
+      - http://localhost:3000/*
+    # CORS for the token and userinfo endpoints, which the SPA calls from these origins.
+    webOrigins:
+      - https://agent-platform.tail45b0ca.ts.net
+      - https://dev-automarket-webapp.eliorion.fr
+      - http://localhost:3000
     defaultClientScopes:
       - email
       - profile
