@@ -5,7 +5,7 @@ eBPF datapath running in kube-proxy replacement mode, and it also supplies the t
 this bare-metal cluster had no other source for: external IPs for `type: LoadBalancer`
 Services (LB-IPAM + L2/ARP announcement) and L7 ingress (Gateway API). Talos installs no
 CNI at all (`cni.name: none` in `bootstraping/patches/common.yaml`) — the chart in this
-directory is the datapath. Chart version `1.19.8`, pinned and bumped by Renovate.
+directory is the datapath. Chart version `1.20.2`, pinned and bumped by Renovate.
 
 Deep detail, the live migration runbook and the 2026-06-12 incident write-up live in
 [../../../../documentations/08-cilium-cni-ingress-migration.md](../../../../documentations/08-cilium-cni-ingress-migration.md).
@@ -19,7 +19,7 @@ The decisions behind it are summarised in
 |---|---|
 | `kustomization.yaml` | Bundles `repository.yaml` + `release.yaml`. There is deliberately no `namespace.yaml`: Cilium targets the pre-existing `kube-system`, which is why `install.createNamespace` is `false`. |
 | `repository.yaml` | `HelmRepository` `cilium` in `flux-system`, `https://helm.cilium.io`, 24h interval. |
-| `release.yaml` | The `HelmRelease` — chart `cilium` `1.19.8`, `targetNamespace: kube-system`. All datapath, LB-IPAM, Gateway API and Hubble settings are `spec.values` here. |
+| `release.yaml` | The `HelmRelease` — chart `cilium` `1.20.2`, `targetNamespace: kube-system`. All datapath, LB-IPAM, Gateway API and Hubble settings are `spec.values` here. |
 | `config/kustomization.yaml` | Bundles the two CR files below. Rendered by a **separate** Flux Kustomization so it can be ordered after the chart. |
 | `config/pool.yaml` | `CiliumLoadBalancerIPPool` `lan-pool` (`192.168.1.110`–`192.168.1.130`) and `CiliumL2AnnouncementPolicy` `lan-l2` that ARP-announces those IPs on the LAN. |
 | `config/gateway.yaml` | `Gateway` `cilium-gw` (GatewayClass `cilium`, HTTP listener on `:80`, routes allowed `from: All`) and the `HTTPRoute` `nexus` in namespace `nexus` pointing `nexus.staging.lan` at `nexus-lb:8081`. |

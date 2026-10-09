@@ -93,7 +93,7 @@ Dagger CI telemetry), `20` cluster health 2026-10 (etcd timing, OOM limits,
   `bootstraping/render.sh`), run `bootstraping/render.sh`, review
   `talosctl apply-config --dry-run`, then apply. Never regenerate `talsecret`
   (new PKI = dead cluster).
-- CNI is **Cilium** `1.19.8`, kube-proxy-free, with LB-IPAM (`192.168.1.110-130`)
+- CNI is **Cilium** `1.20.2`, kube-proxy-free, with LB-IPAM (`192.168.1.110-130`)
   + L2 announce and Gateway API — `infrastructure/controllers/base/cilium/README.md`.
 - Storage: **LINSTOR/DRBD** (Piraeus) is the block tier — class `ssd`, the
   cluster default, two replicas plus a diskless tiebreaker across all three

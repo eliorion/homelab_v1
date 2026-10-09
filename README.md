@@ -15,7 +15,7 @@ prove work because I restored them rather than because I configured them.
 | **OS** | Talos Linux `v1.14.2`, immutable, no SSH, no package manager, API driven |
 | **Kubernetes** | `v1.36.1`, API VIP `192.168.1.100` elected through an etcd lease |
 | **GitOps** | Flux `v2.9.6`, 18 Kustomizations with an explicit dependency graph, `prune: true` everywhere |
-| **Network** | Cilium `1.19.8` without kube-proxy, LB-IPAM pool `.110` to `.130`, Gateway API `v1.6.1` |
+| **Network** | Cilium `1.20.2` without kube-proxy, LB-IPAM pool `.110` to `.130`, Gateway API `v1.6.1` |
 | **Storage** | Longhorn `1.12.0`, 3 replicas by default, one per node |
 | **Databases** | 7 CloudNativePG Postgres clusters, 4 with continuous WAL shipped off cluster |
 | **Secrets** | SOPS with age, 42 encrypted files, private key never committed |
@@ -172,7 +172,7 @@ Details: [documentations/07-talos-ha-expansion.md](documentations/07-talos-ha-ex
 | Host OS | Talos Linux | `v1.14.2` | No SSH and no shell means the machine config is the only way to change a node, so node state is as reviewable as application state | Debian on Proxmox |
 | Kubernetes | upstream via Talos | `v1.36.1` | Three member etcd survives one node leaving | single node k3s |
 | Node config | `talosctl gen config` + patches | rendered | `bootstraping/render.sh` renders all three machine configs from shared and per-node patches, so the shared block cannot drift between nodes (talhelper until 2026-10-09, archived upstream) | three hand copied 25 KB files |
-| CNI | Cilium | `1.19.8` | eBPF service load balancing lets kube-proxy be removed entirely; Hubble gives flow visibility | Flannel plus kube-proxy |
+| CNI | Cilium | `1.20.2` | eBPF service load balancing lets kube-proxy be removed entirely; Hubble gives flow visibility | Flannel plus kube-proxy |
 | Load balancer | Cilium LB-IPAM plus L2 announcements | in chart | Bare metal `type: LoadBalancer` with no extra controller | k3s ServiceLB, which does not exist on Talos |
 | L7 ingress | Gateway API | `v1.6.1` | The chart already provides a GatewayClass; no second ingress controller to own | Traefik, retired with k3s |
 | Storage | Longhorn | `1.12.0` | Replicated block storage across three nodes with online volume expansion | `local-path`, single node only |
