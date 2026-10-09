@@ -12,7 +12,7 @@ spec:
     requests.cpu: "7"
     requests.memory: 12Gi
     limits.cpu: "42"
-    limits.memory: 36Gi
+    limits.memory: 48Gi
     persistentvolumeclaims: "16"
     requests.storage: 40Gi
     ssd-single.storageclass.storage.k8s.io/requests.storage: 40Gi

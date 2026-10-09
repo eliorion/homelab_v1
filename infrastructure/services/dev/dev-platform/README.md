@@ -156,7 +156,7 @@ e2e overlay's own shape). One run's worth:
 
 `dev-quota` covers the platform plus two stack sets — the persistent environment and one
 fresh migration run: 75 pods, 7 CPU and 12Gi requested,
-42 CPU and 36Gi of limits, 16 PVCs, 40Gi `ssd-single`. `limits.cpu` is the number that has
+42 CPU and 48Gi of limits, 16 PVCs, 40Gi `ssd-single`. `limits.cpu` is the number that has
 actually run out in practice (E2E_dev_platform failing with `exceeded quota: dev-quota` on an
 unrelated stack's pod mid-run, `asp` PR #428) — 30 was sized for three stacks, and advisor's own
 ~5.5 CPU of limits per run, times two run-slots, is where the extra 12 comes from. Requests and
@@ -164,7 +164,10 @@ memory stayed put: advisor's own requests and memory are a small fraction of eit
 neither was ever the pod actually refused. Because the quota caps `limits.cpu`, `dev-limits`
 gives every container without a CPU limit a 500m default; the vcluster control plane sets its
 own 2 CPU so the API server is not throttled. The asp lane runs at most two at once (its runner
-scale set). Free requests on the cluster at measurement (2026-09-15, pre-advisor): ~18 CPU, ~37Gi.
+scale set). `limits.memory` went 36Gi to 48Gi on 2026-10-09: two overlapping four-stack runs hit
+36218Mi and `engine-worker` was refused (`exceeded quota`), failing the scraper check. Limits are
+not scheduled against, so this only lifts the admission cap; the real ceiling is node memory
+*requests* (~90% on all three nodes). Free requests on the cluster at measurement (2026-09-15, pre-advisor): ~18 CPU, ~37Gi.
 
 ## Traps
 
