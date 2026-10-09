@@ -1,0 +1,20 @@
+# agent-platform: the control plane (agent-api, the Agent controller).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-platform
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+# agent-sandboxes: the agents themselves (gVisor boxes, one per Agent), their templates, warm
+# pools and network policy. Restricted too: a box runs non-root, drops ALL, RuntimeDefault seccomp.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-sandboxes
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

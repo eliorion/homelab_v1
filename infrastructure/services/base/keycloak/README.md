@@ -55,7 +55,7 @@ Traffic in:
 |---|---|
 | `job.yaml` | A `keycloak-config-cli` Job (`adorsys/keycloak-config-cli:6.5.1-26`) that logs in as the operator-generated admin and applies the three realm files. |
 | `realm-mcp.yaml` | The `mcp` realm: anonymous dynamic client registration fenced by client-registration policies, the `mcp:tools` scope, and the audience mapper for `https://fbref-mcp.eliorion.fr/mcp`. |
-| `realm-apps.yaml` | The applications realm — **name from `$(env:APPS_REALM)`**, `staging-apps` on this cluster. Two confidential clients: `cloudflare-access` for Zero Trust edge authentication of tunnel-published UIs (today: nao), and `nextcloud` for Nextcloud's own `user_oidc` login. Carries the access catalogue: one group per application. |
+| `realm-apps.yaml` | The applications realm — **name from `$(env:APPS_REALM)`**, `staging-apps` on this cluster. Two confidential clients: `cloudflare-access` for Zero Trust edge authentication of tunnel-published UIs (today: nao), and `nextcloud` for Nextcloud's own `user_oidc` login. Plus one public client, `agent-platform`: device flow only, audience mapper `aud: agent-platform`, flat `groups` claim, consumed by the agent platform's agent-api (a resource server). Carries the access catalogue: one group per application. |
 | `realm-master.yaml` | The `master` realm, carrying a single attribute: `frontendUrl`. |
 | `kustomization.yaml` | A `configMapGenerator` that packs the three realm files into the `keycloak-realm` ConfigMap, plus `job.yaml`. |
 
@@ -104,6 +104,7 @@ to that group. This is the whole authorization model:
 | `nextcloud-users` | Nextcloud | **user_oidc itself** — `--group-restrict-login-to-whitelist=1` with `--group-whitelist-regex '^nextcloud-'`. Live. |
 | `nextcloud-admins` | Nextcloud | Provisioned as a Nextcloud group; grants no admin rights on its own (Nextcloud's admin group is `admin`). |
 | `nao-users` | nao | **A Cloudflare Access policy** matching the `groups` claim. Until that policy is switched from an email list to a group rule, this group grants nothing. |
+| `agent-platform-viewers` / `-operators` / `-admins` | agent-platform (asp) | **agent-api itself**: it maps the token's `groups` claim to a role (highest wins). No group = 403 on every route but `/healthz`. |
 
 The right-hand column is the point. A group is inert unless something reads it,
 and the enforcement point differs per application: an app with native OIDC can

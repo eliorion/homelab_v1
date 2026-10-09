@@ -1,0 +1,41 @@
+# Chart owned by the asp repo (k8s/charts/agent-platform). Values here are environment overrides
+# ONLY, never image tags (the chart's values.yaml owns those, bumped by asp CI). README.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: agent-platform
+  namespace: flux-system
+spec:
+  targetNamespace: agent-platform
+  interval: 30m
+  chart:
+    spec:
+      chart: k8s/charts/agent-platform
+      sourceRef:
+        kind: GitRepository
+        name: agent-platform
+      interval: 12h
+      reconcileStrategy: Revision
+  install:
+    createNamespace: false
+    # The Agent CRD lives in the chart's crds/, which Helm itself never upgrades.
+    crds: Create
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled (documentations/14).
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      strategy: rollback
+  test:
+    enable: true
+  values:
+    global:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+    api:
+      auth:
+        # Public issuer: the in-cluster Keycloak's NetworkPolicy refuses other namespaces.
+        issuerUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps
+        audience: agent-platform

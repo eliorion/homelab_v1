@@ -414,6 +414,29 @@ spec:
   # No wait: a box that fails to start IS a Phase 0 result, not a reconcile failure.
   wait: false
 ---
+# The agent platform (asp docs/22-agent-platform.md): namespaces + the chart's HelmRelease.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-agent-platform
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 10m
+  dependsOn:
+    - name: infra-agent-sandbox
+    - name: infra-gvisor
+    - name: infra-reflector
+    - name: infra-cilium
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/services/staging/agent-platform
+  prune: true
+  # No wait: helm tests gate the release; Flux health is the HelmRelease's own.
+  wait: false
+---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:

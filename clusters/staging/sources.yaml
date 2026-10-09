@@ -116,3 +116,27 @@ spec:
     !/k8s/charts/scraper/
     # The library chart scraper depends on (file://../common); see the asp source.
     !/k8s/charts/common/
+---
+# Source for the agent platform's Helm chart (k8s/charts/agent-platform in the asp repo).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: agent-platform
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: ssh://git@github.com/Eliorion/asp
+  ref:
+    branch: main
+  secretRef:
+    name: asp-deploy-key
+  # Scoped to the chart path: reconcileStrategy: Revision re-reconciles on every new revision.
+  ignore: |
+    /*
+    !/k8s/
+    /k8s/*
+    !/k8s/charts/
+    /k8s/charts/*
+    !/k8s/charts/agent-platform/
+    # The library chart it depends on (file://../common).
+    !/k8s/charts/common/

@@ -49,6 +49,10 @@ in that list. It has its own Flux Kustomization, `infra-agent-p0`, which depends
 `infra-agent-sandbox` for the `Sandbox` CRDs. Listing it would make the whole tier wait on that
 controller. See [`base/agent-p0/README.md`](base/agent-p0/README.md).
 
+`staging/agent-platform/` is deliberately **not** in that list. It has its own Flux Kustomization,
+`infra-agent-platform`, which depends on `infra-agent-sandbox`, so that controller's CRDs never gate
+the whole tier. See [`base/agent-platform/README.md`](base/agent-platform/README.md).
+
 There is no `production/` overlay. The unused one, never deployed and still
 encoding a shared bucket layout that staging deliberately moved away from, was
 deleted on 2026-09-15 — see the open-work section of
