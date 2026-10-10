@@ -3,4 +3,11 @@ kind: Kustomization
 resources:
   - release.yaml
   - release-e2e.yaml
+  - release-dagger.yaml
   - github-pat.enc.yaml
+# Plaintext annotation patch over the SOPS Secret, applied after decryption.
+patches:
+  - path: github-pat-reflection.yaml
+    target:
+      kind: Secret
+      name: arc-github-pat

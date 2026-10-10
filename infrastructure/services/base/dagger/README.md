@@ -85,6 +85,10 @@ Kubernetes, and it drives three rules:
 3. **Fork pull requests must never run on runners bound to this Role.** Gate on
    `github.event.pull_request.head.repo.full_name == github.repository`.
 
+The exec RoleBinding names three runner ServiceAccounts: the default pool, the e2e pool and the
+lean pool `self-hosted-arc-dagger` in `arc-dagger`
+(`../../staging/arc-runner-set/README.md`).
+
 ## Engine config
 
 `config/engine.json` stays a plain JSON file. A kustomize `replacement` copies it into

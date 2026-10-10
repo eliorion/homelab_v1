@@ -9,3 +9,13 @@ metadata:
   name: arc-runners
   labels:
     pod-security.kubernetes.io/enforce: privileged
+---
+# The lean pool (self-hosted-arc-dagger): no dind, so nothing here needs privilege.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-dagger
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
