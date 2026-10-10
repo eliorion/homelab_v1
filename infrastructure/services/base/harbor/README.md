@@ -165,8 +165,9 @@ with the `harbor-admin` Secret and converges, idempotently, on every run:
 
 - project `e2e`: a normal (not proxy-cache) **private** project, quota 50Gi — proxy-cache
   projects refuse pushes;
-- tag retention on it: keep images pushed in the last 7 days **or** the 5 most recent per
-  repository, daily at 03:00;
+- tag retention on it, daily at 03:00, two rules ORed: `pr-*` tags pushed in the last 1 day, and
+  the 2 newest per repository of the release baseline tags (`*-v[0-9]*`, main's released tags
+  copied from GHCR). A tag matching neither rule is removed;
 - a weekly garbage-collection schedule, created only if Harbor has none (retention untags; only
   GC frees the disk). An existing schedule is left alone;
 - robot `robot$e2e+ci`: push + pull on `e2e`, for the asp `build-scan` job (a push checks for
@@ -184,6 +185,18 @@ A secret must be 8-128 characters with an upper, a lower and a digit; the Job re
 else before calling Harbor. The Job is re-created after `ttlSecondsAfterFinished` (a day), so a
 change made in the UI to these objects is reverted within a day. Objects not listed here —
 the proxy projects below — are untouched.
+
+**Why two rules and not "keep the newest image per repository".** `e2e/<image>` holds two
+kinds of tag. PR builds (`pr-<n>-<sha12>`) are CI scratch: measured 2026-10-10, every pulled
+image was last pulled under a day after its push, and about a dozen PRs push into the same
+repositories per day, so a per-repository count keeps one PR's image and deletes every other
+open PR's (a queued or re-run e2e job then fails on pull). Release tags (`<image>-vX.Y.Z`) are
+main's baseline; a PR push is always newer, so "newest 1" over all tags would delete the
+baseline nightly. Hence time for PR tags, count for release tags (2: the current release and
+the previous one, against a release landing mid-run). Harbor's smallest time unit is 1 day.
+Measured effect: 50 GB of quota at 7 days / 5 newest, about 17 GB at this policy; the busiest day
+pushed 13 GB deduplicated, so the ceiling between two nightly runs is roughly 30 GB.
+Retention frees quota; GC only frees registry-volume disk.
 
 Proven against Harbor 2.15.2 on a scratch project (since deleted): create, a second idempotent
 run, a secret rotation (the old secret's token grants no actions), GC schedule creation, and the

@@ -68,13 +68,14 @@ qid=$(api GET "/quotas?reference=project&reference_id=$pid" | jq -r '.[0].id')
 api PUT "/quotas/$qid" -d "{\"hard\":{\"storage\":$STORAGE_LIMIT}}"
 log "project $PROJECT: private, quota $STORAGE_LIMIT bytes"
 
-# ── retention: keep what was pushed in the last 7 days OR the 5 newest, per repository ───
+# ── retention: PR images 1 day; release baseline tags, the 2 newest per repository ───────
 policy=$(jq -n --argjson pid "$pid" '
-  def rule(t; p): {disabled: false, action: "retain", template: t, params: p,
-    tag_selectors: [{kind: "doublestar", decoration: "matches", pattern: "**"}],
+  def rule(t; p; tag): {disabled: false, action: "retain", template: t, params: p,
+    tag_selectors: [{kind: "doublestar", decoration: "matches", pattern: tag}],
     scope_selectors: {repository: [{kind: "doublestar", decoration: "repoMatches", pattern: "**"}]}};
   {algorithm: "or",
-   rules: [rule("nDaysSinceLastPush"; {nDaysSinceLastPush: 7}), rule("latestPushedK"; {latestPushedK: 5})],
+   rules: [rule("nDaysSinceLastPush"; {nDaysSinceLastPush: 1}; "pr-*"),
+           rule("latestPushedK"; {latestPushedK: 2}; "*-v[0-9]*")],
    trigger: {kind: "Schedule", settings: {cron: "0 0 3 * * *"}},
    scope: {level: "project", ref: $pid}}')
 rid=$(api GET "/projects/$pid" | jq -r '.metadata.retention_id // empty')
@@ -83,7 +84,7 @@ if [ -n "$rid" ]; then
 else
   api POST /retentions -d "$policy"
 fi
-log "retention: 7 days or 5 newest, daily at 03:00"
+log "retention: pr-* 1 day, release tags 2 newest, daily at 03:00"
 
 # ── garbage collection: retention only untags; GC frees the disk. Never overrides a schedule ─
 # No schedule yet answers an empty body, which jq turns into an empty string.
