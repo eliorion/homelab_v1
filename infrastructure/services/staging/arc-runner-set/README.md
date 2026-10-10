@@ -21,7 +21,7 @@ is described in
 | File | What it does |
 |---|---|
 | `kustomization.yaml` | Lists `release.yaml`, `release-e2e.yaml`, `github-pat.enc.yaml`. |
-| `release.yaml` | `HelmRelease/arc-runner-set-asp` in `flux-system`, `targetNamespace: arc-runners`, chart `gha-runner-scale-set` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h. Registers the scale set `self-hosted-arc`, `minRunners: 5` / `maxRunners: 25`, with a hand-written dind pod template. |
+| `release.yaml` | `HelmRelease/arc-runner-set-asp` in `flux-system`, `targetNamespace: arc-runners`, chart `gha-runner-scale-set` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h. Registers the scale set `self-hosted-arc`, `minRunners: 5` / `maxRunners: 16`, with a hand-written dind pod template. |
 | `release-e2e.yaml` | `HelmRelease/arc-runner-set-asp-e2e`, same chart, namespace and secret. Registers `self-hosted-arc-e2e`, `minRunners: 0` / `maxRunners: 2` — the e2e lane's concurrency, sized to the platform quota. Runner container only (no dind, non-root, no privilege escalation): the job drives the in-cluster Dagger engine and reads Secret `dev-platform/vc-e2e-runner` (Role in `infrastructure/services/dev/dev-platform/runner-access.yaml`). |
 | `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). Both releases point at it through `githubConfigSecret`. Never commit it decrypted. |
 
@@ -45,7 +45,7 @@ Sizing as the manifests currently declare it:
 
 | Pool | Runners | runner container | dind sidecar |
 |---|---|---|---|
-| `self-hosted-arc` | min 5 / max 25 | req 2Gi, limit 4Gi | req 1Gi, limit 6Gi, no CPU limit |
+| `self-hosted-arc` | min 5 / max 16 | req 2Gi, limit 4Gi | req 1Gi, limit 6Gi, no CPU limit |
 | `self-hosted-arc-e2e` | min 0 / max 2 | req 100m CPU + 512Mi, limit 2Gi | none |
 
 Flux applies this directory as part of the `infrastructure-services`
@@ -199,7 +199,7 @@ CI job pending.
 - **The sizing prose has drifted from the manifests.** The sizing notes in
   [04-ci-runners-cache.md](../../../../documentations/04-ci-runners-cache.md)
   quote `maxRunners: 10` for the default pool, and describe an XL pool that no longer
-  exists. The values in this directory are authoritative: default 5/25 with a 1Gi/6Gi dind,
+  exists. The values in this directory are authoritative: default 5/16 with a 1Gi/6Gi dind,
   e2e 0/2 with no dind.
 
 ## Operating it

@@ -30,7 +30,7 @@ spec:
     # `runs-on: self-hosted-arc` in workflow files targets this scale set.
     runnerScaleSetName: self-hosted-arc
     minRunners: 5
-    maxRunners: 25
+    maxRunners: 16
     # Manual dind template, NOT containerMode: dind — that one accepts no extra
     # dockerd flags, so it cannot pass --insecure-registry (see README).
     template:
