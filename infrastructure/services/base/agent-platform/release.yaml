@@ -43,6 +43,8 @@ spec:
       # The ExternalSecret in ../../staging/agent-platform/secrets.
       secretName: claude-subscription
     web:
+      # The UI, on the tailnet at https://agent-platform.tail45b0ca.ts.net (ingress-tailscale.yaml).
+      enabled: true
       auth:
         issuerUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps
         clientId: agent-platform
