@@ -44,7 +44,7 @@ Set up in earlier PRs:
 
 ## Agents are not in git
 
-An agent is an `Agent` object (`agentplatform.eliorion.fr/v1alpha1`). agent-api creates it at
+An agent is an `Agent` object (`agentic.platform/v1alpha1`). agent-api creates it at
 runtime. The controller turns it into a `SandboxClaim` on a warm pool and owns that claim, so
 deleting the Agent deletes the claim, the box and its workspace. None of those objects is in this
 repo, and Flux never prunes them.
