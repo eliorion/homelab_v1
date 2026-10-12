@@ -85,7 +85,8 @@ Dagger CI telemetry), `20` cluster health 2026-10 (etcd timing, OOM limits,
   commit plaintext secrets. No `.enc.yaml` lives under a `base/` path.
 - Chart versions are pinned and Renovate bumps them. Container image tags under
   `apps/` are **not** — `renovate.json` scopes the kubernetes manager to
-  `/apps/.+/db-migrations/.+\.yaml$/`, so every other image pin is manual. The
+  `/apps/.+/db-migrations/.+\.yaml$/` and `infrastructure/` (minus `upstream/`
+  and `policies/tests/`), so every other image pin is manual. The
   two ARC charts (`gha-runner-scale-set-controller` and `gha-runner-scale-set`)
   must stay on the same version.
 - Node config is rendered by **plain `talosctl`** (talhelper was archived and

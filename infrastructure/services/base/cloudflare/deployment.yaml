@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: cloudflared
-          # Pinned off :latest (Radar audit imageTagLatest). Renovate bumps it.
+          # renovate: datasource=docker depName=cloudflare/cloudflared
           image: cloudflare/cloudflared:2026.7.3
           securityContext:
             allowPrivilegeEscalation: false
