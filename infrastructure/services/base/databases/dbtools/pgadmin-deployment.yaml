@@ -31,7 +31,7 @@ spec:
         # Build the pgpass the servers.json PassFile entries point at, from the
         # reflected CNPG credentials.
         - name: pgpass
-          image: busybox:1.37.0
+          image: busybox:1.38.0
           command:
             - /bin/sh
             - -c
