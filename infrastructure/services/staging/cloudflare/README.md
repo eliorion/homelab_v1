@@ -318,6 +318,19 @@ use `Include → Everyone` with the IdP as the only gate — the `staging-apps` 
 Leaving One-time PIN enabled would let anyone with any email address bypass
 Keycloak entirely; it is on by default when an application is created.
 
+### 5. `raph-corp.eliorion.fr` — the Raph Corp quote form (hostname to confirm)
+
+| Field | Value |
+|---|---|
+| Subdomain / Domain | `raph-corp` / `eliorion.fr` |
+| Path | *(empty — the whole host)* |
+| Service | `http://raph-corp.raph-corp.svc.cluster.local:8080` |
+| HTTP Host Header | *(leave empty — pass the original through)* |
+
+Plain HTTP inside the cluster, same as fbref-mcp: the Node.js pod serves no TLS. The chart's
+NetworkPolicy is egress-only, so cloudflared needs no ingress rule. The form is public and has
+no login; see [`../../../../apps/staging/raph-corp/README.md`](../../../../apps/staging/raph-corp/README.md).
+
 ## WAF rule — the second layer
 
 Security → WAF → Custom rules. One rule, on the `eliorion.fr` zone:

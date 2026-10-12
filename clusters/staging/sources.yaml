@@ -140,3 +140,28 @@ spec:
     !/k8s/charts/agent-platform/
     # The library chart it depends on (file://../common).
     !/k8s/charts/common/
+---
+# Source for the raph-corp Helm chart (k8s/charts/raph-corp in the asp repo).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: raph-corp
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: ssh://git@github.com/eliorion/asp
+  ref:
+    branch: main
+  secretRef:
+    name: asp-deploy-key
+  # Keep scoped to the chart path: reconcileStrategy: Revision re-reconciles on
+  # every new artifact revision.
+  ignore: |
+    /*
+    !/k8s/
+    /k8s/*
+    !/k8s/charts/
+    /k8s/charts/*
+    !/k8s/charts/raph-corp/
+    # The library chart raph-corp depends on (file://../common); see the asp source.
+    !/k8s/charts/common/

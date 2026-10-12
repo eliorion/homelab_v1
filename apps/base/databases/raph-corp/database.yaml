@@ -1,0 +1,20 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: raph-corp-db
+  namespace: raph-corp
+spec:
+  # Test site: one instance is enough. Raise to 2 before real traffic.
+  instances: 1
+  # Field is imageName (not image); ghcr.io/cloudnative-pg/cloudnative-pg is the
+  # OPERATOR image and must never be used here.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+
+  bootstrap:
+    initdb:
+      database: raph_corp
+      owner: app
+      # The app applies its own SQL migrations at startup (no Flyway job).
+
+  storage:
+    size: 1Gi
