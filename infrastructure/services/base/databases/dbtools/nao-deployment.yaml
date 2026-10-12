@@ -33,7 +33,7 @@ spec:
         # Seed the project directory ONCE — `cp -n`, so the PVC copy wins after
         # the first boot.
         - name: seed-project
-          image: busybox:1.37.0
+          image: busybox:1.38.0
           command:
             - /bin/sh
             - -c
