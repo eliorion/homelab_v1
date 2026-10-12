@@ -42,6 +42,9 @@ spec:
     broker:
       # The ExternalSecret in ../../staging/agent-platform/secrets.
       secretName: claude-subscription
+    # Custom model providers' keys (namespace.yaml): turns Settings > Model providers on.
+    providers:
+      namespace: agent-providers
     web:
       # The UI, on the tailnet at https://agent-platform.tail45b0ca.ts.net (ingress-tailscale.yaml).
       enabled: true

@@ -18,3 +18,16 @@ metadata:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
+---
+# agent-providers: the custom model providers' Secrets (an AI-gateway virtual key, an API key),
+# written by agent-api from the UI (Settings > Model providers) and read by the broker when it starts
+# a runtime. Nothing runs here. Its own namespace so agent-api, which writes Secrets, never reaches
+# the subscription token Secret in agent-platform.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-providers
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

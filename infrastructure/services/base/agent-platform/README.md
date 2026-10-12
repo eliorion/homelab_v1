@@ -11,7 +11,7 @@ This directory is the cluster wiring only.
 
 | File | What it does |
 |---|---|
-| `namespace.yaml` | Two namespaces, both PodSecurity `restricted`. `agent-platform` holds the control plane (agent-api and the Agent controller). `agent-sandboxes` holds the agents: one gVisor box per `Agent`, plus the chart's templates, warm pools, quota and CiliumNetworkPolicies. |
+| `namespace.yaml` | Three namespaces, all PodSecurity `restricted`. `agent-platform` holds the control plane (agent-api and the Agent controller). `agent-sandboxes` holds the agents: one gVisor box per `Agent`, plus the chart's templates, warm pools, quota and CiliumNetworkPolicies. `agent-providers` holds only the custom model providers' Secrets (Settings › Model providers in the UI): agent-api writes them there and the broker reads them, so agent-api never reaches the subscription token in `agent-platform`. |
 | `release.yaml` | `HelmRelease agent-platform`, chart `k8s/charts/agent-platform` from the `agent-platform` GitRepository, with `reconcileStrategy: Revision` like the other asp-repo charts. It sets `crds: Create` / `upgrade.crds: CreateReplace` (the Agent CRD is in the chart's `crds/`), `retries: 3` and helm tests. Its values are environment overrides only: `ghcr-pull-secret`, and the Keycloak issuer and audience. |
 | `ingress-tailscale.yaml` | `Ingress agent-web` (`ingressClassName: tailscale`): the web UI at `https://agent-platform.tail45b0ca.ts.net`, which is one of the Keycloak client's redirect URIs. The chart's `agent-web` nginx serves the SPA and proxies `/api` to agent-api. |
 | `kustomization.yaml` | The three files above. |
