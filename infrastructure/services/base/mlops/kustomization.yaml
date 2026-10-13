@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - repository.yaml
   - dagster-workspace.yaml
+  - mlflow-auth-config.yaml
   - networkpolicies.yaml
   - release-dagster.yaml
   - release-mlflow.yaml

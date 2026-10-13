@@ -8,11 +8,10 @@ spec:
   instances: 1
   bootstrap:
     initdb:
-      # Must match postgresql.postgresqlDatabase/Username in the dagster HelmRelease.
-      database: dagster
-      owner: dagster
-      secret:
-        name: mlops-dagster-db
+      # CNPG generates this owner's login as Secret mlops-db-app (uri, host, username, password):
+      # MLflow reads it directly. Must match release-mlflow.yaml.
+      database: mlflow
+      owner: mlflow
   managed:
     roles:
       - name: dagster
@@ -20,11 +19,6 @@ spec:
         login: true
         passwordSecret:
           name: mlops-dagster-db
-      - name: mlflow
-        ensure: present
-        login: true
-        passwordSecret:
-          name: mlops-mlflow-db
   resources:
     requests:
       cpu: 100m
@@ -38,13 +32,13 @@ spec:
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:
-  name: mlflow
+  name: dagster
   namespace: mlops
 spec:
   cluster:
     name: mlops-db
-  name: mlflow
-  owner: mlflow
+  name: dagster
+  owner: dagster
   databaseReclaimPolicy: retain
 ---
 apiVersion: postgresql.cnpg.io/v1

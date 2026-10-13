@@ -45,15 +45,33 @@ spec:
         allowed_hosts: "mlflow,mlflow:5000,mlflow.mlops:5000,mlflow.mlops.svc.cluster.local:5000,mlflow.tail45b0ca.ts.net"
       flag_options:
         - serve_artifacts
+    # CNPG's generated owner login (mlops-db-app): the URI for the runs store, the PG* variables below
+    # for the auth store, whose INI file carries no password.
     mlflow:
       backendStoreUriFrom:
         secretKeyRef:
-          name: mlops-mlflow-db
+          name: mlops-db-app
           key: uri
       artifactsDestination: s3://mlflow-artifacts
     env:
+      - name: PGHOST
+        valueFrom:
+          secretKeyRef: {name: mlops-db-app, key: host}
+      - name: PGPORT
+        valueFrom:
+          secretKeyRef: {name: mlops-db-app, key: port}
+      - name: PGUSER
+        valueFrom:
+          secretKeyRef: {name: mlops-db-app, key: username}
+      - name: PGPASSWORD
+        valueFrom:
+          secretKeyRef: {name: mlops-db-app, key: password}
       - name: MLFLOW_AUTH_CONFIG_PATH
         value: /etc/mlflow/auth.ini
+      # Seeds the admin user on the FIRST start only.
+      - name: MLFLOW_AUTH_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef: {name: mlflow-auth, key: admin-password}
       - name: MLFLOW_FLASK_SERVER_SECRET_KEY
         valueFrom:
           secretKeyRef: {name: mlflow-auth, key: flask-secret-key}
@@ -75,10 +93,8 @@ spec:
         value: /tmp
     extraVolumes:
       - name: auth
-        secret:
-          secretName: mlflow-auth
-          items:
-            - {key: auth.ini, path: auth.ini}
+        configMap:
+          name: mlflow-auth-config
     extraVolumeMounts:
       - {name: auth, mountPath: /etc/mlflow, readOnly: true}
     # The server refuses to start on an out-of-date schema; the chart runs no migration.
@@ -89,7 +105,7 @@ spec:
         env:
           - name: MLFLOW_BACKEND_STORE_URI
             valueFrom:
-              secretKeyRef: {name: mlops-mlflow-db, key: uri}
+              secretKeyRef: {name: mlops-db-app, key: uri}
           - name: HOME
             value: /tmp
         securityContext:
