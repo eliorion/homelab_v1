@@ -1,0 +1,23 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. S3 credential for bucket ml-lake (asp repo docs/25: the ML data
+# lake, parquet snapshots of fbref read and written by the fbref-pipelines run pods; chart values
+# pipelines.run.envSecrets). Steps: ../README.md.
+#   cp ml-lake.enc.yaml.exemple ml-lake.enc.yaml
+#   # ML_LAKE_S3_ACCESS_KEY: openssl rand -hex 12
+#   # ML_LAKE_S3_SECRET_KEY: openssl rand -hex 32
+#   sops -e -i ml-lake.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-ml-lake
+  namespace: flux-system
+  annotations:
+    # Reflector copies this Secret into the consuming namespace, so one file serves both
+    # the identity (here) and the client (there).
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: fbref
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: fbref
+type: Opaque
+stringData:
+  ML_LAKE_S3_ACCESS_KEY: "<openssl rand -hex 12>"
+  ML_LAKE_S3_SECRET_KEY: "<openssl rand -hex 32>"

@@ -9,6 +9,9 @@ resources:
   # MLflow's proxied artifact store (asp k8s/charts/mlops): run artifacts, model files, frozen
   # training sets. In-cluster on purpose: Garage is off-site and kept for disaster-recovery data.
   - mlflow-artifacts.enc.yaml
+  # The ML data lake (asp docs/25): parquet snapshots of fbref for the fbref-pipelines run pods.
+  # Holds special-category data (GDPR Art. 9), so its identity reaches this bucket and nothing else.
+  - ml-lake.enc.yaml
   - nextcloud.enc.yaml
   # The scraper's own identity for streaming advisor files into advisor-corpus (asp scraper
   # chart engine.fileSinks), separate so the scraper never holds the advisor engine's key.

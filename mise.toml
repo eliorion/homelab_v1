@@ -33,3 +33,8 @@ description = "bao against the cluster's OpenBao: port-forward, CA and admin log
 run = "scripts/bao"
 # Never echo the command line: it carries the secret values being written.
 quiet = true
+
+[tasks.mlflow-user]
+description = "Create an MLflow user from its OpenBao password, as the MLflow admin. Usage: mise mlflow-user pipelines kv/fbref/mlflow-pipelines"
+run = "scripts/mlflow-user"
+quiet = true

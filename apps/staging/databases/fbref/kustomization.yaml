@@ -3,12 +3,18 @@ kind: Kustomization
 
 namespace: fbref
 
+# OpenBao SecretStore + its ServiceAccount: this namespace reads kv/fbref/* (eso-namespaces.txt).
+components:
+  - ../../../../infrastructure/services/base/openbao/consumer
+
 resources:
   - ../../../base/databases/fbref
   # Passwords for the grafana_ro / mcp_ro / scout_ro CNPG managed roles.
   - fbref-grafana-ro.enc.yaml
   - fbref-mcp-ro.enc.yaml
   - fbref-scout-ro.enc.yaml
+  # ml_ro / model_rw logins and the pipelines' MLflow login, from OpenBao (asp docs/25).
+  - externalsecrets.yaml
   # CNPG -> Garage backup (bucket cnpg-staging-fbref, via the in-cluster gateway).
   - garage-backup-credentials.enc.yaml
   - objectstore.yaml

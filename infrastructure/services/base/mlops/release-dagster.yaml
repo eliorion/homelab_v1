@@ -37,7 +37,10 @@ spec:
       postgresqlSecretName: mlops-dagster-db
     postgresql:
       enabled: false
-      postgresqlHost: mlops-db-rw
+      # Fully qualified: run pods execute in their code location's namespace (fbref, ...) and write
+      # their events here; the run launcher hands them this instance config as is. Each such
+      # namespace also needs the mlops-dagster-db Secret (reflected, staging/mlops/secrets).
+      postgresqlHost: mlops-db-rw.mlops.svc.cluster.local
       postgresqlUsername: dagster
       postgresqlDatabase: dagster
       image:
@@ -65,6 +68,10 @@ spec:
         enabled: true
         servers: []
         externalConfigmap: dagster-workspace
+      # The pods read dagster-workspace at start only: change this with its code locations, so the
+      # edit rolls them (here and on the daemon).
+      annotations: &workspaceAnnotation
+        mlops.eliorion.fr/workspace: fbref-pipelines
       logFormat: json
       # Read-only root: Dagster writes only DAGSTER_HOME and /tmp (the two emptyDirs).
       podSecurityContext: &podSecurityContext
@@ -110,6 +117,7 @@ spec:
         limits: {memory: 512Mi}
 
     dagsterDaemon:
+      annotations: *workspaceAnnotation
       image:
         repository: docker.io/dagster/dagster-k8s
         # renovate: datasource=docker depName=docker.io/dagster/dagster-k8s

@@ -101,6 +101,20 @@ stringData:
             "List:mlflow-artifacts",
             "Tagging:mlflow-artifacts"
           ]
+        },
+        {
+          "name": "ml-lake",
+          "credentials": [
+            {
+              "accessKey": "${ML_LAKE_S3_ACCESS_KEY}",
+              "secretKey": "${ML_LAKE_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:ml-lake",
+            "Write:ml-lake",
+            "List:ml-lake"
+          ]
         }
       ]
     }
