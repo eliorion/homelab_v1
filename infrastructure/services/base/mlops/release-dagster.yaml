@@ -1,0 +1,125 @@
+# Upstream chart. Workspace ConfigMap: dagster-workspace.yaml; policies: networkpolicies.yaml. README.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: dagster
+  namespace: flux-system
+spec:
+  targetNamespace: mlops
+  releaseName: dagster
+  interval: 30m
+  # First install waits for mlops-db to bootstrap.
+  timeout: 10m
+  chart:
+    spec:
+      chart: dagster
+      version: "1.13.26"
+      sourceRef:
+        kind: HelmRepository
+        name: dagster
+        namespace: flux-system
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    telemetry:
+      enabled: false
+
+    # Reads key postgresql-password of mlops-dagster-db (OpenBao, staging/mlops/secrets).
+    generatePostgresqlPasswordSecret: false
+    global:
+      postgresqlSecretName: mlops-dagster-db
+    postgresql:
+      enabled: false
+      postgresqlHost: mlops-db-rw
+      postgresqlUsername: dagster
+      postgresqlDatabase: dagster
+      image:
+        registry: docker.io
+        repository: library/postgres
+        tag: "18"
+
+    # Code locations come from their own stack's chart, never from this release; dagster-workspace.yaml lists them.
+    dagster-user-deployments:
+      enabled: true
+      enableSubchart: false
+
+    dagsterWebserver:
+      # Service `dagster-webserver`, not `dagster-dagster-webserver`.
+      nameOverride: webserver
+      image:
+        repository: docker.io/dagster/dagster-k8s
+        # renovate: datasource=docker depName=docker.io/dagster/dagster-k8s
+        tag: "1.13.26"
+        pullPolicy: IfNotPresent
+      # Non-root cannot bind :80.
+      service:
+        port: 3000
+      workspace:
+        enabled: true
+        servers: []
+        externalConfigmap: dagster-workspace
+      logFormat: json
+      # Read-only root: Dagster writes only DAGSTER_HOME and /tmp (the two emptyDirs).
+      podSecurityContext: &podSecurityContext
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      securityContext: &securityContext
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
+      volumes: &volumes
+        - name: dagster-home
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+      volumeMounts: &volumeMounts
+        - name: dagster-home
+          mountPath: /opt/dagster/dagster_home
+        - name: tmp
+          mountPath: /tmp
+      # The chart's probes hardcode :80.
+      readinessProbe:
+        httpGet:
+          path: /server_info
+          port: 3000
+        periodSeconds: 20
+        timeoutSeconds: 10
+        failureThreshold: 3
+      startupProbe:
+        enabled: true
+        httpGet:
+          path: /server_info
+          port: 3000
+        periodSeconds: 10
+        timeoutSeconds: 10
+        failureThreshold: 30
+      resources:
+        requests: {cpu: 50m, memory: 192Mi}
+        limits: {memory: 512Mi}
+
+    dagsterDaemon:
+      image:
+        repository: docker.io/dagster/dagster-k8s
+        # renovate: datasource=docker depName=docker.io/dagster/dagster-k8s
+        tag: "1.13.26"
+        pullPolicy: IfNotPresent
+      logFormat: json
+      podSecurityContext: *podSecurityContext
+      securityContext: *securityContext
+      volumes: *volumes
+      volumeMounts: *volumeMounts
+      resources:
+        requests: {cpu: 50m, memory: 192Mi}
+        limits: {memory: 512Mi}

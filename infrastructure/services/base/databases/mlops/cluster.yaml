@@ -1,0 +1,54 @@
+# One instance, no backup: ../../mlops/README.md.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: mlops-db
+  namespace: mlops
+spec:
+  instances: 1
+  bootstrap:
+    initdb:
+      # CNPG generates this owner's login as Secret mlops-db-app (uri, host, username, password):
+      # MLflow reads it directly. Must match release-mlflow.yaml.
+      database: mlflow
+      owner: mlflow
+  managed:
+    roles:
+      - name: dagster
+        ensure: present
+        login: true
+        passwordSecret:
+          name: mlops-dagster-db
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  storage:
+    size: 5Gi
+---
+# `retain`: deleting these objects must NOT drop the data.
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: dagster
+  namespace: mlops
+spec:
+  cluster:
+    name: mlops-db
+  name: dagster
+  owner: dagster
+  databaseReclaimPolicy: retain
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: mlflow-auth
+  namespace: mlops
+spec:
+  cluster:
+    name: mlops-db
+  name: mlflow_auth
+  owner: mlflow
+  databaseReclaimPolicy: retain

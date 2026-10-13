@@ -86,6 +86,21 @@ stringData:
             "Write:fbref-vision-tmp",
             "List:fbref-vision-tmp"
           ]
+        },
+        {
+          "name": "mlflow-artifacts",
+          "credentials": [
+            {
+              "accessKey": "${MLFLOW_ARTIFACTS_S3_ACCESS_KEY}",
+              "secretKey": "${MLFLOW_ARTIFACTS_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:mlflow-artifacts",
+            "Write:mlflow-artifacts",
+            "List:mlflow-artifacts",
+            "Tagging:mlflow-artifacts"
+          ]
         }
       ]
     }

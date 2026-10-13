@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Every manifest names `namespace: mlops` itself (the ai-gateway convention). No backup wiring; the
+# role Secrets come from OpenBao (../../mlops/secrets).
+resources:
+  - ../../../base/databases/mlops

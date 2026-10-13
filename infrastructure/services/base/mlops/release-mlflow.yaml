@@ -1,0 +1,126 @@
+# Official chart + official `-full` image (Postgres driver, boto3, auth extras). README.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mlflow
+  namespace: flux-system
+spec:
+  targetNamespace: mlops
+  releaseName: mlflow
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: mlflow
+      version: "3.17.0"
+      sourceRef:
+        kind: HelmRepository
+        name: mlflow
+        namespace: flux-system
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    image:
+      repository: ghcr.io/mlflow/mlflow
+      # renovate: datasource=docker depName=ghcr.io/mlflow/mlflow
+      # Never below v3.15.0 (CVE-2026-64849). Keep the db-upgrade init container below on the same tag.
+      tag: v3.17.0-full
+    fullnameOverride: mlflow
+    # A new version migrates the schema first; the old server must not keep writing to it.
+    deploymentStrategy:
+      type: Recreate
+    server:
+      value_options:
+        host: "0.0.0.0"
+        port: 5000
+        workers: 2
+        app_name: basic-auth
+        # Must contain the `mlflow` device of ingress-tailscale.yaml: other Host headers get 403.
+        allowed_hosts: "mlflow,mlflow:5000,mlflow.mlops:5000,mlflow.mlops.svc.cluster.local:5000,mlflow.tail45b0ca.ts.net"
+      flag_options:
+        - serve_artifacts
+    # CNPG's generated owner login (mlops-db-app): the URI for the runs store, the PG* variables below
+    # for the auth store, whose INI file carries no password.
+    mlflow:
+      backendStoreUriFrom:
+        secretKeyRef:
+          name: mlops-db-app
+          key: uri
+      artifactsDestination: s3://mlflow-artifacts
+    env:
+      - name: PGHOST
+        valueFrom:
+          secretKeyRef: {name: mlops-db-app, key: host}
+      - name: PGPORT
+        valueFrom:
+          secretKeyRef: {name: mlops-db-app, key: port}
+      - name: PGUSER
+        valueFrom:
+          secretKeyRef: {name: mlops-db-app, key: username}
+      - name: PGPASSWORD
+        valueFrom:
+          secretKeyRef: {name: mlops-db-app, key: password}
+      - name: MLFLOW_AUTH_CONFIG_PATH
+        value: /etc/mlflow/auth.ini
+      # Seeds the admin user on the FIRST start only.
+      - name: MLFLOW_AUTH_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef: {name: mlflow-auth, key: admin-password}
+      - name: MLFLOW_FLASK_SERVER_SECRET_KEY
+        valueFrom:
+          secretKeyRef: {name: mlflow-auth, key: flask-secret-key}
+      # The job runner is ~1.5 GiB of huey workers and unused here.
+      - name: MLFLOW_SERVER_ENABLE_JOB_EXECUTION
+        value: "false"
+      - name: MLFLOW_S3_ENDPOINT_URL
+        value: http://seaweedfs-seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef: {name: s3-mlflow-artifacts, key: MLFLOW_ARTIFACTS_S3_ACCESS_KEY}
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef: {name: s3-mlflow-artifacts, key: MLFLOW_ARTIFACTS_S3_SECRET_KEY}
+      - name: AWS_DEFAULT_REGION
+        value: us-east-1
+      # Read-only root: HOME must be writable.
+      - name: HOME
+        value: /tmp
+    extraVolumes:
+      - name: auth
+        configMap:
+          name: mlflow-auth-config
+    extraVolumeMounts:
+      - {name: auth, mountPath: /etc/mlflow, readOnly: true}
+    # The server refuses to start on an out-of-date schema; the chart runs no migration.
+    extraInitContainers:
+      - name: db-upgrade
+        image: ghcr.io/mlflow/mlflow:v3.17.0-full
+        command: ["sh", "-c", "exec mlflow db upgrade \"$MLFLOW_BACKEND_STORE_URI\""]
+        env:
+          - name: MLFLOW_BACKEND_STORE_URI
+            valueFrom:
+              secretKeyRef: {name: mlops-db-app, key: uri}
+          - name: HOME
+            value: /tmp
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+        volumeMounts:
+          - {name: tmp, mountPath: /tmp}
+        resources:
+          requests: {cpu: 50m, memory: 256Mi}
+          limits: {memory: 768Mi}
+    # The chart's policy admits every pod of every namespace: networkpolicies.yaml replaces it.
+    networkPolicy:
+      enabled: false
+    resources:
+      requests: {cpu: 50m, memory: 512Mi}
+      limits: {memory: 1280Mi}

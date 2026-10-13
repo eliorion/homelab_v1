@@ -12,4 +12,5 @@ s3.bucket.create -name nextcloud
 s3.bucket.create -name tmp-backup-garage
 s3.bucket.create -name advisor-corpus
 s3.bucket.create -name fbref-vision-tmp
+s3.bucket.create -name mlflow-artifacts
 SHELL

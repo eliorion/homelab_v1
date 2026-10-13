@@ -1,0 +1,15 @@
+# No secret here: the store URI has no host or password (libpq reads the PG* variables
+# release-mlflow.yaml sets from mlops-db-app) and the admin password comes from
+# MLFLOW_AUTH_ADMIN_PASSWORD. MLflow reads this file at start only.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlflow-auth-config
+  namespace: mlops
+data:
+  auth.ini: |
+    [mlflow]
+    default_permission = NO_PERMISSIONS
+    database_uri = postgresql:///mlflow_auth
+    admin_username = admin
+    authorization_function = mlflow.server.auth:authenticate_request_basic_auth

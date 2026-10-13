@@ -22,6 +22,7 @@ their databases. `dbtools/` is the exception in this tree and documents itself i
 infrastructure/services/base/databases/
 ├── keycloak/     Cluster keycloak-db      (no namespace — the overlay sets it)
 ├── ai-gateway/   Cluster ai-gateway-db    (namespace: ai-gateway)
+├── mlops/        Cluster mlops-db         (namespace: mlops) + Databases mlflow, mlflow_auth
 └── dbtools/      the whole `database` namespace — see dbtools/README.md
 
 infrastructure/services/staging/databases/
@@ -37,6 +38,7 @@ Base — the shape of the cluster, environment-independent:
 | `keycloak/cluster.yaml` | `Cluster keycloak-db`, `instances: 2`, `initdb` database/owner `keycloak`, `storage.size: 10Gi` |
 | `ai-gateway/cluster.yaml` | `Cluster ai-gateway-db` in namespace `ai-gateway`, `instances: 2`, `initdb` database/owner `bifrost` with `encoding: UTF8`, `storage.size: 20Gi` |
 | `harbor/cluster.yaml` | `Cluster harbor-db`, `instances: 2`, `initdb` database/owner `harbor`, `storage.size: 20Gi`. Namespace `registry` comes from the staging overlay. No backup wiring yet — see `../harbor/README.md`. |
+| `mlops/cluster.yaml` | `Cluster mlops-db` in namespace `mlops`, `instances: 1`, `initdb` database/owner `mlflow` (CNPG generates `mlops-db-app`), managed role `dagster` (password from an OpenBao ExternalSecret in `staging/mlops/secrets`), `Database` objects `dagster` + `mlflow_auth` (`retain`), `storage.size: 5Gi`. No backup, by design — `../mlops/README.md` |
 | `*/kustomization.yaml` | one resource each, `cluster.yaml` |
 
 Staging — everything environment-specific (bucket, endpoint, credential,

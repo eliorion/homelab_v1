@@ -19,3 +19,5 @@ resources:
   - ai-gateway/
   - homepage/
   - openbao/
+  # The shared MLOps platform (asp docs/24): Dagster + MLflow, both UIs on the tailnet only.
+  - mlops/
