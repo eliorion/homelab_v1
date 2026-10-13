@@ -1,0 +1,10 @@
+# Mounted by the dagster release (dagsterWebserver.workspace.externalConfigmap). One grpc_server
+# entry per code location; empty until the first one (asp docs/24 phase 4).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dagster-workspace
+  namespace: mlops
+data:
+  workspace.yaml: |
+    load_from: []

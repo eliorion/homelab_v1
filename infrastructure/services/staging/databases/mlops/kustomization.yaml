@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# Every manifest names `namespace: mlops` itself (the ai-gateway convention). No backup wiring and no
-# secret file: base/databases/mlops/cluster.yaml and credentials.yaml say why.
+# Every manifest names `namespace: mlops` itself (the ai-gateway convention). No backup wiring; the
+# role Secrets come from OpenBao (../../mlops/secrets).
 resources:
   - ../../../base/databases/mlops

@@ -28,6 +28,6 @@ spec:
       port:
         number: 5000
   tls:
-    # KEEP `mlflow`: release-mlops.yaml allows exactly this Host header.
+    # KEEP `mlflow`: release-mlflow.yaml allows exactly this Host header.
     - hosts:
         - mlflow

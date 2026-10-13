@@ -1,4 +1,4 @@
-# Upstream chart. Workspace ConfigMap and network policies come from release-mlops.yaml. README.md.
+# Upstream chart. Workspace ConfigMap: dagster-workspace.yaml; policies: networkpolicies.yaml. README.md.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -31,7 +31,7 @@ spec:
     telemetry:
       enabled: false
 
-    # Reads key postgresql-password of the generated Secret (../databases/mlops/credentials.yaml).
+    # Reads key postgresql-password of mlops-dagster-db (OpenBao, staging/mlops/secrets).
     generatePostgresqlPasswordSecret: false
     global:
       postgresqlSecretName: mlops-dagster-db
@@ -45,7 +45,7 @@ spec:
         repository: library/postgres
         tag: "18"
 
-    # Code locations come from their own stack's chart, never from this release.
+    # Code locations come from their own stack's chart, never from this release; dagster-workspace.yaml lists them.
     dagster-user-deployments:
       enabled: true
       enableSubchart: false
