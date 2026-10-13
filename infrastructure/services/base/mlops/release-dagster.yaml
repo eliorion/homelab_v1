@@ -31,7 +31,7 @@ spec:
     telemetry:
       enabled: false
 
-    # Reads key postgresql-password of mlops-dagster-db (sops, staging/mlops/secrets).
+    # Reads key postgresql-password of mlops-dagster-db (OpenBao, staging/mlops/secrets).
     generatePostgresqlPasswordSecret: false
     global:
       postgresqlSecretName: mlops-dagster-db
