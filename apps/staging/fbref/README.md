@@ -208,7 +208,7 @@ this repo:
 |---|---|---|
 | roles `ml_ro`, `model_rw` (LOGIN) | `../../base/databases/fbref/database.yaml` | asp fbref V60 (reads every schema) and V59 (writes `model.*`); the run pods read the **replica** as `ml_ro` |
 | Secrets `fbref-ml-ro`, `fbref-model-rw`, `fbref-mlflow-pipelines` | `../databases/fbref/externalsecrets.yaml` | OpenBao `kv/fbref/*` (this namespace is onboarded: `eso-namespaces.txt`) |
-| Secret `s3-ml-lake` | `infrastructure/controllers/staging/seaweedfs/s3/buckets/ml-lake.enc.yaml` | the `ml-lake` bucket key, sops, reflected here |
+| Secret `s3-ml-lake` | `infrastructure/controllers/staging/seaweedfs/s3/buckets/ml-lake.enc.yaml` | the `ml-lake` bucket key, sops; the namespaces it is reflected into are in the plain `ml-lake.reflection.yaml` next to it |
 | Secret `mlops-dagster-db` | `infrastructure/services/staging/mlops/secrets/` | reflected from `mlops`: a run pod writes its events to Dagster's storage |
 
 **Seed before the first reconcile** (hex only), then create the MLflow user once MLflow and the entry

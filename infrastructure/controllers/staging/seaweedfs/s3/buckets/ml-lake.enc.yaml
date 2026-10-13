@@ -1,35 +1,29 @@
 # S3 credential for bucket ml-lake (asp docs/25: the ML data lake, parquet snapshots of fbref,
-# including special-category data: GDPR Art. 9). Read and written by the fbref-pipelines run pods (asp
-# fbref chart pipelines.run.envSecrets) and the owner's devcontainer (sops -d). Template:
-# ml-lake.enc.yaml.exemple. Steps: ../README.md.
+# including special-category data: GDPR Art. 9). Template: ml-lake.enc.yaml.exemple. Steps: ../README.md.
+# Which namespaces receive it is NOT here: ml-lake.reflection.yaml (plain), so granting a namespace
+# never touches this file. Encrypted with mac_only_encrypted (.sops.yaml) so that patch is accepted.
 apiVersion: v1
 kind: Secret
 metadata:
     name: s3-ml-lake
     namespace: flux-system
-    annotations:
-        # Reflector copies this Secret into the consuming namespace, so one file serves both
-        # the identity (here) and the client (there).
-        reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-        reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: fbref
-        reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-        reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: fbref
 type: Opaque
 stringData:
-    ML_LAKE_S3_ACCESS_KEY: ENC[AES256_GCM,data:2JgJshqw+T700H9nhqNUi3Jpdb/GJdtY,iv:qQBhLgzk7UDnYHti+3sbdCebt52Dk9t2ivUq2V9tkOY=,tag:1G693pXMNs8U2uTuYQbmHA==,type:str]
-    ML_LAKE_S3_SECRET_KEY: ENC[AES256_GCM,data:lwhMAxBvzieYus96FPOr5NIntpvlO5yfvxiIUkPPFBJzNBPbHS/tkzPZnhsKP8023DOxIm902gfFjNBPgdIVpw==,iv:G+XTfQA1u6yHWs3XCMIxoK6QGtgCTp0i2Qe8PFDW1xQ=,tag:GvudIGW1HJMPg0T0D83GXA==,type:str]
+    ML_LAKE_S3_ACCESS_KEY: ENC[AES256_GCM,data:sVyQP53leYvE8OUHGWFneC3z+tCg/8b0,iv:brwIWmMsr42yQqGRjkxuBGT50t/+eaSKNhTSN7SeTm0=,tag:3JnVS64J3QzMoU+Y1HF7sg==,type:str]
+    ML_LAKE_S3_SECRET_KEY: ENC[AES256_GCM,data:5uu416A0xzEwZSSPGpbwaZDrmWifHjfzVIpEW1JwxyGv89iMVw+DQLKjPRzLZ0CECFdGJ36BCkkXm0p/zv0uvA==,iv:IuXi1PFS40Nubs+dNR8TbXjbCmoid+Vk8YaDzW59z04=,tag:iiu0UvGyw8KeU9Qcj5CGVg==,type:str]
 sops:
     age:
         - enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAvOE1oUHlxam9oMWJVRjhJ
-            OFdycFF3ZEsrNXd4eWExRzE1V1VXaTBlRURVCnlYRm5PdCtPeWg4V1JSYTZkSzA1
-            TTVlZnZnRzJtdVQ1UHVPcUk0enpVZkEKLS0tIE52SW1PN1RTcGR6R2xESXFHMkZZ
-            eFlpMlhUZUtCUVUzOUt0QUVZZzNtVHcKnOckgQpn61JWMytwVeKMdzll8JTZs6+k
-            PlRL0B5e8oaJgnF6Hf5zh4ygitcRSmnUJ212x9zEno/kThevsvScig==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBCaTV5SEsxNERkSWlVL2lV
+            R3dpQnl3Vmt1ZTZ1djg1NDhocU1tYlVPR1Y0CnY5L2RYT2pRNzFKQ1gzc3BBTUc4
+            WEdWUktSK0locCtjRWIwUEZBenJLbVUKLS0tIDUyZkJUdndQM0Q3UXhEZUlWamtV
+            R0FheWlrQ2o0K1JpMWhtT2lqVE8wYmMKDahyQsoGShta9wlEP4SRxdx5m0KBFu6T
+            W/KBgrlucQno4e4mSlWkEZdLUKCZNWVaPQBxc8Pt6ZWrDk+nnnPS9Q==
             -----END AGE ENCRYPTED FILE-----
           recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
     encrypted_regex: ^(data|stringData)$
-    lastmodified: "2026-10-13T17:58:00Z"
-    mac: ENC[AES256_GCM,data:9ki5SrI2cWkI6D8QQjrikdOEXKOOElTjkZXSmWB7w6PD/BNxgnejK8tTOhpG6eUspdEeYxDJK7eTYzf7p7D5W0qqjzyu0tjw9J6vBtiO1Bya63DElPK/5E+1U/ilVlDWHDXy8hURXfQgrvnsvgCwQzhz5UEQFQcBdXVlyoKQ1vQ=,iv:RkYg48ztESmUvCRgZaH7EG/+LK31scKE/hGppQ9YZeo=,tag:3VKP+VQUSoK/GfTk4mwjnw==,type:str]
+    lastmodified: "2026-10-13T22:52:51Z"
+    mac: ENC[AES256_GCM,data:UaabmrdIGYQBkq5435YVN7G/fhaigiLG/tldBycLr23c3MvOhQtVwYuOuLBVP3u7303KAjFiA6k+473DRv4n6tuG5MBmzHp3ddWvKTKkq8hhlMxss6m+vPr1v/RYr5lY7MIXnmXcOEO53maZZHJPpCA+tn9k7ceW6vAGbXUqLA4=,iv:rKdD53cIDmC0txDwj7FK5NZ/D6dGtilr/d8Wf42bEE0=,tag:lDUR0/GxePVPVsE5XjsuDA==,type:str]
+    mac_only_encrypted: true
     version: 3.13.3
