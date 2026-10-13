@@ -1,0 +1,36 @@
+# admin_password seeds MLflow's FIRST start only: rotate it in the MLflow UI. README.md.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: mlflow-auth
+  namespace: mlops
+spec:
+  refreshPolicy: CreatedOnce
+  target:
+    name: mlflow-auth
+    creationPolicy: Owner
+    template:
+      data:
+        auth.ini: |
+          [mlflow]
+          default_permission = NO_PERMISSIONS
+          database_uri = postgresql:///mlflow_auth
+          admin_username = admin
+          admin_password = {{ .admin }}
+          authorization_function = mlflow.server.auth:authenticate_request_basic_auth
+        flask-secret-key: "{{ .flask }}"
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: mlops-password
+      rewrite:
+        - regexp: {source: "^password$", target: "admin"}
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: mlops-password
+      rewrite:
+        - regexp: {source: "^password$", target: "flask"}

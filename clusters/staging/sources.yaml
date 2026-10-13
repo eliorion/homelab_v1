@@ -140,3 +140,28 @@ spec:
     !/k8s/charts/agent-platform/
     # The library chart it depends on (file://../common).
     !/k8s/charts/common/
+---
+# Source for the MLOps platform's Helm chart (k8s/charts/mlops in the asp repo): MLflow, the Dagster
+# workspace and the policies around both UIs. Dagster itself comes from its upstream HelmRepository.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: mlops
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: ssh://git@github.com/Eliorion/asp
+  ref:
+    branch: main
+  secretRef:
+    name: asp-deploy-key
+  # Scoped to the chart path: reconcileStrategy: Revision re-reconciles on every new revision.
+  ignore: |
+    /*
+    !/k8s/
+    /k8s/*
+    !/k8s/charts/
+    /k8s/charts/*
+    !/k8s/charts/mlops/
+    # The library chart it depends on (file://../common).
+    !/k8s/charts/common/

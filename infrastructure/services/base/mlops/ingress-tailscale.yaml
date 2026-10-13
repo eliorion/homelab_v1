@@ -1,0 +1,33 @@
+# Tailnet only. No tailscale annotation on the Services (two devices would contend). README.md.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dagster
+  namespace: mlops
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: dagster-webserver
+      port:
+        number: 3000
+  tls:
+    - hosts:
+        - dagster
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mlflow
+  namespace: mlops
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: mlflow
+      port:
+        number: 5000
+  tls:
+    # KEEP `mlflow`: release-mlops.yaml allows exactly this Host header.
+    - hosts:
+        - mlflow

@@ -8,3 +8,4 @@ resources:
   - ai-gateway/
   - dbtools/
   - harbor/
+  - mlops/

@@ -1,0 +1,33 @@
+# S3 credential for bucket mlflow-artifacts (asp k8s/charts/mlops: MLflow's proxied artifact store,
+# mlflow.objectStore). Template: mlflow-artifacts.enc.yaml.exemple. Steps: ../README.md.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-mlflow-artifacts
+    namespace: flux-system
+    annotations:
+        # Reflector copies this Secret into mlops, so one file serves both the identity (here) and the
+        # client (MLflow, the only pod that holds it).
+        reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+        reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: mlops
+        reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+        reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: mlops
+type: Opaque
+stringData:
+    MLFLOW_ARTIFACTS_S3_ACCESS_KEY: ENC[AES256_GCM,data:MEmPlQzlfR8oHKSWYSJoEvfpkvSlXgWT,iv:zHTH/9MURG6AYNOCpE08OPyjoc+Yl8bF0zxgFCZDfkI=,tag:ac+PsLw/U+mRB9HA771cGw==,type:str]
+    MLFLOW_ARTIFACTS_S3_SECRET_KEY: ENC[AES256_GCM,data:nzFTPDuSg1X7CkXCEs4z+eqkQ9zLBqc9QU/DTiVN61CYSiTffdn6Kzf6rD/o7d0zIRc4ZTulDn1SlHDZ5t1z8Q==,iv:YERnt43H5SPCieVsrLOJSGD8yCLNuMo2l+5gxOZv/Og=,tag:Gg5olVaG/DEKvesmNHY+iA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBmVGgzakVFUk9FdlpMU09u
+            ckNrdUdybGRGcE5Ld28yZVlkV0hGUU8rekJzCkN4K2oxb1BLME1Dam16MDBNYTE4
+            Z3R1NU9wS1V0MTE2M21KS0ZYaVJnem8KLS0tIE81cmhnd1pvY25FZmJSZmEyWjlB
+            MXBKTCs0bWJYeTIvenJIbjZpZjZhTk0K4yoPB9CXtXPBGmXXzdRjwtt14JcGeTTv
+            xN/Mb7s750lafLPMPdT8SXPHebxW4QDHOlpVxgujDLsKj0s110jwaA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-13T02:39:59Z"
+    mac: ENC[AES256_GCM,data:UPwV+YYNYS5G4gzHRM5METvhgCLu5ykoI0iF08bC2bPdBCgsK12eVyfHhIkbQTFde31jG2IXXoiMZz9KevmT91z/Wn7C13sbJJjKJsbVhypc1G/gkLtroFN3HBf7IstqqdL/XYPuxFE1AIljeDH6RIXihlDt6guItysqiSW0CQQ=,iv:fQmdbBUoASgJ1qJT/X1Fg2ntG/N59KV1/aPgAeonVx8=,tag:octOg7baDTQ1TkSR+wssmw==,type:str]
+    version: 3.13.3

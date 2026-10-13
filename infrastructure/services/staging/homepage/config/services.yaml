@@ -81,6 +81,22 @@
         namespace: registry
         app: harbor
         podSelector: app.kubernetes.io/part-of=harbor
+    - Dagster:
+        icon: dagster.png
+        href: https://dagster.tail45b0ca.ts.net
+        description: Pipeline orchestration (no login, tailnet only)
+        siteMonitor: http://dagster-webserver.mlops.svc:3000/server_info
+        namespace: mlops
+        app: dagster
+        podSelector: app.kubernetes.io/name=dagster
+    - MLflow:
+        icon: mlflow.png
+        href: https://mlflow.tail45b0ca.ts.net
+        description: Experiments, evaluations, model registry
+        siteMonitor: http://mlflow.mlops.svc:5000/health
+        namespace: mlops
+        app: mlflow
+        podSelector: app=mlflow
 
 - Storage:
     - LINSTOR:
