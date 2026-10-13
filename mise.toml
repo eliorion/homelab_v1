@@ -31,3 +31,5 @@ run = "scripts/etcd-restore-drill"
 [tasks.bao]
 description = "bao against the cluster's OpenBao: port-forward, CA and admin login done for you. Usage: mise bao kv get kv/mlops/dagster-db"
 run = "scripts/bao"
+# Never echo the command line: it carries the secret values being written.
+quiet = true
