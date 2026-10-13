@@ -1,18 +1,19 @@
 # scripts
 
-Four scripts sit directly in `scripts/`. They are the small amount of imperative
+Five scripts sit directly in `scripts/`. They are the small amount of imperative
 glue a GitOps repo still needs: things that are not a Kubernetes object and
 cannot be reconciled — vendoring an upstream release, rewrapping secrets onto
 new recipients, proving a backup restores, building the dev environment.
 
 | Script | What it is for | Usual entry point |
 |---|---|---|
+| [`bao`](bao) | Run any `bao` command against the cluster's OpenBao without the manual port-forward, CA and login. | `mise bao <args>` |
 | [`etcd-restore-drill`](etcd-restore-drill) | Prove the newest etcd snapshot really restores (doc 09, Tiers 0 + 1). | `mise run etcd-drill` |
 | [`fetch-keycloak-operator`](fetch-keycloak-operator) | Re-vendor the Keycloak operator release manifests. | `scripts/fetch-keycloak-operator <version>` |
 | [`setup`](setup) | Devcontainer `postCreateCommand`: build the toolchain. | DevPod runs it |
 | [`sops-updatekeys`](sops-updatekeys) | Rewrap every SOPS file onto the recipients in `.sops.yaml`. | `mise run sops-updatekeys` |
 
-All four are shellchecked together by `mise run lint`
+All five are shellchecked together by `mise run lint`
 ([`../mise.toml`](../mise.toml)), which is the check to run after editing any of
 them.
 
@@ -24,6 +25,24 @@ The four subdirectories are self-contained rigs and document themselves:
 and destroys them, so read it before running anything in it.
 
 ---
+
+## `bao`
+
+`mise bao <bao arguments>` — e.g. `mise bao kv put kv/mlops/dagster-db password="$(openssl rand -hex 32)"`
+or `mise bao kv get kv/mlops/dagster-db`. It does the procedure of
+[`../infrastructure/services/base/openbao/README.md`](../infrastructure/services/base/openbao/README.md)
+(“Operating it”) for you:
+
+1. If nothing answers on `BAO_ADDR` (default `https://127.0.0.1:8200`, port `BAO_PORT`), it opens
+   `kubectl -n openbao port-forward svc/openbao` with your current kubeconfig, and closes it on exit.
+2. It trusts the offline CA (`infrastructure/services/base/openbao/ca.crt`).
+3. It reuses a valid token (`BAO_TOKEN` or the bao token helper); otherwise it decrypts the
+   break-glass admin password from `openbao-admin.enc.yaml` with sops (age key at
+   `clusters/staging/age.agekey` or `SOPS_AGE_KEY_FILE`) and logs in as `admin` through stdin. The
+   password is never printed and the token lives only in the process environment.
+
+If the admin password was changed in OpenBao, the sops file holds the old one: `export BAO_TOKEN=…`
+first (or update the sops file, which the OpenBao README asks for anyway).
 
 ## `etcd-restore-drill`
 

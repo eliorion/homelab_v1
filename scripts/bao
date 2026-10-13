@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# bao, with the plumbing done: `mise bao <bao args>` (e.g. `mise bao kv get kv/mlops/dagster-db`).
+# Opens a port-forward to OpenBao if nothing listens on BAO_PORT, trusts the offline CA, reuses a
+# valid token or logs in as admin with the password decrypted from sops (never printed), runs the
+# command, and closes the tunnel it opened. README.md.
+set -euo pipefail
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+port=${BAO_PORT:-8200}
+export BAO_ADDR=${BAO_ADDR:-https://127.0.0.1:${port}}
+export BAO_CACERT=${BAO_CACERT:-$root/infrastructure/services/base/openbao/ca.crt}
+
+if [ $# -eq 0 ]; then
+  echo "usage: mise bao <bao arguments>   e.g. mise bao kv get kv/mlops/dagster-db" >&2
+  exit 2
+fi
+
+pf_pid=
+cleanup() { [ -n "$pf_pid" ] && kill "$pf_pid" 2>/dev/null || true; }
+trap cleanup EXIT
+
+if ! curl -s --cacert "$BAO_CACERT" -o /dev/null "$BAO_ADDR/v1/sys/health?standbyok=true&sealedcode=200&uninitcode=200"; then
+  kubectl -n openbao port-forward svc/openbao "${port}:8200" >/dev/null 2>&1 &
+  pf_pid=$!
+  for _ in $(seq 1 50); do
+    curl -s --cacert "$BAO_CACERT" -o /dev/null "$BAO_ADDR/v1/sys/health?standbyok=true" && break
+    kill -0 "$pf_pid" 2>/dev/null || { echo "port-forward to openbao failed (kubeconfig? cluster reachable?)" >&2; exit 1; }
+    sleep 0.2
+  done
+fi
+
+if ! bao token lookup >/dev/null 2>&1; then
+  key=${SOPS_AGE_KEY_FILE:-$root/clusters/staging/age.agekey}
+  [ -f "$key" ] && export SOPS_AGE_KEY_FILE=$key
+  # The break-glass admin password from sops; if it was changed in OpenBao, set BAO_TOKEN instead.
+  if ! pw=$(sops -d --extract '["stringData"]["INITIAL_ADMIN_PASSWORD"]' \
+      "$root/infrastructure/services/staging/openbao/openbao-admin.enc.yaml" 2>/dev/null); then
+    echo "cannot decrypt the OpenBao admin password: put the age key at clusters/staging/age.agekey" >&2
+    echo "(or set SOPS_AGE_KEY_FILE), or export BAO_TOKEN" >&2
+    exit 1
+  fi
+  BAO_TOKEN=$(printf '%s' "$pw" | bao write -field=token auth/userpass/login/admin password=-)
+  unset pw
+  export BAO_TOKEN
+fi
+
+bao "$@"
