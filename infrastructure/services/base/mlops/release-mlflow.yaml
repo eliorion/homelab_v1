@@ -100,7 +100,7 @@ spec:
     # The server refuses to start on an out-of-date schema; the chart runs no migration.
     extraInitContainers:
       - name: db-upgrade
-        image: ghcr.io/mlflow/mlflow:v3.17.0-full
+        image: ghcr.io/mlflow/mlflow:v3.17.1-full
         command: ["sh", "-c", "exec mlflow db upgrade \"$MLFLOW_BACKEND_STORE_URI\""]
         env:
           - name: MLFLOW_BACKEND_STORE_URI
