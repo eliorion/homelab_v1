@@ -6,6 +6,19 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
+
+# mise runs tasks from the repo root: a relative KUBECONFIG (e.g. `kubeconfig` set in bootstraping/)
+# is resolved against the directory the command was typed in.
+if [ -n "${KUBECONFIG:-}" ]; then
+  caller=${MISE_ORIGINAL_CWD:-$PWD}
+  resolved=
+  IFS=: read -ra kcs <<<"$KUBECONFIG"
+  for kc in "${kcs[@]}"; do
+    case $kc in /*|'') ;; *) kc=$caller/$kc ;; esac
+    resolved=${resolved:+$resolved:}$kc
+  done
+  export KUBECONFIG=$resolved
+fi
 port=${BAO_PORT:-8200}
 export BAO_ADDR=${BAO_ADDR:-https://127.0.0.1:${port}}
 export BAO_CACERT=${BAO_CACERT:-$root/infrastructure/services/base/openbao/ca.crt}
