@@ -88,7 +88,10 @@ breaks every mount on the node. The mechanism and the init-container rule are in
 `volume-node-1` 2.5Gi (limit 4Gi, applied to both volume servers through the
 chart's `volume:` block), S3 1.6Gi (3Gi), filer 349Mi (1Gi), mount 337Mi (2Gi),
 master 105Mi (512Mi), `seaweedfs-db` 125Mi (1Gi). The worker's 500m CPU request
-is the chart default; it used none, so the request is 10m.
+is the chart default; it used none, so the request is 10m. `seaweedfs-db` also
+carries `failoverDelay: 30` and `podAntiAffinityType: required`, like every CNPG
+cluster — why in
+[`../../../services/base/databases/README.md`](../../../services/base/databases/README.md).
 
 ## What this does not survive
 

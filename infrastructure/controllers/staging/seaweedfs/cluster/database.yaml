@@ -5,6 +5,9 @@ metadata:
   namespace: seaweedfs
 spec:
   instances: 2
+  failoverDelay: 30
+  affinity:
+    podAntiAffinityType: required
   resources:
     requests:
       memory: 256Mi
