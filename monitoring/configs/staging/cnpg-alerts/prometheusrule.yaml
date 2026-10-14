@@ -30,6 +30,25 @@ spec:
           annotations:
             summary: "{{ $value }} WAL segments waiting to be archived on {{ $labels.namespace }}/{{ $labels.pod }}"
             description: "Segments are finished but not shipped, so Postgres cannot recycle them and pg_wal only grows -- this ends with CNPG shutting the instance down on low disk and every client losing the -rw Service. Check the ObjectStore (region, endpoint, credentials) and the plugin-barman-cloud sidecar logs. See documentations/12-garage-object-storage.md."
+    - name: cnpg-replication.rules
+      rules:
+        # Streaming replicas seen by each primary vs. instance pods minus one; the
+        # cluster name is the pod name minus its `-<n>` serial. See monitoring/configs/README.md.
+        - alert: CNPGReplicaNotStreaming
+          expr: |
+            label_replace(
+              cnpg_pg_replication_streaming_replicas
+                and on (namespace, pod) (cnpg_pg_replication_in_recovery == 0),
+              "cluster", "$1", "pod", "(.+)-[0-9]+")
+            < on (namespace, cluster)
+            (count by (namespace, cluster) (
+              label_replace(kube_pod_info{pod=~".+-db-[0-9]+"}, "cluster", "$1", "pod", "(.+)-[0-9]+")) - 1)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.cluster }} runs without a streaming replica"
+            description: "The primary sees {{ $value }} streaming replica(s) for 30m, so the cluster has a single working copy. A replica stuck on `pg_rewind: error: could not find common ancestor` or `read 0 of 8192` cannot heal itself: re-clone it (infrastructure/services/base/databases/README.md, When it breaks)."
     - name: cnpg-storage.rules
       rules:
         # The regex is CNPG's PVC naming (`<cluster>-<n>`) -- every CNPG Cluster

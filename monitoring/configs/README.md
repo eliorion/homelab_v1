@@ -251,7 +251,7 @@ kubectl -n etcd-backup logs job/manual-test-1
 
 ---
 
-## cnpg-alerts — CNPG WAL archiving and volume usage
+## cnpg-alerts — CNPG WAL archiving, replication and volume usage
 
 ### What it is
 
@@ -271,12 +271,13 @@ watched the archive, and nothing watched the disk.
 |---|---|
 | `kustomization.yaml` | Lists the two objects below. |
 | `podmonitor.yaml` | `PodMonitor` `cnpg-instances` in ns `monitoring`; `namespaceSelector.any: true`, `selector.matchLabels: cnpg.io/podRole: instance`, endpoint port `metrics` (9187, plain HTTP, no auth). |
-| `prometheusrule.yaml` | `PrometheusRule` `cnpg-alerts` in ns `monitoring`, groups `cnpg-wal-archiving.rules` and `cnpg-storage.rules`. |
+| `prometheusrule.yaml` | `PrometheusRule` `cnpg-alerts` in ns `monitoring`, groups `cnpg-wal-archiving.rules`, `cnpg-replication.rules` and `cnpg-storage.rules`. |
 
 | Alert | Expression | `for` | Severity |
 |---|---|---|---|
 | `CNPGWALArchivingFailing` | `increase(cnpg_pg_stat_archiver_failed_count[15m]) > 0` | 15m | critical |
 | `CNPGWALArchiveBacklog` | `cnpg_collector_pg_wal_archive_status{value="ready"} > 0` | 15m | critical |
+| `CNPGReplicaNotStreaming` | a primary's `cnpg_pg_replication_streaming_replicas` below the cluster's instance pods minus one | 30m | warning |
 | `CNPGVolumeFillingUp` | `kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".+-db-[0-9]+"} / kubelet_volume_stats_capacity_bytes > 0.80` | 30m | warning |
 | `CNPGVolumeAlmostFull` | same ratio `> 0.90` | 10m | critical |
 
@@ -304,6 +305,17 @@ problem.** Postgres cannot recycle a segment it has not archived, so every
 archiving failure is also the disk filling up. That is why both archiving alerts
 are `critical` rather than `warning`.
 
+**A replica that stops streaming is invisible without its own rule.** Losing
+a replica changes nothing a client sees, so on 2026-10-10 `keycloak-db` and
+`ai-gateway-db` ran on one copy for 4.5 days before anyone looked. Their
+replicas had been left with emptied files by an interrupted `pg_rewind`, which
+never heals by itself. The rule asks each primary how many replicas stream to
+it and compares with the instance pods of its cluster, so it fires both for a
+replica that is up but not streaming and for one that never starts. Since
+`databases` stopped gating on whole-Cluster readiness (`apps/README.md`), this
+alert is the only signal for a lost replica. `warning`, not `critical`: writes
+continue, only redundancy is gone.
+
 **Two volume thresholds.** CNPG stops the instance on its own low-disk check, so
 reaching 100% is a hard outage rather than a degradation: 80% for 30m is the
 "look at this" warning, 90% for 10m is the "act now" page.
@@ -330,6 +342,18 @@ reaching 100% is a hard outage rather than a degradation: 80% for 30m is the
   every other PVC in the cluster. It only works because every CNPG Cluster in
   this repo is named `*-db`. A Cluster named otherwise gets no volume alerting
   and nothing says so.
+- **`CNPGReplicaNotStreaming` is blind to a primary whose scrape fails.**
+  The comparison needs the primary's own series. One failing custom query takes
+  the whole endpoint down (HTTP 500) or drops the replication series, and the
+  rule then says nothing. On 2026-10-14 both happened: `scraper-db`'s
+  `scraper-serving-metrics` returned duplicate rows on the primary, and
+  `nextcloud-db`'s exporter role was refused CONNECT on database `nextcloud`.
+  Check `up{pod=~".+-db-[0-9]+"}` and `cnpg_errors_total` after adding a
+  custom query.
+- **The cluster label is derived, not scraped.** `label_replace` strips the
+  `-<n>` serial from the pod name on both sides; re-clone join pods
+  (`<cluster>-<n>-join-<hash>`) do not match `.+-db-[0-9]+` and so are not
+  counted as instances.
 - **The `release: kube-prometheus-stack` label on both objects** — see "The
   label that ties everything together" above. This whole directory exists
   because that label was missing from the operator-generated PodMonitor.
