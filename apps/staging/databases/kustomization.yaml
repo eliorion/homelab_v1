@@ -10,3 +10,31 @@ resources:
   - n8n/
   - nextcloud/
   - scraper/
+
+# Staging only, never in base/databases: base also feeds the e2e vcluster, whose
+# LimitRange rejects limits over 2Gi. Sizes and why: infrastructure/services/base/databases/README.md.
+patches:
+  - target:
+      group: postgresql.cnpg.io
+      kind: Cluster
+    patch: |-
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      metadata:
+        name: any
+      spec:
+        failoverDelay: 30
+        affinity:
+          podAntiAffinityType: required
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: advisor-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "256Mi"}, "limits": {"memory": "1Gi"}}}]'
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: asp-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "512Mi"}, "limits": {"memory": "1536Mi"}}}]'
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: fbref-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "1Gi"}, "limits": {"memory": "4Gi"}}}]'
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: n8n-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "256Mi"}, "limits": {"memory": "1Gi"}}}]'
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: nextcloud-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: scraper-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "512Mi"}, "limits": {"memory": "1536Mi"}}}]'

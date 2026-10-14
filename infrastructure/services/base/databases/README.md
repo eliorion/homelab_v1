@@ -189,8 +189,56 @@ the checksums.
 two tools that live off it — because the workload there **is** database tooling,
 so there is nothing to split a tier up.
 
+### Memory limits, `failoverDelay` and anti-affinity (every CNPG cluster)
+
+These three settings apply to every CNPG cluster in the repo, `apps/` included.
+They come from the 2026-10-13 incident, where five replicas were left unable to
+rejoin. The patches live in the two staging tier kustomizations
+(`apps/staging/databases/kustomization.yaml`,
+`infrastructure/services/staging/databases/kustomization.yaml`). `seaweedfs-db`
+and `mlops-db` carry the same fields in their own manifests.
+
+**Memory limits make a database immune to the Talos OOM controller.** Talos
+picks its victim with `memory_max.hasValue() ? 0.0 : <QoS weight> *
+memory_current` (document 20), so any cgroup with a memory limit is never
+chosen. Without one, every Postgres pod was `BestEffort` and was the first thing
+killed whenever node-1 ran short — often enough to cause the failovers behind
+the incident. Sizes are measured, not guessed: the request is about the 7-day
+p95 working set, the limit 2–3× the 7-day peak (fbref: 1Gi request, 4Gi limit,
+set by the owner).
+
+| Cluster | 7-day peak | request / limit |
+|---|---|---|
+| `keycloak-db`, `nextcloud-db`, `dbtools-db` | ≤ 131Mi | 128Mi / 512Mi |
+| `advisor-db`, `n8n-db`, `ai-gateway-db`, `harbor-db` | 280–376Mi | 256Mi / 1Gi |
+| `asp-db`, `scraper-db` | 681–713Mi | 512Mi / 1.5Gi |
+| `fbref-db` | 2316Mi | 1Gi / 4Gi |
+| `mlops-db`, `seaweedfs-db` | 138 / 222Mi | 256Mi / 1Gi (own manifests) |
+
+The working set counts page cache, which the kernel reclaims inside the cgroup
+before it OOM-kills anything; only anonymous memory above the limit kills the
+instance.
+
+**`failoverDelay: 30` stops a short kill from becoming a failover.** A primary
+killed and restarted in place is back within seconds (`scraper-db-1`: redo done
+in 1.2s). Without the delay CNPG promotes the replica at once. The old primary
+then has to `pg_rewind` to rejoin, and a `pg_rewind` interrupted midway leaves
+an instance that cannot heal (below). The price is up to 30s more write outage
+when a primary is really gone.
+
+**`podAntiAffinityType: required`.** CNPG's default is `preferred`, which let
+both `nextcloud-db` instances land on node-2, one node failure away from losing
+the service. With `required` a replica that cannot find a node without its
+primary stays `Pending`. Every `ssd` volume can attach on any node (diskless
+DRBD), so only `asp-db` and `fbref-db`, pinned to node-2/3 on node-local
+`ssd-cnpg`, have fewer than three choices.
+
 ## Traps
 
+- **Never move `resources`, `failoverDelay` or `affinity` into
+  `apps/base/databases/*`.** The asp, fbref, scraper and advisor base manifests
+  are also the e2e vcluster's `e2e-db-templates`. The dev-platform `LimitRange`
+  rejects any container limit above 2Gi, so fbref's 4Gi would break every e2e run.
 - **A `bootstrap.recovery` patch must set `database:` and `owner:` explicitly.**
   They are not inherited from `initdb`; CNPG defaults both to `app` and then
   writes a `<cluster>-app` Secret describing an empty `app` database instead of
@@ -324,3 +372,46 @@ diagnosis, the Garage-side `s3api head-bucket` check and the recovery are in
 [`../../../../documentations/12-garage-object-storage.md`](../../../../documentations/12-garage-object-storage.md);
 restore procedures are in
 [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md).
+
+#### A replica that never becomes ready after a failover
+
+Symptoms: one instance `0/1` with restarts climbing about once an hour (the
+startup probe), and the Cluster phase `Waiting for the instances to become
+active` or `Instance Status Extraction Error`. Its log repeats one of:
+
+```
+pg_rewind: error: could not find common ancestor of the source and target cluster's timelines
+pg_rewind: error: could not read file ".../pg_wal/<segment>": read 0 of 8192
+```
+
+After a failover the old primary runs `pg_rewind` to rejoin. `pg_rewind`
+truncates every file it is about to copy before fetching it, so a run cut short
+by a node stall, a kill or a lost connection leaves empty timeline histories,
+WAL segments and even relation files behind. Every retry then fails. The data
+directory cannot be repaired; the replica has to be cloned again from the
+primary. The only data lost is what the old primary wrote after the fork, which
+the new primary never had.
+
+```bash
+kubectl -n <ns> get cluster <cluster>     # currentPrimary is NOT the broken instance
+kubectl -n <ns> logs <instance> -c postgres | grep pg_rewind
+
+kubectl -n <ns> delete pvc <instance> --wait=false
+kubectl -n <ns> delete pod <instance>
+```
+
+`--wait=false` is required. Without it `kubectl delete pvc` blocks for good,
+because `pvc-protection` keeps the claim while the pod still mounts it, so the
+pod deletion never runs. CNPG then runs a `<cluster>-<n>-join` Job
+(`pg_basebackup` from the primary) and starts `<cluster>-<n>` with the next
+serial. That takes about a minute for 5Gi, 8 minutes for 16G and 45 for 107G
+(document 20). Check it streams before doing the next cluster:
+
+```bash
+kubectl -n <ns> exec <primary> -c postgres -- \
+  psql -Atc "select application_name, state from pg_stat_replication"
+```
+
+One cluster at a time, and never the primary's PVC. `CNPGReplicaNotStreaming`
+fires after 30 minutes in this state (`monitoring/configs/README.md`). If the
+primary is killed during the join, the Job fails and CNPG retries it.
