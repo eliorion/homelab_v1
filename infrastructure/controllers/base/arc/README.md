@@ -18,7 +18,7 @@ dependency cache they pull through, is described in
 | File | What it does |
 |---|---|
 | `kustomization.yaml` | Base: `namespace.yaml`, `repository.yaml`, `release.yaml`. |
-| `namespace.yaml` | Two namespaces. `arc-systems` holds the controller and the per-scale-set listener pods. `arc-runners` holds the ephemeral runner pods and carries `pod-security.kubernetes.io/enforce: privileged`. |
+| `namespace.yaml` | Three namespaces. `arc-systems` holds the controller and the per-scale-set listener pods. `arc-runners` holds the dind and e2e pools' runner pods and carries `pod-security.kubernetes.io/enforce: privileged`. `arc-dagger` holds the lean pool's (`self-hosted-arc-dagger`: no dind) and enforces, audits and warns `restricted` — see `../../../services/staging/arc-runner-set/README.md`. |
 | `repository.yaml` | `HelmRepository/arc` in `flux-system`, `type: oci`, `oci://ghcr.io/actions/actions-runner-controller-charts`, 24h interval. Shared: the runner-set releases in `infrastructure/services/staging/arc-runner-set/` point at this same source. |
 | `release.yaml` | `HelmRelease/arc-controller` in `flux-system`, `targetNamespace: arc-systems`, `releaseName: arc-controller`, chart `gha-runner-scale-set-controller` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h, `install.createNamespace: true`, manager `securityContext` hardening, requests 500m/256Mi and a 512Mi memory limit. |
 

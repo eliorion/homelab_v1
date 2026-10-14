@@ -1,0 +1,12 @@
+# Plaintext patch over the SOPS Secret's metadata (the ghcr-pull-secret-namespaces.yaml pattern):
+# mirrors arc-github-pat into the namespaces of pools that do not live in arc-runners.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: arc-github-pat
+  namespace: arc-runners
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: arc-dagger
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: arc-dagger
