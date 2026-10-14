@@ -7,8 +7,6 @@ resources:
   - asp/
   - advisor/
   - fbref/
-  - monica/
   - n8n/
-  - paperclip/
   - nextcloud/
   - scraper/
