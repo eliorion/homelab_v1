@@ -61,15 +61,16 @@ spec:
         # not alert. A paused site with a backlog is the real failure.
         - alert: ScraperSiteServingPaused
           expr: >-
-            max by (tenant, site, role) (cnpg_scraper_serving_paused) > 0
-            and on (tenant, site) max by (tenant, site) (cnpg_scraper_serving_pending) > 0
+            max by (tenant_id, site, role) (cnpg_scraper_serving_paused) > 0
+            and on (tenant_id, site) max by (tenant_id, site) (cnpg_scraper_serving_pending) > 0
           for: 30m
           labels:
             severity: warning
           annotations:
-            summary: "Platform not serving {{ $labels.site }} ({{ $labels.role }}) for {{ $labels.tenant }} with work queued"
+            summary: "Platform not serving {{ $labels.site }} ({{ $labels.role }}) for tenant_id {{ $labels.tenant_id }} with work queued"
             description: >-
-              domain_control.paused is set for {{ $labels.tenant }}/{{ $labels.site }}/{{ $labels.role }}
+              domain_control.paused is set for {{ $labels.site }}/{{ $labels.role }}
+              (tenant_id {{ $labels.tenant_id }})
               while requests are still pending. Those lanes are excluded from
               leasing AND from every KEDA scale trigger, so the fleet will not
               scale to drain them and the anti-bot ladder cannot escalate --

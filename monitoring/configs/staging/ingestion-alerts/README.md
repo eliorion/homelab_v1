@@ -76,8 +76,8 @@ cluster and no new workload.
 | `cnpg_asp_ingestion_scraping_paused` | `apps/staging/databases/asp/ingestion-metrics-configmap.yaml` |
 | `cnpg_asp_ingestion_searching_paused` | same |
 | `cnpg_asp_ingestion_seconds_since_last_listing` | same |
-| `cnpg_scraper_serving_paused{tenant,site,role}` | `apps/staging/databases/scraper/serving-metrics-configmap.yaml` |
-| `cnpg_scraper_serving_pending{tenant,site,role}` | same |
+| `cnpg_scraper_serving_paused{tenant_id,site,role}` | `apps/staging/databases/scraper/serving-metrics-configmap.yaml` |
+| `cnpg_scraper_serving_pending{tenant_id,site,role}` | same |
 
 Both are attached by a `cluster-metrics-patch.yaml` in the same directory.
 
@@ -127,12 +127,15 @@ the threshold.
   merge on a CRD list replaces it rather than appending. Dropping that first
   entry removes every default CNPG metric — replication lag, backends,
   checkpointer — cluster-wide.
-- **`tenant` is part of the series key.** `site_config` is unique on
+- **`tenant_id` is part of the series key.** `site_config` is unique on
   `(tenant_id, site)`, not on `site`: `fbref` and `tmapi` each exist under two
   tenants. Without the label the query emits duplicate series, and the exporter
   answers HTTP 500 for the whole endpoint, taking every default CNPG metric of
-  the primary with it (2026-10-14). The alert joins `on (tenant, site)` for the
-  same reason: a pause in one tenant must not pair with another tenant's backlog.
+  the primary with it (2026-10-14). The alert joins `on (tenant_id, site)` for
+  the same reason: a pause in one tenant must not pair with another tenant's
+  backlog. It is the id, not `tenants.name`, because the exporter role can only
+  read the tables scraper's Flyway migration V25 grants it, and `tenants` is not
+  one of them: a join there fails every scrape with `permission denied`.
 - **`target_databases` is not optional here.** It defaults to `postgres`, where
   neither `worker_control` nor `domain_control` exists. Wrong value means the
   query errors on every scrape and the metric never appears.

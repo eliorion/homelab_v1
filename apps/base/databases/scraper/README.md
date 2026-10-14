@@ -38,7 +38,7 @@ Staging overlay (`apps/staging/databases/scraper/`):
   `monitoring.customQueriesConfigMap` to `cnpg-default-monitoring` plus
   `scraper-serving-metrics`.
 - `serving-metrics-configmap.yaml` — the `scraper-serving-metrics` query, run
-  on the primary against database `scraper`: one row per `(tenant, site, role)`
+  on the primary against database `scraper`: one row per `(tenant_id, site, role)`
   of `domain_control`, exported as `cnpg_scraper_serving_paused` and
   `cnpg_scraper_serving_pending`. `paused` is the platform-side switch and is
   independent of any tenant's own pause flag; both must be clear for work to
@@ -128,9 +128,14 @@ consumer is a permit nobody audits.
   schema source that competes with Flyway.
 - `storage.size: 5Gi` and the absence of a storage class live in base; the
   `longhorn` storage class is added only by the staging overlay.
-- `scraper-serving-metrics` must key on `tenant` as well as `site` and `role`:
-  site names repeat across tenants, and a duplicate series makes the exporter
-  answer HTTP 500 for every metric on the primary, replication included.
+- `scraper-serving-metrics` must key on `tenant_id` as well as `site` and
+  `role`: site names repeat across tenants, and a duplicate series makes the
+  exporter answer HTTP 500 for every metric on the primary, replication included.
+- `scraper-serving-metrics` runs as `cnpg_metrics_exporter`, which can read only
+  the tables Flyway migration V25 (`cnpg metrics exporter grants`) grants it:
+  `domain_control`, `site_config`, `lanes`, `scrape_requests`. Joining any other
+  table, `tenants` included, fails the query with `permission denied`; add the
+  grant in the migrations repo first.
 - Drop the `cnpg.io/reload` label from `scraper-serving-metrics` and an edited
   query keeps running in its old form until the instance pods restart: CNPG
   only pushes changes from labelled ConfigMaps to running instances.
