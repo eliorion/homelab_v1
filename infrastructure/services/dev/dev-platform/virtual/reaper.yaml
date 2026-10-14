@@ -29,7 +29,7 @@ spec:
           containers:
             - name: reaper
               # sh + kubectl; keep the kubectl minor within one of the vcluster's.
-              image: docker.io/alpine/k8s:1.36.4
+              image: docker.io/alpine/k8s:1.37.1
               imagePullPolicy: IfNotPresent
               command: ["/bin/sh", "/script/reaper.sh"]
               env:
