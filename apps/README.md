@@ -14,7 +14,7 @@ Three Flux Kustomizations in
 
 | Kustomization | Path | Notes |
 |---|---|---|
-| `databases` | `./apps/staging/databases` | `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, `wait: true` — Ready only when the CNPG Cluster is Ready |
+| `databases` | `./apps/staging/databases` | `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, `wait: true` — Ready once every CNPG Cluster has a serving primary (`healthCheckExprs`) |
 | `db-migrations` | `./apps/staging/databases/db-migrations` | `dependsOn` `databases`, `force: true`, `wait: true` — Ready only when the Flyway Job completes |
 | `apps` | `./apps/staging` | `dependsOn` `db-migrations`, `prune: true`, SOPS decryption |
 
@@ -67,6 +67,15 @@ applying the same objects is drift by construction.
 Job runs while the old pods are still serving, and `wait: true` on both upstream Kustomizations
 means a failed migration stops the app rollout instead of shipping code against an unmigrated
 database.
+
+**`databases` waits for each primary, not for the whole Cluster.** Its `healthCheckExprs` count
+a CNPG Cluster healthy once `status.currentPrimary` is listed in `status.instancesStatus.healthy`,
+instead of the Cluster's `Ready` condition, which turns False whenever any replica is down. On
+2026-10-13 one broken replica in each of `n8n-db` and `scraper-db` held `db-migrations` and every
+app rollout for 21 hours (doc 20 records the same stall during the fbref re-clone). A primary that
+is down still gates the chain, as it must; a missing replica fires `CNPGReplicaNotStreaming`
+(`monitoring/configs/staging/cnpg-alerts/`) instead. A new Cluster has no status yet, so the
+expression errors and Flux keeps waiting until its primary is up — the intended first-install gate.
 
 **Some components have no `base/`.** A component that exists in exactly one environment and is
 little more than a single `HelmRelease` gains nothing from a base plus a one-line overlay.

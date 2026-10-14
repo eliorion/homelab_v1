@@ -16,6 +16,11 @@ spec:
   path: ./apps/staging/databases
   prune: true
   wait: true
+  # Healthy once the primary serves; a missing replica alerts instead of gating apps. See apps/README.md.
+  healthCheckExprs:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      current: has(status.currentPrimary) && has(status.instancesStatus.healthy) && status.currentPrimary in status.instancesStatus.healthy
   decryption:
     provider: sops
     secretRef:

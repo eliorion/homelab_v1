@@ -101,11 +101,12 @@ entire write path. This is the reason a cache service exists at all.
   cluster.
 - **No `encryption:` under `wal:` or `data:`.** Garage implements SSE-C only;
   requesting SSE-S3/AES256 fails every upload.
-- **Placeholder Garage credentials stall the whole app tier.** The `databases`
-  Flux Kustomization runs with `wait: true` and gates `db-migrations`, which
-  gates `apps`. A barman sidecar that cannot authenticate degrades the cluster,
-  the Kustomization never reports Ready, and every app behind it stops
-  reconciling. Create the bucket and key *before* the first push.
+- **Placeholder Garage credentials end in a stopped primary.** A barman
+  sidecar that cannot authenticate archives nothing, `pg_wal` grows until the
+  volume fills and CNPG stops the primary — and a stopped primary holds
+  `databases`, which gates `db-migrations` and every app behind it.
+  `CNPGWALArchivingFailing` fires first. Create the bucket and key *before*
+  the first push.
 - **The bucket name is `cnpg-staging-nextcloud`.** `destinationPath` and the key
   grant must agree, or the failure only surfaces at restore time.
 - **A Garage outage fills this volume.** Failing WAL archiving is not just a

@@ -37,8 +37,9 @@ Staging (`apps/staging/databases/asp/`):
 Flux applies this through `clusters/staging/apps.yaml`: the Kustomization
 `databases` reconciles `./apps/staging/databases` (whose kustomization lists
 `asp/`), `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, decrypts with
-SOPS and uses `wait: true`, so it is Ready only when the CNPG Cluster reports
-Ready. `db-migrations` depends on `databases` (it needs `asp-db` and the
+SOPS and uses `wait: true` with a primary-only health check
+(`../../../README.md`), so it is Ready once `asp-db`'s primary serves.
+`db-migrations` depends on `databases` (it needs `asp-db` and the
 generated `asp-db-app` secret), `apps` depends on `db-migrations`, and
 `clusters/staging/lab.yaml` also depends on `databases`.
 

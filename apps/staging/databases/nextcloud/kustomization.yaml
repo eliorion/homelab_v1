@@ -7,8 +7,8 @@ resources:
   - ../../../base/databases/nextcloud
   # CNPG -> Garage backup (bucket cnpg-staging-nextcloud, via the in-cluster gateway).
   # Create this file from the .exemple template BEFORE pushing: with placeholder
-  # credentials the barman WAL archiver fails, degrades the cluster, and
-  # `databases` reconciles with wait:true -- that stalls the whole app tier.
+  # credentials the barman WAL archiver fails and pg_wal grows until CNPG stops
+  # the primary.
   - garage-backup-credentials.enc.yaml
   - objectstore.yaml
   - scheduledbackup.yaml

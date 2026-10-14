@@ -127,9 +127,9 @@ applied and must be `sops -e -i`-encrypted before it is committed; the
   unavailable.
 - Uncomment the backup resources and `cluster-backup-patch.yaml` **together**,
   and only with a working Garage key in place. With placeholder credentials the
-  barman WAL archiver fails, which degrades the CNPG cluster; `databases`
-  reconciles with `wait: true` and gates `db-migrations` → `apps`, so a broken
-  `n8n-db` stalls the whole app tier, not just n8n.
+  barman WAL archiver fails, `pg_wal` grows until CNPG stops the primary, and a
+  stopped primary stalls `db-migrations` → `apps` for the whole app tier, not
+  just n8n.
 - The ObjectStore must not set `encryption:`. Garage supports SSE-C only, not
   SSE-S3/AES256, and AES256 would fail every WAL and base upload.
 - `AWS_REGION` and `AWS_DEFAULT_REGION` must both stay `garage`. This archive is
