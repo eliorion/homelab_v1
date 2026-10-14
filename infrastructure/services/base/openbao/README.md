@@ -121,7 +121,7 @@ application credential and belongs in OpenBao.
 | `bootstraping/talsecret.sops.yaml` | Talos PKI |
 | `openbao-unseal`, `openbao-ca`, `openbao-admin` | OpenBao cannot hold its own key, CA or break-glass login |
 | `cert-manager/cloudflare-api-token`, `tailscale/operator-oauth` | TLS issuance and the tailnet path backups use |
-| `linstor-passphrase`, `paperclip-secrets-key` | Encryption keys for data; lose them and backups are unreadable |
+| `linstor-passphrase` | Encryption key for data; lose it and backups are unreadable |
 | `etcd-backup-s3`, every CNPG `r2-`/`garage-backup-credentials` | Disaster recovery must not need OpenBao |
 | `telegram-bot-token`, `alertmanager-telegram`, `grafana-admin` | The alerting path must work while OpenBao is down |
 

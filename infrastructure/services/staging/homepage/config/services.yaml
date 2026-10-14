@@ -147,13 +147,6 @@
         namespace: n8n
         app: n8n
         podSelector: app=n8n
-    - Monica:
-        icon: mdi-account-heart-outline
-        href: https://monica.tail45b0ca.ts.net
-        description: Personal CRM
-        siteMonitor: http://monica.monica.svc:8080/up
-        namespace: monica
-        app: monica
     - asp admin:
         icon: mdi-soccer
         href: http://asp-admin-ui.tail45b0ca.ts.net:8080

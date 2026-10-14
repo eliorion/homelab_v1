@@ -11,8 +11,6 @@ resources:
   - fbref/
   - glpi/
   - linkding/
-  - monica/
   - n8n/
-  - paperclip/
   - nextcloud/
   - scraper/
