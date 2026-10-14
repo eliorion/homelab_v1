@@ -62,6 +62,20 @@ spec:
         login: true
         passwordSecret:
           name: fbref-scout-ro
+      # asp repo fbref V60: the ML data lake's reader (SELECT on every schema, nothing else). The
+      # fbref-pipelines run pods use it on fbref-db-ro to extract snapshots (asp docs/25).
+      - name: ml_ro
+        ensure: present
+        login: true
+        passwordSecret:
+          name: fbref-ml-ro
+      # asp repo fbref V59: the pipelines' publisher (reads tm.* and the canonical scout models,
+      # writes model.* only), for the publish step of asp docs/25 phase 5.
+      - name: model_rw
+        ensure: present
+        login: true
+        passwordSecret:
+          name: fbref-model-rw
       # Flyway V3 creates the worker-control/nocodb roles while connected as
       # app — needs CREATEROLE.
       - name: app

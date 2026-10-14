@@ -197,3 +197,40 @@ Traces in Grafana (Explore → Tempo, TraceQL):
 
 More probes, and the tunnel-side configuration, are in
 [`../../../infrastructure/services/staging/cloudflare/README.md`](../../../infrastructure/services/staging/cloudflare/README.md).
+
+## ML pipelines (asp docs/25)
+
+The fbref chart deploys the `fbref-pipelines` Dagster code location (gRPC :3030, no credential) and
+Dagster launches its runs **in this namespace** (the lake extract, trainings). What they need from
+this repo:
+
+| Object | Where | What |
+|---|---|---|
+| roles `ml_ro`, `model_rw` (LOGIN) | `../../base/databases/fbref/database.yaml` | asp fbref V60 (reads every schema) and V59 (writes `model.*`); the run pods read the **replica** as `ml_ro` |
+| Secrets `fbref-ml-ro`, `fbref-model-rw`, `fbref-mlflow-pipelines` | `../databases/fbref/externalsecrets.yaml` | OpenBao `kv/fbref/*` (this namespace is onboarded: `eso-namespaces.txt`) |
+| Secret `s3-ml-lake` | `infrastructure/controllers/staging/seaweedfs/s3/buckets/ml-lake.enc.yaml` | the `ml-lake` bucket key, sops; the namespaces it is reflected into are in the plain `ml-lake.reflection.yaml` next to it |
+| Secret `mlops-dagster-db` | `infrastructure/services/staging/mlops/secrets/` | reflected from `mlops`: a run pod writes its events to Dagster's storage |
+
+**Seed before the first reconcile** (hex only), then create the MLflow user once MLflow and the entry
+exist:
+
+```sh
+mise bao kv put kv/fbref/ml-ro password="$(openssl rand -hex 32)"
+mise bao kv put kv/fbref/model-rw password="$(openssl rand -hex 32)"
+mise bao kv put kv/fbref/mlflow-pipelines password="$(openssl rand -hex 32)"
+mise mlflow-user pipelines kv/fbref/mlflow-pipelines
+```
+
+Without them the three ExternalSecrets stay `SecretSyncedError` and CNPG keeps the two roles NOLOGIN;
+the code server still runs, only a launched run fails.
+
+Verify:
+
+```sh
+kubectl -n fbref get externalsecret,secret | grep -E 'ml-ro|model-rw|mlflow-pipelines|s3-ml-lake|mlops-dagster-db'
+kubectl -n fbref get cluster fbref-db -o jsonpath='{.status.managedRolesStatus.byStatus}'; echo
+kubectl -n fbref get pods -l app=fbref-pipelines
+```
+
+Then from https://dagster.tail45b0ca.ts.net: location `fbref-pipelines`, job `extract_fbref`, Launch.
+Run pods are `app=fbref-pipelines-run` in this namespace (`kubectl -n fbref logs -l app=fbref-pipelines-run`).

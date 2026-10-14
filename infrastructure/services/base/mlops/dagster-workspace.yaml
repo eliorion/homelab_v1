@@ -1,5 +1,5 @@
 # Mounted by the dagster release (dagsterWebserver.workspace.externalConfigmap). One grpc_server
-# entry per code location; empty until the first one (asp docs/24 phase 4).
+# entry per code location, each deployed by its own stack's chart in its own namespace.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,4 +7,10 @@ metadata:
   namespace: mlops
 data:
   workspace.yaml: |
-    load_from: []
+    load_from:
+      # asp fbref chart templates/pipelines.yaml: the fbref ML pipelines (asp docs/25). Its runs
+      # execute in the fbref namespace, with fbref's credentials.
+      - grpc_server:
+          host: fbref-pipelines.fbref.svc.cluster.local
+          port: 3030
+          location_name: fbref-pipelines

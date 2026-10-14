@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Create an MLflow user whose password lives in OpenBao, as the MLflow admin:
+#   mise mlflow-user <username> <openbao kv path holding `password`>
+#   mise mlflow-user pipelines kv/fbref/mlflow-pipelines
+# Both passwords are read through scripts/bao and never printed or put on a command line (curl reads
+# them from stdin/a pipe). The admin password is kv/mlops/mlflow-auth's, the break-glass copy: if it
+# was rotated in the MLflow UI, update that entry first. README: infrastructure/services/base/mlops.
+set -euo pipefail
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+url=${MLFLOW_URL:-https://mlflow.tail45b0ca.ts.net}
+
+if [ $# -ne 2 ]; then
+  echo "usage: mise mlflow-user <username> <kv path>   e.g. mise mlflow-user pipelines kv/fbref/mlflow-pipelines" >&2
+  exit 2
+fi
+user=$1 path=$2
+case $user in *[!a-z0-9_-]*|'') echo "username: lowercase letters, digits, - and _ only" >&2; exit 2 ;; esac
+
+admin=$("$root/scripts/bao" kv get -field=admin-password kv/mlops/mlflow-auth)
+password=$("$root/scripts/bao" kv get -field=password "$path")
+case $password in *[!0-9a-f]*|'') echo "$path: password must be hex (it is pasted into JSON)" >&2; exit 1 ;; esac
+
+code=$(printf '{"username":"%s","password":"%s"}' "$user" "$password" |
+  curl -s -o /dev/null -w '%{http_code}' -X POST "$url/api/2.0/mlflow/users/create" \
+    -H 'Content-Type: application/json' --data-binary @- \
+    --netrc-file <(printf 'machine %s login admin password %s\n' "$(printf '%s' "$url" | sed -E 's#^https?://##; s#/.*##')" "$admin"))
+unset admin password
+
+case $code in
+  200) echo "MLflow user $user created" ;;
+  400) echo "MLflow user $user already exists (or the request was refused): HTTP 400" >&2; exit 1 ;;
+  401|403) echo "the MLflow admin login was refused (HTTP $code): is kv/mlops/mlflow-auth current?" >&2; exit 1 ;;
+  *) echo "MLflow answered HTTP $code" >&2; exit 1 ;;
+esac

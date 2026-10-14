@@ -1,0 +1,29 @@
+# S3 credential for bucket ml-lake (asp docs/25: the ML data lake, parquet snapshots of fbref,
+# including special-category data: GDPR Art. 9). Template: ml-lake.enc.yaml.exemple. Steps: ../README.md.
+# Which namespaces receive it is NOT here: ml-lake.reflection.yaml (plain), so granting a namespace
+# never touches this file. Encrypted with mac_only_encrypted (.sops.yaml) so that patch is accepted.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-ml-lake
+    namespace: flux-system
+type: Opaque
+stringData:
+    ML_LAKE_S3_ACCESS_KEY: ENC[AES256_GCM,data:sVyQP53leYvE8OUHGWFneC3z+tCg/8b0,iv:brwIWmMsr42yQqGRjkxuBGT50t/+eaSKNhTSN7SeTm0=,tag:3JnVS64J3QzMoU+Y1HF7sg==,type:str]
+    ML_LAKE_S3_SECRET_KEY: ENC[AES256_GCM,data:5uu416A0xzEwZSSPGpbwaZDrmWifHjfzVIpEW1JwxyGv89iMVw+DQLKjPRzLZ0CECFdGJ36BCkkXm0p/zv0uvA==,iv:IuXi1PFS40Nubs+dNR8TbXjbCmoid+Vk8YaDzW59z04=,tag:iiu0UvGyw8KeU9Qcj5CGVg==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBCaTV5SEsxNERkSWlVL2lV
+            R3dpQnl3Vmt1ZTZ1djg1NDhocU1tYlVPR1Y0CnY5L2RYT2pRNzFKQ1gzc3BBTUc4
+            WEdWUktSK0locCtjRWIwUEZBenJLbVUKLS0tIDUyZkJUdndQM0Q3UXhEZUlWamtV
+            R0FheWlrQ2o0K1JpMWhtT2lqVE8wYmMKDahyQsoGShta9wlEP4SRxdx5m0KBFu6T
+            W/KBgrlucQno4e4mSlWkEZdLUKCZNWVaPQBxc8Pt6ZWrDk+nnnPS9Q==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-13T22:52:51Z"
+    mac: ENC[AES256_GCM,data:UaabmrdIGYQBkq5435YVN7G/fhaigiLG/tldBycLr23c3MvOhQtVwYuOuLBVP3u7303KAjFiA6k+473DRv4n6tuG5MBmzHp3ddWvKTKkq8hhlMxss6m+vPr1v/RYr5lY7MIXnmXcOEO53maZZHJPpCA+tn9k7ceW6vAGbXUqLA4=,iv:rKdD53cIDmC0txDwj7FK5NZ/D6dGtilr/d8Wf42bEE0=,tag:lDUR0/GxePVPVsE5XjsuDA==,type:str]
+    mac_only_encrypted: true
+    version: 3.13.3

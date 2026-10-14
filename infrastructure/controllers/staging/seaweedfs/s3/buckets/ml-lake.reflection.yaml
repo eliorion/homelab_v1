@@ -1,0 +1,15 @@
+# Which namespaces receive the ml-lake bucket key (Secret s3-ml-lake, ml-lake.enc.yaml): a plain
+# patch, so granting a namespace is a one-line, reviewable diff that needs no age key. Review it like
+# an RBAC grant: every namespace listed gets READ AND WRITE on the lake, which holds special-category
+# data (asp docs/25 L1). Keep the two lists identical. Applied before Flux decrypts the Secret;
+# accepted because ml-lake.enc.yaml's MAC covers its encrypted values only (.sops.yaml).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-ml-lake
+  namespace: flux-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: fbref
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: fbref

@@ -1,4 +1,5 @@
-# Both UIs: the Tailscale proxy and Homepage's site monitor in, nothing else. README.md.
+# Both UIs: the Tailscale proxy and Homepage's site monitor in; MLflow also takes the code locations'
+# run pods. README.md.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -19,6 +20,13 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: homepage
+        # The fbref ML pipelines' run pods (asp fbref chart templates/pipelines.yaml).
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: fbref
+          podSelector:
+            matchLabels:
+              app: fbref-pipelines-run
       ports:
         - protocol: TCP
           port: 5000
@@ -81,6 +89,15 @@ spec:
         - ports:
             - port: "5432"
               protocol: TCP
+    # The code locations' gRPC servers (dagster-workspace.yaml).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: fbref
+            app: fbref-pipelines
+      toPorts:
+        - ports:
+            - port: "3030"
+              protocol: TCP
     - toEntities:
         - kube-apiserver
 ---
@@ -112,6 +129,15 @@ spec:
       toPorts:
         - ports:
             - port: "5432"
+              protocol: TCP
+    # The code locations' gRPC servers (dagster-workspace.yaml).
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: fbref
+            app: fbref-pipelines
+      toPorts:
+        - ports:
+            - port: "3030"
               protocol: TCP
     - toEntities:
         - kube-apiserver

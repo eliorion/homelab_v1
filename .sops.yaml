@@ -7,6 +7,14 @@ creation_rules:
   - path_regex: (^|/)talsecret\.sops\.ya?ml$
     age: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
 
+  # SeaweedFS bucket keys: the MAC covers the encrypted values only, so the Secret's metadata (the
+  # reflector annotations, kept in a plain <bucket>.reflection.yaml patch) changes without
+  # re-encrypting. Must come before the generic staging rule (first match wins).
+  - path_regex: (^|/)infrastructure/controllers/staging/seaweedfs/s3/buckets/.*\.enc\.ya?ml$
+    encrypted_regex: ^(data|stringData)$
+    mac_only_encrypted: true
+    age: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+
   - path_regex: (^|/)staging/.*\.enc\.ya?ml$
     encrypted_regex: ^(data|stringData)$
     age: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3

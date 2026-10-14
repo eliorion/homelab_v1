@@ -34,6 +34,22 @@ Two rules the gateway imposes:
 4. `../configure/configure.sh`: `s3.bucket.create -name <b>`.
 5. After Flux applied it: restart the gateway (above).
 
+### Consumer namespaces outside the encrypted file (ml-lake; the pattern for new buckets)
+
+sops' MAC normally covers EVERY value, the Secret's annotations included: the reflector namespaces of
+an existing bucket can only change through `sops edit` (the age key, every ciphertext line rewritten),
+and a hand edit fails Flux with "MAC mismatch". `buckets/ml-lake.enc.yaml` is encrypted with
+`mac_only_encrypted` (the `.sops.yaml` rule for this directory), carries no annotation, and its
+consumers live in the plain patch `buckets/ml-lake.reflection.yaml` (listed under `patches:` in
+`buckets/kustomization.yaml`). Flux builds, so patches, before it decrypts, and the MAC still covers
+the key pair. Granting a namespace = add it to BOTH lists in that file; nothing else. The price:
+sops no longer detects an edit of the Secret's metadata, so the git review is that check (a namespace
+added there gets the bucket's read AND write key: review it like an RBAC grant).
+
+A new bucket follows the same pattern from step 1: `.enc.yaml` without annotations (the directory rule
+applies `mac_only_encrypted` by itself), a `<b>.reflection.yaml` patch, a `patches:` entry. The older
+buckets keep their annotations inside the encrypted file until someone re-encrypts them.
+
 Removing a bucket is the same steps backwards; its data stays until `s3.bucket.delete -name <b>`.
 
 The consumer reads the reflected Secret by its own key names (the advisor chart: `objectStore.accessKeyKey`
