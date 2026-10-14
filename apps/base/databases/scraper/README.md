@@ -131,6 +131,9 @@ consumer is a permit nobody audits.
 - `scraper-serving-metrics` must key on `tenant` as well as `site` and `role`:
   site names repeat across tenants, and a duplicate series makes the exporter
   answer HTTP 500 for every metric on the primary, replication included.
+- Drop the `cnpg.io/reload` label from `scraper-serving-metrics` and an edited
+  query keeps running in its old form until the instance pods restart: CNPG
+  only pushes changes from labelled ConfigMaps to running instances.
 - `scraper-db` has no off-cluster backup at all. Do not treat it as a durable
   store for anything that is not rebuildable from the migrations.
 
