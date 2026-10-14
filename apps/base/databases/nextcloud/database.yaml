@@ -25,8 +25,10 @@ spec:
     initdb:
       database: nextcloud
       owner: app
-      # No postInit and no db-migrations entry: Nextcloud owns its own schema
-      # (`occ maintenance:install` on first boot, `occ upgrade` after). See README.md.
+      # No db-migrations entry: Nextcloud owns its own schema. See README.md.
+      # Nextcloud's installer revokes CONNECT from PUBLIC; this keeps the metrics exporter in.
+      postInitApplicationSQL:
+        - GRANT CONNECT ON DATABASE nextcloud TO pg_monitor
 
   storage:
     size: 5Gi

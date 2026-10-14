@@ -348,6 +348,8 @@ reaching 100% is a hard outage rather than a degradation: 80% for 30m is the
   rule then says nothing. On 2026-10-14 both happened: `scraper-db`'s
   `scraper-serving-metrics` returned duplicate rows on the primary, and
   `nextcloud-db`'s exporter role was refused CONNECT on database `nextcloud`.
+  Both fixed the same day; the causes are traps in
+  `apps/base/databases/{scraper,nextcloud}/README.md`.
   Check `up{pod=~".+-db-[0-9]+"}` and `cnpg_errors_total` after adding a
   custom query.
 - **The cluster label is derived, not scraped.** `label_replace` strips the

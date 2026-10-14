@@ -43,7 +43,8 @@ The staging overlay (`apps/staging/databases/nextcloud/`) adds:
 entrypoint runs `occ maintenance:install` against an empty database on first
 boot, and `occ upgrade` after every image bump. A Flyway job in
 `apps/staging/databases/db-migrations/` would fight it. The `initdb` block
-therefore creates an *empty* `nextcloud` database and stops there.
+therefore creates an *empty* `nextcloud` database; its one `postInitApplicationSQL`
+line is a grant for the metrics exporter, not schema (see Traps).
 
 **2 instances, not 3.** Nextcloud is a single-writer application with no read
 splitting; the replica exists for failover and for the synchronous quorum, not
@@ -93,6 +94,16 @@ entire write path. This is the reason a cache service exists at all.
   the Nextcloud pod, which reads an empty database instead of the restored 196
   tables. Hit on 2026-08-24; repair procedure in
   [`../../../../documentations/03-backups.md`](../../../../documentations/03-backups.md).
+- **The metrics exporter needs an explicit `CONNECT` grant.** Nextcloud's
+  installer revokes `CONNECT` on database `nextcloud` from `PUBLIC`, and CNPG's
+  default monitoring queries run in that database as `cnpg_metrics_exporter`.
+  Without a grant every default query fails with `permission denied for database
+  "nextcloud"`: no replication, WAL or backend metrics, and
+  `CNPGReplicaNotStreaming` cannot see this cluster (2026-10-14).
+  `postInitApplicationSQL` grants `CONNECT` to `pg_monitor` on a fresh `initdb`;
+  a `bootstrap.recovery` restores the grant with the data. The live cluster got
+  it by hand, once:
+  `kubectl -n nextcloud exec <primary> -c postgres -- psql -c "GRANT CONNECT ON DATABASE nextcloud TO pg_monitor"`.
 - **`imageName`, not `image`.** And never
   `ghcr.io/cloudnative-pg/cloudnative-pg` — that is the *operator* image.
 - **`AWS_REGION` and `AWS_DEFAULT_REGION` must both stay `garage`.** A wrong
