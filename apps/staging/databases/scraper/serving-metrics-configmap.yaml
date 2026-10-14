@@ -5,17 +5,17 @@ metadata:
 data:
   queries: |
     scraper_serving:
-      # One row per (site, role). `paused` here is the PLATFORM-side switch and
-      # is independent of any tenant's own pause flag -- both must be clear for
-      # work to flow. `pending` is what makes a pause alertable: a paused site
-      # with no backlog is a deliberate off-switch, not an outage.
+      # `tenant` must stay a label: site names repeat across tenants, and one
+      # duplicate series makes the exporter 500 every metric on the primary.
       query: |
-        SELECT sc.site AS site
+        SELECT t.name AS tenant
+          , sc.site AS site
           , dc.role AS role
           , (CASE WHEN dc.paused THEN 1 ELSE 0 END) AS paused
           , COALESCE(p.pending, 0) AS pending
         FROM public.domain_control dc
         JOIN public.site_config sc ON sc.id OPERATOR(pg_catalog.=) dc.site_config_id
+        JOIN public.tenants t ON t.id OPERATOR(pg_catalog.=) sc.tenant_id
         LEFT JOIN (
           SELECT l.site_config_id AS scid
             , pg_catalog.count(*) AS pending
@@ -28,6 +28,9 @@ data:
       target_databases:
         - scraper
       metrics:
+        - tenant:
+            usage: "LABEL"
+            description: "Tenant that owns the site config"
         - site:
             usage: "LABEL"
             description: "Site the lane serves"

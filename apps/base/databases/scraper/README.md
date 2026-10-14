@@ -26,7 +26,7 @@ Base (`apps/base/databases/scraper/`):
 Staging overlay (`apps/staging/databases/scraper/`):
 
 - `kustomization.yaml` — pulls the base, forces `namespace: scraper`, and
-  applies the two patches below. It adds no Secrets and no backup resources.
+  applies the three patches below. It adds no Secrets and no backup resources.
 - `cluster-storage-patch.yaml` — JSON 6902 patch adding
   `/spec/storage/storageClass: longhorn`. Explicit, though Longhorn is also the
   cluster default storage class on Talos.
@@ -34,6 +34,18 @@ Staging overlay (`apps/staging/databases/scraper/`):
   `inheritedMetadata.annotations` that permit kubernetes-reflector to mirror
   this cluster's generated Secrets into the `database` namespace
   (`reflection-allowed: "true"`, `reflection-allowed-namespaces: "database"`).
+- `cluster-metrics-patch.yaml` — strategic-merge patch setting
+  `monitoring.customQueriesConfigMap` to `cnpg-default-monitoring` plus
+  `scraper-serving-metrics`.
+- `serving-metrics-configmap.yaml` — the `scraper-serving-metrics` query, run
+  on the primary against database `scraper`: one row per `(tenant, site, role)`
+  of `domain_control`, exported as `cnpg_scraper_serving_paused` and
+  `cnpg_scraper_serving_pending`. `paused` is the platform-side switch and is
+  independent of any tenant's own pause flag; both must be clear for work to
+  flow. `pending` is what makes a pause alertable: a paused site with no backlog
+  is a deliberate off-switch. The alert that reads them is
+  `ScraperSiteServingPaused`
+  ([`monitoring/configs/staging/ingestion-alerts`](../../../../monitoring/configs/staging/ingestion-alerts/README.md)).
 
 Flux: the `databases` Kustomization in
 [`clusters/staging/apps.yaml`](../../../../clusters/staging/apps.yaml) applies
@@ -116,6 +128,9 @@ consumer is a permit nobody audits.
   schema source that competes with Flyway.
 - `storage.size: 5Gi` and the absence of a storage class live in base; the
   `longhorn` storage class is added only by the staging overlay.
+- `scraper-serving-metrics` must key on `tenant` as well as `site` and `role`:
+  site names repeat across tenants, and a duplicate series makes the exporter
+  answer HTTP 500 for every metric on the primary, replication included.
 - `scraper-db` has no off-cluster backup at all. Do not treat it as a durable
   store for anything that is not rebuildable from the migrations.
 
