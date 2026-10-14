@@ -1,0 +1,51 @@
+# Chart lives in the asp repo (k8s/charts/raph-corp) — values here are environment
+# overrides ONLY, never image tags (the chart's values.yaml owns those). README.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: raph-corp
+spec:
+  interval: 1m
+  timeout: 5m
+  chart:
+    spec:
+      chart: k8s/charts/raph-corp
+      # Chart.yaml version is static — upgrade on git revision instead.
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: raph-corp
+        namespace: flux-system
+      interval: 1m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      # retries is REQUIRED: helm-controller performs no remediation at the
+      # default retries: 0 — strategy alone is a no-op.
+      retries: 3
+      strategy: rollback
+      remediateLastFailure: true
+  rollback:
+    cleanupOnFail: true
+  test:
+    enable: true
+    ignoreFailures: false
+  driftDetection:
+    mode: enabled
+  values:
+    global:
+      # Private GHCR image; the Secret is mirrored into the ns by reflector.
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+    # The databases tier owns raph-corp-db (apps/base/databases/raph-corp).
+    cnpg:
+      enabled: false
+    # Informational: the public route is a Cloudflare tunnel route (dashboard),
+    # see infrastructure/services/staging/cloudflare/README.md.
+    publicHost: raph-corp.eliorion.fr # TODO(eliorion): confirm the hostname
+    otel:
+      enabled: true
+      endpoint: http://alloy-receiver.monitoring.svc.cluster.local:4318
+      environment: staging
