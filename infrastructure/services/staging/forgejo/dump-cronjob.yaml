@@ -1,0 +1,135 @@
+# Daily `forgejo dump` (repositories, attachments, config, a SQL copy of the DB) to Cloudflare R2.
+# The database is ALSO archived continuously by CNPG (../databases/forgejo); this covers what lives
+# on the Forgejo volume. The volume is RWO, so the Job runs on the Forgejo pod's node (podAffinity)
+# and mounts the same claim. Restore drill: ../../base/forgejo/README.md.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: forgejo-dump
+  namespace: forgejo
+spec:
+  schedule: "37 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app: forgejo-dump
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - topologyKey: kubernetes.io/hostname
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: forgejo
+                      app.kubernetes.io/instance: forgejo
+          initContainers:
+            - name: dump
+              image: code.forgejo.org/forgejo/forgejo:15.0.10-rootless
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  forgejo dump --config /data/gitea/conf/app.ini --work-path /data \
+                    --tempdir /dump --type tar.zst --skip-log --skip-index --skip-repo-archives \
+                    --file "/dump/forgejo-dump-$(date -u +%Y%m%dT%H%M%SZ).tar.zst"
+                  ls -la /dump
+              env:
+                - name: GITEA_APP_INI
+                  value: /data/gitea/conf/app.ini
+                - name: GITEA_WORK_DIR
+                  value: /data
+                - name: GITEA_CUSTOM
+                  value: /data/gitea
+                - name: HOME
+                  value: /data/gitea/git
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 256Mi
+                limits:
+                  memory: 1Gi
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                  readOnly: true
+                - name: dump
+                  mountPath: /dump
+          containers:
+            - name: upload
+              image: docker.io/rclone/rclone:1.75.2
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  rclone copy /dump r2:forgejo-dump-staging --include 'forgejo-dump-*.tar.zst' -v
+                  # Bucket versioning + object lock are the real retention; this only trims.
+                  rclone delete r2:forgejo-dump-staging --min-age 14d -v || true
+              env:
+                - name: RCLONE_CONFIG_R2_TYPE
+                  value: s3
+                - name: RCLONE_CONFIG_R2_PROVIDER
+                  value: Cloudflare
+                - name: RCLONE_CONFIG_R2_ENDPOINT
+                  value: https://07e577de68147de704bb467debe46e21.r2.cloudflarestorage.com
+                # The token is scoped to this one bucket; it cannot list or create buckets.
+                - name: RCLONE_CONFIG_R2_NO_CHECK_BUCKET
+                  value: "true"
+                - name: RCLONE_CONFIG_R2_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: r2-dump-credentials
+                      key: ACCESS_KEY_ID
+                - name: RCLONE_CONFIG_R2_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: r2-dump-credentials
+                      key: ACCESS_KEY_SECRET
+                - name: HOME
+                  value: /tmp
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 512Mi
+              volumeMounts:
+                - name: dump
+                  mountPath: /dump
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: gitea-shared-storage
+            - name: dump
+              emptyDir:
+                sizeLimit: 10Gi
+            - name: tmp
+              emptyDir: {}

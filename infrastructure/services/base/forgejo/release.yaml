@@ -1,0 +1,220 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: forgejo
+  namespace: flux-system
+spec:
+  targetNamespace: forgejo
+  releaseName: forgejo
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: forgejo
+      # Forgejo 15.0.10, the LTS line (supported to 2027-07-15).
+      version: "17.3.0"
+      sourceRef:
+        kind: HelmRepository
+        name: forgejo
+        namespace: flux-system
+      interval: 12h
+  # retries defaults to 0, which latches Stalled after ONE failure.
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    # The chart's helm-test Pod pulls busybox:latest; Flux runs no tests here.
+    test:
+      enabled: false
+
+    # RWO volume: never two pods.
+    strategy:
+      type: Recreate
+
+    # git.eliorion.fr:22 for clone/push over SSH. HTTPS goes through the Cilium Gateway
+    # (gateway.yaml), not this address.
+    service:
+      ssh:
+        type: LoadBalancer
+        port: 22
+        annotations:
+          io.cilium/lb-ipam-ips: 192.168.1.113
+
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ssd
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 2Gi
+
+    # Off cp1: it carries the Dagger engine and is the node under memory pressure.
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: NotIn
+                  values: [staging-controlplane-1]
+
+    gitea:
+      # Local account, for bootstrap and break-glass. People log in through Keycloak.
+      admin:
+        existingSecret: forgejo-admin
+        email: forgejo-admin@eliorion.fr
+        passwordMode: keepUpdated
+
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          additionalLabels:
+            release: kube-prometheus-stack
+
+      # OAuth2 source `keycloak`; the name is part of the redirect URI the realm declares
+      # (keycloak/realm/realm-apps.yaml, client `forgejo`). No forgejo-users group = refused.
+      oauth:
+        - name: keycloak
+          provider: openidConnect
+          existingSecret: forgejo-oidc-client
+          autoDiscoverUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps/.well-known/openid-configuration
+          scopes: "openid,email,profile"
+          requiredClaimName: groups
+          requiredClaimValue: forgejo-users
+          groupClaimName: groups
+
+      # [database] PASSWD from the CNPG-generated owner Secret, never inline.
+      additionalConfigFromEnvs:
+        - name: FORGEJO__DATABASE__PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: forgejo-db-app
+              key: password
+
+      config:
+        APP_NAME: Forgejo
+        server:
+          DOMAIN: git.eliorion.fr
+          ROOT_URL: https://git.eliorion.fr/
+          SSH_DOMAIN: git.eliorion.fr
+          PROTOCOL: http
+          HTTP_PORT: 3000
+          SSH_PORT: 22
+          SSH_LISTEN_PORT: 2222
+        database:
+          DB_TYPE: postgres
+          HOST: forgejo-db-rw.forgejo.svc:5432
+          NAME: forgejo
+          USER: forgejo
+          SSL_MODE: require
+        # No Valkey: one replica, so the in-process queue, cache and DB sessions are enough.
+        queue:
+          TYPE: level
+        cache:
+          ADAPTER: memory
+        session:
+          PROVIDER: db
+        # Nobody self-registers locally; an account is created on first Keycloak login.
+        service:
+          DISABLE_REGISTRATION: false
+          ALLOW_ONLY_EXTERNAL_REGISTRATION: true
+          SHOW_REGISTRATION_BUTTON: false
+          REQUIRE_SIGNIN_VIEW: true
+          DEFAULT_KEEP_EMAIL_PRIVATE: true
+        openid:
+          ENABLE_OPENID_SIGNIN: false
+          ENABLE_OPENID_SIGNUP: false
+        oauth2_client:
+          ENABLE_AUTO_REGISTRATION: true
+          USERNAME: nickname
+          ACCOUNT_LINKING: login
+        repository:
+          DEFAULT_PRIVATE: private
+        # Harbor and Nexus already cover packages.
+        packages:
+          ENABLED: false
+        migrations:
+          ALLOWED_DOMAINS: github.com
+        actions:
+          ENABLED: true
+          # asp's workflows pin GitHub action SHAs; resolve `uses:` against GitHub itself.
+          DEFAULT_ACTIONS_URL: https://github.com
+          ARTIFACT_RETENTION_DAYS: 14
+        cron.delete_old_actions_logs:
+          ENABLED: true
+        metrics:
+          ENABLED: true
+
+    # bootstrap.yaml, in the Forgejo pod: it needs the app.ini on /data for forgejo-cli.
+    extraContainers:
+      - name: bootstrap
+        image: code.forgejo.org/forgejo/forgejo:15.0.10-rootless
+        command: ["/bin/sh", "/bootstrap/bootstrap.sh"]
+        env:
+          - name: GITEA_APP_INI
+            value: /data/gitea/conf/app.ini
+          - name: GITEA_CUSTOM
+            value: /data/gitea
+          - name: GITEA_WORK_DIR
+            value: /data
+          - name: GITEA_TEMP
+            value: /tmp/gitea
+          - name: HOME
+            value: /data/gitea/git
+          - name: ORG
+            value: eliorion
+          - name: DAGGER_RUNNER_HOST
+            value: tcp://dagger.dagger.svc:1234
+          # Public half of the GitHub mirror job's SSH key; the private half is the asp repo
+          # secret FORGEJO_MIRROR_SSH_KEY.
+          - name: MIRROR_PUBKEY
+            value: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICCaNehh0pXkRuMkCVwbiYjo0suJ0mLNUZYyvOavjK2i github-mirror@asp"
+          - name: FORGEJO_ADMIN_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: forgejo-admin
+                key: username
+          - name: FORGEJO_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: forgejo-admin
+                key: password
+        securityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+        volumeMounts:
+          - name: data
+            mountPath: /data
+          - name: temp
+            mountPath: /tmp
+          - name: bootstrap
+            mountPath: /bootstrap
+          - name: runner-secrets
+            mountPath: /runner-secrets
+            readOnly: true
+    extraVolumes:
+      - name: bootstrap
+        configMap:
+          name: forgejo-bootstrap
+      - name: runner-secrets
+        secret:
+          secretName: forgejo-runner-secrets

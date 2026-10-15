@@ -240,7 +240,8 @@ curl -H 'Host: nexus.staging.lan' http://<gateway-ip>/
 ```
 
 Live values at the time of writing: `nexus-lb` = `192.168.1.110`, `cilium-gw` =
-`192.168.1.111`.
+`192.168.1.111` (also serves `git.eliorion.fr` on :443, listener `https-git`), `harbor` =
+`192.168.1.112` (pinned), `forgejo-ssh` = `192.168.1.113` (pinned, Forgejo SSH :22).
 
 **When it breaks and Flux is down with it.** The recovery lever is that KubePrism and the
 control plane are host-network, so `talosctl` and `kubectl` through the VIP `192.168.1.100`

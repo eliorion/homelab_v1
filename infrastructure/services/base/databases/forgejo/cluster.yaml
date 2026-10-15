@@ -1,0 +1,16 @@
+# Forgejo's metadata: users, repos, issues, Actions state. The git data itself lives on the
+# Forgejo volume (../../forgejo/README.md) and is covered by the dump CronJob instead.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: forgejo-db
+spec:
+  instances: 2
+  bootstrap:
+    initdb:
+      # CNPG generates this owner's login as Secret forgejo-db-app; the HelmRelease reads its
+      # `password` key. Must match [database] NAME/USER in ../../forgejo/release.yaml.
+      database: forgejo
+      owner: forgejo
+  storage:
+    size: 5Gi
