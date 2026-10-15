@@ -30,7 +30,9 @@ spec:
     # `runs-on: self-hosted-arc` in workflow files targets this scale set.
     runnerScaleSetName: self-hosted-arc
     minRunners: 5
-    maxRunners: 16
+    # 8, not 16, while Forgejo's 16 runner slots share the same Dagger engine (sized at 16Gi for
+    # ~12 sessions). infrastructure/services/base/forgejo-runner/README.md.
+    maxRunners: 8
     # Custom pod template, no Docker daemon: a job only runs `dagger call`, which drives the
     # in-cluster engine over tcp:// (infrastructure/services/base/dagger). Anything that needs
     # a daemon (fork PRs' ephemeral engine, the k3d break-glass e2e) runs on GitHub-hosted

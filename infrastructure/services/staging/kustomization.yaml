@@ -25,3 +25,7 @@ resources:
   - mlops/
   # The live architecture docs (asp docs/site): main and every open PR, on the tailnet only.
   - docs/
+  # Forgejo: the forge for the production repos, CI on the shared Dagger engine (asp docs/30). Runners in
+  # their own namespace, admitted to the engine by dagger/networkpolicy.yaml.
+  - forgejo/
+  - forgejo-runner/

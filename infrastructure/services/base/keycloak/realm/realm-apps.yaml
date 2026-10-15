@@ -198,6 +198,50 @@ clients:
           "access.token.claim": "true"
           "userinfo.token.claim": "true"
 
+  # Forgejo's own login (git.eliorion.fr, LAN + tailnet). Like `nextcloud`, the APPLICATION
+  # delegates its authentication: Forgejo's OAuth2 source `keycloak` runs the code flow
+  # server-side and refuses any account whose `groups` claim lacks `forgejo-users`
+  # (--required-claim-name/--required-claim-value, infrastructure/services/base/forgejo).
+  - clientId: forgejo
+    name: Forgejo
+    description: Forgejo login delegated to this realm (OAuth2 source "keycloak")
+    protocol: openid-connect
+    enabled: true
+    publicClient: false
+    # Substituted from FORGEJO_OIDC_CLIENT_SECRET; the same Secret is mirrored into the
+    # `forgejo` namespace by reflector, so both ends read one value.
+    secret: $(env:FORGEJO_OIDC_CLIENT_SECRET)
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    # Forgejo builds the callback from ROOT_URL + /user/oauth2/<source name>/callback.
+    redirectUris:
+      - $(env:FORGEJO_URL)/user/oauth2/keycloak/callback
+    webOrigins: []
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    fullScopeAllowed: false
+    consentRequired: false
+    protocolMappers:
+      # Without it the claim is absent and the required-claim check refuses everyone.
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          "claim.name": groups
+          "full.path": "false"
+          "id.token.claim": "true"
+          "access.token.claim": "true"
+          "userinfo.token.claim": "true"
+
   # The agent platform's API (asp docs/22-agent-platform.md). agent-api is a RESOURCE SERVER: it
   # verifies tokens this client gets and never issues one. Public, because the callers are
   # a terminal now and a browser SPA later (asp Phase 1b), neither of which can keep a secret.
@@ -367,6 +411,9 @@ groups:
   - name: agent-platform-viewers
   - name: agent-platform-operators
   - name: agent-platform-admins
+  # ENFORCED by Forgejo's OAuth2 source: --required-claim-name groups
+  # --required-claim-value forgejo-users. No group = Keycloak login succeeds, Forgejo refuses it.
+  - name: forgejo-users
 
 # NO `users:` BLOCK, DELIBERATELY — same rule as realm-mcp.yaml. Accounts are
 # created in the admin console over the tailnet, and the import Job's

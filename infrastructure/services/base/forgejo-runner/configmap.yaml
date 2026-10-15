@@ -1,0 +1,38 @@
+# forgejo-runner 13.2 config. `host` executor: a job's steps run in this pod's own shell, and the
+# real work is a `dagger call` against the shared engine (tcp://dagger.dagger.svc:1234). README.md.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-runner-config
+  namespace: forgejo-runners
+data:
+  config.yaml: |
+    log:
+      level: info
+      job_level: info
+    runner:
+      file: /data/.runner
+      # 4 pods x 4 = 16 jobs at once (owner, 2026-10-15).
+      capacity: 4
+      timeout: 3h
+      shutdown_timeout: 10m
+      fetch_timeout: 30s
+      fetch_interval: 2s
+      labels:
+        - forgejo-host:host
+      # Into every job: the same OTLP wiring as the ARC runners, tagged so the dagger-ci
+      # dashboard splits the two forges. Node first on PATH for JavaScript actions
+      # (actions/checkout), from the runner image's own bundled copy.
+      envs:
+        PATH: /home/runner/externals/node24/bin:/home/runner/.local/bin:/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+        OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/traces
+        OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/logs
+        OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy-receiver.monitoring.svc.cluster.local:4318/v1/metrics
+        OTEL_RESOURCE_ATTRIBUTES: ci.forge=forgejo
+    # The job cache server binds a port on this pod; nothing in the asp workflows uses
+    # actions/cache, and the Dagger engine is the cache.
+    cache:
+      enabled: false
+    host:
+      workdir_parent: /work
