@@ -14,7 +14,7 @@ and the rules that alert on the results.
 
 | Probe | Job | Module | Targets | Exposure |
 |---|---|---|---|---|
-| `public-endpoints` | `blackbox-public` | `http_2xx` | Keycloak realm `mcp` OIDC discovery, `mve-azuracast.eliorion.fr` | internet via Cloudflare tunnel |
+| `public-endpoints` | `blackbox-public` | `http_2xx` | Keycloak realm `mcp` OIDC discovery | internet via Cloudflare tunnel |
 | `internal-endpoints` | `blackbox-internal` | `http_401` | `registry.eliorion.fr/v2/` (Harbor) | cluster only |
 
 | Alert | Expression | `for` | Severity |
@@ -70,6 +70,7 @@ probe_http_status_code{job=~"blackbox-.+"}
 probe_duration_seconds{job=~"blackbox-.+"}
 ```
 
-Switched off on staging (memory on staging-controlplane-1): `nao` and `fbref-mcp` are no longer
-probed. The `public-endpoints-authenticated` probe (`http_401`, `fbref-mcp.eliorion.fr/mcp`) was
-removed with it; restore both targets when those apps are woken.
+Switched off on staging (memory on staging-controlplane-1): `nao`, `fbref-mcp` and
+`mve-azuracast.eliorion.fr` are no longer probed. The `public-endpoints-authenticated` probe
+(`http_401`, `fbref-mcp.eliorion.fr/mcp`) was removed with `fbref-mcp`; restore these targets when
+those apps are woken.

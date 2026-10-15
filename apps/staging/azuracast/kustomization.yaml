@@ -2,3 +2,11 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base/azuracast/
+patches:
+  - target:
+      kind: Deployment
+      name: azuracast
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0

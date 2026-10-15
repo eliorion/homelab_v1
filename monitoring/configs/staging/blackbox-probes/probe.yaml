@@ -19,7 +19,6 @@ spec:
         exposure: public
       static:
         - https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration
-        - https://mve-azuracast.eliorion.fr/
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: Probe

@@ -229,6 +229,15 @@ it runs.
 ### Overlays
 
 Only `apps/staging/azuracast/` exists. That
-overlay is a bare passthrough: `resources: [../../base/azuracast/]`, no
-namespace directive, no patches, no secrets. Every resource in the base already
-sets `namespace: azuracast` explicitly, so staging and base render identically.
+overlay pulls `resources: [../../base/azuracast/]` with no namespace directive and
+no secrets. Every resource in the base already sets `namespace: azuracast`
+explicitly, so the only difference from base is one patch:
+
+- **SWITCHED OFF** (2026-10-15, memory on staging-controlplane-1): a JSON patch
+  sets the Deployment to `replicas: 0`. The four PVCs, both Services, the
+  tunnel route and the tailnet stream Service stay, so no data is lost; the
+  public hostname answers 502 and `azuracast-stream` has no endpoints. The
+  `mve-azuracast.eliorion.fr` blackbox target is removed so it does not trip
+  `PublicEndpointDown`. To wake it, delete the `patches:` block from the overlay
+  and restore that probe target; the 10-minute startup probe covers MariaDB and
+  the schema migration on the first boot back.
