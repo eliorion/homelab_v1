@@ -58,22 +58,43 @@ deleted by hand:
 kubectl -n dagger delete pvc cache-dagger-engine-0 cache-dagger-engine-1
 ```
 
-## Connection: kube-pod://, never tcp://
+## Connection: tcp:// for CI, kube-pod:// as the fallback
 
-Dagger's own documentation states that `tcp://` sends every query and response
-in plaintext with no authentication. `kube-pod://` execs a session helper
-through the apiserver instead, so the transport is the apiserver's TLS and the
-authorization is Kubernetes RBAC. There is deliberately **no TCP listener**:
-`engine.port` stays unset, because the chart turns it into
-`--addr tcp://0.0.0.0:<port>`.
+CI connects with `_EXPERIMENTAL_DAGGER_RUNNER_HOST=tcp://dagger.dagger.svc:1234` (the
+`DAGGER_RUNNER_HOST` repo variable in asp). The engine listens on `--addr tcp://0.0.0.0:1234`
+(`engine.port`) AND keeps its unix socket, so `kube-pod://dagger-engine-0?namespace=dagger`
+still works; the rollback is changing that one variable.
 
-The chart does render a ClusterIP Service, `dagger`, because `engine.containerPorts`
-is set. It carries only the `metrics` port (see [Metrics](#metrics)), which is
-already reachable at the pod IP.
+**Why it moved off `kube-pod://`** (2026-10-15): `kube-pod://` is `kubectl exec … buildctl
+dial-stdio`, i.e. every `dagger call` is one long-lived SPDY stream through the apiserver
+(10.96.0.1:443). Any reset on that path (an apiserver or etcd blip, a Cilium reconnect,
+cp1 under memory pressure) kills the job with `Post "http://dagger/query": unexpected EOF`
+while the engine itself keeps running (0 restarts across the failures). The work is cached,
+so a rerun passed, which is what made it a retry-until-green tax. `tcp://` takes the
+apiserver out of the data path.
+
+**What it costs.** Dagger's own documentation says `tcp://` sends every query and response in
+plaintext with no authentication. [`networkpolicy.yaml`](networkpolicy.yaml) is therefore the
+only authentication on :1234: a CiliumNetworkPolicy admitting the ARC runner pods
+(`app.kubernetes.io/part-of: gha-runner-scale-set` in `arc-runners`) to that port, and
+Prometheus to :9090. The reach it grants is the one `pods/exec` already granted (node-root
+through a privileged pod), minus the RBAC check, over a flat cluster network instead of TLS to
+the apiserver. Two rules keep that acceptable:
+
+1. Keep the selector tight. Anything else admitted to `arc-runners` that carries the
+   `part-of` label can run code as root on cp1.
+2. Fork pull requests never reach this engine (asp `dagger-engine.sh` gives them an ephemeral
+   one), and the runners hold no Docker daemon, so there is nothing privileged left in the
+   runner pod to pivot from.
+
+The chart renders the ClusterIP Service `dagger` from `engine.containerPorts`; the
+`dagger` port must be listed there beside `metrics`, or `engine.port` alone opens the
+listener without exposing it on the Service.
 
 ## Security
 
-`rbac.yaml` grants `pods/get` + `pods/exec` on exactly `dagger-engine-0`.
+`rbac.yaml` grants `pods/get` + `pods/exec` on exactly `dagger-engine-0` (the `kube-pod://`
+path, now the fallback; see [Connection](#connection-tcp-for-ci-kube-pod-as-the-fallback)).
 
 **Exec into a privileged pod is node-root-equivalent.** Anything holding that
 Role can run code as root on cp2 or cp3. That is inherent to Dagger on
@@ -82,8 +103,8 @@ Kubernetes, and it drives three rules:
 1. Dedicated namespace, nothing cluster-wide, `resourceNames`-pinned.
 2. `list` is **not** granted — `resourceNames` cannot constrain a list, so it
    would hand over namespace enumeration for no benefit.
-3. **Fork pull requests must never run on runners bound to this Role.** Gate on
-   `github.event.pull_request.head.repo.full_name == github.repository`.
+3. **Fork pull requests must never run on runners bound to this Role** or admitted by
+   `networkpolicy.yaml`. Gate on `github.event.pull_request.head.repo.full_name == github.repository`.
 
 ## Engine config
 
@@ -276,9 +297,9 @@ every engine bump. The PodMonitor and the dashboard live in
 [`monitoring/configs/staging/dagger-ci/`](../../../../monitoring/configs/staging/dagger-ci/README.md).
 
 This is a **metrics** listener, not the engine API: it serves read-only
-Prometheus text, unauthenticated, to anything that can reach the pod IP. The rule
-above — no TCP listener for the engine itself, clients go through `kube-pod://` —
-is unchanged.
+Prometheus text, unauthenticated, and `networkpolicy.yaml` admits only the `monitoring`
+namespace to it. The engine API is the separate :1234 listener described under
+[Connection](#connection-tcp-for-ci-kube-pod-as-the-fallback).
 
 Traces and step logs do **not** come from the engine. The `dagger` CLI in the
 runner pod pulls them over the session and exports them over OTLP; that wiring is
@@ -332,9 +353,10 @@ being down degrades speed, never correctness.
 ## Operating
 
 ```bash
-# Is the engine reachable from a runner?
-_EXPERIMENTAL_DAGGER_RUNNER_HOST=kube-pod://dagger-engine-0?namespace=dagger \
-  dagger version
+# Is the engine reachable from a runner? (the CNP only admits runner pods, not your laptop)
+_EXPERIMENTAL_DAGGER_RUNNER_HOST=tcp://dagger.dagger.svc:1234 dagger version
+# From a laptop with kube access, the fallback transport:
+_EXPERIMENTAL_DAGGER_RUNNER_HOST='kube-pod://dagger-engine-0?namespace=dagger' dagger version
 
 # What is the cache actually holding?
 kubectl -n dagger exec dagger-engine-0 -- buildctl du -v | tail -20

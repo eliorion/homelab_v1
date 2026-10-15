@@ -1,14 +1,13 @@
 # arc-runner-set
 
-The runner half of the self-hosted GitHub Actions stack: three
-`gha-runner-scale-set` HelmReleases that register three runner pools with GitHub
-for the `Eliorion/asp` repository. Each pool is an `AutoscalingRunnerSet`
+The runner half of the self-hosted GitHub Actions stack: one
+`gha-runner-scale-set` HelmRelease that registers the runner pool `self-hosted-arc` with
+GitHub for the `Eliorion/asp` repository. The pool is an `AutoscalingRunnerSet`
 consumed by the ARC controller, which turns a queued job into a one-shot
 ephemeral pod in the `arc-runners` namespace and deletes it when the job ends.
-`self-hosted-arc` is the default pool for ordinary jobs; `self-hosted-arc-e2e` runs
-the e2e lane on the dev platform, two at a time, with no dind. A third pool,
-`self-hosted-arc-xl` (bigger runners for the k3d e2e leg), was deleted on 2026-09-16 — see
-"The XL pool is gone" below. The operator half
+Two pools went away: `self-hosted-arc-xl` (bigger runners for the k3d e2e leg) on
+2026-09-16, and `self-hosted-arc-e2e` (the dev-platform e2e lane's pool) on 2026-10-15 — see
+"Why it is like this". The operator half
 (CRDs, controller Deployment, the `arc-systems` / `arc-runners` namespaces and
 the shared `HelmRepository/arc`) lives in
 [`infrastructure/controllers/base/arc/`](../../../controllers/base/arc/README.md).
@@ -20,39 +19,35 @@ is described in
 
 | File | What it does |
 |---|---|
-| `kustomization.yaml` | Lists `release.yaml`, `release-e2e.yaml`, `github-pat.enc.yaml`. |
-| `release.yaml` | `HelmRelease/arc-runner-set-asp` in `flux-system`, `targetNamespace: arc-runners`, chart `gha-runner-scale-set` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h. Registers the scale set `self-hosted-arc`, `minRunners: 5` / `maxRunners: 16`, with a hand-written dind pod template. |
-| `release-e2e.yaml` | `HelmRelease/arc-runner-set-asp-e2e`, same chart, namespace and secret. Registers `self-hosted-arc-e2e`, `minRunners: 0` / `maxRunners: 2` — the e2e lane's concurrency, sized to the platform quota. Runner container only (no dind, non-root, no privilege escalation): the job drives the in-cluster Dagger engine and reads Secret `dev-platform/vc-e2e-runner` (Role in `infrastructure/services/dev/dev-platform/runner-access.yaml`). |
-| `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). Both releases point at it through `githubConfigSecret`. Never commit it decrypted. |
+| `kustomization.yaml` | Lists `release.yaml`, `github-pat.enc.yaml`. |
+| `release.yaml` | `HelmRelease/arc-runner-set-asp` in `flux-system`, `targetNamespace: arc-runners`, chart `gha-runner-scale-set` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h. Registers the scale set `self-hosted-arc`, `minRunners: 5` / `maxRunners: 16`, with a custom pod template that holds the runner container only. |
+| `github-pat.enc.yaml` | SOPS-encrypted Secret `arc-github-pat` (classic PAT with `repo` scope on `Eliorion/asp`). The release points at it through `githubConfigSecret`. Never commit it decrypted. |
 
-The default release carries this pod template shape:
+**There is no Docker daemon in the pod.** A job runs `dagger call`, which connects to the
+in-cluster engine over `tcp://dagger.dagger.svc:1234`
+([`../../base/dagger`](../../base/dagger/README.md)) and executes everything inside it. The
+template is one container:
 
-- `init-dind-externals` — an init container that copies `/home/runner/externals`
-  into a shared `dind-externals` emptyDir, because the dind container expects
-  them there.
-- `dind` — `docker:dind` running `dockerd` as a **native sidecar**
-  (`restartPolicy: Always` on an entry in `initContainers`), `privileged: true`,
-  `DOCKER_GROUP_GID=123` and a `docker info` startup probe (2s period, 24
-  failures). It carried six `--insecure-registry` flags for the Nexus connectors
-  until 2026-09-16; see below.
-- `runner` — `ghcr.io/actions/actions-runner:latest` running
-  `/home/runner/run.sh` with `DOCKER_HOST=unix:///var/run/docker.sock` and
-  `RUNNER_WAIT_FOR_DOCKER_IN_SECONDS=120`.
-- Three emptyDirs: `work` (`/home/runner/_work`), `dind-sock` (`/var/run`, the
-  shared docker socket) and `dind-externals`.
+- `runner` — `ghcr.io/actions/actions-runner` running `/home/runner/run.sh` as uid 1001
+  (`runAsNonRoot`, `allowPrivilegeEscalation: false`, all capabilities dropped), one `work`
+  emptyDir, and the Dagger telemetry variables below.
 
-Sizing as the manifests currently declare it:
+Sizing as the manifest declares it:
 
-| Pool | Runners | runner container | dind sidecar |
-|---|---|---|---|
-| `self-hosted-arc` | min 5 / max 16 | req 2Gi, limit 4Gi | req 1Gi, limit 6Gi, no CPU limit |
-| `self-hosted-arc-e2e` | min 0 / max 2 | req 100m CPU + 512Mi, limit 2Gi | none |
+| Pool | Runners | runner container |
+|---|---|---|
+| `self-hosted-arc` | min 5 / max 16 | req 256Mi, limit 4Gi, no CPU request or limit |
+
+The request follows the measured working set (Prometheus, 7 days: idle 265–323Mi, p99 peak
+441Mi, max 1046Mi), not the limit; the limit is the headroom for one gitleaks scan of the full
+history. Five warm runners therefore reserve 1.25Gi, down from 5Gi (500Mi for the runner plus 500Mi
+for the dind sidecar, each).
 
 Flux applies this directory as part of the `infrastructure-services`
 Kustomization (`clusters/staging/infrastructure.yaml`, `path:
 ./infrastructure/services/staging`, `prune: true`, SOPS decryption via the
 `sops-age` secret). That Kustomization `dependsOn` `infra-arc-controller`,
-because these releases declare ARC custom resources and need the CRDs to exist
+because this release declares ARC custom resources and need the CRDs to exist
 first.
 
 ### Overlays
@@ -60,63 +55,37 @@ first.
 There is no `base/` for this component: it exists only
 under `infrastructure/services/staging/`, listed as `arc-runner-set/` in
 `infrastructure/services/staging/kustomization.yaml`. The CI stack as a whole is
-staging-only. The three releases in this directory are the pool split —
-default and e2e — not two environments.
+staging-only.
 
 ## Why it is like this
 
-**The dind sidecar is hand-written instead of `containerMode: dind`.** The
-chart's `containerMode: dind` injects a fixed sidecar that accepts no extra
-`dockerd` flags. The Nexus Docker connectors were plain HTTP, so `dockerd`
-refused them unless every host:port form was whitelisted with
-`--insecure-registry`. The template here reproduces what `containerMode: dind`
-would have injected — the externals init container, native sidecar semantics,
-the socket and externals volumes, the runner's `DOCKER_HOST`.
+**Dind was removed on 2026-10-15.** The pod carried a privileged `docker:dind` sidecar (and an
+init container, three emptyDirs, `RUNNER_WAIT_FOR_DOCKER_IN_SECONDS`) so jobs could `docker
+run`. Everything that did has moved: gates run in the Dagger engine, `gitleaks` is a
+self-provisioned binary (`ensure-tool.sh`), and the two paths that genuinely need a daemon
+— a fork PR's ephemeral engine (a fork must never reach the cluster engine) and the manual
+k3d `e2e-tests.yaml` — run on GitHub-hosted `ubuntu-latest`. Removing it dropped the only
+privileged container in `arc-runners`, so the namespace's Pod Security label is back to
+`baseline` (`infrastructure/controllers/base/arc/namespace.yaml`), and a runner can no longer
+be a pivot to the node. The manual dind template and its history (six `--insecure-registry`
+flags until 2026-09-16, why `containerMode: dind` was not used) are in git, and
+[14-design-decisions.md](../../../../documentations/14-design-decisions.md).
 
-**The six flags were removed on 2026-09-16.** CI pulls now go to Harbor over a
-publicly trusted certificate, which needs no whitelist, so the only reason this
-template existed is gone. Switching to `containerMode: dind` is therefore
-possible and is *not* done here: it is a separate change, and the hand-written
-template still buys the per-container memory limits and the startup probe. If it
-is taken, re-read
-[14-design-decisions.md](../../../../documentations/14-design-decisions.md)
-("A hand written dind template instead of the chart's `containerMode: dind`")
-first.
-
-Caching stays opt-in per workflow line either way: `dockerd` is given no
-`--registry-mirror`, and it **cannot** usefully be given one here — Docker's
-mirror support is Docker-Hub-only and accepts no path, so a Harbor proxy-cache
-project cannot be a transparent mirror for it. Measured 2026-09-16 with
-`--registry-mirror=https://registry.eliorion.fr/v2/dockerhub-proxy`: `dockerd`
-requested `/v2/dockerhub-proxy/v2/library/busybox/manifests/1.37`, got a 404 and
-silently pulled from Docker Hub instead. Pull by full name
-(`registry.eliorion.fr/dockerhub-proxy/library/busybox:1.37`) or not at all —
-that is what the `DOCKERHUB_MIRROR` / `GHCR_MIRROR` variables in the `asp` repo
-now hold.
-
-**Only the default pool keeps runners warm.** It holds 5 for fast PR feedback, roughly
-15Gi permanently resident on a 3-node cluster with about 50Gi total. The e2e pool starts
-from zero: its lane runs minutes-long jobs on the dev platform, so one pod start is
-cheaper than two idle runners.
-
-**Memory is capped, CPU is not.** Each dind sidecar has a memory limit so a
-runaway build cannot consume a whole node and OOM-evict a co-located e2e pod —
-6Gi is already generous for the single-service image builds the default pool
-runs. There is deliberately no CPU limit on either pool: CPU is compressible
-and these builds are short, so an uncapped sidecar keeps PR feedback and the
-parallel docker builds fast. All three nodes are control planes with no kubelet
-`system-reserved`, so if etcd shows latency under heavy e2e, the answer is to
-reserve CPU at the kubelet level rather than to cap the build here.
+**Only one pool, and it keeps runners warm.** It holds 5 for fast PR feedback. The e2e pool
+(`self-hosted-arc-e2e`, `maxRunners: 2`) existed for one reason: runners that never touch a
+Docker daemon and read one Secret (`dev-platform/vc-e2e-runner`). The default runner is now
+exactly that, so the e2e lane runs on it and the pool, its HelmRelease and its RBAC subject
+are gone. The one thing that went with it is the `maxRunners: 2` cap on e2e concurrency: the
+`e2e-platform-inplace` concurrency group still serialises the in-place runs, and the
+dev-platform's own quota is the backstop for the per-PR runs
+(`infrastructure/services/dev/dev-platform/README.md`).
 
 **The XL pool is gone (2026-09-16).** It existed for one job: the k3d e2e leg, whose whole
 stack ran inside a dind sidecar big enough to hold a cluster, one pod per node. asp moved
-that gate to the dev-platform vcluster (`self-hosted-arc-e2e`, no dind at all), leaving the
-k3d path as a manual `e2e-tests.yaml` dispatch, which now lands on the default pool. Two
-warm XL runners for a workflow nobody triggers was the whole cost. If a break-glass k3d run
-ever OOMs the default pool's 6Gi dind, the answer is a bigger dind there or this file back
-from git history — not a permanently resident pool.
+that gate to the dev-platform vcluster, leaving the k3d path as a manual `e2e-tests.yaml`
+dispatch (GitHub-hosted since the dind removal).
 
-**Both pools export Dagger telemetry to the in-cluster collector, not to Dagger
+**The pool exports Dagger telemetry to the in-cluster collector, not to Dagger
 Cloud.** The runner container carries `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`
 and one endpoint per signal on `alloy-receiver.monitoring.svc.cluster.local:4318`
 (see [`monitoring/controllers/base/alloy`](../../../../monitoring/controllers/base/alloy/README.md)).
@@ -130,18 +99,14 @@ Setting it on the runner rather than in each workflow of the `asp` repository
 covers every job without touching that repository; a job on a GitHub-hosted
 fallback runner simply exports nothing.
 
-**The two pools share one PAT secret.** `arc-github-pat` lives in `arc-runners`
-and both releases reference it; there is one credential for the one repository
-they both serve.
-
 **Both chart versions are pinned and move together.** `gha-runner-scale-set`
 here and `gha-runner-scale-set-controller` in
 `infrastructure/controllers/base/arc/release.yaml` are all `0.14.2`. Renovate
 bumps them separately and nothing enforces the rule but a comment and a human.
 
-**Runners spread across nodes, softly** (2026-10-06). Both templates carry a
+**Runners spread across nodes, softly** (2026-10-06). The template carries a
 `topologySpreadConstraints` entry on `kubernetes.io/hostname`, keyed on
-`actions.github.com/scale-set-name`. Before it, every runner of both pools sat on
+`actions.github.com/scale-set-name`. Before it, every runner sat on
 node-1, so a burst of Rust builds (~16 `rustc` each) landed on the node already
 carrying the Dagger engine and the scraper workers, and node-1's memory pressure
 fed the Talos OOM controller (`../../../controllers/base/linstor/README.md`).
@@ -168,39 +133,34 @@ CI job pending.
   plain Deployment behind a ClusterIP Service; if CI suddenly stalls at the end of
   a `dagger call`, check that pod before the engine.
 - **The two ARC chart versions must match.** `gha-runner-scale-set` `0.14.2` in
-  both files here and `gha-runner-scale-set-controller` `0.14.2` in
+  `release.yaml` here and `gha-runner-scale-set-controller` `0.14.2` in
   `infrastructure/controllers/base/arc/release.yaml`. Align them in the same
-  merge, and re-check the hand-written dind template against upstream on any
+  merge, and re-check the custom pod template against upstream on any
   bump past `0.14.x`.
 - **`runnerScaleSetName` is the contract with the workflow files.**
-  `self-hosted-arc` and `self-hosted-arc-e2e` are what `runs-on:` targets in
-  `Eliorion/asp` (`CI_RUNNER`, `CI_RUNNER_E2E`). The names must stay distinct: a scale set
-  name has to be unique.
-- **Re-adding a plain-HTTP registry means re-adding `--insecure-registry`.**
-  `dockerd` refuses HTTP registries, and the chart's `containerMode: dind`
-  accepts no extra flags — that constraint is what the hand-written template was
-  built for, and it applies again the moment a workflow points at something
-  without TLS.
+  `self-hosted-arc` is what `runs-on:` targets in `Eliorion/asp` (`CI_RUNNER`), and the
+  ServiceAccount `self-hosted-arc-gha-rs-no-permission` that the chart derives from it is what
+  `../../base/dagger/rbac.yaml` and `../../dev/dev-platform/runner-access.yaml` bind.
+  Renaming the scale set silently breaks both.
+- **The Cilium policy on the engine selects runner pods by label.**
+  `../../base/dagger/networkpolicy.yaml` admits `app.kubernetes.io/part-of:
+  gha-runner-scale-set` in `arc-runners` to the engine's plaintext TCP port. Do not put
+  anything else that carries that label in this namespace.
 - **Workflows pull Harbor by full name.** `registry.eliorion.fr/<project>/<repo>`
   over TLS, from the `DOCKERHUB_MIRROR` / `GHCR_MIRROR` variables in
   `Eliorion/asp`. Any other spelling silently bypasses the cache and goes
   upstream.
-- **`restartPolicy: Always` on the `dind` initContainer is what makes it a
-  native sidecar.** Remove it and `dind` becomes a blocking init container that
-  never completes.
-- **The privileged dind sidecar needs the namespace label.** `arc-runners`
-  carries `pod-security.kubernetes.io/enforce: privileged` in
-  `infrastructure/controllers/base/arc/namespace.yaml`. Without it Talos'
-  cluster-wide `baseline` enforcement fails every runner pod with
-  `violates PodSecurity "baseline:latest": privileged (container "dind" must not
-  set securityContext.privileged=true)`.
+- **Nothing in a job can use a Docker daemon.** `docker` is not installed in the runner image
+  and there is no socket. A new workflow step that needs one belongs on `ubuntu-latest`;
+  a step that only needs a tool should fetch the binary with `.github/scripts/ensure-tool.sh`.
+- **The container runs without `sudo`.** `allowPrivilegeEscalation: false` makes setuid
+  binaries inert, so `sudo apt-get` fails. Tools go to `~/.local/bin`.
 - **`github-pat.enc.yaml` is SOPS ciphertext.** Edit it only through `sops`, and
   never commit it decrypted.
 - **The sizing prose has drifted from the manifests.** The sizing notes in
   [04-ci-runners-cache.md](../../../../documentations/04-ci-runners-cache.md)
-  quote `maxRunners: 10` for the default pool, and describe an XL pool that no longer
-  exists. The values in this directory are authoritative: default 5/16 with a 1Gi/6Gi dind,
-  e2e 0/2 with no dind.
+  quote `maxRunners: 10` for the default pool, and describe pools that no longer
+  exist. The values in this directory are authoritative: 5/16, a 256Mi/4Gi runner, no dind.
 
 ## Operating it
 
@@ -209,7 +169,7 @@ Render check before commit, then the usual Flux status:
 ```sh
 kubectl kustomize infrastructure/services/staging/arc-runner-set
 flux get kustomizations              # infrastructure-services Ready
-flux get helmreleases -A             # arc-runner-set-asp, arc-runner-set-asp-e2e Ready
+flux get helmreleases -A             # arc-runner-set-asp Ready
 ```
 
 Where to look when it breaks:
@@ -221,7 +181,7 @@ kubectl -n arc-runners get pods -w   # watch a pod spawn for a queued job
 ```
 
 In GitHub: `Eliorion/asp` > Settings > Actions > Runners should list
-`self-hosted-arc` and `self-hosted-arc-e2e` online.
+`self-hosted-arc` online.
 
 After fixing a Pod Security or template problem, clear the stuck runners so the
 controller recreates them clean:
@@ -230,7 +190,7 @@ controller recreates them clean:
 kubectl -n arc-runners delete ephemeralrunner --all
 ```
 
-Before raising either `maxRunners`, confirm the dind peak stays under its limit
+Before raising `maxRunners`, confirm the runner peak stays under its limit
 during a real run:
 
 ```sh

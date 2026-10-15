@@ -1,5 +1,8 @@
-# The e2e runner scale set (infrastructure/services/staging/arc-runner-set/release-e2e.yaml)
-# reads the vcluster credential it hands to Dagger. Nothing else on the host.
+# The ARC runner pods (scale set self-hosted-arc, infrastructure/services/staging/arc-runner-set/)
+# read the vcluster credential they hand to Dagger. Nothing else on the host.
+# This used to be a dedicated e2e scale set; with it gone the credential is reachable from any job
+# on the default pool. Fork PRs never run there (asp routes them to GitHub-hosted runners), so the
+# audience is the same repo's own workflows -- and the token is confined by e2e-runner-scope.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -22,5 +25,5 @@ roleRef:
   name: e2e-runner-kubeconfig
 subjects:
   - kind: ServiceAccount
-    name: self-hosted-arc-e2e-gha-rs-no-permission
+    name: self-hosted-arc-gha-rs-no-permission
     namespace: arc-runners
