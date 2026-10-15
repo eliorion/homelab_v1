@@ -65,6 +65,10 @@ spec:
     components:
       fbref-vision:
         enabled: false
+    # Switched off: the Dagster code location (gRPC server) is not needed now. The mlops
+    # dagster-workspace entry fbref-pipelines.fbref.svc then fails to load until it is back on.
+    pipelines:
+      enabled: false
     mcp:
       enabled: false
       # The one PUBLIC surface in this stack (Cloudflare tunnel →
