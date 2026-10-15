@@ -52,7 +52,7 @@ Staging overlay (`apps/staging/databases/fbref/`):
   plugin to the Cluster as the WAL archiver, `barmanObjectName: garage-store`,
   `serverName: fbref-db`.
 - `cluster-storage-patch.yaml` — JSON 6902 patch: `storageClass: ssd-cnpg` (one
-  local LINSTOR replica per instance), `storage.size` replaced with `200Gi`, and
+  local LINSTOR replica per instance), `storage.size` replaced with `400Gi`, and
   `affinity` that pins the two instances to node-2 and node-3 with
   `podAntiAffinityType: required`.
 - `cluster-reflector-patch.yaml` — `inheritedMetadata` annotations that permit
@@ -223,7 +223,7 @@ central reflector source.
   annotations in `cluster-reflector-patch.yaml`; anything else added under
   `inheritedMetadata` lands on every object the cluster owns.
 - The storage size is overlay-scoped: base stays at `10Gi`, staging replaces it
-  with `200Gi`. Raising it in base would apply it to a cluster whose disks are
+  with `400Gi`. Raising it in base would apply it to a cluster whose disks are
   not this size.
 - **Changing `storageClass` moves nothing.** CNPG applies it to new instances
   only; an existing instance keeps its PVC until it is destroyed and re-cloned
@@ -270,7 +270,7 @@ Apply a `storage.size` increase to the PVCs when CNPG will not (see Traps):
 ```bash
 for p in $(kubectl -n fbref get pvc -l cnpg.io/cluster=fbref-db -o name); do
   kubectl -n fbref patch "$p" --type=merge \
-    -p '{"spec":{"resources":{"requests":{"storage":"200Gi"}}}}'
+    -p '{"spec":{"resources":{"requests":{"storage":"400Gi"}}}}'
 done
 ```
 
@@ -319,6 +319,6 @@ Restore procedure and the 2026-07-26 restore drill for this exact cluster
 
 Only a `staging` overlay exists (`apps/staging/databases/fbref/`). Base on its own gives the Namespace
 and a Cluster with the default storage class and `10Gi`, no backups and no
-secrets. Staging adds the `ssd-cnpg` storage class, `200Gi` and the node pinning, the barman-cloud
+secrets. Staging adds the `ssd-cnpg` storage class, `400Gi` and the node pinning, the barman-cloud
 plugin and the Garage `ObjectStore` + `ScheduledBackup`, the two managed-role
 password Secrets, and the reflector permit annotations.

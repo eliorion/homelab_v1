@@ -2,11 +2,11 @@
   path: /spec/storage/storageClass
   value: ssd-cnpg
 # Base stays at 10Gi. A full volume halts the primary and the whole fbref stack.
-# 260Gi since 2026-10-15: WAL archiving to Garage timed out from ~01:40, the primary kept
-# every unarchived segment and filled 200Gi by ~07:20 (crash loop "Not enough disk space").
+# 400Gi since 2026-10-15: WAL archiving to Garage failed from ~01:40, the primary kept every
+# unarchived segment and filled 200Gi, then 260Gi (crash loop "Not enough disk space").
 - op: replace
   path: /spec/storage/size
-  value: 260Gi
+  value: 400Gi
 # ssd-cnpg is node-local: one instance per 745GB pool. node-1's pool cannot hold 200Gi.
 - op: add
   path: /spec/affinity
