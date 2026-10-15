@@ -594,7 +594,11 @@ onto the source's chain.
 
 ## 5. CI and build cache
 
-### A hand written dind template instead of the chart's `containerMode: dind`
+### A hand written dind template instead of the chart's `containerMode: dind` (RETIRED 2026-10-15)
+
+**Status.** Superseded: runner pods no longer carry a docker daemon (CI is Dagger-only), so
+there is no template to maintain and `arc-runners` is back to `baseline`. The entry below is
+the reasoning that held while dind existed.
 
 **Why.** The chart's injected sidecar accepts no extra dockerd flags, and the Nexus Docker
 connectors are plain HTTP, so dockerd refuses them unless each host and port form is passed

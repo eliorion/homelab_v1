@@ -30,7 +30,7 @@ host, `timeout: 20m`, `wait: true`, after `infrastructure-controllers` (CNPG's H
 | `guardrails.yaml` | host | ResourceQuota `dev-quota`, LimitRange `dev-limits` (container default limit 500m CPU / 512Mi, max 2Gi, PVC max 5Gi). |
 | `network.yaml` | host | CiliumNetworkPolicies `dev-host-boundary`, `dev-platform-dns-api`, `dev-vcluster-api`. |
 | `rbac.yaml` | host | `kyverno:admission-controller:dev`: lets `policies/workloads.yaml` read CiliumNetworkPolicies. |
-| `runner-access.yaml` | host | Role `e2e-runner-kubeconfig`: the `self-hosted-arc-e2e` runner SA may get Secret `vc-e2e-runner`, nothing else. |
+| `runner-access.yaml` | host | Role `e2e-runner-kubeconfig`: the `self-hosted-arc` runner SA may get Secret `vc-e2e-runner`, nothing else. |
 | `policies/` | host | Kyverno `dev-workloads`, `dev-services`, `dev-pvcs` (validating), `dev-pods` (mutating). `tests/` is not applied. |
 | `vcluster/release.yaml` | host | HelmRepository `loft`, HelmRelease `vcluster` 0.37.1. |
 | `addons/` | host → vcluster | HelmReleases `keda` and `cnpg` built from `infrastructure/controllers/base/{keda,cnpg}` with `spec.kubeConfig`. |
@@ -82,9 +82,9 @@ with a ten-year expiry and never rotates them. The alternative — the virtual A
 host-issued ServiceAccount JWTs — does not work here: the host API refuses anonymous requests
 (`401` on `/.well-known/openid-configuration` and `/openid/v1/jwks`), so the authenticator cannot
 fetch the signing keys. The mitigation is scope (above) and who can read the Secret: the
-`self-hosted-arc-e2e` runner scale set (`runner-access.yaml`, at most two pods) and cluster
-admins. Any workflow that targets that scale set can read it, so the repository must keep
-fork PRs off self-hosted runners (asp `.github/CI-CUTOVER.md`, known scope gaps). Rotate:
+`self-hosted-arc` runner scale set (`runner-access.yaml`; it was a dedicated `self-hosted-arc-e2e`
+pool until 2026-10-15) and cluster admins. Any workflow that targets that scale set can read
+it, so the repository must keep fork PRs off self-hosted runners (asp `.github/CI-CUTOVER.md`, known scope gaps). Rotate:
 
 ```bash
 kubectl --kubeconfig <vcluster admin> -n kube-system delete serviceaccount e2e-runner

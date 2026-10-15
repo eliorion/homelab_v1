@@ -80,6 +80,11 @@ A separate `nexus-lb` LoadBalancer Service
 
 ## How it works, end to end
 
+> **2026-10-15:** the dind sidecar and the `self-hosted-arc-e2e` pool are gone (see the last
+> section). Everything below that mentions dockerd, `DOCKER_HOST`, `--insecure-registry` on a
+> sidecar, the `privileged` namespace label or an e2e/XL pool describes the state before that
+> date. Current state: `infrastructure/services/staging/arc-runner-set/README.md`.
+
 ```
 GitHub (Eliorion/asp)                      k3s cluster
 ─────────────────────                      ───────────────────────────────────
@@ -93,7 +98,7 @@ workflow queued                            arc-systems namespace
         │                                  arc-runners namespace
         └── job runs on ──────────────►    runner pod (ephemeral, 1 job max)
                                             ├─ runner container (run.sh)
-                                            └─ dind sidecar (dockerd)
+                                            └─ (until 2026-10-15: dind sidecar)
                                                  │ docker pull/push
                                                  ▼
                                            nexus namespace
@@ -406,3 +411,23 @@ manual `e2e-tests.yaml` dispatch, which now runs on the default pool. `release-x
 its `CI_RUNNER_XL` variable and the `runner-tier: xl` anti-affinity are gone; anything
 above that describes an XL pool is history, not current state. The e2e pool's own sizing
 lives in `infrastructure/services/staging/arc-runner-set/README.md`.
+
+## 2026-10-15 — dind and the e2e pool are retired, Dagger goes over tcp://
+
+CI no longer needs a docker daemon on the runner: every gate is a `dagger call` against the
+cluster engine, and the one `docker run` left (gitleaks) became a pinned binary. So:
+
+- The dind sidecar, its init container, the socket and externals volumes and `DOCKER_HOST` are
+  gone from `arc-runner-set/release.yaml`. The runner is a single non-root container
+  (`allowPrivilegeEscalation: false`, all capabilities dropped), requests 256Mi (measured idle
+  265-323Mi, p99 441Mi) and keeps its 4Gi limit. Five warm runners reserve 1.25Gi instead of 5Gi.
+- `arc-runners` now enforces `baseline` instead of `privileged`.
+- `self-hosted-arc-e2e` (`release-e2e.yaml`, `maxRunners: 2`) is deleted. Its only purpose was
+  dind-less runners, which is now every runner. The dev-platform e2e lane runs on the default
+  pool; the `e2e-platform-inplace` concurrency group and the vcluster quota are what bound
+  concurrency now. `vc-e2e-runner` is readable by the default pool's service account
+  (`dev-platform/runner-access.yaml`), so fork PRs must stay on GitHub-hosted runners.
+- Fork PRs run on `ubuntu-latest` in asp, because their ephemeral Dagger engine needs docker.
+- The Dagger engine listens on `tcp://dagger.dagger.svc:1234` beside its unix socket, fenced by
+  the CiliumNetworkPolicy `dagger-engine-ingress` (runner pods only). The `kube-pod://` scheme
+  stays available as the rollback. Reasoning: `infrastructure/services/base/dagger/README.md`.

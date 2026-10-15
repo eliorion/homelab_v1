@@ -1,0 +1,38 @@
+# The engine API listens on plaintext, unauthenticated TCP (release.yaml, `engine.port`), so
+# THIS POLICY IS THE ONLY AUTHENTICATION ON IT. Anything that reaches :1234 can run code in
+# the privileged engine, which is node-root-equivalent -- the same reach `pods/exec` in
+# rbac.yaml grants, minus the RBAC check. Hence ingress is a closed list:
+#   - the ARC runner pods (the two scale sets' pods carry the part-of label below);
+#   - Prometheus, on the metrics port only.
+# Fork pull requests never get this engine (asp .github/scripts/dagger-engine.sh), but that is
+# the workflow's promise, not the network's: keep the runner selector tight.
+#
+# Kubelet probes come from the node (`host` entity), which Cilium admits to local endpoints
+# regardless of this policy; `kubectl exec` is not a network flow at all.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: dagger-engine-ingress
+  namespace: dagger
+spec:
+  endpointSelector:
+    matchLabels:
+      app: dagger-engine
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: arc-runners
+            # Set by the gha-runner-scale-set chart on every runner pod (and not on the
+            # listener, which sits in arc-systems anyway).
+            k8s:app.kubernetes.io/part-of: gha-runner-scale-set
+      toPorts:
+        - ports:
+            - port: "1234"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP

@@ -6,8 +6,8 @@ the ARC CRDs and the controller Deployment into the `arc-systems` namespace, and
 creates `arc-runners`, the namespace where the ephemeral runner pods land. The
 controller does not itself register anything with GitHub — it watches
 `AutoscalingRunnerSet` resources and turns queued jobs into one-shot runner pods.
-The runner pools themselves (`self-hosted-arc` and `self-hosted-arc-e2e`, both for
-`Eliorion/asp`) are separate `gha-runner-scale-set` HelmReleases living in
+The runner pool itself (`self-hosted-arc`, for
+`Eliorion/asp`) is a separate `gha-runner-scale-set` HelmRelease living in
 `infrastructure/services/staging/arc-runner-set/`, and they consume the CRDs and
 the `HelmRepository` declared here. The whole CI stack, runners plus the Nexus
 dependency cache they pull through, is described in
@@ -18,7 +18,7 @@ dependency cache they pull through, is described in
 | File | What it does |
 |---|---|
 | `kustomization.yaml` | Base: `namespace.yaml`, `repository.yaml`, `release.yaml`. |
-| `namespace.yaml` | Two namespaces. `arc-systems` holds the controller and the per-scale-set listener pods. `arc-runners` holds the ephemeral runner pods and carries `pod-security.kubernetes.io/enforce: privileged`. |
+| `namespace.yaml` | Two namespaces. `arc-systems` holds the controller and the per-scale-set listener pods. `arc-runners` holds the ephemeral runner pods and carries `pod-security.kubernetes.io/enforce: baseline` (it was `privileged` while runner pods carried a dind sidecar, until 2026-10-15). |
 | `repository.yaml` | `HelmRepository/arc` in `flux-system`, `type: oci`, `oci://ghcr.io/actions/actions-runner-controller-charts`, 24h interval. Shared: the runner-set releases in `infrastructure/services/staging/arc-runner-set/` point at this same source. |
 | `release.yaml` | `HelmRelease/arc-controller` in `flux-system`, `targetNamespace: arc-systems`, `releaseName: arc-controller`, chart `gha-runner-scale-set-controller` pinned to `0.14.2`, reconcile interval 30m / chart interval 12h, `install.createNamespace: true`, manager `securityContext` hardening, requests 500m/256Mi and a 512Mi memory limit. |
 
@@ -32,7 +32,7 @@ needs the ARC CRDs to exist before its own resources can be applied.
 
 Runtime flow, in one line: a listener pod in `arc-systems` long-polls GitHub, the
 controller reacts to a queued job by creating an `EphemeralRunner`, and the
-resulting pod (runner container plus a privileged dind sidecar) runs exactly one
+resulting pod (the runner container only) runs exactly one
 job in `arc-runners` and is then deleted.
 
 ### Overlays
@@ -54,7 +54,7 @@ renames the Deployment and the health check never resolves.
 `gha-runner-scale-set-controller` here and `gha-runner-scale-set` in
 `infrastructure/services/staging/arc-runner-set/release.yaml` and
 are `0.14.2`. Renovate bumps them; they must be merged
-together. Beyond version skew, the runner-set releases define their dind pod
+together. Beyond version skew, the runner-set release defines its pod
 template by hand against the `0.14.x` shape, so a chart bump also means
 re-checking that template against upstream.
 
@@ -67,16 +67,12 @@ RuntimeDefault`. It is deliberately kept minimal: no `runAsNonRoot`, no
 The change was verified with `helm template` to confirm the settings land on the
 manager container without wiping the chart's own hardening.
 
-**`arc-runners` enforces the `privileged` Pod Security Standard.** Runner pods
-carry a privileged dind sidecar, because the runner-set releases use a manual
-dind pod template rather than the chart's `containerMode: dind` — that is the
-only way to pass `--insecure-registry` for the HTTP-only Nexus docker connectors
-on ports 5000/5001/5002. On the old k3s box nothing enforced a Pod Security
-Standard and this worked implicitly. Talos enforces `baseline` cluster-wide, so
-after the migration (see
-[07-talos-ha-expansion.md](../../../../documentations/07-talos-ha-expansion.md))
-the controller and listener stayed healthy while every `EphemeralRunner` went
-`Failed` with:
+**`arc-runners` enforces the `baseline` Pod Security Standard** (set explicitly; Talos enforces
+`baseline` cluster-wide anyway). It was `privileged` until 2026-10-15, because runner pods
+carried a privileged dind sidecar; with that gone nothing in the namespace needs more than
+`baseline`, and the label now stops anyone adding a privileged container beside a runner. If a
+dind sidecar ever comes back, the symptom of forgetting the label is every `EphemeralRunner`
+going `Failed` with:
 
 ```
 Failed to create the pod: pods "self-hosted-arc-...-runner-..." is forbidden:
@@ -96,18 +92,17 @@ applies a Kustomization atomically, so the CRD provider has to be a separate,
 
 - **The two ARC chart versions must match.** `gha-runner-scale-set-controller`
   `0.14.2` here and `gha-runner-scale-set` `0.14.2` in
-  `infrastructure/services/staging/arc-runner-set/release.yaml` +
-  . Renovate bumps them separately — align them in the same
+  `infrastructure/services/staging/arc-runner-set/release.yaml`. Renovate bumps them separately — align them in the same
   merge.
 - **Do not change `releaseName: arc-controller`.** The Flux health check on
   `infra-arc-controller` targets the Deployment `arc-controller-gha-rs-controller`,
   which is derived from that release name.
-- **Do not remove `pod-security.kubernetes.io/enforce: privileged` from
-  `arc-runners`.** Runner pods stop being created and every `EphemeralRunner`
-  fails with the `violates PodSecurity "baseline:latest"` error above.
-- **`HelmRepository/arc` is shared.** Both runner-set HelmReleases reference
+- **Do not raise `pod-security.kubernetes.io/enforce` on `arc-runners` back to `privileged`
+  without a reason.** Nothing in a runner pod needs it, and the Cilium policy on the Dagger
+  engine admits every pod in this namespace that carries the scale-set label.
+- **`HelmRepository/arc` is shared.** The runner-set HelmRelease references
   `sourceRef: {kind: HelmRepository, name: arc, namespace: flux-system}`.
-  Renaming or deleting it breaks both runner pools, not just the controller.
+  Renaming or deleting it breaks the runner pool, not just the controller.
 - **Anything that declares an ARC custom resource must `dependsOn:
   infra-arc-controller`.** That is why `infrastructure-services` lists it; drop
   the dependency and the runner-set Kustomization races the CRDs.
@@ -145,6 +140,6 @@ controller recreates them clean:
 kubectl -n arc-runners delete ephemeralrunner --all
 ```
 
-Deep detail — registration, scaling, the dind template, Nexus proxy ports,
+Deep detail — registration, scaling, Nexus proxy ports,
 sizing and the full troubleshooting list — is in
 [04-ci-runners-cache.md](../../../../documentations/04-ci-runners-cache.md).

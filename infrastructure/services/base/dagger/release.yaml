@@ -56,8 +56,14 @@ spec:
         # Undocumented, experimental; scraped by monitoring/configs/staging/dagger-ci.
         - name: _EXPERIMENTAL_DAGGER_METRICS_ADDR
           value: 0.0.0.0:9090
-      # Never set engine.port: it opens the engine API on plaintext TCP.
+      # The engine API on plaintext TCP, reachable as tcp://dagger.dagger.svc:1234. Fenced by
+      # networkpolicy.yaml (runner pods only); the unix socket stays, so kube-pod:// still works.
+      port: 1234
+      # Setting containerPorts replaces the chart's default list, so the API port must be
+      # named here too or the `dagger` Service never exposes it.
       containerPorts:
+        - name: dagger
+          containerPort: 1234
         - name: metrics
           containerPort: 9090
       volumes:

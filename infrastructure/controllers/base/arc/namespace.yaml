@@ -8,4 +8,5 @@ kind: Namespace
 metadata:
   name: arc-runners
   labels:
-    pod-security.kubernetes.io/enforce: privileged
+    # baseline since 2026-10-15: runner pods no longer carry a privileged dind sidecar.
+    pod-security.kubernetes.io/enforce: baseline
