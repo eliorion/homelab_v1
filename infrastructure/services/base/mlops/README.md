@@ -12,9 +12,11 @@ web UIs are on the tailnet only:
 Every ML workload runs **here** (asp docs/27 D1, D2), from one image, `mlops-pipelines`: its code
 locations (chart `k8s/charts/mlops-pipelines`, `release-pipelines.yaml`) and the run pods Dagster
 launches beside them. A domain (fbref today) provides a read-only database role and the schema its
-published results land in; its role Secrets are reflected here. Today one location: **`mlops-pipelines`**
-(the fbref lake extract, the step-up model and its publication, asp docs/25), the domain side wired in
-`apps/staging/fbref/README.md`.
+published results land in; its role Secrets are reflected here. Two locations: **`mlops-pipelines`**, production
+(the fbref lake extract, the step-up model and its publication, asp docs/25), and
+**`mlops-pipelines-dev`**, the dev lane (`extract_query`, `run_notebook`; read-only credentials, one run
+at a time through the `mlops/lane: dev` tag limit in `release-dagster.yaml`). The domain side is wired
+in `apps/staging/fbref/README.md`.
 
 ## How it is wired
 
@@ -42,6 +44,7 @@ asp and fbref read `asp-db-app` / `fbref-db-app`. OpenBao holds only what CNPG c
 |---|---|---|
 | `kv/mlops/mlflow-auth` | `admin-password`, `flask-secret-key` | `mlflow-auth`: the first admin password (`MLFLOW_AUTH_ADMIN_PASSWORD`) and the CSRF key |
 | `kv/mlops/dagster-db` | `password` | `mlops-dagster-db`: username, password (CNPG managed role) and `postgresql-password` (the dagster chart and every run pod, all in this namespace) |
+| `kv/mlops/mlflow-notebook` | `password` | `mlops-mlflow-notebook`: the MLflow user `notebook`, for the dev location's runs and `mise run notebook` in the asp devcontainer (asp docs/27 P2) |
 
 **Seed them before the first reconcile** (hex only). Login as in `../openbao/README.md`, then:
 
@@ -49,6 +52,17 @@ asp and fbref read `asp-db-app` / `fbref-db-app`. OpenBao holds only what CNPG c
 bao kv put kv/mlops/mlflow-auth admin-password="$(openssl rand -hex 24)" flask-secret-key="$(openssl rand -hex 32)"
 bao kv put kv/mlops/dagster-db  password="$(openssl rand -hex 32)"
 ```
+
+The dev lane's MLflow user (asp docs/27 P2), once MLflow runs:
+
+```sh
+mise bao kv put kv/mlops/mlflow-notebook password="$(openssl rand -hex 32)"
+mise mlflow-user notebook kv/mlops/mlflow-notebook
+```
+
+It creates its own experiments (`notebooks`, ...); reading another user's experiment (`scout-stepup`)
+needs a READ grant from the admin in the MLflow UI. Until it exists, dev runs still start and a
+notebook that logs to MLflow is refused (401).
 
 Without them the ExternalSecrets stay `SecretSyncedError`, the `dagster` role and both releases wait
 and retry; nothing breaks, nothing starts.

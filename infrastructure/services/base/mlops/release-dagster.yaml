@@ -70,7 +70,7 @@ spec:
       # The pods read dagster-workspace at start only: change this with its code locations, so the
       # edit rolls them (here and on the daemon).
       annotations: &workspaceAnnotation
-        mlops.eliorion.fr/workspace: mlops-pipelines
+        mlops.eliorion.fr/workspace: mlops-pipelines,mlops-pipelines-dev
       logFormat: json
       # Read-only root: Dagster writes only DAGSTER_HOME and /tmp (the two emptyDirs).
       podSecurityContext: &podSecurityContext
@@ -117,6 +117,16 @@ spec:
 
     dagsterDaemon:
       annotations: *workspaceAnnotation
+      # The dev lane (asp docs/27 P2) runs one job at a time: its jobs carry mlops/lane=dev.
+      runCoordinator:
+        enabled: true
+        type: QueuedRunCoordinator
+        config:
+          queuedRunCoordinator:
+            tagConcurrencyLimits:
+              - key: mlops/lane
+                value: dev
+                limit: 1
       image:
         repository: docker.io/dagster/dagster-k8s
         # renovate: datasource=docker depName=docker.io/dagster/dagster-k8s
