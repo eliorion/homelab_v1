@@ -8,4 +8,5 @@ resources:
   - networkpolicies.yaml
   - release-dagster.yaml
   - release-mlflow.yaml
+  - release-pipelines.yaml
   - ingress-tailscale.yaml

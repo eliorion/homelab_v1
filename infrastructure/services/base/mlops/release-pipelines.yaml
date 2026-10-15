@@ -1,0 +1,34 @@
+# The ML platform's code locations (asp docs/27 D1, D2): chart owned by the asp repo
+# (k8s/charts/mlops-pipelines, image mlops-pipelines). Values here are environment overrides ONLY, never
+# image tags (the chart's values.yaml owns those, bumped by asp CI). Listed in dagster-workspace.yaml;
+# its runs execute in this namespace with the credentials of staging/mlops/secrets. README.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mlops-pipelines
+  namespace: flux-system
+spec:
+  targetNamespace: mlops
+  interval: 30m
+  chart:
+    spec:
+      chart: k8s/charts/mlops-pipelines
+      sourceRef:
+        kind: GitRepository
+        name: mlops-pipelines
+      interval: 12h
+      # Upgrade on every commit to the chart path: that is how the CI tag-bump commit rolls out.
+      reconcileStrategy: Revision
+  install:
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    global:
+      # Private GHCR image; the Secret is mirrored into mlops by reflector.
+      imagePullSecrets:
+        - name: ghcr-pull-secret

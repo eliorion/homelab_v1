@@ -63,7 +63,7 @@ spec:
         passwordSecret:
           name: fbref-scout-ro
       # asp repo fbref V60: the ML data lake's reader (SELECT on every schema, nothing else). The
-      # fbref-pipelines run pods use it on fbref-db-ro to extract snapshots (asp docs/25).
+      # mlops-pipelines run pods (namespace mlops) use it on fbref-db-ro to extract snapshots (asp docs/25).
       - name: ml_ro
         ensure: present
         login: true

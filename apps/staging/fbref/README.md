@@ -198,18 +198,16 @@ Traces in Grafana (Explore → Tempo, TraceQL):
 More probes, and the tunnel-side configuration, are in
 [`../../../infrastructure/services/staging/cloudflare/README.md`](../../../infrastructure/services/staging/cloudflare/README.md).
 
-## ML pipelines (asp docs/25)
+## ML pipelines (asp docs/25, docs/27)
 
-The fbref chart deploys the `fbref-pipelines` Dagster code location (gRPC :3030, no credential) and
-Dagster launches its runs **in this namespace** (the lake extract, trainings). What they need from
-this repo:
+The ML runs (the lake extract, trainings, the step-up publication) execute in **`mlops`**, from the
+`mlops-pipelines` code location (`../../../infrastructure/services/base/mlops/README.md`). fbref only
+provides the database roles and the schema the results land in (`model.*`, asp docs/27 D2):
 
 | Object | Where | What |
 |---|---|---|
 | roles `ml_ro`, `model_rw` (LOGIN) | `../../base/databases/fbref/database.yaml` | asp fbref V60 (reads every schema) and V59 (writes `model.*`); the run pods read the **replica** as `ml_ro` |
-| Secrets `fbref-ml-ro`, `fbref-model-rw`, `fbref-mlflow-pipelines` | `../databases/fbref/externalsecrets.yaml` | OpenBao `kv/fbref/*` (this namespace is onboarded: `eso-namespaces.txt`) |
-| Secret `s3-ml-lake` | `infrastructure/controllers/staging/seaweedfs/s3/buckets/ml-lake.enc.yaml` | the `ml-lake` bucket key, sops; the namespaces it is reflected into are in the plain `ml-lake.reflection.yaml` next to it |
-| Secret `mlops-dagster-db` | `infrastructure/services/staging/mlops/secrets/` | reflected from `mlops`: a run pod writes its events to Dagster's storage |
+| Secrets `fbref-ml-ro`, `fbref-model-rw`, `fbref-mlflow-pipelines` | `../databases/fbref/externalsecrets.yaml` | OpenBao `kv/fbref/*` (this namespace is onboarded: `eso-namespaces.txt`); CNPG reads the role Secrets here, and reflector copies all three into `mlops` |
 
 **Seed before the first reconcile** (hex only), then create the MLflow user once MLflow and the entry
 exist:
@@ -227,10 +225,7 @@ the code server still runs, only a launched run fails.
 Verify:
 
 ```sh
-kubectl -n fbref get externalsecret,secret | grep -E 'ml-ro|model-rw|mlflow-pipelines|s3-ml-lake|mlops-dagster-db'
+kubectl -n fbref get externalsecret,secret | grep -E 'ml-ro|model-rw|mlflow-pipelines'
+kubectl -n mlops get secret | grep -E 'fbref-|s3-ml-lake|mlops-dagster-db'
 kubectl -n fbref get cluster fbref-db -o jsonpath='{.status.managedRolesStatus.byStatus}'; echo
-kubectl -n fbref get pods -l app=fbref-pipelines
 ```
-
-Then from https://dagster.tail45b0ca.ts.net: location `fbref-pipelines`, job `extract_fbref`, Launch.
-Run pods are `app=fbref-pipelines-run` in this namespace (`kubectl -n fbref logs -l app=fbref-pipelines-run`).

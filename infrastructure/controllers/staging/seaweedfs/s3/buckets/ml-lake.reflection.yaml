@@ -10,6 +10,6 @@ metadata:
   namespace: flux-system
   annotations:
     reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: fbref
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: mlops
     reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: fbref
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: mlops
