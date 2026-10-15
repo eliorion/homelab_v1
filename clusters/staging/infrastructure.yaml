@@ -503,6 +503,7 @@ spec:
       - {kind: Secret, name: s3-nextcloud}
       - {kind: Secret, name: s3-tmp-backup-garage}
       - {kind: Secret, name: s3-scraper-advisor-sink}
+      - {kind: Secret, name: s3-fbref-raw}
       - {kind: Secret, name: s3-fbref-vision-tmp}
       - {kind: Secret, name: s3-mlflow-artifacts}
       - {kind: Secret, name: s3-ml-lake}

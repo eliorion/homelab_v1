@@ -1,0 +1,24 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. S3 credential for bucket fbref-raw: the raw page archive of
+# the scraper's `fbref` tenant (asp scraper chart engine.rawArchives, services/scraper/engine/
+# src/raw_archive.py). Written by the scraper engine; read later by the fbref replay job. Steps:
+# ../README.md.
+#   cp fbref-raw.enc.yaml.exemple fbref-raw.enc.yaml
+#   # FBREF_RAW_S3_ACCESS_KEY: openssl rand -hex 12
+#   # FBREF_RAW_S3_SECRET_KEY: openssl rand -hex 32
+#   sops -e -i fbref-raw.enc.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-fbref-raw
+  namespace: flux-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: scraper,fbref
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: scraper,fbref
+type: Opaque
+stringData:
+  FBREF_RAW_S3_ENDPOINT: "http://seaweedfs-seaweedfs-s3.seaweedfs.svc.cluster.local:8333"
+  FBREF_RAW_S3_BUCKET: "fbref-raw"
+  FBREF_RAW_S3_ACCESS_KEY: "<openssl rand -hex 12>"
+  FBREF_RAW_S3_SECRET_KEY: "<openssl rand -hex 32>"

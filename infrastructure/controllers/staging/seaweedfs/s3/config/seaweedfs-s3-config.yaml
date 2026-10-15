@@ -60,6 +60,20 @@ stringData:
           ]
         },
         {
+          "name": "fbref-raw",
+          "credentials": [
+            {
+              "accessKey": "${FBREF_RAW_S3_ACCESS_KEY}",
+              "secretKey": "${FBREF_RAW_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:fbref-raw",
+            "Write:fbref-raw",
+            "List:fbref-raw"
+          ]
+        },
+        {
           "name": "scraper-advisor-sink",
           "credentials": [
             {
