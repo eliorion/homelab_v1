@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: forgejo-oidc-client
+    namespace: identity
+    annotations:
+        reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+        reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: forgejo
+        reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+        reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: forgejo
+type: Opaque
+stringData:
+    #ENC[AES256_GCM,data:8JuUBmmgRNYZrADzAveoA36GVDaIKXIRddyqJXgXiLsE4oqcoqMeZ5sbYWgCfPx1SYGsLD6/x/JwOzT7Mx+mhqRffGLciI8=,iv:hUH6WGHCjaXxSY6NXAQvbifnVhjU94ySacMfyXigMSI=,tag:H2WfzdQQ1gDU2bdk07iSSg==,type:comment]
+    client-secret: ENC[AES256_GCM,data:Lz3510qbaf/eGzS6D6mxGwm5zio+zP2vnWUz0JTB9n9IQis637O5buTVSyw=,iv:B9Mx6cSMcupzqAh2ZDzkEiO45mPQobhdThYGRbicZuc=,tag:4DFi87TGCQFAYfN9TQBP+w==,type:str]
+    #ENC[AES256_GCM,data:zTj7sY9a0f4yBsqOyGxeg/hTqLVsEx5vX2vWh/CfJLdG5svAN59eyvX5FDlp3Q==,iv:7LF7T6p1rbKQxNvW+5WQRtP0gFSdEvSh2hmfhqVzdJ8=,tag:6P7+LOnvrMASzRY3bgwJag==,type:comment]
+    key: ENC[AES256_GCM,data:4VEY2XRiSw==,iv:F/6BBw4i9lFe7oaYViuJd2jYlRiFU+2AmD6AXQ0voIw=,tag:PwmiAEL90hTsy9e8pOiYbw==,type:str]
+    secret: ENC[AES256_GCM,data:zP258joLIM3auQphf69KX2VlUf76Of4wBR8XK0kNi/aQ+uM3zeYiHNoaAxQ=,iv:yaN8XyV8JU5v5RQ0wseLCa4UEpttEAN08IIMOtFOjFQ=,tag:5s4VOw3T4V+JfoTr1kd9Qw==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB3OU0yT3VYcGJzZ3lFRWNH
+            Mi9FREZYSWpDbENWcXJmOGlEUjlhdWZ6bmgwCm91SUtONExiOU1rcmhDR1Q3Y0JH
+            dkpLYjh5dzJ4bkV4cWVmVVJKbDcvSzgKLS0tIGhEZXNkUURMZ1FETWxCZWFQbVNC
+            VTNheVhSQ3dnNkZ0VUl0MTlWclR5bDgKGsP0OnAWlp/1MQzeLhXNoEyJF8pTtaOE
+            0e5GHk9IsK7CG9TNWYLt1dqck9TE1UBFqJQgry8aVfJCnWzlCsiAsw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-15T19:49:42Z"
+    mac: ENC[AES256_GCM,data:3h2V6PvFE/kOEGtNAeVsR7VQE//GIh1byGJ0Zl/4SThJ7bdxw7YLQOvhaQ89fcVAyoKIabRMtt2nWyoqKbIAI8H8X/c8c/HV+rLb8JWCOF90otWCa1K3dmSsjQVTmFSRfzYKVy9N3EpyRAi3Nfb8e+yjpc5mWDrGWtqR+yJT0xo=,iv:f5frhBUHE2ODrzqqQhj8OpPuNXQVkOCFn6fuLAEisZQ=,tag:G9DFCH+cQ30Q80wFXNy5eA==,type:str]
+    version: 3.13.3

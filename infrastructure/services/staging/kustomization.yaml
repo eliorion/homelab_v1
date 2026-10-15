@@ -23,3 +23,7 @@ resources:
   - openbao/
   # The shared MLOps platform (asp docs/24): Dagster + MLflow, both UIs on the tailnet only.
   - mlops/
+  # Forgejo: a mirror of asp with CI on the shared Dagger engine (asp docs/28). Runners in
+  # their own namespace, admitted to the engine by dagger/networkpolicy.yaml.
+  - forgejo/
+  - forgejo-runner/

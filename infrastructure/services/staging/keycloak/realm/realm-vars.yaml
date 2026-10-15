@@ -21,3 +21,6 @@ data:
   # Keycloak matches redirect URIs textually, so a mismatch rejects every login
   # with "Invalid parameter: redirect_uri".
   NEXTCLOUD_URL: https://staging-nextcloud.eliorion.fr
+  # Forgejo's ROOT_URL (infrastructure/services/base/forgejo/release.yaml), used to build its
+  # OIDC redirect URI. Must equal ROOT_URL without the trailing slash.
+  FORGEJO_URL: https://git.eliorion.fr

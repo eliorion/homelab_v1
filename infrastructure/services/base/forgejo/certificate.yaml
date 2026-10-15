@@ -1,0 +1,20 @@
+# Served by the shared Cilium Gateway (kube-system/cilium-gw, listener https-git), which reads it
+# across namespaces through ./gateway.yaml's ReferenceGrant. Envoy reloads a renewed Secret by
+# itself: no restart CronJob, unlike Harbor's nginx.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: git-tls
+  namespace: forgejo
+spec:
+  secretName: git-tls
+  dnsNames:
+    - git.eliorion.fr
+  # Prod rate limit: 5 duplicate certs/week. Test dnsNames changes on letsencrypt-staging first.
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always

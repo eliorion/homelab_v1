@@ -1,0 +1,27 @@
+# TEMPLATE — the Forgejo OIDC client credential for the `apps` realm.
+#
+# .sops.yaml selects the age key by PATH (`staging/*.enc.yaml`), so `.example`
+# matches nothing and is never encrypted — NEVER put the real secret here.
+# Changing this value requires re-running the import by hand AND restarting
+# Forgejo: the ConfigMap hash does not change when only this Secret does.
+#
+# Lives in `identity` because the realm import Job reads it as
+# $(env:FORGEJO_OIDC_CLIENT_SECRET); reflector mirrors it into `forgejo` for
+# Forgejo's OAuth2 source (`existingSecret`, keys `key` + `secret`). One value, two namespaces, no second encrypted file.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: forgejo-oidc-client
+  namespace: identity
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "forgejo"
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "forgejo"
+type: Opaque
+stringData:
+  # openssl rand -base64 32 -- the SAME value in client-secret and secret.
+  client-secret: REPLACE_WITH_OPENSSL_RAND_BASE64_32
+  # Forgejo's OAuth2 source reads these two keys.
+  key: forgejo
+  secret: REPLACE_WITH_OPENSSL_RAND_BASE64_32

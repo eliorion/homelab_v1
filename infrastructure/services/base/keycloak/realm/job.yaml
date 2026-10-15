@@ -104,6 +104,17 @@ spec:
                 secretKeyRef:
                   name: nextcloud-oidc-client
                   key: client-secret
+            - name: FORGEJO_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: keycloak-realm-vars
+                  key: FORGEJO_URL
+            # Substituted into realm-apps.yaml; mirrored into `forgejo` by reflector.
+            - name: FORGEJO_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-oidc-client
+                  key: client-secret
             # no-delete everywhere: the default (full management) deletes every
             # live object the realm files do not declare.
             - name: IMPORT_MANAGED_COMPONENT

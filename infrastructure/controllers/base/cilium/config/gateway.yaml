@@ -13,6 +13,25 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # git.eliorion.fr (Forgejo, infrastructure/services/base/forgejo/gateway.yaml). TLS ends here;
+    # the cert lives in `forgejo` and is read through that namespace's ReferenceGrant. Envoy picks
+    # up a renewed Secret by itself. Only routes from `forgejo` may attach.
+    - name: https-git
+      protocol: HTTPS
+      port: 443
+      hostname: git.eliorion.fr
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: git-tls
+            namespace: forgejo
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: forgejo
 ---
 # nexus UI/API only; the docker connector ports 5000-5002 stay L4 on the nexus-lb Service.
 apiVersion: gateway.networking.k8s.io/v1

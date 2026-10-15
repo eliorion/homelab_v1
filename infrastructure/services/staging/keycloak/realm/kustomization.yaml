@@ -13,3 +13,5 @@ resources:
   # The Nextcloud OIDC client secret, read by the import Job as $(env:...) and
   # mirrored into the `nextcloud` namespace by reflector.
   - nextcloud-oidc-client.enc.yaml
+  # The Forgejo OIDC client secret, same shape: read by the import Job, mirrored into `forgejo`.
+  - forgejo-oidc-client.enc.yaml

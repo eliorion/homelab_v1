@@ -1,0 +1,37 @@
+# HTTPS for git.eliorion.fr: the Gateway's `https-git` listener (infrastructure/controllers/base/
+# cilium/config/gateway.yaml) terminates TLS with git-tls and routes plain HTTP to forgejo-http.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: forgejo
+  namespace: forgejo
+spec:
+  parentRefs:
+    - name: cilium-gw
+      namespace: kube-system
+      sectionName: https-git
+  hostnames:
+    - git.eliorion.fr
+  rules:
+    - backendRefs:
+        - name: forgejo-http
+          port: 3000
+      # A large `git push` or a long Actions log stream outlives Envoy's default route timeout.
+      timeouts:
+        request: 0s
+---
+# Lets the Gateway in kube-system read the certificate Secret here, and nothing else.
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: cilium-gw-git-tls
+  namespace: forgejo
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      namespace: kube-system
+  to:
+    - group: ""
+      kind: Secret
+      name: git-tls
