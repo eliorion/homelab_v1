@@ -309,3 +309,10 @@ replication, and Keycloak OIDC — none of which zot has.
 - **OIDC is not enabled.** Login is the local admin account from `harbor-admin.enc.yaml`.
   Keycloak wiring is additive and independent; it was deferred so the registry could be proven
   working first.
+
+## Trivy is switched off
+
+`trivy.enabled: false` (staging, memory on staging-controlplane-1; nothing here uses Harbor's
+built-in scanner, CI scans with its own trivy gate). The `harbor-trivy` StatefulSet is gone; its
+10Gi `ssd-single` PVC (`data-harbor-trivy-0`) is left behind by Helm and can be deleted by hand.
+Set it back to `true` to scan from the UI again; the scanner then re-registers itself.

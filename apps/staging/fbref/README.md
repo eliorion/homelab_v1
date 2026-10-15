@@ -6,7 +6,7 @@ resulting database. Like `asp`, this directory holds no application manifests �
 `HelmRelease` points at the `k8s/charts/fbref` chart in the private `asp` repository, and the
 values here are environment overrides only. fbref runs in its own `fbref` namespace against its
 own CNPG cluster `fbref-db`, and it is the first and currently only client of the central
-scraper platform. `fbref-mcp` is the one publicly reachable surface in this stack.
+scraper platform. `fbref-mcp` is the one publicly reachable surface in this stack (currently switched off, see the values table).
 
 ## How it is wired
 
@@ -33,6 +33,8 @@ Values set here:
 | `otel.environment` | `staging` |
 | `engine.sites` | `"fbref,transfermarkt"` |
 | `engine.maxInFlightOverrides.transfermarkt` | `10` |
+| `mcp.enabled` | `false` — SWITCHED OFF (memory on staging-controlplane-1): no Deployment, Service, egress policy, family-counts CronJob or mcp_ro helm test. The settings below stay so waking it is one flip |
+| `components.fbref-vision.enabled` | `false` — SWITCHED OFF, same reason. Vision runs requested from the admin UI stay `pending` until it is back |
 | `mcp.auth.enabled` | `true` |
 | `mcp.auth.issuerUrl` | `https://staging-keycloak.eliorion.fr/realms/mcp` |
 | `mcp.auth.resourceUrl` | `https://fbref-mcp.eliorion.fr/mcp` |

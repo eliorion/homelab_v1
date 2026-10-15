@@ -60,7 +60,13 @@ spec:
         sofascore: 3
       produceBatchOverrides:
         sofascore: 3
+    # Switched off (memory on staging-controlplane-1). mcp.enabled also drops its Service, egress
+    # policy, family-counts CronJob and the mcp_ro helm test; the Cloudflare route then answers 502.
+    components:
+      fbref-vision:
+        enabled: false
     mcp:
+      enabled: false
       # The one PUBLIC surface in this stack (Cloudflare tunnel →
       # https://fbref-mcp.eliorion.fr/mcp, no Ingress object).
       auth:

@@ -1,0 +1,59 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: goldilocks
+  namespace: flux-system
+spec:
+  targetNamespace: goldilocks
+  releaseName: goldilocks
+  interval: 30m
+  chart:
+    spec:
+      chart: goldilocks
+      version: "11.2.0"
+      sourceRef:
+        kind: HelmRepository
+        name: fairwinds
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: false
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    fullnameOverride: goldilocks
+    # The recommender is the vpa HelmRelease (infrastructure/controllers/base/vpa).
+    vpa:
+      enabled: false
+    metrics-server:
+      enabled: false
+    image:
+      pullPolicy: IfNotPresent
+    controller:
+      flags:
+        # A VerticalPodAutoscaler per workload in EVERY namespace, mode Off (Goldilocks'
+        # default): it never writes a request. Job and CronJob pods are one-shot.
+        on-by-default: "true"
+        ignore-controller-kind: "Job,CronJob"
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
+    dashboard:
+      replicaCount: 1
+      service:
+        type: ClusterIP
+        # Tailnet only, read-only, no auth: same exposure as radar.
+        annotations:
+          tailscale.com/expose: "true"
+          tailscale.com/hostname: goldilocks
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          memory: 256Mi

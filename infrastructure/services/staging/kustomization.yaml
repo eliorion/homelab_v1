@@ -16,6 +16,8 @@ resources:
   - etcd-backup/
   - garage-gateway/
   - radar/
+  # Goldilocks: dashboard + controller that creates a VPA (mode Off) per workload.
+  - goldilocks/
   - ai-gateway/
   - homepage/
   - openbao/
