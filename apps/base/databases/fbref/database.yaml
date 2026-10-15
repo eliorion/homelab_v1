@@ -67,6 +67,9 @@ spec:
       - name: ml_ro
         ensure: present
         login: true
+        # The extract reads `workers` chunks at once, one connection each (asp docs/27 P3): a cap so
+        # a large extract can never take the replica's connection slots from the apps.
+        connectionLimit: 10
         passwordSecret:
           name: fbref-ml-ro
       # asp repo fbref V59: the pipelines' publisher (reads tm.* and the canonical scout models,
