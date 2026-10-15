@@ -272,3 +272,11 @@ serves them, so no extra tunnel entry is needed.
 ### Overlays
 
 - `apps/staging/nextcloud/` — hostname config + the admin Secret.
+
+## Switched off (staging)
+
+`nextcloud` and `nextcloud-valkey` are at `replicas: 0` (`apps/staging/nextcloud/kustomization.yaml`)
+and `nextcloud-db` is hibernated (`cnpg.io/hibernation: "on"`, PVCs kept, in
+`apps/staging/databases/nextcloud/kustomization.yaml`), to free memory on
+staging-controlplane-1. Delete the patches marked SWITCHED OFF to bring it back; the database
+wakes first.

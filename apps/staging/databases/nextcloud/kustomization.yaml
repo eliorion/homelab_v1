@@ -24,3 +24,15 @@ patches:
     target:
       kind: Cluster
       name: nextcloud-db
+  # SWITCHED OFF (memory on staging-controlplane-1): hibernate, PVCs kept.
+  # The `databases` health check accepts a hibernated Cluster. See apps/README.md.
+  - target:
+      kind: Cluster
+      name: nextcloud-db
+    patch: |-
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      metadata:
+        name: nextcloud-db
+        annotations:
+          cnpg.io/hibernation: "on"

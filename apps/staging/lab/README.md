@@ -5,7 +5,7 @@ its own `lab` namespace (`lab-asp`, `lab-fbref`, …), each reading its project'
 database replica across namespaces. It is a single `HelmRelease` driving a chart that fans out
 over a `projects` list, so adding a sandbox is one line rather than one more copy of a
 Deployment, a Service and a set of Secrets. The pods are published on the tailnet by the
-Tailscale operator and are always on (`replicas: 1`), so a lab is reachable without scaling
+Tailscale operator and are meant to be always on (`replicas: 1`; currently `0`, see below), so a lab is reachable without scaling
 anything up first.
 
 ## How it is wired
@@ -42,7 +42,7 @@ Values set in `release.yaml`:
 
 | value | setting |
 | --- | --- |
-| `replicas` | `1` — always on |
+| `replicas` | `1` — always on; **`0` now**: switched off to free memory on staging-controlplane-1, set back to `1` to wake every lab |
 | `projects` | `asp`, `fbref` |
 | `tailscale.expose` | `true` |
 | `auth.disableToken` | `true` |

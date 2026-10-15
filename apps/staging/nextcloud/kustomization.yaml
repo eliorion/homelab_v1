@@ -17,3 +17,20 @@ configMapGenerator:
   - name: nextcloud-config
     envs:
       - nextcloud-config.env
+
+# SWITCHED OFF (memory on staging-controlplane-1); nextcloud-db is hibernated too.
+patches:
+  - target:
+      kind: Deployment
+      name: nextcloud
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
+  - target:
+      kind: Deployment
+      name: nextcloud-valkey
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0

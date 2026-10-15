@@ -16,11 +16,13 @@ spec:
   path: ./apps/staging/databases
   prune: true
   wait: true
-  # Healthy once the primary serves; a missing replica alerts instead of gating apps. See apps/README.md.
+  # Healthy once the primary serves, or when deliberately hibernated; a missing replica alerts instead of gating apps. See apps/README.md.
   healthCheckExprs:
     - apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
-      current: has(status.currentPrimary) && has(status.instancesStatus.healthy) && status.currentPrimary in status.instancesStatus.healthy
+      current: >-
+        (has(metadata.annotations) && 'cnpg.io/hibernation' in metadata.annotations && metadata.annotations['cnpg.io/hibernation'] == 'on') ||
+        (has(status.currentPrimary) && has(status.instancesStatus.healthy) && status.currentPrimary in status.instancesStatus.healthy)
   decryption:
     provider: sops
     secretRef:

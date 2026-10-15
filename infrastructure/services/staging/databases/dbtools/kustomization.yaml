@@ -16,6 +16,32 @@ resources:
   - nao-ingress-tailscale.yaml
 
 patches:
+  # SWITCHED OFF to free memory on staging-controlplane-1 (see README "Switched off").
+  # Hibernate dbtools-db (PVCs kept) and scale its only consumers to 0.
+  - target:
+      kind: Cluster
+      name: dbtools-db
+    patch: |-
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      metadata:
+        name: dbtools-db
+        annotations:
+          cnpg.io/hibernation: "on"
+  - target:
+      kind: Deployment
+      name: nao
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
+  - target:
+      kind: Deployment
+      name: pgadmin
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
   # PVCs on Longhorn (explicit — also the cluster default SC on Talos).
   - path: cluster-storage-patch.yaml
     target:

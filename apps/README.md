@@ -74,7 +74,9 @@ instead of the Cluster's `Ready` condition, which turns False whenever any repli
 2026-10-13 one broken replica in each of `n8n-db` and `scraper-db` held `db-migrations` and every
 app rollout for 21 hours (doc 20 records the same stall during the fbref re-clone). A primary that
 is down still gates the chain, as it must; a missing replica fires `CNPGReplicaNotStreaming`
-(`monitoring/configs/staging/cnpg-alerts/`) instead. A new Cluster has no status yet, so the
+(`monitoring/configs/staging/cnpg-alerts/`) instead. A Cluster annotated `cnpg.io/hibernation: "on"` also counts as healthy: it has no pods, so no primary can
+be listed, and without this clause switching one off would stall `databases` and everything behind it.
+A new Cluster has no status yet, so the
 expression errors and Flux keeps waiting until its primary is up — the intended first-install gate.
 
 **Some components have no `base/`.** A component that exists in exactly one environment and is

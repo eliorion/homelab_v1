@@ -700,3 +700,11 @@ name the model sees (`postgres_fbref-execute_sql`).
 ```bash
 kubectl kustomize infrastructure/services/staging/databases/dbtools
 ```
+
+### Switched off (staging)
+
+`dbtools-db` is hibernated (`cnpg.io/hibernation: "on"`, PVCs kept) and `nao` and `pgadmin`
+are at `replicas: 0`, all in `infrastructure/services/staging/databases/dbtools/kustomization.yaml`,
+to free memory on staging-controlplane-1. `dbtools-db` has no backup, so hibernation (which
+keeps the volume) is the only safe way to stop it. To switch everything back on, delete the
+three patches marked SWITCHED OFF; the Cluster wakes first and the two consumers follow.

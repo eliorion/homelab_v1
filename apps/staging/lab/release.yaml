@@ -25,7 +25,8 @@ spec:
       retries: 3
       strategy: rollback
   values:
-    replicas: 1
+    # SWITCHED OFF (memory on staging-controlplane-1); set back to 1 to wake every lab.
+    replicas: 0
     # Empty in the chart means "cluster default"; pin it so the class is visible
     # here and does not silently change when the default flips.
     storage:
