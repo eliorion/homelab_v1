@@ -15,3 +15,9 @@ data:
           host: mlops-pipelines.mlops.svc.cluster.local
           port: 3030
           location_name: mlops-pipelines
+      # Location mlops-pipelines-dev: the dev lane (extract_query, run_notebook; asp docs/27 P2).
+      # Read-only credentials only, one run at a time (mlops/lane=dev, release-dagster.yaml).
+      - grpc_server:
+          host: mlops-pipelines-dev.mlops.svc.cluster.local
+          port: 3030
+          location_name: mlops-pipelines-dev

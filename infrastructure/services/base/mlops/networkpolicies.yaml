@@ -22,8 +22,10 @@ spec:
               kubernetes.io/metadata.name: homepage
         # The code locations' run pods (asp k8s/charts/mlops-pipelines, this namespace).
         - podSelector:
-            matchLabels:
-              app: mlops-pipelines-run
+            matchExpressions:
+              - key: app
+                operator: In
+                values: [mlops-pipelines-run, mlops-pipelines-dev-run]
       ports:
         - protocol: TCP
           port: 5000
@@ -91,6 +93,9 @@ spec:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: mlops
             app: mlops-pipelines
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: mlops
+            app: mlops-pipelines-dev
       toPorts:
         - ports:
             - port: "3030"
@@ -132,6 +137,9 @@ spec:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: mlops
             app: mlops-pipelines
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: mlops
+            app: mlops-pipelines-dev
       toPorts:
         - ports:
             - port: "3030"
