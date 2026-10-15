@@ -140,3 +140,28 @@ spec:
     !/k8s/charts/agent-platform/
     # The library chart it depends on (file://../common).
     !/k8s/charts/common/
+---
+# Source for the ML platform's code locations chart (k8s/charts/mlops-pipelines in the asp repo,
+# asp docs/27): deployed into mlops by infrastructure/services/base/mlops/release-pipelines.yaml.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: mlops-pipelines
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: ssh://git@github.com/Eliorion/asp
+  ref:
+    branch: main
+  secretRef:
+    name: asp-deploy-key
+  # Scoped to the chart path: reconcileStrategy: Revision re-reconciles on every new revision.
+  ignore: |
+    /*
+    !/k8s/
+    /k8s/*
+    !/k8s/charts/
+    /k8s/charts/*
+    !/k8s/charts/mlops-pipelines/
+    # The library chart it depends on (file://../common).
+    !/k8s/charts/common/

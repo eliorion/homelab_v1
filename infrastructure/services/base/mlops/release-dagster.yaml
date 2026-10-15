@@ -37,9 +37,8 @@ spec:
       postgresqlSecretName: mlops-dagster-db
     postgresql:
       enabled: false
-      # Fully qualified: run pods execute in their code location's namespace (fbref, ...) and write
-      # their events here; the run launcher hands them this instance config as is. Each such
-      # namespace also needs the mlops-dagster-db Secret (reflected, staging/mlops/secrets).
+      # Fully qualified: the run launcher hands this instance config to the run pods as is, and a
+      # run pod writes its events here (today every run executes in mlops, asp docs/27 D2).
       postgresqlHost: mlops-db-rw.mlops.svc.cluster.local
       postgresqlUsername: dagster
       postgresqlDatabase: dagster
@@ -71,7 +70,7 @@ spec:
       # The pods read dagster-workspace at start only: change this with its code locations, so the
       # edit rolls them (here and on the daemon).
       annotations: &workspaceAnnotation
-        mlops.eliorion.fr/workspace: fbref-pipelines
+        mlops.eliorion.fr/workspace: mlops-pipelines
       logFormat: json
       # Read-only root: Dagster writes only DAGSTER_HOME and /tmp (the two emptyDirs).
       podSecurityContext: &podSecurityContext

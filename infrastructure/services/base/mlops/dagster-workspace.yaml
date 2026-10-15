@@ -1,5 +1,6 @@
 # Mounted by the dagster release (dagsterWebserver.workspace.externalConfigmap). One grpc_server
-# entry per code location, each deployed by its own stack's chart in its own namespace.
+# entry per code location, all in this namespace (asp docs/27 D2), deployed by release-pipelines.yaml.
+# Edit together with the workspace annotation in release-dagster.yaml (the pods read this at start).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,9 +9,9 @@ metadata:
 data:
   workspace.yaml: |
     load_from:
-      # asp fbref chart templates/pipelines.yaml: the fbref ML pipelines (asp docs/25). Its runs
-      # execute in the fbref namespace, with fbref's credentials.
+      # asp k8s/charts/mlops-pipelines, location mlops-pipelines: the production location (the fbref
+      # lake extract, the step-up model and its publication, asp docs/25 and docs/27).
       - grpc_server:
-          host: fbref-pipelines.fbref.svc.cluster.local
+          host: mlops-pipelines.mlops.svc.cluster.local
           port: 3030
-          location_name: fbref-pipelines
+          location_name: mlops-pipelines
