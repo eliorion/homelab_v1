@@ -14,8 +14,7 @@ and the rules that alert on the results.
 
 | Probe | Job | Module | Targets | Exposure |
 |---|---|---|---|---|
-| `public-endpoints` | `blackbox-public` | `http_2xx` | Keycloak realm `mcp` OIDC discovery, `nao.eliorion.fr`, `mve-azuracast.eliorion.fr` | internet via Cloudflare tunnel |
-| `public-endpoints-authenticated` | `blackbox-public` | `http_401` | `fbref-mcp.eliorion.fr/mcp` | internet via Cloudflare tunnel |
+| `public-endpoints` | `blackbox-public` | `http_2xx` | Keycloak realm `mcp` OIDC discovery, `mve-azuracast.eliorion.fr` | internet via Cloudflare tunnel |
 | `internal-endpoints` | `blackbox-internal` | `http_401` | `registry.eliorion.fr/v2/` (Harbor) | cluster only |
 
 | Alert | Expression | `for` | Severity |
@@ -26,7 +25,7 @@ and the rules that alert on the results.
 
 Measured when this was written (2026-09-15), from outside the cluster with exporter
 v0.28.0: every public target `probe_success 1` — Keycloak 200, nao 200 (the app, behind
-Cloudflare Access at the edge), azuracast 302 → `/login` 200, fbref-mcp `/mcp` 401. A
+Cloudflare Access at the edge; since switched off), azuracast 302 → `/login` 200, fbref-mcp `/mcp` 401. A
 negative control (`http_401` against a 200 site) returned 0.
 
 ## Why it is like this
@@ -70,3 +69,7 @@ probe_http_status_code{job=~"blackbox-.+"}
 (probe_ssl_earliest_cert_expiry{job=~"blackbox-.+"} - time()) / 86400
 probe_duration_seconds{job=~"blackbox-.+"}
 ```
+
+Switched off on staging (memory on staging-controlplane-1): `nao` and `fbref-mcp` are no longer
+probed. The `public-endpoints-authenticated` probe (`http_401`, `fbref-mcp.eliorion.fr/mcp`) was
+removed with it; restore both targets when those apps are woken.

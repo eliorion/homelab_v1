@@ -57,6 +57,13 @@ spec:
       enabled: true
       proxyEgressPorts: [8888] # let FlareSolverr reach the Tailscale egress proxy
     engine:
+      # Trimmed 750m -> 500m: measured p95 use is 0.03-0.28 core per worker over 7 days, so the
+      # scheduler was reserving 0.47-0.72 core per pod it never used (7 pods). Requests only;
+      # the limit is untouched, and CPU is compressible.
+      resources:
+        scraper:
+          requests:
+            cpu: "500m"
       # Request-driven warm pools (ROLE=server), one per egress IP, KEDA-scaled
       # 0<->1 and capped at one pod: one pool = one proxy = one IP = one
       # fingerprint. Scale throughput by adding POOLS, never replicas.

@@ -19,29 +19,7 @@ spec:
         exposure: public
       static:
         - https://staging-keycloak.eliorion.fr/realms/mcp/.well-known/openid-configuration
-        - https://nao.eliorion.fr/
         - https://mve-azuracast.eliorion.fr/
----
-apiVersion: monitoring.coreos.com/v1
-kind: Probe
-metadata:
-  name: public-endpoints-authenticated
-  namespace: monitoring
-  labels:
-    # Matches Prometheus probeSelector.
-    release: kube-prometheus-stack
-spec:
-  jobName: blackbox-public
-  interval: 60s
-  module: http_401
-  prober:
-    url: prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
-  targets:
-    staticConfig:
-      labels:
-        exposure: public
-      static:
-        - https://fbref-mcp.eliorion.fr/mcp
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: Probe

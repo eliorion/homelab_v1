@@ -100,6 +100,8 @@ spec:
     - name: infra-arc-controller
     - name: infra-keycloak-operator
     - name: infra-external-secrets
+    # Goldilocks creates VerticalPodAutoscaler objects; the CRD ships with the vpa chart.
+    - name: infra-vpa
   retryInterval: 1m
   timeout: 5m
   sourceRef:
@@ -249,6 +251,27 @@ spec:
   path: ./infrastructure/controllers/base/descheduler
   prune: true
   wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-vpa
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./infrastructure/controllers/base/vpa
+  prune: true
+  wait: true
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: vpa
+      namespace: flux-system
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
