@@ -1,0 +1,17 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. S3 credential for bucket scraper-results (the scraper platform's
+# result store: every finished fetch lands here, a client pulls and acks it through the scraper API).
+# Steps: ../README.md.
+#   cp scraper-results.enc.yaml.exemple scraper-results.enc.yaml
+#   # SCRAPER_RESULTS_S3_ACCESS_KEY: openssl rand -hex 12
+#   # SCRAPER_RESULTS_S3_SECRET_KEY: openssl rand -hex 32
+#   sops -e -i scraper-results.enc.yaml      (.sops.yaml encrypts it with mac_only_encrypted)
+# The namespaces that receive it are NOT here: scraper-results.reflection.yaml.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-scraper-results
+  namespace: flux-system
+type: Opaque
+stringData:
+  SCRAPER_RESULTS_S3_ACCESS_KEY: "<openssl rand -hex 12>"
+  SCRAPER_RESULTS_S3_SECRET_KEY: "<openssl rand -hex 32>"

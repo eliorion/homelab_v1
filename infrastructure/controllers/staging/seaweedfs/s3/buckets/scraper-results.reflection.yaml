@@ -1,0 +1,13 @@
+# Which namespaces receive the scraper-results key (Secret s3-scraper-results, scraper-results.enc.yaml):
+# a plain patch, like ml-lake.reflection.yaml. Only the scraper holds the key; asp and fbref reach
+# the bucket through the scraper API. Every namespace listed gets READ AND WRITE on the bucket.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-scraper-results
+  namespace: flux-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: scraper
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: scraper
