@@ -56,6 +56,14 @@ spec:
         login: true
         passwordSecret:
           name: advisor-publish-login # pragma: allowlist secret
+      # The ML platform's reader (asp repo advisor V36, docs/27 D7): SELECT on every table, corpus
+      # included, nothing else. The mlops-pipelines run pods read the REPLICA with it (extract_advisor).
+      - name: advisor_ml
+        ensure: present
+        login: true
+        connectionLimit: 5
+        passwordSecret:
+          name: advisor-ml-login # pragma: allowlist secret
 
   storage:
     size: 20Gi

@@ -1,0 +1,27 @@
+# S3 credential for bucket ml-lake-advisor (asp docs/27 D7: the advisor's ML lake, corpus included).
+# Template: ml-lake-advisor.enc.yaml.exemple. Reflection: ml-lake-advisor.reflection.yaml (plain).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-ml-lake-advisor
+    namespace: flux-system
+type: Opaque
+stringData:
+    ML_LAKE_ADVISOR_S3_ACCESS_KEY: ENC[AES256_GCM,data:TOW5/jp18YoM/nreeghYQqxlqvesdqxu,iv:LNGRGDKO1zmcZFVIF4251O2eOM95Zi2Uqi8BECGE5Xg=,tag:E3hOHe+nuMmIc6lfr8kDvA==,type:str]
+    ML_LAKE_ADVISOR_S3_SECRET_KEY: ENC[AES256_GCM,data:NI78B/Joaj4deaoLsuCQrESa7CJ68VmBfk9bz63HZ4zqL0odHIazLE64dsHHZBqZdp4sHY5rfeFREPPFElwKCQ==,iv:pDuLYYUt8i+zZkX7zRJE2EvmxsTNXtP4WnpjMGra+y0=,tag:P9GYnk3jq0xJuQ9s0rdQ3Q==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBLZU1kTThCV1p1K0I2WTRX
+            d1ZzVW5BN2d2Q25ZbEo1cThmUUtXMERRR3pZCk1FTEJaYXJPUzZYQkovcFdvRTdY
+            eVVDUXZoajl0RE1iSTdHWnN4dXV5SmcKLS0tIHAxSXJhVGNxWWNzd3d3ZWI4VGpm
+            SzBaZTA5cVltRlJ1aTlKU2thNVpjN2cKWa9q2kbL2/I9XTbrEnNq6GKV/TUUdu87
+            8542FZrXPykig822JX/Ggc4c2FU4/qWR28MSiclZkz4ZoT5XrDUoMw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-16T14:29:28Z"
+    mac: ENC[AES256_GCM,data:e7XbI8IDWW0iUGnWeVAvu65c40cZcZm8jGC1NozW42UEE4y/iv2Jicsl263c11jZKwJV58+Z6dllGEv61eUmV2WbebuEGDXhkoMEDHf82rncwO6rSH8Z/j4wPKXEWy7fbcU8qZToygdXTlatnJhmSgGcOQ1GCdKxYTrEZjDUCoM=,iv:HvmHKdIIYLJwr64n/VnRyH+Mxtjb5Jv/CAj9PmVc5h4=,tag:a+U8KkULFF6BWto1ETirlw==,type:str]
+    mac_only_encrypted: true
+    version: 3.13.3

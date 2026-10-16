@@ -19,6 +19,9 @@ resources:
   # asp's ML lake (asp docs/27 D6, P8): parquet snapshots of the WHOLE asp database, ad text and seller
   # fields included, for the mlops-pipelines run pods. Its own identity: a domain never shares a bucket.
   - ml-lake-asp.enc.yaml
+  # The advisor's ML lake (asp docs/27 D7, P9): parquet snapshots of the WHOLE advisor database, corpus
+  # included, for the mlops-pipelines run pods. Its own identity, like every domain's lake.
+  - ml-lake-advisor.enc.yaml
   - nextcloud.enc.yaml
   # The scraper's own identity for streaming advisor files into advisor-corpus (asp scraper
   # chart engine.fileSinks), separate so the scraper never holds the advisor engine's key.
@@ -28,3 +31,4 @@ patches:
   # ml-lake's consumer namespaces (reflector), kept out of the encrypted file: ml-lake.reflection.yaml.
   - path: ml-lake.reflection.yaml
   - path: ml-lake-asp.reflection.yaml
+  - path: ml-lake-advisor.reflection.yaml

@@ -16,4 +16,5 @@ s3.bucket.create -name fbref-vision-tmp
 s3.bucket.create -name mlflow-artifacts
 s3.bucket.create -name ml-lake
 s3.bucket.create -name ml-lake-asp
+s3.bucket.create -name ml-lake-advisor
 SHELL

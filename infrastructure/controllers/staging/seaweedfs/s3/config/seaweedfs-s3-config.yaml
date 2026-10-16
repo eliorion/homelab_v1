@@ -143,6 +143,20 @@ stringData:
             "Write:ml-lake-asp",
             "List:ml-lake-asp"
           ]
+        },
+        {
+          "name": "ml-lake-advisor",
+          "credentials": [
+            {
+              "accessKey": "${ML_LAKE_ADVISOR_S3_ACCESS_KEY}",
+              "secretKey": "${ML_LAKE_ADVISOR_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:ml-lake-advisor",
+            "Write:ml-lake-advisor",
+            "List:ml-lake-advisor"
+          ]
         }
       ]
     }

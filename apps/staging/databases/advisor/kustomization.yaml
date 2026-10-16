@@ -3,6 +3,10 @@ kind: Kustomization
 
 namespace: advisor
 
+# OpenBao SecretStore + its ServiceAccount: this namespace reads kv/advisor/* (eso-namespaces.txt).
+components:
+  - ../../../../infrastructure/services/base/openbao/consumer
+
 resources:
   - ../../../base/databases/advisor
   # Password for the advisor_pub CNPG managed role (unblocks advisor-api's dbRole login).
@@ -16,6 +20,9 @@ resources:
   - advisor-seed-login.enc.yaml
   - advisor-ingest-login.enc.yaml
   - advisor-publish-login.enc.yaml
+  # Password for the advisor_ml managed role (asp docs/27 D7), from OpenBao kv/advisor/ml-login;
+  # reflected into mlops, where extract_advisor reads the replica.
+  - externalsecrets.yaml
   # The Garage backup wiring is NOT here yet — see README.md (it needs a Garage bucket).
 
 patches:

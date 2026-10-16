@@ -28,3 +28,14 @@ that file; only the credential itself lives in the sibling `.enc.yaml`).
 
 Neither remaining item blocks this PR: the chart is inert until `advisor-db-migrations`' first
 release writes a real image tag (see `apps/staging/advisor/README.md`).
+
+## ML lake (asp docs/27 D7, P9)
+
+`advisor_ml` (advisor migration V36: SELECT on every table, corpus included, nothing else) logs in with
+the password in OpenBao `kv/advisor/ml-login`, synced by `externalsecrets.yaml` and reflected into
+`mlops`, where `extract_advisor` reads `advisor-db-ro` into the bucket `ml-lake-advisor`. Seed it once,
+before the first reconcile:
+
+```
+mise bao kv put kv/advisor/ml-login password="$(openssl rand -hex 24)"
+```
