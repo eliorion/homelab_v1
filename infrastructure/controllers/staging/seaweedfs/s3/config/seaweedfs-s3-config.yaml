@@ -129,6 +129,20 @@ stringData:
             "Write:ml-lake",
             "List:ml-lake"
           ]
+        },
+        {
+          "name": "scraper-results",
+          "credentials": [
+            {
+              "accessKey": "${SCRAPER_RESULTS_S3_ACCESS_KEY}",
+              "secretKey": "${SCRAPER_RESULTS_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:scraper-results",
+            "Write:scraper-results",
+            "List:scraper-results"
+          ]
         }
       ]
     }

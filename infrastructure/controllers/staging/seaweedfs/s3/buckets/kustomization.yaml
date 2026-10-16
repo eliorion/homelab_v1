@@ -16,6 +16,9 @@ resources:
   # The ML data lake (asp docs/25): parquet snapshots of fbref for the mlops-pipelines run pods.
   # Holds special-category data (GDPR Art. 9), so its identity reaches this bucket and nothing else.
   - ml-lake.enc.yaml
+  # The scraper platform's result store: finished fetches wait here until the client acks them, so a
+  # client outage never stops the lanes. Only the scraper holds this key (reflection patch below).
+  - scraper-results.enc.yaml
   - nextcloud.enc.yaml
   # The scraper's own identity for streaming advisor files into advisor-corpus (asp scraper
   # chart engine.fileSinks), separate so the scraper never holds the advisor engine's key.
@@ -24,3 +27,4 @@ resources:
 patches:
   # ml-lake's consumer namespaces (reflector), kept out of the encrypted file: ml-lake.reflection.yaml.
   - path: ml-lake.reflection.yaml
+  - path: scraper-results.reflection.yaml

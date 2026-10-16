@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-scraper-results
+    namespace: flux-system
+type: Opaque
+stringData:
+    SCRAPER_RESULTS_S3_ACCESS_KEY: ENC[AES256_GCM,data:yXz/UH2rDDHZS2MObF7xRAI7ZTfCykAr,iv:MBrwvmExpZmj11xQkOOuAw1fJm0fhDcIk1icPm5rfHM=,tag:9/fqvVd5qWqU2VJ7SxfG0g==,type:str]
+    SCRAPER_RESULTS_S3_SECRET_KEY: ENC[AES256_GCM,data:fl+OWZ0AAfmmARZ7U1Sxf7tkm2ROg+jQrLE6HAHpFnsu5791b/G1fW0vPHnLI2EuXjtd56EZwPQnSoOiovBIzA==,iv:RfWajm1hQkI9KuvEiFc2TxH61yhIDpy69AFI5YAVA0E=,tag:uiPgYqHB2e/SwXK7IcdEwA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAvWkZQaDNkUUFCOVZlaktW
+            ODJXcmp6K2FoU3Rhd0psYUEwNkZFWG1lLzFVCnF0TUtreHpNak9UVjlOV2FVQlFL
+            cmtsdmhGL0EyOTk2ZmdnQys3TmFTaGcKLS0tIDdwbElnYzh0U2JOenZqWkRjeGlI
+            b2pvVXk1R1JkS3NramZIcnFWcWVsYVEK3/RBL5CmLesfRLVlZprcu416ZkDQw7GO
+            cKqR17rb5pVzbZ6WseduB6qv4K1koVDYL9ON5XDoyZmLmM6i86zd6g==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-16T23:17:17Z"
+    mac: ENC[AES256_GCM,data:q44ZfnvCu1zUzMrSAWcCAEJqQD0RSSBuCv1hYuyGyWG7OsNY603geN4RFKZ1I2tSv26RIpofxa1bdhUdrT+mcquLmRd3/azOrwOZnDxz7r74ScblF+sDy9qSfbd+3T4J2mCOXNdnWcF9M0k/eOZLkMrRKsN0LjQhzA7xmlcYrn0=,iv:ledlnj3lOpThA5FdI4oJYQYikbaTADa/zIJgUb/Svoc=,tag:tPMVIAviDdFXQchknkg+cg==,type:str]
+    mac_only_encrypted: true
+    version: 3.13.3
