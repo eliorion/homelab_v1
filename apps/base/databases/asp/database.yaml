@@ -66,6 +66,15 @@ spec:
         login: true
         passwordSecret:
           name: asp-advisor-ro
+      # The ML data lake's reader (asp V12, asp docs/27 D6): SELECT on every table, ad text and
+      # seller fields included, nothing else. The mlops-pipelines run pods (namespace mlops) read
+      # the REPLICA with it in extract_asp. A cap so a large extract never takes the app's slots.
+      - name: ml_ro
+        ensure: present
+        login: true
+        connectionLimit: 5
+        passwordSecret:
+          name: asp-ml-ro
 
   storage:
     size: 20Gi

@@ -129,6 +129,20 @@ stringData:
             "Write:ml-lake",
             "List:ml-lake"
           ]
+        },
+        {
+          "name": "ml-lake-asp",
+          "credentials": [
+            {
+              "accessKey": "${ML_LAKE_ASP_S3_ACCESS_KEY}",
+              "secretKey": "${ML_LAKE_ASP_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:ml-lake-asp",
+            "Write:ml-lake-asp",
+            "List:ml-lake-asp"
+          ]
         }
       ]
     }

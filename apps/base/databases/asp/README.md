@@ -235,3 +235,15 @@ plus the storage-class and reflector patches listed above.
 A production overlay (bucket `s3://asp-cnpg-production` plus a temporary
 seed-from-staging recovery patch) was never reconciled and was deleted with the
 rest of the production tree on 2026-09-15.
+
+## ML lake (asp docs/27 D6, P8)
+
+`ml_ro` (asp migration V12: SELECT on every table, nothing else) logs in with the password in
+OpenBao `kv/asp/ml-ro`, synced by `apps/staging/databases/asp/externalsecrets.yaml` and
+reflected into `mlops`, where `extract_asp` reads `asp-db-ro` into the bucket `ml-lake-asp`.
+Seed it once, before the first reconcile:
+
+```
+mise bao kv put kv/asp/ml-ro password="$(openssl rand -hex 24)"
+```
+

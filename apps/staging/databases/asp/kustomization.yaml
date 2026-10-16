@@ -3,6 +3,10 @@ kind: Kustomization
 
 namespace: asp
 
+# OpenBao SecretStore + its ServiceAccount: this namespace reads kv/asp/* (eso-namespaces.txt).
+components:
+  - ../../../../infrastructure/services/base/openbao/consumer
+
 resources:
   - ../../../base/databases/asp
   - r2-backup-credentials.enc.yaml
@@ -10,6 +14,8 @@ resources:
   - asp-webapp-ro.enc.yaml
   # Password for the advisor_ro managed role above — the advisor's price feed; reflected into `advisor`.
   - asp-advisor-ro.enc.yaml
+  # Password for the ml_ro managed role (asp docs/27 D6), from OpenBao kv/asp/ml-ro; reflected into mlops.
+  - externalsecrets.yaml
   - objectstore.yaml
   - scheduledbackup.yaml
   - ingestion-metrics-configmap.yaml

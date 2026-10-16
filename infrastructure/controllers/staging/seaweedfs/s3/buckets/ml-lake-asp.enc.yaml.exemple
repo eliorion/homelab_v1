@@ -1,0 +1,16 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. S3 credential for bucket ml-lake-asp (asp repo docs/27 D6: asp's ML
+# lake, parquet snapshots of the whole asp database, for the mlops-pipelines run pods). Steps: ../README.md.
+#   cp ml-lake-asp.enc.yaml.exemple ml-lake-asp.enc.yaml
+#   # ML_LAKE_ASP_S3_ACCESS_KEY: openssl rand -hex 12
+#   # ML_LAKE_ASP_S3_SECRET_KEY: openssl rand -hex 32
+#   sops -e -i ml-lake-asp.enc.yaml      (.sops.yaml encrypts it with mac_only_encrypted)
+# The namespaces that receive it are NOT here: ml-lake-asp.reflection.yaml.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-ml-lake-asp
+  namespace: flux-system
+type: Opaque
+stringData:
+  ML_LAKE_ASP_S3_ACCESS_KEY: "<openssl rand -hex 12>"
+  ML_LAKE_ASP_S3_SECRET_KEY: "<openssl rand -hex 32>"

@@ -1,0 +1,27 @@
+# S3 credential for bucket ml-lake-asp (asp docs/27 D6: asp's ML lake, the whole asp database incl. ad text
+# and sellers). Template: ml-lake-asp.enc.yaml.exemple. Reflection: ml-lake-asp.reflection.yaml (plain).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-ml-lake-asp
+    namespace: flux-system
+type: Opaque
+stringData:
+    ML_LAKE_ASP_S3_ACCESS_KEY: ENC[AES256_GCM,data:PXLbCKXkCvJE6e3k9hLHec/+GE5GlwEF,iv:5z1pPgbMbDVIGWo2oqGUbg3quFcoU8oOnJbN6/lJ6RU=,tag:GghzlC/hzxH9ZT4z+zCumw==,type:str]
+    ML_LAKE_ASP_S3_SECRET_KEY: ENC[AES256_GCM,data:NRsvtECM6QMqXfG3wQC0ky7I3YtO5L54Imm9JVi+JL3iRhazQSS1RDX7DQOzMScMyu69JhTm7Bo6Wat9ETqbjA==,iv:ErXFrGN1blX+OoHFHM0Z9kzSNbXeniT/veZo8gKeSkE=,tag:dGdVel8UOhlJj2kKmAU4iA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA0L0l2ZFZjaW93dkZSa3Nv
+            YjBrZFpKVGZhLzk4NGpqa09hNWNaVGszNnhBCkI5Y0RRZU1SRmZBT2NtQjBmd2M2
+            U0xVWW1jQkd5U003cVAxUmpSVXMvWE0KLS0tIC9zeUtzaU5WR051Wi9JK0lra081
+            SWttaDFsT1hyVWEwY2c3bmNFd0U0ckUKxepM4urnQ/v0Q+nSK2flIQwXR3a73BRM
+            dS6asO4gdvvTVXlldTR04bmCtvbLHwktl3TymFxbtmdcUS8O23yCBg==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-16T14:10:08Z"
+    mac: ENC[AES256_GCM,data:vt58CDytg+FVqsf2ZgD7Td0w68ag+53Eh5vx98CjhYeudeqbgHOQ1/mWB4tGJwdnZOX3hnNa4MfVlQhRFDjXsTYawyeXRyrdEZMHovFnvt56yBOjEhYdNS0euQiaz4GvBzbDG5gejdncV5ZLYaUxmkUUtnFNXfxDkuH3pcAL5UM=,iv:wrTCKuMpRZLWXaTm0w+0fTjR8yspyvmvsEL813WTWcc=,tag:mrX4UT51N450BURpXpDLvg==,type:str]
+    mac_only_encrypted: true
+    version: 3.13.3
