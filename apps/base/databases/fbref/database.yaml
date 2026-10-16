@@ -24,6 +24,10 @@ spec:
       # `fbref-db-ro` then get "canceling statement due to conflict with
       # recovery". hot_standby_feedback=on is not the alternative — see README.
       max_standby_streaming_delay: "300s"
+      # Checkpoint and compression settings are a pair: see README "WAL volume".
+      wal_compression: "lz4"
+      max_wal_size: "16GB"
+      checkpoint_timeout: "15min"
 
   bootstrap:
     initdb:

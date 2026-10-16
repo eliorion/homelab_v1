@@ -277,6 +277,7 @@ watched the archive, and nothing watched the disk.
 |---|---|---|---|
 | `CNPGWALArchivingFailing` | `increase(cnpg_pg_stat_archiver_failed_count[15m]) > 0` | 15m | critical |
 | `CNPGWALArchiveBacklog` | `cnpg_collector_pg_wal_archive_status{value="ready"} > 0` | 15m | critical |
+| `CNPGWALGenerationHigh` | `increase(cnpg_collector_wal_bytes[1h]) > 3GiB` | 1h | warning |
 | `CNPGReplicaNotStreaming` | a primary's `cnpg_pg_replication_streaming_replicas` below the cluster's instance pods minus one | 30m | warning |
 | `CNPGVolumeFillingUp` | `kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".+-db-[0-9]+"} / kubelet_volume_stats_capacity_bytes > 0.80` | 30m | warning |
 | `CNPGVolumeAlmostFull` | same ratio `> 0.90` | 10m | critical |
@@ -294,6 +295,15 @@ flag would not have been enough: the PodMonitor the CNPG operator generates
 carries no `release: kube-prometheus-stack` label and the CRD exposes no field
 to add one, so `podMonitorSelector` would drop it anyway. A single PodMonitor
 with `namespaceSelector.any: true` is both correct and less wiring.
+
+**`CNPGWALGenerationHigh` watches the cause, not the symptom.** The archiving and
+volume alerts only fire once WAL is already stuck or the disk is already filling.
+`fbref-db` wrote 4-40GiB of WAL an hour (almost all full-page images, see
+[`../../apps/base/databases/fbref/README.md`](../../apps/base/databases/fbref/README.md),
+"WAL volume"), so a Garage stall filled 400Gi in under a day. `cnpg_collector_wal_bytes`
+is a counter on the primary's `pg_stat_wal`, so `increase()` survives restarts. 3GiB/h
+is a first guess sized against fbref's measured rate; tune it from the post-fix
+baseline rather than silencing it, and expect it to stay quiet on the small clusters.
 
 **No role filter on the archiver rules.** `cnpg_pg_stat_archiver_*` is exported
 by primaries only — the collector's queries are primary-scoped — so a replica

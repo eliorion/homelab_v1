@@ -30,6 +30,15 @@ spec:
           annotations:
             summary: "{{ $value }} WAL segments waiting to be archived on {{ $labels.namespace }}/{{ $labels.pod }}"
             description: "Segments are finished but not shipped, so Postgres cannot recycle them and pg_wal only grows -- this ends with CNPG shutting the instance down on low disk and every client losing the -rw Service. Check the ObjectStore (region, endpoint, credentials) and the plugin-barman-cloud sidecar logs. See documentations/12-garage-object-storage.md."
+        - alert: CNPGWALGenerationHigh
+          expr: |
+            increase(cnpg_collector_wal_bytes[1h]) > 3 * 1024 * 1024 * 1024
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} wrote {{ $value | humanize1024 }}B of WAL in the last hour"
+            description: "Sustained WAL above 3GiB/h fills the volume within days if archiving stalls (fbref-db did on 2026-10-15). Check the full-page-image share (pg_stat_wal.wal_fpi), checkpoint frequency (pg_stat_checkpointer.num_requested) and no-op upserts. See apps/base/databases/fbref/README.md, WAL volume."
     - name: cnpg-replication.rules
       rules:
         # Streaming replicas seen by each primary vs. instance pods minus one; the

@@ -95,6 +95,21 @@ replica cost nothing; unbounded bloat on that primary costs the cluster. The
 price is replica lag, bounded by this value and paid only during a conflict;
 the longest observed sync query was 21.4s.
 
+**WAL volume: `wal_compression: lz4`, `max_wal_size: 16GB`, `checkpoint_timeout: 15min`**
+(2026-10-16). Measured on the primary after the 2026-10-15 outage: 731MB of WAL per
+minute while the ingest changed about 12k rows, and 93,696 of the 197,063 records in
+that minute were full-page images — essentially the whole volume. Three causes stacked:
+the default `max_wal_size` of 1GB was hit every ~1.4 minutes (33 requested checkpoints
+against 40 timed in 4.5h), every checkpoint makes the next touch of each page log a
+whole 8KB copy, and the ingest upserts at random keys into a 28GB unique index and a
+30GB heap, so each row touches ~8 distinct pages. Compression shrinks each image; the
+larger window means a page is imaged once per 15 minutes instead of once per checkpoint
+that was forced by the images themselves. All three settings reload without a restart.
+`lz4` over `zstd`: both are built into the CNPG image, lz4 costs less CPU on a
+homelab node. `16GB` is a soft limit — an unarchived backlog still grows `pg_wal` past
+it, which is why `CNPGWALArchiveBacklog` and `CNPGWALGenerationHigh` exist. Crash
+recovery now replays up to 16GB of WAL instead of 1GB.
+
 **No `postInit` bootstrap.** The schema is owned by Flyway (the
 `fbref-db-migrations` Job, gated ahead of the apps tier), mirroring asp. A fresh
 cluster comes up empty and the Job applies V1 onward; the pre-existing cluster
