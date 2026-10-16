@@ -22,6 +22,10 @@ resources:
   # The advisor's ML lake (asp docs/27 D7, P9): parquet snapshots of the WHOLE advisor database, corpus
   # included, for the mlops-pipelines run pods. Its own identity, like every domain's lake.
   - ml-lake-advisor.enc.yaml
+  # The vision lake (asp docs/27 D8-D9, P10): player photos fbref-vision archives before deleting them
+  # from fbref-vision-tmp (no expiry, owner's choice) and the vision.* labels extract_vision snapshots.
+  # GDPR Art. 9 material: its own identity, reflected into fbref (the archiver) and mlops (the lake).
+  - ml-lake-vision.enc.yaml
   - nextcloud.enc.yaml
   # The scraper's own identity for streaming advisor files into advisor-corpus (asp scraper
   # chart engine.fileSinks), separate so the scraper never holds the advisor engine's key.
@@ -32,3 +36,4 @@ patches:
   - path: ml-lake.reflection.yaml
   - path: ml-lake-asp.reflection.yaml
   - path: ml-lake-advisor.reflection.yaml
+  - path: ml-lake-vision.reflection.yaml

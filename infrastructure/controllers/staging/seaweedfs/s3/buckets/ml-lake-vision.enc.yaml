@@ -1,0 +1,27 @@
+# S3 credential for bucket ml-lake-vision (asp docs/27 D8-D9: player photos and their labels, GDPR Art. 9).
+# Template: ml-lake-vision.enc.yaml.exemple. Reflection: ml-lake-vision.reflection.yaml (plain).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-ml-lake-vision
+    namespace: flux-system
+type: Opaque
+stringData:
+    ML_LAKE_VISION_S3_ACCESS_KEY: ENC[AES256_GCM,data:EmD22RDCZwdVNh80RnvMyjDxywh+t+Tt,iv:gYVD05/60Vvq5pp0SFM0SflDy1N3JX+njrIpzXm7zBg=,tag:fjawER0l0ybF9k3bddVTbA==,type:str]
+    ML_LAKE_VISION_S3_SECRET_KEY: ENC[AES256_GCM,data:VTP+gfG4J7RGQ6lqfyymkOfGASt3QyLCLg3Ij4scCMVrbZGfwOTuXvyJbQnTMHNUzFrFfPkhp+2zUZ4UIImTuA==,iv:2K7q/wGpMJwj2hgyjscYrMQYUZs0tObtXg0zOARmwc0=,tag:2qFmO3FYdk0j0zyMOyjWLA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBFbjA0RXBtZldubUNJckhk
+            U2QyVjFvdVpiSGNGeXp3bWxUMDhBV1VHcGlvClAyci8zRWhKVWV1SWcyaisyeDN0
+            d25QT285c1Q5WW5ISUpQUFpZMTJZWkEKLS0tIHpQRW1yWE02Y3FOZUhudXhLemoy
+            YXY5eVp5QURqOU1QMWpxWEtHdjI0R1EKpT+k0GA03IPhsi+UZItYgu0q5p5s/cbp
+            Jtn3vbvJLGsvBaV2jpCGPswT1m6RynQxFJVFhGUZ7ILZdTCnSvFRtA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-16T14:35:33Z"
+    mac: ENC[AES256_GCM,data:o2wlKuZ7Y2e0Gvx+UqZHp9ENGuSLwE1fle7eSTZwi9BATjAOqz9xwWkUsk4WmwCF5lNON1zuUZR2e9dBIX+AA0hylSlgGdAh5tATXCSZYry1Zj1SLxl8sulT3OiwCRbrmK7+YpANiXSfZ0o1uWAmgHiQV3lHiwmSwDnJCZT8ywk=,iv:Gb37idH3vdCtiGob6y+NBfwCA3jmYLzGXnmjn+p599k=,tag:CJknygvGXY99rAf9V8AkFg==,type:str]
+    mac_only_encrypted: true
+    version: 3.13.3

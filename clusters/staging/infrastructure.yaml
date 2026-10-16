@@ -532,6 +532,7 @@ spec:
       - {kind: Secret, name: s3-ml-lake}
       - {kind: Secret, name: s3-ml-lake-asp}
       - {kind: Secret, name: s3-ml-lake-advisor}
+      - {kind: Secret, name: s3-ml-lake-vision}
 ---
 # force: true so the Job is deleted and recreated when its script changes.
 apiVersion: kustomize.toolkit.fluxcd.io/v1

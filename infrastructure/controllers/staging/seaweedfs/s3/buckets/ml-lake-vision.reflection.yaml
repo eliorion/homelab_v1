@@ -1,0 +1,14 @@
+# Which namespaces receive the ml-lake-vision bucket key (Secret s3-ml-lake-vision): a plain patch, reviewed
+# like an RBAC grant: every namespace listed gets READ AND WRITE on player photos and their photo-derived
+# labels (GDPR Art. 9, asp docs/27 D8-D9). fbref: fbref-vision archives each scored photo; mlops: the lake.
+# Keep the two lists identical.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-ml-lake-vision
+  namespace: flux-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: fbref,mlops
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: fbref,mlops
