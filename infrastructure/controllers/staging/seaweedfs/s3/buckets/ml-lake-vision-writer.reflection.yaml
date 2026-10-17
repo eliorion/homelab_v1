@@ -1,0 +1,14 @@
+# Which namespaces receive fbref-vision's write-only key on ml-lake (Secret s3-ml-lake-vision): fbref
+# only, where fbref-vision archives each scored photo under vision/photos (asp docs/27 D8-D10). It can
+# write the bucket and read nothing; the lake's read key (s3-ml-lake) stays in mlops. Keep the two lists
+# identical.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-ml-lake-vision
+  namespace: flux-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: fbref
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: fbref

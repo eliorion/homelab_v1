@@ -1,0 +1,16 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. fbref-vision's WRITE-ONLY key on bucket ml-lake (asp repo docs/27
+# D8-D10: player photos archived under vision/photos, GDPR Art. 9). Steps: ../README.md.
+#   cp ml-lake-vision-writer.enc.yaml.exemple ml-lake-vision-writer.enc.yaml
+#   # ML_LAKE_VISION_S3_ACCESS_KEY: openssl rand -hex 12
+#   # ML_LAKE_VISION_S3_SECRET_KEY: openssl rand -hex 32
+#   sops -e -i ml-lake-vision-writer.enc.yaml      (.sops.yaml encrypts it with mac_only_encrypted)
+# The namespaces that receive it are NOT here: ml-lake-vision-writer.reflection.yaml.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-ml-lake-vision
+  namespace: flux-system
+type: Opaque
+stringData:
+  ML_LAKE_VISION_S3_ACCESS_KEY: "<openssl rand -hex 12>"
+  ML_LAKE_VISION_S3_SECRET_KEY: "<openssl rand -hex 32>"

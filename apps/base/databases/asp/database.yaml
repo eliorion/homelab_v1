@@ -66,6 +66,16 @@ spec:
         login: true
         passwordSecret:
           name: asp-advisor-ro
+      # The ML platform's reader (asp docs/27 D6-D7, D10): SELECT on everything, nothing else (asp V12).
+      # The SAME role and password as on every domain database: Secret ml-ro, born in mlops (OpenBao
+      # kv/mlops/ml-ro) and reflected here. Capped like fbref's, so an extract never takes the
+      # replica's connection slots from the apps.
+      - name: ml_ro
+        ensure: present
+        login: true
+        connectionLimit: 10
+        passwordSecret:
+          name: ml-ro
 
   storage:
     size: 20Gi
