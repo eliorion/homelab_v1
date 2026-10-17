@@ -16,6 +16,9 @@ resources:
   # The ML data lake (asp docs/25): parquet snapshots of fbref for the mlops-pipelines run pods.
   # Holds special-category data (GDPR Art. 9), so its identity reaches this bucket and nothing else.
   - ml-lake.enc.yaml
+  # fbref-vision's WRITE-ONLY key on ml-lake (asp docs/27 D8-D10): it archives player photos under
+  # vision/photos and reads nothing; the lake's read key stays in mlops.
+  - ml-lake-vision-writer.enc.yaml
   # The scraper platform's result store: finished fetches wait here until the client acks them, so a
   # client outage never stops the lanes. Only the scraper holds this key (reflection patch below).
   - scraper-results.enc.yaml
@@ -27,4 +30,5 @@ resources:
 patches:
   # ml-lake's consumer namespaces (reflector), kept out of the encrypted file: ml-lake.reflection.yaml.
   - path: ml-lake.reflection.yaml
+  - path: ml-lake-vision-writer.reflection.yaml
   - path: scraper-results.reflection.yaml

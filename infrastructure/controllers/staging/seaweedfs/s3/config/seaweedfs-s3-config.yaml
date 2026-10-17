@@ -131,6 +131,18 @@ stringData:
           ]
         },
         {
+          "name": "ml-lake-vision-writer",
+          "credentials": [
+            {
+              "accessKey": "${ML_LAKE_VISION_S3_ACCESS_KEY}",
+              "secretKey": "${ML_LAKE_VISION_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Write:ml-lake"
+          ]
+        },
+        {
           "name": "scraper-results",
           "credentials": [
             {

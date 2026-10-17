@@ -209,19 +209,18 @@ provides the database roles and the schema the results land in (`model.*`, asp d
 | Object | Where | What |
 |---|---|---|
 | roles `ml_ro`, `model_rw` (LOGIN) | `../../base/databases/fbref/database.yaml` | asp fbref V60 (reads every schema) and V59 (writes `model.*`); the run pods read the **replica** as `ml_ro` |
-| Secrets `fbref-ml-ro`, `fbref-model-rw`, `fbref-mlflow-pipelines` | `../databases/fbref/externalsecrets.yaml` | OpenBao `kv/fbref/*` (this namespace is onboarded: `eso-namespaces.txt`); CNPG reads the role Secrets here, and reflector copies all three into `mlops` |
+| Secrets `fbref-model-rw`, `fbref-mlflow-pipelines` (the reader `ml_ro`'s Secret `ml-ro` is born in `mlops` and reflected here, asp docs/27 D10) | `../databases/fbref/externalsecrets.yaml` | OpenBao `kv/fbref/*` (this namespace is onboarded: `eso-namespaces.txt`); CNPG reads the role Secrets here, and reflector copies both into `mlops` |
 
 **Seed before the first reconcile** (hex only), then create the MLflow user once MLflow and the entry
 exist:
 
 ```sh
-mise bao kv put kv/fbref/ml-ro password="$(openssl rand -hex 32)"
 mise bao kv put kv/fbref/model-rw password="$(openssl rand -hex 32)"
 mise bao kv put kv/fbref/mlflow-pipelines password="$(openssl rand -hex 32)"
 mise mlflow-user pipelines kv/fbref/mlflow-pipelines
 ```
 
-Without them the three ExternalSecrets stay `SecretSyncedError` and CNPG keeps the two roles NOLOGIN;
+Without them the two ExternalSecrets stay `SecretSyncedError` and CNPG keeps `model_rw` NOLOGIN;
 the code server still runs, only a launched run fails.
 
 Verify:

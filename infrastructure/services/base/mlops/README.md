@@ -44,6 +44,7 @@ asp and fbref read `asp-db-app` / `fbref-db-app`. OpenBao holds only what CNPG c
 |---|---|---|
 | `kv/mlops/mlflow-auth` | `admin-password`, `flask-secret-key` | `mlflow-auth`: the first admin password (`MLFLOW_AUTH_ADMIN_PASSWORD`) and the CSRF key |
 | `kv/mlops/dagster-db` | `password` | `mlops-dagster-db`: username, password (CNPG managed role) and `postgresql-password` (the dagster chart and every run pod, all in this namespace) |
+| `kv/mlops/ml-ro` | `password` | `ml-ro`: the ML platform's ONE database reader `ml_ro` (asp docs/27 D10), the same role and password on fbref-db, asp-db and advisor-db. Reflected to `fbref`, `asp` and `advisor`, where CNPG sets the role's password from it; the run pods read it here (`PGPASSWORD`) |
 | `kv/mlops/mlflow-notebook` | `password` | `mlops-mlflow-notebook`: the MLflow user `notebook`, for the dev location's runs and `mise run notebook` in the asp devcontainer (asp docs/27 P2) |
 
 **Seed them before the first reconcile** (hex only). Login as in `../openbao/README.md`, then:
@@ -51,6 +52,13 @@ asp and fbref read `asp-db-app` / `fbref-db-app`. OpenBao holds only what CNPG c
 ```sh
 bao kv put kv/mlops/mlflow-auth admin-password="$(openssl rand -hex 24)" flask-secret-key="$(openssl rand -hex 32)"
 bao kv put kv/mlops/dagster-db  password="$(openssl rand -hex 32)"
+```
+
+The ML reader (asp docs/27 D10), before the first reconcile of `ml-ro` (until it exists, CNPG keeps
+`ml_ro` without a password on the three databases and every extract fails to log in):
+
+```sh
+mise bao kv put kv/mlops/ml-ro password="$(openssl rand -hex 32)"
 ```
 
 The dev lane's MLflow user (asp docs/27 P2), once MLflow runs:
