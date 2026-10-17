@@ -42,7 +42,7 @@ Staging overlay (`apps/staging/databases/fbref/`):
 - `garage-backup-credentials.enc.yaml` — the Garage S3 key used by the barman
   sidecars. `garage-backup-credentials.enc.yaml.exemple` is the plaintext
   template for recreating it.
-- `objectstore.yaml` — the barman-cloud `ObjectStore` `garage-store`: 7d
+- `objectstore.yaml` — the barman-cloud `ObjectStore` `garage-store`: 3d
   retention, `s3://cnpg-staging-fbref`, endpoint
   `http://garage-s3.garage-gw.svc.cluster.local:3900`, gzip on WAL and data,
   `jobs: 2`, plus the sidecar environment.

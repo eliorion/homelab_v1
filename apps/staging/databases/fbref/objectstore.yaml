@@ -3,7 +3,7 @@ kind: ObjectStore
 metadata:
   name: garage-store
 spec:
-  retentionPolicy: "7d"
+  retentionPolicy: "3d"
   configuration:
     destinationPath: "s3://cnpg-staging-fbref"
     # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes.
