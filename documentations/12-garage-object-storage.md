@@ -100,6 +100,9 @@ One bucket per consumer, one key scoped to that bucket — no shared credentials
 | `homelab-staging-etcd-backup` | Talos etcd snapshots | `etcd-backup-s3.enc.yaml` |
 | `cnpg-staging-fbref` | `fbref-db` CNPG | `garage-backup-credentials` (ns `fbref`) |
 | `cnpg-staging-ai-gateway` | `ai-gateway-db` CNPG | `ai-gateway-garage-backup-credentials` (ns `ai-gateway`) |
+| `cnpg-staging-nextcloud` | `nextcloud-db` CNPG | `garage-backup-credentials` (ns `nextcloud`) |
+| `cnpg-staging-n8n` | `n8n-db` CNPG — **not archiving yet**, backup commented out | `garage-backup-credentials` (ns `n8n`) |
+| `cnpg-staging-asp` | nobody since `asp-db` moved to R2 (`asp-cnpg-staging`) | — |
 
 Barman's layout inside a bucket is `<serverName>/base/` + `<serverName>/wals/`.
 **An empty `wals/` prefix on a live cluster means archiving is broken**, no
@@ -158,6 +161,101 @@ aws --endpoint-url $E s3 ls --recursive s3://cnpg-staging-ai-gateway/ai-gateway-
 Drop `AWS_DEFAULT_REGION` and the `head-bucket` line reproduces the outage
 below exactly. The namespace's PodSecurity `restricted` label only warns, so the
 pod schedules; it is deleted on exit.
+
+## Changing the replication factor (2 → 3)
+
+With `replication_factor = 2` a write needs both copies and a read needs one, so
+one node down leaves Garage **read-only**. With 3, reads and writes each need 2
+of 3, so one node down keeps full service. Garage has no supported in-place
+change: its docs call it "technically possible … a dangerous operation that is
+not officially supported" — stop every node, delete the layout files, change the
+config, restart, build a new layout, let it rebalance.
+
+**What is at stake.** Every bucket is a backup the cluster regenerates
+(`Buckets and keys` above), so the fallback for a rebuild that goes wrong is an
+empty cluster plus fresh backups, not a restore. What a fallback loses is
+history: point-in-time recovery to before the rebuild and older etcd snapshots.
+During the window there is **no off-site backup at all** — keep it short.
+
+### Before the window
+
+```bash
+# on a Garage node
+garage status                       # all three nodes, versions >= 2.0
+garage layout show > layout-before.txt
+garage key import --help            # fallback needs: re-import a key with the same id + secret
+for b in homelab-staging-etcd-backup cnpg-staging-fbref cnpg-staging-ai-gateway \
+         cnpg-staging-nextcloud cnpg-staging-n8n cnpg-staging-asp; do
+  garage bucket info "$b"           # which key, which permissions — keep this output
+done
+```
+
+The key **secrets** are already in git, one sops file per consumer (table above;
+etcd uses `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, the CNPG ones
+`ACCESS_KEY_ID` / `ACCESS_KEY_SECRET`). Read them in the devcontainer only if the
+fallback needs them:
+
+```bash
+sops -d --extract '["stringData"]["ACCESS_KEY_ID"]' apps/staging/databases/fbref/garage-backup-credentials.enc.yaml
+```
+
+### The window
+
+```bash
+# 1. stop the etcd snapshots (Flux does not manage `suspend`, so the patch holds)
+kubectl -n etcd-backup patch cronjob etcd-backup -p '{"spec":{"suspend":true}}'
+```
+
+2. On **every** node: stop Garage, set `replication_factor = 3` in its NixOS
+   config, delete the `cluster_layout` file in the metadata directory, rebuild.
+   Start all three only once all three are changed.
+3. Lay out three zones, one node each, so each zone holds one copy:
+
+```bash
+garage status                                    # node ids
+garage layout assign -z home    -c <capacity> <node-a-id>
+garage layout assign -z site-b  -c <capacity> <node-b-id>
+garage layout assign -z site-c  -c <capacity> <node-c-id>
+garage layout show                               # check the staged layout ONCE
+garage layout apply --version <current + 1>      # once, from one node
+garage worker list                               # resync queue drains to 0
+```
+
+4. Check what survived: `garage bucket list` (all six), `garage key list`, and one
+   `ls` per bucket with the aws-cli pod below.
+   **Fallback, only if 2–4 went wrong** — wipe metadata and data on every node, start a
+   fresh cluster (new node ids: update `bootstrap_peers` or `garage node connect`),
+   lay it out as in 3, then recreate each bucket from the inventory except
+   `cnpg-staging-asp`, `garage key import` the secret from its sops file, and
+   `garage bucket allow --read --write <bucket> --key <name>`.
+
+### After the window
+
+```bash
+# 5. fresh backups now, not at the next schedule
+kubectl -n etcd-backup patch cronjob etcd-backup -p '{"spec":{"suspend":false}}'
+kubectl -n etcd-backup create job --from=cronjob/etcd-backup etcd-backup-rf3
+for c in fbref/fbref-db ai-gateway/ai-gateway-db nextcloud/nextcloud-db; do
+  kubectl -n "${c%/*}" create -f - <<EOF
+apiVersion: postgresql.cnpg.io/v1
+kind: Backup
+metadata: {name: ${c#*/}-rf3}
+spec:
+  method: plugin
+  pluginConfiguration: {name: barman-cloud.cloudnative-pg.io}
+  cluster: {name: ${c#*/}}
+EOF
+done
+kubectl get backups.postgresql.cnpg.io -A | grep rf3   # phase: completed
+```
+
+6. Verify every consumer with `Verifying a consumer actually archives` below — a
+   fallback leaves `wals/` empty until the new base backup lands, and
+   `CNPGWALArchiveBacklog` fires until then.
+7. **Prove the point**: stop one Garage node, `aws s3 cp` a test object through the
+   gateway (aws-cli pod below), expect success, delete it, start the node again.
+8. `n8n-db` starts archiving only now: merge its backup PR after its key has been
+   `garage key import`ed (`apps/staging/databases/n8n/`).
 
 ## Onboarding a new CNPG cluster onto Garage
 
