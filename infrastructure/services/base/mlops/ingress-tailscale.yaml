@@ -31,3 +31,20 @@ spec:
     # KEEP `mlflow`: release-mlflow.yaml allows exactly this Host header.
     - hosts:
         - mlflow
+---
+# The marimo notebook (asp docs/27 P11, chart k8s/charts/mlops-pipelines `notebook`): owner only, plus its token.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: marimo
+  namespace: mlops
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: marimo
+      port:
+        number: 2718
+  tls:
+    - hosts:
+        - marimo

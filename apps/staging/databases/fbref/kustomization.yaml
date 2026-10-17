@@ -19,6 +19,8 @@ resources:
   - garage-backup-credentials.enc.yaml
   - objectstore.yaml
   - scheduledbackup.yaml
+  # The ML platform's own replica (asp docs/27 P11): unlimited standby delay, read by mlops only.
+  - ml-replica.yaml
 
 patches:
   # Attach the Barman Cloud plugin -> Garage (WAL archiver + daily base backup).

@@ -46,6 +46,7 @@ asp and fbref read `asp-db-app` / `fbref-db-app`. OpenBao holds only what CNPG c
 | `kv/mlops/dagster-db` | `password` | `mlops-dagster-db`: username, password (CNPG managed role) and `postgresql-password` (the dagster chart and every run pod, all in this namespace) |
 | `kv/mlops/ml-ro` | `password` | `ml-ro`: the ML platform's ONE database reader `ml_ro` (asp docs/27 D10), the same role and password on fbref-db, asp-db and advisor-db. Reflected to `fbref`, `asp` and `advisor`, where CNPG sets the role's password from it; the run pods read it here (`PGPASSWORD`) |
 | `kv/mlops/mlflow-notebook` | `password` | `mlops-mlflow-notebook`: the MLflow user `notebook`, for the dev location's runs and `mise run notebook` in the asp devcontainer (asp docs/27 P2) |
+| `kv/mlops/marimo` | `token` | `mlops-marimo`: the in-cluster marimo notebook's access token (asp docs/27 P11), on top of the tailnet |
 
 **Seed them before the first reconcile** (hex only). Login as in `../openbao/README.md`, then:
 
@@ -59,6 +60,13 @@ The ML reader (asp docs/27 D10), before the first reconcile of `ml-ro` (until it
 
 ```sh
 mise bao kv put kv/mlops/ml-ro password="$(openssl rand -hex 32)"
+```
+
+The marimo notebook's access token (asp docs/27 P11), before the chart's `notebook` is on (until it
+exists the notebook pod cannot start):
+
+```sh
+mise bao kv put kv/mlops/marimo token="$(openssl rand -hex 24)"
 ```
 
 The dev lane's MLflow user (asp docs/27 P2), once MLflow runs:

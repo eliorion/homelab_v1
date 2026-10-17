@@ -20,12 +20,12 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: homepage
-        # The code locations' run pods (asp k8s/charts/mlops-pipelines, this namespace).
+        # The code locations' run pods and the marimo notebook (asp k8s/charts/mlops-pipelines).
         - podSelector:
             matchExpressions:
               - key: app
                 operator: In
-                values: [mlops-pipelines-run, mlops-pipelines-dev-run]
+                values: [mlops-pipelines-run, mlops-pipelines-dev-run, marimo]
       ports:
         - protocol: TCP
           port: 5000
