@@ -30,8 +30,16 @@ patches:
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "256Mi"}, "limits": {"memory": "1Gi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: asp-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "512Mi"}, "limits": {"memory": "1536Mi"}}}]'
+  # fbref-db: 1 GB of shared_buffers instead of the 128MB default. The scout webapp's first read of a page
+  # came from disk (a club roster 2.2 s cold, 0.3 s warm; person_season_last alone is 320 MB) and its
+  # statements hit scout_ro's 5 s timeout. The request follows it, so the scheduler counts the buffers;
+  # effective_cache_size tells the planner what the 4Gi limit leaves for the page cache. Changing
+  # shared_buffers RESTARTS both instances (replica first, then the primary in place, see README).
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: fbref-db}
-    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "1Gi"}, "limits": {"memory": "4Gi"}}}]'
+    patch: |-
+      - {"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "2Gi"}, "limits": {"memory": "4Gi"}}}
+      - {"op": "add", "path": "/spec/postgresql/parameters/shared_buffers", "value": "1GB"}
+      - {"op": "replace", "path": "/spec/postgresql/parameters/effective_cache_size", "value": "3GB"}
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: n8n-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "256Mi"}, "limits": {"memory": "1Gi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: nextcloud-db}
