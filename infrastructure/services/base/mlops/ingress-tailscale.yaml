@@ -32,7 +32,8 @@ spec:
     - hosts:
         - mlflow
 ---
-# The marimo notebook (asp docs/27 P11, chart k8s/charts/mlops-pipelines `notebook`): owner only, plus its token.
+# The marimo notebook (asp docs/27 P11, chart k8s/charts/mlops-pipelines `notebook`): no login, the tailnet is
+# its gate (owner only), like Dagster.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
