@@ -61,6 +61,10 @@ The ML reader (asp docs/27 D10), before the first reconcile of `ml-ro` (until it
 mise bao kv put kv/mlops/ml-ro password="$(openssl rand -hex 32)"
 ```
 
+The in-cluster marimo notebook (asp docs/27 P11) has no login, like Dagster: the tailnet (owner only) is
+its gate. Anyone on the tailnet can run code there with the dev lane's read-only database credentials and
+the lake key, the same exposure Dagster's UI already has.
+
 The dev lane's MLflow user (asp docs/27 P2), once MLflow runs:
 
 ```sh
