@@ -7,9 +7,23 @@ namespace, stores its state in the CloudNativePG cluster `n8n-db`, and is
 published on the tailnet only, at `https://n8n.tail45b0ca.ts.net`. The price of
 running a platform rather than a job: **workflows live in Postgres, not git** —
 `documentations/n8n-workflows/` holds hand-exported import templates, not the
-live state — and the `n8n-db` Garage backup that would be the other copy is
-written but still commented out of
-[`apps/staging/databases/n8n/kustomization.yaml`](../../staging/databases/n8n/kustomization.yaml).
+live state — and the other copy is the `n8n-db` CNPG backup to Garage bucket
+`cnpg-staging-n8n` (daily base backup plus continuous WAL,
+[`apps/staging/databases/n8n/`](../../staging/databases/n8n/)). Its key is
+generated in git, not on Garage: `garage-backup-credentials.enc.yaml` holds it, and
+it must be imported on a Garage node **before** that directory is applied —
+a key Garage rejects makes the WAL archiver fail and `pg_wal` grow until CNPG
+stops the primary:
+
+```bash
+# devcontainer (sops + age key)
+F=apps/staging/databases/n8n/garage-backup-credentials.enc.yaml
+sops -d --extract '["stringData"]["ACCESS_KEY_ID"]' $F
+sops -d --extract '["stringData"]["ACCESS_KEY_SECRET"]' $F
+# Garage node
+garage key import <ACCESS_KEY_ID> <ACCESS_KEY_SECRET> -n n8n-cnpg-staging
+garage bucket allow --read --write cnpg-staging-n8n --key n8n-cnpg-staging
+```
 Full background in
 [`documentations/10-n8n-automation.md`](../../../documentations/10-n8n-automation.md).
 
@@ -176,8 +190,8 @@ from datacenter IP ranges.
   `n8n-db` (the LinkedIn token, every future API key). Rotate it — or reinstall
   and let n8n generate a fresh one — and every credential in every workflow
   becomes permanently unreadable. A database restore without this exact key is
-  worthless. Disaster recovery needs *both* halves: the CNPG backup — which is
-  currently commented out, so that half does not exist yet — and this key.
+  worthless. Disaster recovery needs *both* halves: the CNPG backup and this
+  key.
 - `strategy.type: Recreate` must stay. `RollingUpdate` deadlocks on the RWO
   volume.
 - `fsGroup: 1000` must match the image's `node` user, or the PVC is unwritable.
