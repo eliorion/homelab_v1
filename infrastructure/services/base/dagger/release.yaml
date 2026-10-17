@@ -98,10 +98,12 @@ spec:
                     operator: In
                     values:
                       - staging-controlplane-1
+      # priorityclass.yaml; see README "Priority".
+      priorityClassName: ci-engine
       resources:
         requests:
           cpu: "2"
-          memory: 10Gi
+          memory: 12Gi
         limits:
           # No CPU limit on purpose. See README.
           memory: 16Gi
