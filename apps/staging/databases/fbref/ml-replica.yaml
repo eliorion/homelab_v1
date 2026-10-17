@@ -1,4 +1,7 @@
-# fbref-ml: the ML platform's OWN replica of fbref-db (asp docs/27 P11, owner 2026-10-17). A CNPG replica
+# fbref-ml: the ML platform's OWN replica of fbref-db. Read it through `fbref-ml-r` (any instance): in a replica
+# cluster the first instance, the "designated primary", is itself a read-only standby, so `-ro` (instances after
+# the first) has no endpoint with one instance, and `-rw` would name a write that cannot happen.
+# (asp docs/27 P11, owner 2026-10-17). A CNPG replica
 # cluster, read by nobody but the mlops run pods and the marimo notebook (as ml_ro, Secret ml-ro). Its point
 # is the standby delay: fbref-db-ro serves the apps with max_standby_streaming_delay 300s, so an extract
 # statement older than that is cancelled when replay conflicts (docs/27 P3). Here the delay is unlimited:
