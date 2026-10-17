@@ -1,0 +1,13 @@
+# The CI engine outranks every application pod (they all run at the default 0) and stays far
+# below the system classes, so Cilium, kube-apiserver and the CSI drivers still come first.
+# Two effects, see README "Priority": when the engine is Pending it may preempt lower-priority
+# pods on cp1, and under node memory pressure the kubelet evicts lower-priority pods that use
+# more than they requested before it touches the engine.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: ci-engine
+value: 100000
+preemptionPolicy: PreemptLowerPriority
+globalDefault: false
+description: The Dagger CI engine (dagger-engine-0); outranks application pods, never system pods.

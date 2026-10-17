@@ -254,15 +254,25 @@ is re-pulled.
 - **`privileged: true` is non-negotiable.** The engine is BuildKit: it creates
   containers, manages snapshots and mounts. The chart hardcodes it, plus
   `capabilities: ALL`, `runAsUser: 0` and `fsGroup: 1001`.
-- **`cpu: 2` requested (no limit), memory limit 16Gi, request 10Gi.** A throttled builder makes
+- **`cpu: 2` requested (no limit), memory limit 16Gi, request 12Gi.** A throttled builder makes
   every job slower for no isolation benefit on a dedicated node. The limit was 8Gi until the
   engine was OOMKilled at 8.2GiB RSS during a full PR pipeline (2026-09-15): the kill
   aborts every running CI session and left the cache at 3GB afterwards. The request rose
   2Gi → 4Gi on 2026-09-16, to reserve what the engine actually holds while idle-to-warm,
   and 4Gi → 10Gi on 2026-10-10, to what it holds under CI load (9.7–10.2GiB working set
-  during the 2026-10-09 EOF bursts). The request is what keeps the scheduler from
+  during the 2026-10-09 EOF bursts), and 10Gi → 12Gi on 2026-10-17: cp1 sat at 93% memory
+  (11.5GiB engine working set, 22.2Gi of 28.5Gi allocatable requested), and its memory stalls
+  were killing cilium-agent (60 restarts, exit 137 on liveness) and kube-apiserver. The request is what keeps the scheduler from
   filling cp1 around the engine; it must fit cp1's free allocatable, or the pod stays
   `Pending` behind its required affinity and CI has no engine.
+- **Priority: PriorityClass `ci-engine` (100000, `priorityclass.yaml`).** Every application pod
+  runs at the default 0, the system classes at 2e9. So when the engine is `Pending` (a reschedule,
+  a node restart), the scheduler may preempt lower-priority pods on cp1 to fit its request instead
+  of leaving CI without an engine; and under node memory pressure the kubelet evicts lower-priority
+  pods using more than they requested (the scraper browsers, typically) before the engine. It does
+  NOT make the scheduler read real memory use: placement stays request-based, which is why the
+  request must match what the engine holds. A preemption can pick any priority-0 pod on cp1,
+  CNPG instances included (PodDisruptionBudgets are honoured best-effort only).
 - **`unexpected EOF` on `Post "http://dagger/query"` is node-1 stalling, not the engine
   crashing** (2026-10-09/10, 16 failed jobs in 6 bursts). The engine never restarted. Every
   CLI session is a `kubectl exec` stream through node-1's kubelet and containerd. When node-1
