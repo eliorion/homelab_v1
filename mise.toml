@@ -22,7 +22,7 @@ run = "scripts/sops-updatekeys"
 
 [tasks.lint]
 description = "shellcheck all scripts"
-run = "shellcheck scripts/bao scripts/sops-updatekeys scripts/fetch-keycloak-operator scripts/etcd-restore-drill scripts/setup bootstraping/render.sh"
+run = "shellcheck scripts/bao scripts/claude-kubeconfig scripts/sops-updatekeys scripts/fetch-keycloak-operator scripts/etcd-restore-drill scripts/setup bootstraping/render.sh"
 
 [tasks.etcd-drill]
 description = "Read-only etcd restore drill (doc 09): fetch newest Garage snapshot, decrypt with the offline age key, restore + verify. Pass -- --offline-key PATH [--keep]"
@@ -32,6 +32,11 @@ run = "scripts/etcd-restore-drill"
 description = "bao against the cluster's OpenBao: port-forward, CA and admin login done for you. Usage: mise bao kv get kv/mlops/dagster-db"
 run = "scripts/bao"
 # Never echo the command line: it carries the secret values being written.
+quiet = true
+
+[tasks.claude-kubeconfig]
+description = "Issue the Claude Code agent's own kubeconfig (read-only + workbench, no Secrets), 7-day token. Usage: mise claude-kubeconfig [duration]"
+run = "scripts/claude-kubeconfig"
 quiet = true
 
 [tasks.mlflow-user]

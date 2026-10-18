@@ -1,0 +1,145 @@
+# Read everything except Secrets: the built-in aggregated `view` role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-agent-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: claude-agent
+    namespace: claude-agent
+---
+# What `view` leaves out: cluster-scoped objects and the CRDs that do not aggregate into it.
+# Never add the core group's `secrets`, and never `*` on the core group (it includes them).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: claude-agent-read
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "namespaces", "persistentvolumes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+      - storage.k8s.io
+      - apiextensions.k8s.io
+      - rbac.authorization.k8s.io
+      - postgresql.cnpg.io
+      - barmancloud.cnpg.io
+      - kustomize.toolkit.fluxcd.io
+      - helm.toolkit.fluxcd.io
+      - source.toolkit.fluxcd.io
+      - notification.toolkit.fluxcd.io
+      - monitoring.coreos.com
+      - external-secrets.io
+      - keda.sh
+      - cilium.io
+      - gateway.networking.k8s.io
+      - cert-manager.io
+      - kyverno.io
+      - policies.kyverno.io
+      - tailscale.com
+      - piraeus.io
+      - objectbucket.io
+      - metrics.k8s.io
+      - autoscaling.k8s.io
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-agent-read
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-agent-read
+subjects:
+  - kind: ServiceAccount
+    name: claude-agent
+    namespace: claude-agent
+---
+# `flux reconcile`: an annotation patch on Flux objects. Flux reverts any other spec change.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: claude-agent-flux-reconcile
+rules:
+  - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+    resources: ["kustomizations"]
+    verbs: ["patch"]
+  - apiGroups: ["helm.toolkit.fluxcd.io"]
+    resources: ["helmreleases"]
+    verbs: ["patch"]
+  - apiGroups: ["source.toolkit.fluxcd.io"]
+    resources: ["gitrepositories", "helmrepositories", "ocirepositories"]
+    verbs: ["patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-agent-flux-reconcile
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-agent-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: claude-agent
+    namespace: claude-agent
+---
+# Throwaway pods (benchmarks, S3 reads with keys reflected into this namespace) — here only.
+# The namespace enforces the `restricted` Pod Security level.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: claude-agent-workbench
+  namespace: claude-agent
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "delete", "get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude-agent-workbench
+  namespace: claude-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: claude-agent-workbench
+subjects:
+  - kind: ServiceAccount
+    name: claude-agent
+    namespace: claude-agent
+---
+# Port-forward to Loki and Prometheus, nothing else.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: claude-agent-port-forward
+  namespace: monitoring
+rules:
+  - apiGroups: [""]
+    resources: ["pods/portforward"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude-agent-port-forward
+  namespace: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: claude-agent-port-forward
+subjects:
+  - kind: ServiceAccount
+    name: claude-agent
+    namespace: claude-agent

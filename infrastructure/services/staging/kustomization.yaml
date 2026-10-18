@@ -15,6 +15,7 @@ resources:
   - dagger/
   - etcd-backup/
   - garage-gateway/
+  - claude-agent/
   - radar/
   # Goldilocks: dashboard + controller that creates a VPA (mode Off) per workload.
   - goldilocks/
