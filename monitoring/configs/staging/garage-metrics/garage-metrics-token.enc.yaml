@@ -1,3 +1,9 @@
+# PLACEHOLDER -- NOT ENCRYPTED YET. Bearer token Prometheus sends to each Garage node's
+# :3903/metrics (ScrapeConfig garage, scrapeconfig.yaml). Steps: README.md.
+#   cp garage-metrics-token.enc.yaml.exemple garage-metrics-token.enc.yaml
+#   # token: either the value Garage is configured with (GARAGE_METRICS_TOKEN / metrics_token),
+#   #        or the secret printed by: garage admin-token create --scope Metrics prometheus-staging
+#   sops -e -i garage-metrics-token.enc.yaml      (.sops.yaml encrypts stringData)
 apiVersion: v1
 kind: Secret
 metadata:
@@ -5,19 +11,19 @@ metadata:
     namespace: monitoring
 type: Opaque
 stringData:
-    token: ENC[AES256_GCM,data:iuYYcsaWnptufNMQrwC0wxvHTM4+ieX8P6x/rIzQ4vKfKApl8cTDq7NdN82T8pSpa5CqxtffHPNKG2vjUO4jVQ==,iv:zzKb9w9CVvqcolhqAmU6oiKwgAINUngTnhlIlmOW20I=,tag:wuQWS9o1vcFqwSVugSAzWg==,type:str]
+    token: ENC[AES256_GCM,data:MSO6RM/6vQXEzXH1rXl5EaSM3odwN1IHHHiTyg9UR1suKwtW4NnAisb1aMDGdGnZxpEz3u2mMjE4k69kPvjn2FK8hJU=,iv:Vg3oVdsAtLpOHPHrkKjzO59pLnwrzxtCxl07BE5fw2Y=,tag:jKKOW6B32SYrH8jNaDZw/g==,type:str]
 sops:
     age:
         - enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAzMTUrTk44Yk1RY1dxUC9q
-            VHMrZ2IzVWExc2lzMkFpNkhNeWFOYlZ1MUM4CkI1bG5hU3NMTmQ1Y0V5S1NPVnh3
-            OUVYQWs0LzlrTk1halRKeWdTeWxUdzQKLS0tIDIwTVFVaitWZzRrVG13dklqYnh5
-            MzRhTVltcmtVTHVueDBaS1VNejlyTE0K5t6pWhX91RP4TkbNdq9CooLi8lCsBu8s
-            GHxdhdS1ySpfW3eZOHKMmbgPWlKYfQYA+ha8xuNXWIuwh7dqzt+AWA==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA1VFFzMXhEM0twOWVtZGxm
+            MlRsc000dlhWbHd1TlNnNkpiN2FORkkrREFVCjR3WlRkQ2xNK1d6NHVpSkVYOFdh
+            L0VWalp6QUZOeGpFeThvS1o2KzRwMWMKLS0tIEVLWUdObUUrc1pHR3ZPK0xQOHZi
+            WU1DR0duMCt1OUhjMXI4aDArYXdNY1EKWQDfVdPo8j1BX9DO0aFs8W0oB8+Mtr1y
+            uhsrWyjjJ8mekw2ZejEyxK0Voay/ZBnNSKJVGpimqpEZR4fC8Regkw==
             -----END AGE ENCRYPTED FILE-----
           recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
     encrypted_regex: ^(data|stringData)$
-    lastmodified: "2026-10-18T16:23:38Z"
-    mac: ENC[AES256_GCM,data:0P2KUDNgDOhwc6QAwU2h0FcY9leBb6zgjAMmBak4j+Pse5J1vwf8wCfz+lHMCzHBkII0VD44NSb4gJtBr5udI7Qwgi1HwLd+fJA2GHxtea3BV9O9nofLB2/VYpgpi9Jw7dwLRQyN0F0a0MMahX4n9OVgwX8qfNXHH0q9ujTO8yk=,iv:MQr1irgbHM6R/GQhcC9oQU6dsySfkH8rzZP+9G8yfbE=,tag:u2gFQB1i+dim/vPD0T+8BQ==,type:str]
+    lastmodified: "2026-10-18T17:00:13Z"
+    mac: ENC[AES256_GCM,data:PA4XPKsIRkabNNGZWu9ZmIIA9iyZTm02MNBN14c6jEJ0D6g0yXlDBuqgO/yslevlXpV3wDMjnRjIQAIEd2Dq0dhXtO8ppKBACN7YwLCymEiqKdtN2VRcFPlVZMjDAghZld4oahVoZ/3GBgTQt2fYffuXhJVNZEXYczwQgBrUs6E=,iv:P/k0I3PxvMUo3UPaLGd/rI58mHT7wZ04fcmuRJXrJ7A=,tag:3W+f4cxCF0utZ6jCqsdR6g==,type:str]
     version: 3.13.3
