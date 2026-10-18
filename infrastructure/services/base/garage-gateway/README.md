@@ -21,14 +21,17 @@ Base (`infrastructure/services/base/garage-gateway/`):
 | `namespace.yaml` | Namespace `garage-gw`. |
 | `deployment.yaml` | The HAProxy Deployment: image `haproxy:3.0.6-alpine` (Renovate-tracked), 2 replicas, preferred pod anti-affinity on `kubernetes.io/hostname`, non-root uid/gid 99, read-only root filesystem, all capabilities dropped, `RuntimeDefault` seccomp, an `emptyDir` at `/tmp`, and the `garage-haproxy-config` ConfigMap mounted read-only at `/usr/local/etc/haproxy`. Ports `3900` (`s3`) and `8404` (`health`); requests 25m CPU / 64Mi, limit 128Mi. |
 | `service.yaml` | ClusterIP Service `garage-s3`, port `3900` → `3900`, selecting `app: garage-gateway`. This is the name every consumer dials. |
+| `service-admin.yaml` | ClusterIP Service `garage-admin`, port `3903`, the Garage admin API. Only the `garage-config` Job dials it (`../../staging/garage-gateway/configure/`). |
 | `kustomization.yaml` | Pulls in the three resources above. No config — see the overlay. |
 
 Overlay (`infrastructure/services/staging/garage-gateway/`):
 
 | File | What it holds |
 |---|---|
-| `haproxy.cfg` | The proxy config itself. `mode tcp` defaults; a `resolvers kube` block pointing at cluster DNS `10.96.0.10:53`; `frontend s3_in` binding `:3900` into `backend garage_s3`, round-robin over `garage-node-{a,b,c}.tailscale.svc.cluster.local:3900` with `check inter 3s fall 3 rise 2 resolvers kube init-addr last,none`; and `frontend health` on `:8404` with `monitor-uri /healthz` plus the stats page on `/stats`. |
-| `kustomization.yaml` | Sets `namespace: garage-gw`, includes the base, and turns `haproxy.cfg` into the `garage-haproxy-config` ConfigMap via `configMapGenerator`. |
+| `haproxy.cfg` | The proxy config itself. `mode tcp` defaults; a `resolvers kube` block pointing at cluster DNS `10.96.0.10:53`; `frontend s3_in` binding `:3900` into `backend garage_s3`, round-robin over `garage-node-{a,b,c}.tailscale.svc.cluster.local:3900` with `check inter 3s fall 3 rise 2 resolvers kube init-addr last,none`; `frontend admin_in` on `:3903` into `backend garage_admin` (same three nodes, port 3903); and `frontend health` on `:8404` with `monitor-uri /healthz` plus the stats page on `/stats`. |
+| `kustomization.yaml` | Sets `namespace: garage-gw`, includes the base, the OpenBao consumer component and `externalsecret.yaml`, and turns `haproxy.cfg` into the `garage-haproxy-config` ConfigMap via `configMapGenerator`. |
+| `externalsecret.yaml` | Secret `garage-bucket-manager` from OpenBao `kv/garage-gw/bucket-manager`: the scoped admin token for the `garage-config` Job. |
+| `configure/` | The `garage-config` Job and its bucket list — its own Flux Kustomization, `infra-garage-config`. README there. |
 
 The component is reconciled by Flux as part of
 `infrastructure/services/staging/kustomization.yaml`.

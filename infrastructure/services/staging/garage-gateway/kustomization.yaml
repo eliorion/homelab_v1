@@ -3,6 +3,9 @@ kind: Kustomization
 namespace: garage-gw
 resources:
   - ../../base/garage-gateway
+  - externalsecret.yaml
+components:
+  - ../../base/openbao/consumer
 # Hashed, so a haproxy.cfg change rolls the Deployment. The name must match the
 # Deployment's volume reference. See ../../base/garage-gateway/README.md.
 configMapGenerator:

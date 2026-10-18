@@ -37,6 +37,8 @@ spec:
           ports:
             - name: s3
               containerPort: 3900
+            - name: admin
+              containerPort: 3903
             - name: health
               containerPort: 8404
           securityContext:
