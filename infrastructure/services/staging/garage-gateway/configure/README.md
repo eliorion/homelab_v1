@@ -28,7 +28,7 @@ namespace's ExternalSecret. Create it on a Garage node with only what the script
 
 ```bash
 garage admin-token create --scope ListBuckets,ListKeys,CreateBucket,ImportKey,AllowBucketKey bucket-manager-staging
-bao kv put kv/garage-gw/bucket-manager token=<the secret it printed>
+mise bao kv put kv/garage-gw/bucket-manager token=-   # paste the secret on stdin, Ctrl-D
 ```
 
 No `DeleteBucket`, `DeleteKey`, `GetKeyInfo` (it can reveal secrets), layout or node scopes. Garage
