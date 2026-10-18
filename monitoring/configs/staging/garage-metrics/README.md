@@ -9,6 +9,7 @@ series.
 | --- | --- |
 | `scrapeconfig.yaml` | `ScrapeConfig garage` (`monitoring.coreos.com/v1alpha1`): targets `garage-node-{a,b,c}.tailscale.svc.cluster.local:3903`, label `garage_node`, Bearer auth from the Secret below, every 60 s. |
 | `garage-metrics-token.enc.yaml` | Secret `garage-metrics-token` (`token`), sops-encrypted. |
+| `garage-metrics-token.enc.yaml.exemple` | Its plaintext template: copy it, never an existing `.enc.yaml`. |
 
 ## Why the token is in sops, not OpenBao
 
