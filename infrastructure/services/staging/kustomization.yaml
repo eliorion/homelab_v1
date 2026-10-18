@@ -23,3 +23,5 @@ resources:
   - openbao/
   # The shared MLOps platform (asp docs/24): Dagster + MLflow, both UIs on the tailnet only.
   - mlops/
+  # The live architecture docs (asp docs/site): main and every open PR, on the tailnet only.
+  - docs/

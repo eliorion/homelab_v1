@@ -165,3 +165,28 @@ spec:
     !/k8s/charts/mlops-pipelines/
     # The library chart it depends on (file://../common).
     !/k8s/charts/common/
+---
+# Source for the live docs chart (k8s/charts/docs-preview in the asp repo): deployed into docs by
+# infrastructure/services/base/docs/release.yaml.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: docs-preview
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: ssh://git@github.com/Eliorion/asp
+  ref:
+    branch: main
+  secretRef:
+    name: asp-deploy-key
+  # Scoped to the chart path: reconcileStrategy: Revision re-reconciles on every new revision.
+  ignore: |
+    /*
+    !/k8s/
+    /k8s/*
+    !/k8s/charts/
+    /k8s/charts/*
+    !/k8s/charts/docs-preview/
+    # The library chart it depends on (file://../common).
+    !/k8s/charts/common/

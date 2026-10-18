@@ -1,0 +1,18 @@
+# Tailnet only: https://docs.tail45b0ca.ts.net (main) and https://docs.tail45b0ca.ts.net/<pr>/.
+# No tailscale annotation on the Service (two devices would contend for one hostname).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: docs
+  namespace: docs
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: docs-preview
+      port:
+        number: 8080
+  tls:
+    # KEEP `docs`: release.yaml allows exactly these Host headers.
+    - hosts:
+        - docs

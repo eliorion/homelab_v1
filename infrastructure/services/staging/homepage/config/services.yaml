@@ -168,6 +168,14 @@
         namespace: scraper
         app: admin-ui
         podSelector: app=admin-ui
+    - Docs:
+        icon: mdi-book-open-page-variant
+        href: https://docs.tail45b0ca.ts.net
+        description: Architecture docs, main and every open PR (/<pr>/)
+        siteMonitor: http://docs-preview.docs.svc:8080/
+        namespace: docs
+        app: docs-preview
+        podSelector: app=docs-preview
 
 - Public apps:
     - AzuraCast:

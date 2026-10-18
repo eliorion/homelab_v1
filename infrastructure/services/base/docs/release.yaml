@@ -1,0 +1,41 @@
+# The live architecture docs (asp docs/site): one VitePress dev server serving main at / and every open
+# PR at /<n>/, refreshed from GitHub within seconds of each push. Chart owned by the asp repo
+# (k8s/charts/docs-preview, image docs-preview). Values here are environment overrides ONLY, never
+# image tags (the chart's values.yaml owns those, bumped by asp CI). README.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: docs-preview
+  namespace: flux-system
+spec:
+  targetNamespace: docs
+  interval: 30m
+  chart:
+    spec:
+      chart: k8s/charts/docs-preview
+      sourceRef:
+        kind: GitRepository
+        name: docs-preview
+      interval: 12h
+      # Upgrade on every commit to the chart path: that is how the CI tag-bump commit rolls out.
+      reconcileStrategy: Revision
+  install:
+    remediation:
+      retries: 3
+  # retries defaults to 0, which latches the release Stalled (documentations/14).
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    global:
+      # Private GHCR image; the Secret is mirrored into docs by reflector.
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+    preview:
+      # Vite refuses any other Host header: the tailnet device (ingress-tailscale.yaml), its full
+      # MagicDNS name, and the Service name Homepage's site monitor calls.
+      allowedHosts:
+        - docs
+        - docs.tail45b0ca.ts.net
+        - docs-preview.docs.svc
