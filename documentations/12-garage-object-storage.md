@@ -107,8 +107,11 @@ matter what the base backups say.
 
 ## Administering Garage
 
-`garage` CLI, run **on a Garage node** (the admin API is not exposed through the
-in-cluster gateway):
+Bucket and key creation for cluster consumers is GitOps: `infrastructure/services/staging/garage-gateway/configure/`
+(the `garage-config` Job, through the gateway's admin frontend
+`http://garage-admin.garage-gw.svc.cluster.local:3903`). Prometheus scrapes each node's
+`/metrics` (`monitoring/configs/staging/garage-metrics/`). For everything else, the `garage` CLI,
+run **on a Garage node**:
 
 ```bash
 garage status                     # nodes + versions; all three should be listed

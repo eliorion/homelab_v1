@@ -15,3 +15,4 @@ resources:
   - dagger-ci
   - blackbox-probes
   - cert-manager-metrics
+  - garage-metrics

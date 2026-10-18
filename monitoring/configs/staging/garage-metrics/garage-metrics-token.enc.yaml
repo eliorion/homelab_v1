@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: garage-metrics-token
+    namespace: monitoring
+type: Opaque
+stringData:
+    token: ENC[AES256_GCM,data:iuYYcsaWnptufNMQrwC0wxvHTM4+ieX8P6x/rIzQ4vKfKApl8cTDq7NdN82T8pSpa5CqxtffHPNKG2vjUO4jVQ==,iv:zzKb9w9CVvqcolhqAmU6oiKwgAINUngTnhlIlmOW20I=,tag:wuQWS9o1vcFqwSVugSAzWg==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAzMTUrTk44Yk1RY1dxUC9q
+            VHMrZ2IzVWExc2lzMkFpNkhNeWFOYlZ1MUM4CkI1bG5hU3NMTmQ1Y0V5S1NPVnh3
+            OUVYQWs0LzlrTk1halRKeWdTeWxUdzQKLS0tIDIwTVFVaitWZzRrVG13dklqYnh5
+            MzRhTVltcmtVTHVueDBaS1VNejlyTE0K5t6pWhX91RP4TkbNdq9CooLi8lCsBu8s
+            GHxdhdS1ySpfW3eZOHKMmbgPWlKYfQYA+ha8xuNXWIuwh7dqzt+AWA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-18T16:23:38Z"
+    mac: ENC[AES256_GCM,data:0P2KUDNgDOhwc6QAwU2h0FcY9leBb6zgjAMmBak4j+Pse5J1vwf8wCfz+lHMCzHBkII0VD44NSb4gJtBr5udI7Qwgi1HwLd+fJA2GHxtea3BV9O9nofLB2/VYpgpi9Jw7dwLRQyN0F0a0MMahX4n9OVgwX8qfNXHH0q9ujTO8yk=,iv:MQr1irgbHM6R/GQhcC9oQU6dsySfkH8rzZP+9G8yfbE=,tag:u2gFQB1i+dim/vPD0T+8BQ==,type:str]
+    version: 3.13.3
