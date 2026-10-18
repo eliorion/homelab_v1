@@ -137,8 +137,8 @@ as the single highest-value hardware change available to this cluster.
   the database change, wait for `Cluster in healthy state`, then the release.
 - **A container that needs more than 256Mi has to say so.** The namespace
   `LimitRange` applies to everything here, CNPG and Barman sidecars included.
-  When backups are turned on for `seaweedfs-db`, size the plugin sidecar in the
-  `ObjectStore`'s `instanceSidecarConfiguration.resources`.
+  `seaweedfs-db`'s Barman plugin sidecar is sized in its `ObjectStore`
+  (`../../staging/seaweedfs/cluster/objectstore.yaml`, 64Mi/512Mi) for that reason.
 - **`weed volume -max` defaults to `8`, not to auto.** Left alone every server
   caps at 8 × 30 GB = 240 GB and the 2 TB disks are invisible. `maxVolumes: 0`
   per `dataDirs` entry is what sets `-max 0`. A count mismatch between `-dir` and

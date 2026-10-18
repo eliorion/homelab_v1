@@ -16,10 +16,11 @@ What is **not** wired yet, and needs the owner (source: `docs/16-advisor-homelab
    itself. `advisor-pub-login` is done — that unblocks `advisor-api`'s dbRole login; the other four
    only gate the role-isolation helm test hooks and the not-yet-deployed `advisor-ingest` Job, not
    `advisor-api` itself.
-2. **Backup wiring** — a Garage bucket `cnpg-staging-advisor`, `garage-backup-credentials.enc.yaml`
-   (same shape as `apps/staging/databases/fbref/garage-backup-credentials.enc.yaml`), an
-   `objectstore.yaml` and a daily `ScheduledBackup`, mirroring the fbref overlay. Gated on
-   WP1.10's restore drill, not on a first deployment being visible.
+2. **Backup wiring — done 2026-10-18, on the owner's request, ahead of WP1.10's restore drill.**
+   Garage bucket `cnpg-staging-advisor` (created and its key imported by the `garage-config` Job,
+   `infrastructure/services/staging/garage-gateway/configure/`), `garage-backup-credentials.enc.yaml`,
+   `objectstore.yaml` (7d), a daily `ScheduledBackup` at 02:40 and `cluster-backup-patch.yaml`.
+   The restore drill itself is still WP1.10's.
 
 `ghcr-pull-secret` reflection is already done — `advisor` is in the plaintext
 `reflection-auto-namespaces`/`reflection-allowed-namespaces` lists in

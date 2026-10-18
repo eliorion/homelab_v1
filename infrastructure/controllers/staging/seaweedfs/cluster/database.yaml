@@ -18,6 +18,12 @@ spec:
     synchronous:
       method: any
       number: 1
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: garage-store
+        serverName: seaweedfs-db
   bootstrap:
     initdb:
       database: seaweedfs

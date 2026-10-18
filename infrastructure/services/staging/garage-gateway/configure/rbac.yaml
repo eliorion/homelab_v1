@@ -107,3 +107,133 @@ subjects:
   - kind: ServiceAccount
     name: garage-config
     namespace: garage-gw
+---
+# Read ONE Secret in seaweedfs: the key for bucket cnpg-staging-seaweedfs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: seaweedfs
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: seaweedfs
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw
+---
+# Read ONE Secret in scraper: the key for bucket cnpg-staging-scraper.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: scraper
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: scraper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw
+---
+# Read ONE Secret in advisor: the key for bucket cnpg-staging-advisor.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: advisor
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: advisor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw
+---
+# Read ONE Secret in n8n: the key for bucket cnpg-staging-n8n.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: n8n
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: n8n
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw
+---
+# Read ONE Secret in registry: the key for bucket cnpg-staging-harbor.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: registry
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: registry
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw

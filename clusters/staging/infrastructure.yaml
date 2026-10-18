@@ -564,6 +564,9 @@ spec:
   timeout: 10m
   dependsOn:
     - name: infrastructure-services
+    # The consumers' key Secrets must exist before the Job reads them.
+    - name: infrastructure-controllers
+    - name: databases
   sourceRef:
     kind: GitRepository
     name: flux-system

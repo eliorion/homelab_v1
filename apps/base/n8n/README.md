@@ -10,20 +10,11 @@ running a platform rather than a job: **workflows live in Postgres, not git** �
 live state — and the other copy is the `n8n-db` CNPG backup to Garage bucket
 `cnpg-staging-n8n` (daily base backup plus continuous WAL,
 [`apps/staging/databases/n8n/`](../../staging/databases/n8n/)). Its key is
-generated in git, not on Garage: `garage-backup-credentials.enc.yaml` holds it, and
-it must be imported on a Garage node **before** that directory is applied —
-a key Garage rejects makes the WAL archiver fail and `pg_wal` grow until CNPG
-stops the primary:
-
-```bash
-# devcontainer (sops + age key)
-F=apps/staging/databases/n8n/garage-backup-credentials.enc.yaml
-sops -d --extract '["stringData"]["ACCESS_KEY_ID"]' $F
-sops -d --extract '["stringData"]["ACCESS_KEY_SECRET"]' $F
-# Garage node
-garage key import <ACCESS_KEY_ID> <ACCESS_KEY_SECRET> -n n8n-cnpg-staging
-garage bucket allow --read --write cnpg-staging-n8n --key n8n-cnpg-staging
-```
+generated in git, not on Garage: `garage-backup-credentials.enc.yaml` holds it, and the
+`garage-config` Job (`infrastructure/services/staging/garage-gateway/configure/`, line
+`cnpg-staging-n8n`) creates the bucket, imports the key and grants it — no command on a Garage
+node. Until that Job has run the WAL archiver fails and retries; it is harmless for minutes, but a
+key Garage keeps rejecting makes `pg_wal` grow until CNPG stops the primary.
 Full background in
 [`documentations/10-n8n-automation.md`](../../../documentations/10-n8n-automation.md).
 
