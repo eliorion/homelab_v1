@@ -200,6 +200,18 @@ Traces in Grafana (Explore → Tempo, TraceQL):
 More probes, and the tunnel-side configuration, are in
 [`../../../infrastructure/services/staging/cloudflare/README.md`](../../../infrastructure/services/staging/cloudflare/README.md).
 
+## Scout login (asp docs/17 §3)
+
+`webapp.auth` turns on Scout's own login: Auth.js in the webapp against the Keycloak realm
+`staging-apps`, client `scout`. A self-registered account lands on a "waiting for approval" page
+until the owner adds it to the group `scout-users` (Keycloak admin console, tailnet). The Secret
+`scout-oidc-client` (`client-secret`, `auth-secret`) is born in `identity` from OpenBao and
+reflected here (infrastructure/services/base/keycloak/README.md, "Scout and Fider").
+
+Inert until the asp fbref chart and the fbref-webapp image both carry the login. Until it is
+verified live, Scout's Cloudflare Access application stays in front (two gates, both pass);
+delete that application only afterwards (infrastructure/services/staging/cloudflare/README.md §5).
+
 ## ML pipelines (asp docs/25, docs/27)
 
 The ML runs (the lake extract, trainings, the step-up publication) execute in **`mlops`**, from the

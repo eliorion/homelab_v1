@@ -9,6 +9,7 @@ resources:
   - audiobookshelf/
   - azuracast/
   - fbref/
+  - fider/
   - glpi/
   - linkding/
   - n8n/

@@ -104,6 +104,61 @@ spec:
                 secretKeyRef:
                   name: nextcloud-oidc-client
                   key: client-secret
+            - name: SCOUT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: keycloak-realm-vars
+                  key: SCOUT_URL
+            - name: FIDER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: keycloak-realm-vars
+                  key: FIDER_URL
+            - name: SCOUT_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: scout-oidc-client
+                  key: client-secret
+            - name: FIDER_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: fider-oidc-client
+                  key: client-secret
+            - name: SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: apps-realm-smtp
+                  key: host
+            - name: SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: apps-realm-smtp
+                  key: port
+            - name: SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: apps-realm-smtp
+                  key: from
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: apps-realm-smtp
+                  key: username
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: apps-realm-smtp
+                  key: password
+            - name: SMTP_STARTTLS
+              valueFrom:
+                secretKeyRef:
+                  name: apps-realm-smtp
+                  key: starttls
+            - name: SMTP_SSL
+              valueFrom:
+                secretKeyRef:
+                  name: apps-realm-smtp
+                  key: ssl
             # no-delete everywhere: the default (full management) deletes every
             # live object the realm files do not declare.
             - name: IMPORT_MANAGED_COMPONENT

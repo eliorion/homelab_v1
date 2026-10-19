@@ -33,14 +33,34 @@ displayName: Apps
 # Every flow here crosses the public internet.
 sslRequired: all
 
-# Nobody self-registers. Accounts are created in the admin console over the
-# tailnet, exactly like the `mcp` realm — see documentations/02-keycloak.md.
-registrationAllowed: false
+# ANYONE MAY REGISTER, AND REGISTERING GRANTS NOTHING (owner, 2026-10-19: Scout asks people to
+# create an account, then the owner approves it). That is safe only because of the rule above:
+# access is a group, and no group is given on registration (no defaultGroups). A self-registered
+# account reaches every login page and is refused by every application until the owner adds it
+# to `<app>-users` in the admin console. Never add a defaultGroups entry here: it would turn
+# the public registration form into a grant.
+# The address must be proven (verifyEmail) before the first login: Fider names a person by it
+# and Cloudflare Access policies match on it. Both need the SMTP server below; so does the
+# password reset a public registration form makes necessary.
+registrationAllowed: true
 registrationEmailAsUsername: false
-resetPasswordAllowed: false
+resetPasswordAllowed: true
 loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
-verifyEmail: false
+verifyEmail: true
+
+# The realm's mail sender: verification and password-reset mail. From the apps-realm-smtp Secret
+# (staging overlay), read by the import Job as $(env:...).
+smtpServer:
+  host: $(env:SMTP_HOST)
+  port: $(env:SMTP_PORT)
+  from: $(env:SMTP_FROM)
+  fromDisplayName: Eliorion
+  auth: "true"
+  user: $(env:SMTP_USER)
+  password: $(env:SMTP_PASSWORD)
+  starttls: $(env:SMTP_STARTTLS)
+  ssl: $(env:SMTP_SSL)
 rememberMe: false
 
 # The login page is on the public internet, so brute-force protection is not
@@ -264,6 +284,81 @@ clients:
           "access.token.claim": "true"
           "userinfo.token.claim": "false"
 
+  # Scout (asp services/fbref/webapp): the app's OWN login, Auth.js against this client.
+  # Confidential: the code exchange is server-side, from the webapp pod. The app reads the
+  # `groups` claim and holds an account outside scout-users on a "waiting for approval" page.
+  - clientId: scout
+    name: Scout
+    description: Scout's login (asp services/fbref/webapp, Auth.js)
+    protocol: openid-connect
+    enabled: true
+    publicClient: false
+    # From the scout-oidc-client Secret, reflected into `fbref` for the webapp.
+    secret: $(env:SCOUT_OIDC_CLIENT_SECRET)
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    attributes:
+      "pkce.code.challenge.method": "S256"
+    # Auth.js's callback for the provider id `keycloak`.
+    redirectUris:
+      - $(env:SCOUT_URL)/api/auth/callback/keycloak
+    webOrigins: []
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    fullScopeAllowed: false
+    consentRequired: false
+    protocolMappers:
+      # Auth.js reads the id_token's claims: flat names, matched against `scout-users`.
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          "claim.name": groups
+          "full.path": "false"
+          "id.token.claim": "true"
+          "access.token.claim": "false"
+          "userinfo.token.claim": "true"
+
+  # Fider (apps/base/fider), the feedback site: its own login, a "custom OAuth provider" set in
+  # Fider's admin UI (it stores it in its DB; there is no env for it). Who may reach Fider at
+  # all is decided BEFORE it, by the Cloudflare Access policy on feedback.<domain> (group
+  # scout-users through the cloudflare-access client): this client grants nothing by itself.
+  - clientId: fider
+    name: Fider
+    description: Fider's login (apps/base/fider) — reachable only through Cloudflare Access
+    protocol: openid-connect
+    enabled: true
+    publicClient: false
+    secret: $(env:FIDER_OIDC_CLIENT_SECRET)
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    # Fider names a custom provider `_<number>` when it is created in its admin UI, so the
+    # callback path is only known then: /oauth/_<n>/callback.
+    redirectUris:
+      - $(env:FIDER_URL)/oauth/*
+    webOrigins: []
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    fullScopeAllowed: false
+    consentRequired: false
+
 # THE ACCESS CATALOGUE. One group per application; membership is the grant.
 # Kept by IMPORT_MANAGED_GROUP=no-delete, so a group added by hand in the admin
 # console survives the next import — but anything not listed here is undocumented
@@ -284,12 +379,16 @@ groups:
   # ENFORCED by agent-api (asp services/agent-platform/control): viewers read agents,
   # operators create/suspend/resume/delete them, admins add what later phases bring
   # (ModelProvider). Highest group wins. No group = 403 on every route but /healthz.
+  # ENFORCED by Scout itself (asp services/fbref/webapp src/proxy.ts: no group = the pending
+  # page) AND by the Cloudflare Access policy on Fider, which must match this group via the
+  # `groups` claim. Membership is the owner's approval of a self-registered account.
+  - name: scout-users
   - name: agent-platform-viewers
   - name: agent-platform-operators
   - name: agent-platform-admins
 
 # NO `users:` BLOCK, DELIBERATELY — same rule as realm-mcp.yaml. Accounts are
-# created in the admin console over the tailnet, and the import Job's
+# created in the admin console over the tailnet or by self-registration, and the import Job's
 # IMPORT_MANAGED_USER=no-delete is what keeps a realm edit from deleting them
 # all. Membership of this realm is not itself permission: for Cloudflare Access
 # UIs the Access policy decides, and for Nextcloud the `nextcloud-users` group

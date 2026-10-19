@@ -60,6 +60,13 @@ spec:
         sofascore: 3
       produceBatchOverrides:
         sofascore: 3
+    # Scout's login (README "Scout login"); scout-oidc-client is reflected from `identity`.
+    webapp:
+      auth:
+        enabled: true
+        issuerUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps
+        secretName: scout-oidc-client
+      feedbackUrl: https://feedback.eliorion.fr
     # Switched off (memory on staging-controlplane-1). mcp.enabled also drops its Service, egress
     # policy, family-counts CronJob and the mcp_ro helm test; the Cloudflare route then answers 502.
     components:

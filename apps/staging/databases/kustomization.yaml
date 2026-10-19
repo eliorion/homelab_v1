@@ -7,6 +7,7 @@ resources:
   - asp/
   - advisor/
   - fbref/
+  - fider/
   - n8n/
   - nextcloud/
   - scraper/
@@ -40,6 +41,8 @@ patches:
       - {"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "2Gi"}, "limits": {"memory": "4Gi"}}}
       - {"op": "add", "path": "/spec/postgresql/parameters/shared_buffers", "value": "1GB"}
       - {"op": "replace", "path": "/spec/postgresql/parameters/effective_cache_size", "value": "3GB"}
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: fider-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: n8n-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "256Mi"}, "limits": {"memory": "1Gi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: nextcloud-db}

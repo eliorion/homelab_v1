@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fider
+  namespace: fider
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fider
+  template:
+    metadata:
+      labels:
+        app: fider
+    spec:
+      # The image declares no USER: without this it runs as root.
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: fider
+          # renovate: datasource=docker depName=getfider/fider
+          image: getfider/fider:v0.38.2@sha256:25d17db73c3d86292d75b29cda296343bbce8e6d3b313e7661525f30eb6d946c
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: fider-db-app
+                  key: uri
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: fider-secrets
+                  key: jwt-secret
+            # apps-realm-smtp is reflected from `identity`.
+            - name: EMAIL
+              value: smtp
+            - name: EMAIL_NOREPLY
+              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: from}}
+            - name: EMAIL_SMTP_HOST
+              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: host}}
+            - name: EMAIL_SMTP_PORT
+              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: port}}
+            - name: EMAIL_SMTP_USERNAME
+              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: username}}
+            - name: EMAIL_SMTP_PASSWORD
+              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: password}}
+            - name: EMAIL_SMTP_ENABLE_STARTTLS
+              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: starttls}}
+            - name: EMAIL_SMTP_ENABLE_IMPLICIT_TLS
+              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: ssl}}
+            - name: LOG_SQL
+              value: "false"
+          envFrom:
+            - configMapRef:
+                name: fider-config
+          startupProbe:
+            httpGet:
+              path: /_health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /_health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /_health
+              port: http
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
