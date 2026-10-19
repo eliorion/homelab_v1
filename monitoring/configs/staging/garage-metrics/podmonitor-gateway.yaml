@@ -1,0 +1,21 @@
+# The gateway's own view of each Garage node: HAProxy's built-in Prometheus exporter on the
+# health port (frontend health, /metrics) of each garage-gateway pod.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: garage-gateway
+  namespace: monitoring
+  labels:
+    # Matches Prometheus podMonitorSelector.
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - garage-gw
+  selector:
+    matchLabels:
+      app: garage-gateway
+  podMetricsEndpoints:
+    - port: health
+      path: /metrics
+      interval: 30s
