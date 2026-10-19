@@ -20,13 +20,12 @@ person. **Quackback's own login** behind it, a custom OIDC provider on the Keycl
 |---|---|
 | `deployment.yaml` | Quackback by digest, as its own non-root user (1001) with a read-only root; its entrypoint runs the migrations before the server |
 | `service.yaml` | ClusterIP :3000, the tunnel's target |
-| `networkpolicy.yaml` | in: the `cloudflare` namespace only. out: `quackback-db`, `quackback-redis`, the SeaweedFS S3 gateway (:8333), DNS, public 443/587/465 |
+| `networkpolicy.yaml` | in: the `cloudflare` namespace only. out: `quackback-db`, `quackback-redis`, the SeaweedFS S3 gateway (:8333), DNS, public 443 (the OAuth code exchange with Keycloak's public hostname) |
 | `redis.yaml` | the Redis 0.13.2 refuses to run without (`REDIS_URL`): cache and job state, nothing on disk, reachable from Quackback only |
 | `../databases/quackback/` | the namespace and the CNPG cluster `quackback-db` (with `vector` and `pg_trgm`) |
 | `../../staging/quackback/` | `BASE_URL`, the S3 settings, and the ExternalSecret `quackback-secrets` (`secret-key`, OpenBao `kv/quackback/quackback-secrets`) |
 
-Two Secrets arrive by reflector: `apps-realm-smtp` (the realm's SMTP account, from `identity`) and
-`s3-quackback` (the bucket `quackback`'s identity, from `flux-system`:
+One Secret arrives by reflector: `s3-quackback` (the bucket `quackback`'s identity, from `flux-system`:
 `infrastructure/controllers/staging/seaweedfs/s3/`). Seed OpenBao first
 (`infrastructure/services/base/keycloak/README.md`, "Scout and Quackback").
 
@@ -48,6 +47,9 @@ Two Secrets arrive by reflector: `apps-realm-smtp` (the realm's SMTP account, fr
   redirects can be rewritten, but every one of the page's 35 assets is a root path, the main bundle
   builds 198 more at runtime, and the client router matches the real address bar. The board
   needs its own hostname.
+- **No mail.** No SMTP account yet; Quackback then writes the notifications it would have sent to its
+  log (its documented behaviour). Adding one = the `EMAIL_SMTP_*` / `EMAIL_FROM` variables and
+  587/465 in the NetworkPolicy.
 - **Ingress from `cloudflare` only**, so nothing reaches the board around the Access application.
 
 ## First run (once, after the Access application and the tunnel route exist)
@@ -55,6 +57,8 @@ Two Secrets arrive by reflector: `apps-realm-smtp` (the realm's SMTP account, fr
 1. Open `https://feedback.eliorion.fr` FIRST, before anyone else: the first account created owns
    the setup (workspace name, first admin). Use the owner's address. (`SETUP_OWNER_EMAIL` in the
    ConfigMap reassigns it if a stranger got there first.)
+   Without SMTP, any code or link Quackback would mail is in its log instead:
+   `kubectl -n quackback logs deploy/quackback | grep -i -E "code|link"`.
 2. Settings → Sign-in → custom OIDC (fields as Quackback asks for them):
 
    | Field | Value |

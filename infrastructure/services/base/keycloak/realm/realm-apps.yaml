@@ -39,28 +39,16 @@ sslRequired: all
 # account reaches every login page and is refused by every application until the owner adds it
 # to `<app>-users` in the admin console. Never add a defaultGroups entry here: it would turn
 # the public registration form into a grant.
-# The address must be proven (verifyEmail) before the first login: Quackback names a person by it
-# and Cloudflare Access policies match on it. Both need the SMTP server below; so does the
-# password reset a public registration form makes necessary.
+# NO MAIL SENDER (owner, 2026-10-19: no SMTP yet). So no address verification and no
+# self-service password reset: the owner's approval (adding the account to a group) is the check,
+# and a forgotten password is reset in the admin console. Add a mail sender block and turn both
+# on together when there is one. Cloudflare Access and Scout match on the GROUP, not the address.
 registrationAllowed: true
 registrationEmailAsUsername: false
-resetPasswordAllowed: true
+resetPasswordAllowed: false
 loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
-verifyEmail: true
-
-# The realm's mail sender: verification and password-reset mail. From the apps-realm-smtp Secret
-# (staging overlay), read by the import Job as $(env:...).
-smtpServer:
-  host: $(env:SMTP_HOST)
-  port: $(env:SMTP_PORT)
-  from: $(env:SMTP_FROM)
-  fromDisplayName: Eliorion
-  auth: "true"
-  user: $(env:SMTP_USER)
-  password: $(env:SMTP_PASSWORD)
-  starttls: $(env:SMTP_STARTTLS)
-  ssl: $(env:SMTP_SSL)
+verifyEmail: false
 rememberMe: false
 
 # The login page is on the public internet, so brute-force protection is not

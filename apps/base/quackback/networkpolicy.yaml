@@ -57,7 +57,3 @@ spec:
       ports:
         - protocol: TCP
           port: 443
-        - protocol: TCP
-          port: 587
-        - protocol: TCP
-          port: 465

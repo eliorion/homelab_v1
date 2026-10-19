@@ -32,20 +32,6 @@ spec:
               valueFrom: {secretKeyRef: {name: quackback-db-app, key: uri}}
             - name: SECRET_KEY
               valueFrom: {secretKeyRef: {name: quackback-secrets, key: secret-key}}
-            # apps-realm-smtp is reflected from `identity`.
-            - name: EMAIL_FROM
-              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: from}}
-            - name: EMAIL_SMTP_HOST
-              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: host}}
-            - name: EMAIL_SMTP_PORT
-              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: port}}
-            - name: EMAIL_SMTP_USER
-              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: username}}
-            - name: EMAIL_SMTP_PASS
-              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: password}}
-            # implicit TLS (465): the realm Secret's `ssl`
-            - name: EMAIL_SMTP_SECURE
-              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: ssl}}
             # s3-quackback is reflected from flux-system (SeaweedFS bucket identity).
             - name: S3_ACCESS_KEY_ID
               valueFrom: {secretKeyRef: {name: s3-quackback, key: QUACKBACK_S3_ACCESS_KEY}}

@@ -93,17 +93,19 @@ rest of the production tree on 2026-09-15.
 
 ### Scout and Quackback (2026-10-19)
 
-The `staging-apps` realm takes self-registration (with email verification and password reset
-through `smtpServer`) and two more clients, `scout` and `quackback`; the group `scout-users` is the
-owner's approval. Their credentials are application credentials, so they live in **OpenBao**,
-not SOPS: `staging/keycloak/realm/externalsecrets.yaml` makes three Secrets in `identity`
+The `staging-apps` realm takes self-registration and two more clients, `scout` and `quackback`;
+the group `scout-users` is the owner's approval. **No mail sender** (no SMTP yet): addresses are not
+verified and there is no self-service password reset — the approval is the check, and the owner
+resets a forgotten password in the admin console. Adding SMTP later = a `smtpServer` block in
+realm-apps.yaml with `verifyEmail` and `resetPasswordAllowed` turned on together. The clients'
+credentials are application credentials, so they live in **OpenBao**, not SOPS:
+`staging/keycloak/realm/externalsecrets.yaml` makes two Secrets in `identity`
 (this namespace is a SecretStore consumer), read by the import Job as `$(env:...)`:
 
 | OpenBao key `kv/identity/...` | Keys | Also reflected to |
 |---|---|---|
 | `scout-oidc-client` | `client-secret`, `auth-secret` (signs Scout's session cookie) | `fbref` (the webapp) |
 | `quackback-oidc-client` | `client-secret` (typed into Quackback's admin UI: apps/base/quackback/README.md) | — |
-| `apps-realm-smtp` | `host`, `port`, `from`, `username`, `password`, `starttls`, `ssl` | `quackback` (its mail) |
 
 **Seed them BEFORE the change reconciles**: the import Job cannot start without them, and it
 applies every realm, so a missing key holds every realm edit back (existing logins keep
@@ -112,14 +114,8 @@ working). With the `bao` login from infrastructure/services/base/openbao/README.
 ```bash
 bao kv put kv/identity/scout-oidc-client client-secret="$(openssl rand -base64 32)" auth-secret="$(openssl rand -base64 32)"
 bao kv put kv/identity/quackback-oidc-client client-secret="$(openssl rand -base64 32)"
-bao kv put kv/identity/apps-realm-smtp host=smtp.example port=587 from=noreply@eliorion.fr \
-    username=... password=- starttls=true ssl=false        # password on stdin; 465 = starttls=false ssl=true
 bao kv put kv/quackback/quackback-secrets secret-key="$(openssl rand -base64 32)"
 ```
-
-`verifyEmail: true` applies to EXISTING accounts too: one created in the admin console without
-"Email verified" ticked is asked to verify at its next login (a mail, through the same SMTP).
-Tick it on the owner's accounts first if that is unwanted.
 
 ## Why it is like this
 
