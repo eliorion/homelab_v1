@@ -106,5 +106,5 @@ spec:
           memory: 12Gi
         limits:
           # No CPU limit on purpose. See README.
-          memory: 16Gi
+          memory: 13Gi
       terminationGracePeriodSeconds: 30

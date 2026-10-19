@@ -254,7 +254,7 @@ is re-pulled.
 - **`privileged: true` is non-negotiable.** The engine is BuildKit: it creates
   containers, manages snapshots and mounts. The chart hardcodes it, plus
   `capabilities: ALL`, `runAsUser: 0` and `fsGroup: 1001`.
-- **`cpu: 2` requested (no limit), memory limit 16Gi, request 12Gi.** A throttled builder makes
+- **`cpu: 2` requested (no limit), memory limit 13Gi, request 12Gi.** A throttled builder makes
   every job slower for no isolation benefit on a dedicated node. The limit was 8Gi until the
   engine was OOMKilled at 8.2GiB RSS during a full PR pipeline (2026-09-15): the kill
   aborts every running CI session and left the cache at 3GB afterwards. The request rose
@@ -262,7 +262,10 @@ is re-pulled.
   and 4Gi → 10Gi on 2026-10-10, to what it holds under CI load (9.7–10.2GiB working set
   during the 2026-10-09 EOF bursts), and 10Gi → 12Gi on 2026-10-17: cp1 sat at 93% memory
   (11.5GiB engine working set, 22.2Gi of 28.5Gi allocatable requested), and its memory stalls
-  were killing cilium-agent (60 restarts, exit 137 on liveness) and kube-apiserver. The request is what keeps the scheduler from
+  were killing cilium-agent (60 restarts, exit 137 on liveness) and kube-apiserver. The limit
+  went 16Gi → 13Gi on 2026-10-19: cp1 went NotReady for ~2 h on 10-18 after a memory storm
+  (29.9GiB used, PSI full 56%) with the engine at 11.5GiB, and a 16Gi ceiling let one engine take
+  half the node. 13Gi stays above the 11.5GiB observed peak. The request is what keeps the scheduler from
   filling cp1 around the engine; it must fit cp1's free allocatable, or the pod stays
   `Pending` behind its required affinity and CI has no engine.
 - **Priority: PriorityClass `ci-engine` (100000, `priorityclass.yaml`).** Every application pod
