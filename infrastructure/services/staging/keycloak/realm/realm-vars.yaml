@@ -23,4 +23,4 @@ data:
   NEXTCLOUD_URL: https://staging-nextcloud.eliorion.fr
   # Scheme, no trailing slash; each must equal its Cloudflare public hostname.
   SCOUT_URL: https://scout.eliorion.fr
-  FIDER_URL: https://feedback.eliorion.fr
+  QUACKBACK_URL: https://feedback.eliorion.fr

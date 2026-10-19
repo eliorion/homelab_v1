@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quackback-config
+  namespace: quackback
+data:
+  # Must equal QUACKBACK_URL in infrastructure/services/staging/keycloak/realm/realm-vars.yaml.
+  BASE_URL: https://feedback.eliorion.fr
+  S3_ENDPOINT: http://seaweedfs-seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+  S3_BUCKET: quackback
+  S3_REGION: us-east-1
+  S3_FORCE_PATH_STYLE: "true"
+  # The bucket is in-cluster: the browser reaches uploads through the app only.
+  S3_PROXY: "true"
+  DISABLE_TELEMETRY: "true"

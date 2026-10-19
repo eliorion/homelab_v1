@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: fider
-  namespace: fider
+  name: quackback
+  namespace: quackback
 spec:
   type: ClusterIP
   ports:
@@ -10,4 +10,4 @@ spec:
       port: 3000
       targetPort: http
   selector:
-    app: fider
+    app: quackback

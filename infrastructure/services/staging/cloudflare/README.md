@@ -269,15 +269,16 @@ was never written down here). **Delete that Access application only after** the 
 answers on the live hostname: `curl -sI https://scout.eliorion.fr/ | grep -i location` must
 show Access's redirect while it exists, and `/signin` once it is gone. Never the other way round.
 
-### 6. `feedback.eliorion.fr` — Fider, behind Cloudflare Access
+### 6. `feedback.eliorion.fr` — Quackback, behind Cloudflare Access
 
 | Field | Value |
 |---|---|
 | Path | *(empty — the whole host)* |
-| Service | `http://fider.fider.svc.cluster.local:3000` |
+| Service | `http://quackback.quackback.svc.cluster.local:3000` |
 
-**Create the Access application (below) BEFORE this route.** Fider's own sign-up would
-otherwise be open to the internet for as long as the gap lasts.
+**Create the Access application (below) BEFORE this route.** Quackback's first visitor owns its
+setup, and its own sign-up would be open to the internet for as long as the gap lasts.
+Quackback cannot serve under a path, so Scout's `/feedback` redirects here (asp fbref-webapp).
 
 ## Cloudflare Access — the login in front of nao
 
@@ -342,14 +343,14 @@ Policy: **Allow**, `Include → Emails` listing the operator addresses. **Never*
 Leaving One-time PIN enabled would let anyone with any email address bypass
 Keycloak entirely; it is on by default when an application is created.
 
-### The Fider application — Zero Trust → Access → Applications → Add → Self-hosted
+### The Quackback application — Zero Trust → Access → Applications → Add → Self-hosted
 
 Same identity provider as nao. The group, not an email list, is the policy: approving a Scout
-account (adding it to `scout-users`) is what opens Fider to that person.
+account (adding it to `scout-users`) is what opens the feedback site to that person.
 
 | Field | Value |
 |---|---|
-| Application name | `fider` |
+| Application name | `quackback` |
 | Session duration | 24h |
 | Public hostname | `feedback.eliorion.fr` (whole host, no path) |
 | Identity providers | `Keycloak` **only** — untick One-time PIN |
@@ -360,9 +361,9 @@ must ALSO be listed on the identity provider (Settings → Authentication → Ke
 Claims: `groups`), or Access never requests it and the policy silently matches nobody. The
 `cloudflare-access` client already emits it (realm-apps.yaml).
 
-Then Fider's own login, once (Fider → Site Settings → Authentication → Add new, after the first
-admin account exists — see apps/base/fider/README.md): a custom OAuth2 provider on the Keycloak
-client `fider`. Same Keycloak session as the Access login, so no second password.
+Then Quackback's own login, once, in its admin UI (apps/base/quackback/README.md): a custom OIDC
+provider on the Keycloak client `quackback`. Same Keycloak session as the Access login, so no
+second password.
 
 ## WAF rule — the second layer
 

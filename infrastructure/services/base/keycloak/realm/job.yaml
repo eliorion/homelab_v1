@@ -109,20 +109,20 @@ spec:
                 configMapKeyRef:
                   name: keycloak-realm-vars
                   key: SCOUT_URL
-            - name: FIDER_URL
+            - name: QUACKBACK_URL
               valueFrom:
                 configMapKeyRef:
                   name: keycloak-realm-vars
-                  key: FIDER_URL
+                  key: QUACKBACK_URL
             - name: SCOUT_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: scout-oidc-client
                   key: client-secret
-            - name: FIDER_OIDC_CLIENT_SECRET
+            - name: QUACKBACK_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: fider-oidc-client
+                  name: quackback-oidc-client
                   key: client-secret
             - name: SMTP_HOST
               valueFrom:

@@ -27,8 +27,11 @@ resources:
   # chart engine.fileSinks), separate so the scraper never holds the advisor engine's key.
   - scraper-advisor-sink.enc.yaml
   - tmp-backup-garage.enc.yaml
+  # Quackback's uploads (feedback screenshots), served through the app (S3_PROXY): apps/base/quackback.
+  - quackback.enc.yaml
 patches:
   # ml-lake's consumer namespaces (reflector), kept out of the encrypted file: ml-lake.reflection.yaml.
   - path: ml-lake.reflection.yaml
   - path: ml-lake-vision-writer.reflection.yaml
   - path: scraper-results.reflection.yaml
+  - path: quackback.reflection.yaml

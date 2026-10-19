@@ -91,10 +91,10 @@ There is no production overlay. The inert `production/keycloak/` scaffolding
 (commented-out resources, a seed-from-staging recovery pair) was deleted with the
 rest of the production tree on 2026-09-15.
 
-### Scout and Fider (2026-10-19)
+### Scout and Quackback (2026-10-19)
 
 The `staging-apps` realm takes self-registration (with email verification and password reset
-through `smtpServer`) and two more clients, `scout` and `fider`; the group `scout-users` is the
+through `smtpServer`) and two more clients, `scout` and `quackback`; the group `scout-users` is the
 owner's approval. Their credentials are application credentials, so they live in **OpenBao**,
 not SOPS: `staging/keycloak/realm/externalsecrets.yaml` makes three Secrets in `identity`
 (this namespace is a SecretStore consumer), read by the import Job as `$(env:...)`:
@@ -102,8 +102,8 @@ not SOPS: `staging/keycloak/realm/externalsecrets.yaml` makes three Secrets in `
 | OpenBao key `kv/identity/...` | Keys | Also reflected to |
 |---|---|---|
 | `scout-oidc-client` | `client-secret`, `auth-secret` (signs Scout's session cookie) | `fbref` (the webapp) |
-| `fider-oidc-client` | `client-secret` (typed into Fider's admin UI: apps/base/fider/README.md) | — |
-| `apps-realm-smtp` | `host`, `port`, `from`, `username`, `password`, `starttls`, `ssl` | `fider` (its mail) |
+| `quackback-oidc-client` | `client-secret` (typed into Quackback's admin UI: apps/base/quackback/README.md) | — |
+| `apps-realm-smtp` | `host`, `port`, `from`, `username`, `password`, `starttls`, `ssl` | `quackback` (its mail) |
 
 **Seed them BEFORE the change reconciles**: the import Job cannot start without them, and it
 applies every realm, so a missing key holds every realm edit back (existing logins keep
@@ -111,10 +111,10 @@ working). With the `bao` login from infrastructure/services/base/openbao/README.
 
 ```bash
 bao kv put kv/identity/scout-oidc-client client-secret="$(openssl rand -base64 32)" auth-secret="$(openssl rand -base64 32)"
-bao kv put kv/identity/fider-oidc-client client-secret="$(openssl rand -base64 32)"
+bao kv put kv/identity/quackback-oidc-client client-secret="$(openssl rand -base64 32)"
 bao kv put kv/identity/apps-realm-smtp host=smtp.example port=587 from=noreply@eliorion.fr \
     username=... password=- starttls=true ssl=false        # password on stdin; 465 = starttls=false ssl=true
-bao kv put kv/fider/fider-secrets jwt-secret="$(openssl rand -base64 48)"
+bao kv put kv/quackback/quackback-secrets secret-key="$(openssl rand -base64 32)"
 ```
 
 `verifyEmail: true` applies to EXISTING accounts too: one created in the admin console without
@@ -134,7 +134,7 @@ to that group. This is the whole authorization model:
 | `nextcloud-users` | Nextcloud | **user_oidc itself** — `--group-restrict-login-to-whitelist=1` with `--group-whitelist-regex '^nextcloud-'`. Live. |
 | `nextcloud-admins` | Nextcloud | Provisioned as a Nextcloud group; grants no admin rights on its own (Nextcloud's admin group is `admin`). |
 | `nao-users` | nao | **A Cloudflare Access policy** matching the `groups` claim. Until that policy is switched from an email list to a group rule, this group grants nothing. |
-| `scout-users` | Scout (asp) + Fider | **Scout itself** (`src/proxy.ts`: no group = the "waiting for approval" page) and **the Cloudflare Access policy** on `feedback.eliorion.fr` (OIDC claim `groups`). Self-registered accounts start with no group: adding one here is the owner's approval. |
+| `scout-users` | Scout (asp) + Quackback | **Scout itself** (`src/proxy.ts`: no group = the "waiting for approval" page) and **the Cloudflare Access policy** on `feedback.eliorion.fr` (OIDC claim `groups`). Self-registered accounts start with no group: adding one here is the owner's approval. |
 | `agent-platform-viewers` / `-operators` / `-admins` | agent-platform (asp) | **agent-api itself**: it maps the token's `groups` claim to a role (highest wins). No group = 403 on every route but `/healthz`. |
 
 The right-hand column is the point. A group is inert unless something reads it,

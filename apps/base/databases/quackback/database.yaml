@@ -1,0 +1,24 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: quackback-db
+  namespace: quackback
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+
+  postgresql:
+    parameters:
+      max_connections: "50"
+
+  bootstrap:
+    initdb:
+      database: quackback
+      owner: app
+      # As the superuser: `app` cannot create these, and Quackback refuses to start without them.
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS vector
+        - CREATE EXTENSION IF NOT EXISTS pg_trgm
+
+  storage:
+    size: 5Gi

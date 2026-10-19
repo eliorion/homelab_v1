@@ -1,88 +1,83 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fider
-  namespace: fider
+  name: quackback
+  namespace: quackback
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: fider
+      app: quackback
   template:
     metadata:
       labels:
-        app: fider
+        app: quackback
     spec:
-      # The image declares no USER: without this it runs as root.
       securityContext:
-        runAsUser: 65532
-        runAsGroup: 65532
+        # The image's `quackback` user: runAsNonRoot cannot verify a NAMED user.
+        runAsUser: 1001
+        runAsGroup: 1001
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: fider
-          # renovate: datasource=docker depName=getfider/fider
-          image: getfider/fider:v0.38.2@sha256:25d17db73c3d86292d75b29cda296343bbce8e6d3b313e7661525f30eb6d946c
+        - name: quackback
+          # 0.13.2 is the newest PUBLISHED image: v0.14.x have releases but no image tag.
+          image: ghcr.io/quackbackio/quackback:0.13.2@sha256:63660c1b32f2b841fb99e2502622b602cd08f49d2250c75fdac7aae1c7c2c151
           ports:
             - name: http
               containerPort: 3000
           env:
             - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: fider-db-app
-                  key: uri
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: fider-secrets
-                  key: jwt-secret
+              valueFrom: {secretKeyRef: {name: quackback-db-app, key: uri}}
+            - name: SECRET_KEY
+              valueFrom: {secretKeyRef: {name: quackback-secrets, key: secret-key}}
             # apps-realm-smtp is reflected from `identity`.
-            - name: EMAIL
-              value: smtp
-            - name: EMAIL_NOREPLY
+            - name: EMAIL_FROM
               valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: from}}
             - name: EMAIL_SMTP_HOST
               valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: host}}
             - name: EMAIL_SMTP_PORT
               valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: port}}
-            - name: EMAIL_SMTP_USERNAME
+            - name: EMAIL_SMTP_USER
               valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: username}}
-            - name: EMAIL_SMTP_PASSWORD
+            - name: EMAIL_SMTP_PASS
               valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: password}}
-            - name: EMAIL_SMTP_ENABLE_STARTTLS
-              valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: starttls}}
-            - name: EMAIL_SMTP_ENABLE_IMPLICIT_TLS
+            # implicit TLS (465): the realm Secret's `ssl`
+            - name: EMAIL_SMTP_SECURE
               valueFrom: {secretKeyRef: {name: apps-realm-smtp, key: ssl}}
-            - name: LOG_SQL
-              value: "false"
+            # s3-quackback is reflected from flux-system (SeaweedFS bucket identity).
+            - name: S3_ACCESS_KEY_ID
+              valueFrom: {secretKeyRef: {name: s3-quackback, key: QUACKBACK_S3_ACCESS_KEY}}
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: s3-quackback, key: QUACKBACK_S3_SECRET_KEY}}
           envFrom:
             - configMapRef:
-                name: fider-config
+                name: quackback-config
+          # The entrypoint runs every migration before the server: the first boot builds the schema.
           startupProbe:
             httpGet:
-              path: /_health
+              path: /api/health
               port: http
             periodSeconds: 10
             failureThreshold: 30
           readinessProbe:
             httpGet:
-              path: /_health
+              path: /api/health
               port: http
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /_health
+              path: /api/health
               port: http
             periodSeconds: 30
             failureThreshold: 3
           resources:
             requests:
-              cpu: 20m
-              memory: 64Mi
-            limits:
+              cpu: 50m
               memory: 256Mi
+            limits:
+              memory: 1Gi
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -90,8 +85,13 @@ spec:
               drop:
                 - ALL
           volumeMounts:
+            # BUN_INSTALL_CACHE_DIR, the image's one writable directory
+            - name: cache
+              mountPath: /app/.cache
             - name: tmp
               mountPath: /tmp
       volumes:
+        - name: cache
+          emptyDir: {}
         - name: tmp
           emptyDir: {}

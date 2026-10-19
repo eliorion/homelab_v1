@@ -155,6 +155,20 @@ stringData:
             "Write:scraper-results",
             "List:scraper-results"
           ]
+        },
+        {
+          "name": "quackback",
+          "credentials": [
+            {
+              "accessKey": "${QUACKBACK_S3_ACCESS_KEY}",
+              "secretKey": "${QUACKBACK_S3_SECRET_KEY}"
+            }
+          ],
+          "actions": [
+            "Read:quackback",
+            "Write:quackback",
+            "List:quackback"
+          ]
         }
       ]
     }
