@@ -39,8 +39,8 @@ One Secret arrives by reflector: `s3-quackback` (the bucket `quackback`'s identi
   0.13.2 already has custom OIDC (since 0.12) and OAuth-only sign-in.
 - **Uploads in SeaweedFS, proxied by the app** (`S3_PROXY`): the bucket stays private and
   in-cluster, so the browser never needs to reach it.
-- **One CNPG instance, no backup yet**: feedback is small; a second instance and a Garage backup
-  are one patch each away.
+- **One CNPG instance, backed up to Garage** (off-site, daily + WAL, 7 days: databases/quackback/README.md).
+  The uploads in the SeaweedFS bucket are NOT backed up: screenshots attached to feedback.
 - **Redis is required**, not optional: measured 2026-10-19 on 0.13.2, every config read fails
   `redisUrl: invalid_type` without it. It holds nothing durable, so it runs without persistence.
 - **Not under `scout.eliorion.fr/feedback`** (tested 2026-10-19 behind Caddy `handle_path`): the

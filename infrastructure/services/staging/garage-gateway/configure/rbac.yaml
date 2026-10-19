@@ -237,3 +237,29 @@ subjects:
   - kind: ServiceAccount
     name: garage-config
     namespace: garage-gw
+---
+# Read ONE Secret in quackback: the key for bucket cnpg-staging-quackback.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: quackback
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: quackback
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw

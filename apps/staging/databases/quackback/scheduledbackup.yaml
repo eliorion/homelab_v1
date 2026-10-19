@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: quackback-db-daily
+  namespace: quackback
+spec:
+  # 6-field CNPG cron. 3:40 UTC, staggered with the other clusters.
+  schedule: "0 40 3 * * *"
+  immediate: true
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  cluster:
+    name: quackback-db
