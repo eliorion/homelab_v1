@@ -5,3 +5,5 @@ resources:
   - release.yaml
   - advisor-ai-gateway-token.enc.yaml
   - review-ingress-tailscale.yaml
+  # the DVSA MOT Parquet archive the backfill Job writes (asp docs/16 section 3)
+  - mot-archive-pvc.yaml

@@ -1,0 +1,17 @@
+# The DVSA MOT Parquet archive (asp docs/13 section 4, V10: "cells, not events"): advisor-mot-backfill writes a year's raw
+# events here (`archive write`), verifies them against the database (`archive verify`) and only then purges the staged
+# rows (`archive purge`), so the next year fits the database volume. A later refit reads it back. Kept indefinitely; the
+# raw events exist nowhere else once purged, so it wants the same backup care as the database. `hdd` (SeaweedFS) is a
+# network filesystem: files, written by one Job at a time, never a live container filesystem.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: advisor-mot-archive
+  namespace: advisor
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: hdd
+  resources:
+    requests:
+      storage: 100Gi

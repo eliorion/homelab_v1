@@ -38,3 +38,11 @@ created in the Cloudflare dashboard. The review UI (`advisor-review`) stays on t
 `review-ingress-tailscale.yaml` exposes it as `https://advisor-review.<tailnet>.ts.net`, and the values
 here enable it with `REVIEWER_HEADER=tailscale-user-login`. It needs the `advisor-review-login`
 Secret (`apps/staging/databases/advisor/`) before it can start.
+
+## MOT backfill capacity (2026-10-19)
+
+`advisor-db` storage is 100Gi (`apps/base/databases/advisor/database.yaml`) and `mot-archive-pvc.yaml` is the
+`advisor-mot-archive` claim (100Gi, `hdd`) the backfill archives each year to before purging it from the database.
+The HelmRelease enables `collection.motBackfill` with `capacityConfirmed: true` and that claim; the CronJob stays
+suspended, an operator runs it: `kubectl -n advisor create job --from=cronjob/advisor-mot-backfill mot-2022-2025`
+(asp `k8s/charts/advisor/scripts/mot-backfill.sh`, docs/19 PR 1, docs/29 §5.2).
