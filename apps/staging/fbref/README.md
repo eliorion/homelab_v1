@@ -203,8 +203,8 @@ More probes, and the tunnel-side configuration, are in
 ## Scout login (asp docs/17 §3)
 
 `webapp.auth` turns on Scout's own login: Auth.js in the webapp against the Keycloak realm
-`staging-apps`, client `scout`. A self-registered account lands on a "waiting for approval" page
-until the owner adds it to the group `scout-users` (Keycloak admin console, tailnet). The Secret
+`staging-apps`, client `scout`. Accounts are created by the owner in the Keycloak admin console
+(tailnet); one without the group `scout-users` lands on a "waiting for approval" page. The Secret
 `scout-oidc-client` (`client-secret`, `auth-secret`) is born in `identity` from OpenBao and
 reflected here (infrastructure/services/base/keycloak/README.md, "Scout and Quackback").
 

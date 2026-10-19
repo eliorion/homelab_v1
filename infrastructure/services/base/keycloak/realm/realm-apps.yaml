@@ -33,17 +33,9 @@ displayName: Apps
 # Every flow here crosses the public internet.
 sslRequired: all
 
-# ANYONE MAY REGISTER, AND REGISTERING GRANTS NOTHING (owner, 2026-10-19: Scout asks people to
-# create an account, then the owner approves it). That is safe only because of the rule above:
-# access is a group, and no group is given on registration (no defaultGroups). A self-registered
-# account reaches every login page and is refused by every application until the owner adds it
-# to `<app>-users` in the admin console. Never add a defaultGroups entry here: it would turn
-# the public registration form into a grant.
-# NO MAIL SENDER (owner, 2026-10-19: no SMTP yet). So no address verification and no
-# self-service password reset: the owner's approval (adding the account to a group) is the check,
-# and a forgotten password is reset in the admin console. Add a mail sender block and turn both
-# on together when there is one. Cloudflare Access and Scout match on the GROUP, not the address.
-registrationAllowed: true
+# Nobody self-registers. Accounts are created in the admin console over the
+# tailnet, exactly like the `mcp` realm — see documentations/02-keycloak.md.
+registrationAllowed: false
 registrationEmailAsUsername: false
 resetPasswordAllowed: false
 loginWithEmailAllowed: true
@@ -370,14 +362,14 @@ groups:
   # (ModelProvider). Highest group wins. No group = 403 on every route but /healthz.
   # ENFORCED by Scout itself (asp services/fbref/webapp src/proxy.ts: no group = the pending
   # page) AND by the Cloudflare Access policy on Quackback, which must match this group via the
-  # `groups` claim. Membership is the owner's approval of a self-registered account.
+  # `groups` claim. Membership is the owner granting an account Scout (and the board).
   - name: scout-users
   - name: agent-platform-viewers
   - name: agent-platform-operators
   - name: agent-platform-admins
 
 # NO `users:` BLOCK, DELIBERATELY — same rule as realm-mcp.yaml. Accounts are
-# created in the admin console over the tailnet or by self-registration, and the import Job's
+# created in the admin console over the tailnet, and the import Job's
 # IMPORT_MANAGED_USER=no-delete is what keeps a realm edit from deleting them
 # all. Membership of this realm is not itself permission: for Cloudflare Access
 # UIs the Access policy decides, and for Nextcloud the `nextcloud-users` group

@@ -336,9 +336,9 @@ broken login rather than a denied one.
 | Identity providers | `Keycloak` **only** — untick everything else, including One-time PIN |
 | Instant Auth | On (single IdP, so skip the chooser) |
 
-Policy: **Allow**, `Include → Emails` listing the operator addresses. **Never**
-`Include → Everyone` with the IdP as the only gate: the `staging-apps` realm has
-`registrationAllowed: true` since Scout (2026-10-19), so anyone can hold an account in it.
+Policy: **Allow**, `Include → Emails` listing the operator addresses. Do **not**
+use `Include → Everyone` with the IdP as the only gate — the `staging-apps` realm has
+`registrationAllowed: false`, but an emails include keeps the two independent.
 
 Leaving One-time PIN enabled would let anyone with any email address bypass
 Keycloak entirely; it is on by default when an application is created.
