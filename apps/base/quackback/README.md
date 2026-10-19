@@ -20,7 +20,8 @@ person. **Quackback's own login** behind it, a custom OIDC provider on the Keycl
 |---|---|
 | `deployment.yaml` | Quackback by digest, as its own non-root user (1001) with a read-only root; its entrypoint runs the migrations before the server |
 | `service.yaml` | ClusterIP :3000, the tunnel's target |
-| `networkpolicy.yaml` | in: the `cloudflare` namespace only. out: `quackback-db`, the SeaweedFS S3 gateway (:8333), DNS, public 443/587/465 |
+| `networkpolicy.yaml` | in: the `cloudflare` namespace only. out: `quackback-db`, `quackback-redis`, the SeaweedFS S3 gateway (:8333), DNS, public 443/587/465 |
+| `redis.yaml` | the Redis 0.13.2 refuses to run without (`REDIS_URL`): cache and job state, nothing on disk, reachable from Quackback only |
 | `../databases/quackback/` | the namespace and the CNPG cluster `quackback-db` (with `vector` and `pg_trgm`) |
 | `../../staging/quackback/` | `BASE_URL`, the S3 settings, and the ExternalSecret `quackback-secrets` (`secret-key`, OpenBao `kv/quackback/quackback-secrets`) |
 
@@ -41,6 +42,12 @@ Two Secrets arrive by reflector: `apps-realm-smtp` (the realm's SMTP account, fr
   in-cluster, so the browser never needs to reach it.
 - **One CNPG instance, no backup yet**: feedback is small; a second instance and a Garage backup
   are one patch each away.
+- **Redis is required**, not optional: measured 2026-10-19 on 0.13.2, every config read fails
+  `redisUrl: invalid_type` without it. It holds nothing durable, so it runs without persistence.
+- **Not under `scout.eliorion.fr/feedback`** (tested 2026-10-19 behind Caddy `handle_path`): the
+  redirects can be rewritten, but every one of the page's 35 assets is a root path, the main bundle
+  builds 198 more at runtime, and the client router matches the real address bar. The board
+  needs its own hostname.
 - **Ingress from `cloudflare` only**, so nothing reaches the board around the Access application.
 
 ## First run (once, after the Access application and the tunnel route exist)

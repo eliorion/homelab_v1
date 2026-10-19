@@ -6,6 +6,7 @@ metadata:
 data:
   # Must equal QUACKBACK_URL in infrastructure/services/staging/keycloak/realm/realm-vars.yaml.
   BASE_URL: https://feedback.eliorion.fr
+  REDIS_URL: redis://quackback-redis:6379
   S3_ENDPOINT: http://seaweedfs-seaweedfs-s3.seaweedfs.svc.cluster.local:8333
   S3_BUCKET: quackback
   S3_REGION: us-east-1
