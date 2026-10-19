@@ -5,3 +5,8 @@ homelab-staging-etcd-backup  etcd-backup  etcd-backup-s3                        
 cnpg-staging-fbref           fbref        garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
 cnpg-staging-ai-gateway      ai-gateway   ai-gateway-garage-backup-credentials  ACCESS_KEY_ID      ACCESS_KEY_SECRET
 cnpg-staging-nextcloud       nextcloud    garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
+cnpg-staging-seaweedfs       seaweedfs    garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
+cnpg-staging-scraper         scraper      garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
+cnpg-staging-advisor         advisor      garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
+cnpg-staging-n8n             n8n          garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
+cnpg-staging-harbor          registry     garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET

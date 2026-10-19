@@ -6,8 +6,17 @@ namespace: scraper
 resources:
   - ../../../base/databases/scraper
   - serving-metrics-configmap.yaml
+  # Barman Cloud -> Garage bucket cnpg-staging-scraper (key imported by garage-config).
+  - garage-backup-credentials.enc.yaml
+  - objectstore.yaml
+  - scheduledbackup.yaml
 
 patches:
+  # Attach the Barman Cloud plugin -> Garage.
+  - path: cluster-backup-patch.yaml
+    target:
+      kind: Cluster
+      name: scraper-db
   # PVCs on the LINSTOR `ssd` class.
   - path: cluster-storage-patch.yaml
     target:

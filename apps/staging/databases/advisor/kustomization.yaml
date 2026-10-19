@@ -16,9 +16,17 @@ resources:
   - advisor-seed-login.enc.yaml
   - advisor-ingest-login.enc.yaml
   - advisor-publish-login.enc.yaml
-  # The Garage backup wiring is NOT here yet — see README.md (it needs a Garage bucket).
+  # Barman Cloud -> Garage bucket cnpg-staging-advisor (key imported by garage-config).
+  - garage-backup-credentials.enc.yaml
+  - objectstore.yaml
+  - scheduledbackup.yaml
 
 patches:
+  # Attach the Barman Cloud plugin -> Garage.
+  - path: cluster-backup-patch.yaml
+    target:
+      kind: Cluster
+      name: advisor-db
   # PVCs on the staging storage class. Base stays unset (dev has no storage class opinion).
   - path: cluster-storage-patch.yaml
     target:

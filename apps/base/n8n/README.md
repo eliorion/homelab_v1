@@ -7,9 +7,14 @@ namespace, stores its state in the CloudNativePG cluster `n8n-db`, and is
 published on the tailnet only, at `https://n8n.tail45b0ca.ts.net`. The price of
 running a platform rather than a job: **workflows live in Postgres, not git** —
 `documentations/n8n-workflows/` holds hand-exported import templates, not the
-live state — and the `n8n-db` Garage backup that would be the other copy is
-written but still commented out of
-[`apps/staging/databases/n8n/kustomization.yaml`](../../staging/databases/n8n/kustomization.yaml).
+live state — and the other copy is the `n8n-db` CNPG backup to Garage bucket
+`cnpg-staging-n8n` (daily base backup plus continuous WAL,
+[`apps/staging/databases/n8n/`](../../staging/databases/n8n/)). Its key is
+generated in git, not on Garage: `garage-backup-credentials.enc.yaml` holds it, and the
+`garage-config` Job (`infrastructure/services/staging/garage-gateway/configure/`, line
+`cnpg-staging-n8n`) creates the bucket, imports the key and grants it — no command on a Garage
+node. Until that Job has run the WAL archiver fails and retries; it is harmless for minutes, but a
+key Garage keeps rejecting makes `pg_wal` grow until CNPG stops the primary.
 Full background in
 [`documentations/10-n8n-automation.md`](../../../documentations/10-n8n-automation.md).
 
@@ -176,8 +181,8 @@ from datacenter IP ranges.
   `n8n-db` (the LinkedIn token, every future API key). Rotate it — or reinstall
   and let n8n generate a fresh one — and every credential in every workflow
   becomes permanently unreadable. A database restore without this exact key is
-  worthless. Disaster recovery needs *both* halves: the CNPG backup — which is
-  currently commented out, so that half does not exist yet — and this key.
+  worthless. Disaster recovery needs *both* halves: the CNPG backup and this
+  key.
 - `strategy.type: Recreate` must stay. `RollingUpdate` deadlocks on the RWO
   volume.
 - `fsGroup: 1000` must match the image's `node` user, or the PVC is unwritable.
