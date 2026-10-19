@@ -33,10 +33,12 @@ spec:
       containers:
         - name: haproxy
           # renovate: datasource=docker depName=haproxy
-          image: haproxy:3.4.6-alpine
+          image: haproxy:3.4.7-alpine
           ports:
             - name: s3
               containerPort: 3900
+            - name: admin
+              containerPort: 3903
             - name: health
               containerPort: 8404
           securityContext:

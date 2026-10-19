@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: garage-config
+  namespace: garage-gw
+---
+# Read ONE Secret in etcd-backup: the key for bucket homelab-staging-etcd-backup.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: etcd-backup
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["etcd-backup-s3"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: etcd-backup
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw
+---
+# Read ONE Secret in fbref: the key for bucket cnpg-staging-fbref.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: fbref
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: fbref
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw
+---
+# Read ONE Secret in ai-gateway: the key for bucket cnpg-staging-ai-gateway.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: ai-gateway
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["ai-gateway-garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: ai-gateway
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw
+---
+# Read ONE Secret in nextcloud: the key for bucket cnpg-staging-nextcloud.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: nextcloud
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: nextcloud
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw

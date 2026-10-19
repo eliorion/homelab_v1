@@ -1,0 +1,49 @@
+# A Job is immutable, so this is applied by its own Flux Kustomization
+# (`infra-garage-config`, force: true) — the delete+recreate is what re-runs it.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: garage-config
+  namespace: garage-gw
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: garage-config
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: configure
+          image: python:3.15-alpine
+          command: ["python3", "/config/configure.py"]
+          env:
+            - name: GARAGE_ADMIN_URL
+              value: http://garage-admin.garage-gw.svc.cluster.local:3903
+            - name: GARAGE_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: garage-bucket-manager
+                  key: token
+          resources:
+            requests:
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: garage-config-script

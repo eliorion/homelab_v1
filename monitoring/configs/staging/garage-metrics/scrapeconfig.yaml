@@ -1,0 +1,27 @@
+# Per node, not through the gateway: /metrics describes the node it is served by.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: garage
+  namespace: monitoring
+  labels:
+    # Matches Prometheus scrapeConfigSelector.
+    release: kube-prometheus-stack
+spec:
+  scrapeInterval: 60s
+  metricsPath: /metrics
+  authorization:
+    type: Bearer
+    credentials:
+      name: garage-metrics-token
+      key: token
+  staticConfigs:
+    - targets: ["garage-node-a.tailscale.svc.cluster.local:3903"]
+      labels:
+        garage_node: a
+    - targets: ["garage-node-b.tailscale.svc.cluster.local:3903"]
+      labels:
+        garage_node: b
+    - targets: ["garage-node-c.tailscale.svc.cluster.local:3903"]
+      labels:
+        garage_node: c

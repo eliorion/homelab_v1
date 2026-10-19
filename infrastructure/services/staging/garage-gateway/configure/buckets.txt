@@ -1,0 +1,7 @@
+# One Garage bucket per line: bucket  namespace  secret  access-key-id-field  secret-key-field
+# The key lives in git, sops-encrypted, in the consumer's own Secret; the Job imports it into
+# Garage and grants it read+write on its bucket. Each namespace also needs a Role in rbac.yaml.
+homelab-staging-etcd-backup  etcd-backup  etcd-backup-s3                        AWS_ACCESS_KEY_ID  AWS_SECRET_ACCESS_KEY
+cnpg-staging-fbref           fbref        garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
+cnpg-staging-ai-gateway      ai-gateway   ai-gateway-garage-backup-credentials  ACCESS_KEY_ID      ACCESS_KEY_SECRET
+cnpg-staging-nextcloud       nextcloud    garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET

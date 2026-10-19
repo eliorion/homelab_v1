@@ -97,6 +97,22 @@
         namespace: mlops
         app: mlflow
         podSelector: app=mlflow
+    - marimo:
+        icon: mdi-notebook-outline
+        href: https://marimo.tail45b0ca.ts.net
+        description: Notebooks over the ML lake (tailnet only)
+        # no siteMonitor: the mlops-pipelines chart admits only the Tailscale proxy to it
+        namespace: mlops
+        app: marimo
+        podSelector: app=marimo
+    - Agent platform:
+        icon: mdi-robot-outline
+        href: https://agent-platform.tail45b0ca.ts.net
+        description: Coding agents in gVisor sandboxes
+        siteMonitor: http://agent-web.agent-platform.svc:8080/healthz
+        namespace: agent-platform
+        app: agent-web
+        podSelector: app=agent-web
 
 - Storage:
     - LINSTOR:
@@ -112,6 +128,15 @@
         href: https://seaweedfs-admin.tail45b0ca.ts.net
         description: Bulk and S3 tier (class hdd)
         siteMonitor: http://seaweedfs-seaweedfs-admin.seaweedfs.svc:23646/health
+        namespace: seaweedfs
+        app: seaweedfs
+        podSelector: ""
+    - SeaweedFS S3:
+        icon: mdi-bucket-outline
+        href: https://seaweedfs-s3.tail45b0ca.ts.net
+        description: S3 API (tailnet only)
+        # unsigned request: S3 answers 403, which Homepage counts as up (as for Garage)
+        siteMonitor: http://seaweedfs-seaweedfs-s3.seaweedfs.svc:8333/
         namespace: seaweedfs
         app: seaweedfs
         podSelector: ""
