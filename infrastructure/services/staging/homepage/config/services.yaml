@@ -193,14 +193,14 @@
         namespace: scraper
         app: admin-ui
         podSelector: app=admin-ui
-    - AzuraCast stream:
-        icon: azuracast.png
-        href: http://azuracast-stream.tail45b0ca.ts.net:8000
-        description: Icecast for off-site relays (tailnet only)
-        siteMonitor: http://azuracast-stream.azuracast.svc:8000/
-        namespace: azuracast
-        app: azuracast
-        podSelector: app=azuracast
+    - Docs:
+        icon: mdi-book-open-page-variant
+        href: https://docs.tail45b0ca.ts.net
+        description: Architecture docs, main and every open PR (/<pr>/)
+        siteMonitor: http://docs-preview.docs.svc:8080/
+        namespace: docs
+        app: docs-preview
+        podSelector: app=docs-preview
 
 - Public apps:
     - AzuraCast:

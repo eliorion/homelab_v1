@@ -3,4 +3,5 @@ homepage
 agent-platform
 mlops
 fbref
+docs
 garage-gw
