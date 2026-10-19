@@ -28,7 +28,7 @@ Overlay (`infrastructure/services/staging/garage-gateway/`):
 
 | File | What it holds |
 |---|---|
-| `haproxy.cfg` | The proxy config itself. `mode tcp` defaults; a `resolvers kube` block pointing at cluster DNS `10.96.0.10:53`; `frontend s3_in` binding `:3900` into `backend garage_s3`, round-robin over `garage-node-{a,b,c}.tailscale.svc.cluster.local:3900` with `check inter 3s fall 3 rise 2 resolvers kube init-addr last,none`; `frontend admin_in` on `:3903` into `backend garage_admin` (same three nodes, port 3903); and `frontend health` on `:8404` with `monitor-uri /healthz` plus the stats page on `/stats`. |
+| `haproxy.cfg` | The proxy config itself. `mode tcp` defaults; a `resolvers kube` block pointing at cluster DNS `10.96.0.10:53`; `frontend s3_in` binding `:3900` into `backend garage_s3`, round-robin over `garage-node-{a,b,c}.tailscale.svc.cluster.local:3900` with an HTTP health check (`option httpchk GET /`, any status within 3 s, `inter 5s fall 2 rise 2`) and `resolvers kube init-addr last,none`; `frontend admin_in` on `:3903` into `backend garage_admin` (same three nodes, port 3903); and `frontend health` on `:8404` with `monitor-uri /healthz` plus the stats page on `/stats` and HAProxy's Prometheus exporter on `/metrics` (scraped by `monitoring/configs/staging/garage-metrics/podmonitor-gateway.yaml`). |
 | `kustomization.yaml` | Sets `namespace: garage-gw`, includes the base, the OpenBao consumer component and `externalsecret.yaml`, and turns `haproxy.cfg` into the `garage-haproxy-config` ConfigMap via `configMapGenerator`. |
 | `externalsecret.yaml` | Secret `garage-bucket-manager` from OpenBao `kv/garage-gw/bucket-manager`: the scoped admin token for the `garage-config` Job. |
 | `configure/` | The `garage-config` Job and its bucket list — its own Flux Kustomization, `infra-garage-config`. README there. |
@@ -76,6 +76,14 @@ an operator proxy pod, and that pod's IP changes whenever it restarts. The
 on its own instead of needing a restart. `init-addr last,none` lets HAProxy start
 even when a backend name does not resolve yet, rather than refusing to boot.
 
+**The backend check is HTTP, not TCP.** Each backend is a Tailscale egress proxy, which accepts a
+TCP connection even when the Garage node behind it is hung. On 2026-10-19 node a hung, a TCP check
+kept it UP, and a third of all requests waited out the one-minute timeout (WAL uploads of 60-170 s,
+the garage-config Job timing out). The check sends `GET /` and accepts any status within 3 s: a
+live node answers at once (403 on S3, an error on the admin port), a hung one does not. It
+deliberately avoids `/health`, which can answer 503 for a cluster-wide quorum problem and would then
+mark every node DOWN together, turning a degraded cluster into an outage.
+
 **The probes only prove HAProxy is alive.** HAProxy binds the frontend even when
 every backend is down, so a TCP connect on `3900` is a true liveness/readiness
 signal for the proxy process. Backend health is a separate concern, exposed on
@@ -109,6 +117,8 @@ rewording one changes the hash and redeploys HAProxy for no reason.
   keeps using stale egress proxy IPs.
 - **Do not remove the `node-b` server line** because the host is down. It is
   meant to be there and comes up on its own.
+- **Do not go back to a TCP backend check, and do not check `/health`.** TCP never sees a hung
+  node behind its egress proxy; `/health` can fail on every node at once. See above.
 - **Do not gate the k8s probes on backend health.** The TCP-connect probes are
   intentional; see the rationale above.
 - **`8404` is not used by the probes.** It is the human-facing health and stats

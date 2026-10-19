@@ -1,0 +1,89 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: garage-alerts
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: garage-nodes.rules
+      rules:
+        - alert: GarageNodeUnreachable
+          expr: |
+            up{job="scrapeConfig/monitoring/garage"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Garage node {{ $labels.garage_node }} is unreachable"
+            description: "Prometheus cannot read {{ $labels.instance }}/metrics. With replication factor 2, one node down makes writes fail for the buckets it holds: every CNPG and etcd backup stops. On the node: `garage status`, `journalctl -u garage`. See documentations/12-garage-object-storage.md."
+        - alert: GarageMetricsMissing
+          expr: |
+            absent(up{job="scrapeConfig/monitoring/garage"})
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No Garage metrics at all"
+            description: "The ScrapeConfig monitoring/garage produces no target: every Garage alert is blind. Check monitoring/configs/staging/garage-metrics."
+        - alert: GarageNodeSlow
+          expr: |
+            scrape_duration_seconds{job="scrapeConfig/monitoring/garage"} > 5
+            and on (instance) up{job="scrapeConfig/monitoring/garage"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Garage node {{ $labels.garage_node }} answers slowly ({{ $value | humanizeDuration }})"
+            description: "A healthy node answers /metrics in well under a second. A slow node holds every request routed to it: the precursor of the 2026-10-19 hang. Check the node's load, disks and network."
+    - name: garage-disks.rules
+      rules:
+        - alert: GarageDiskAlmostFull
+          expr: |
+            1 - garage_local_disk_avail / garage_local_disk_total > 0.90
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Garage node {{ $labels.garage_node }}: {{ $labels.volume }} disk {{ $value | humanizePercentage }} full"
+            description: "Above 90%. A full metadata disk refuses every write (LMDB: No space left on device, 2026-10-15) and, with replication factor 2, blocks the whole cluster's writes. Free space or grow the disk; shorter backup retention (an ObjectStore's retentionPolicy) frees data."
+        - alert: GarageDiskFillingUp
+          expr: |
+            1 - garage_local_disk_avail / garage_local_disk_total > 0.80
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Garage node {{ $labels.garage_node }}: {{ $labels.volume }} disk {{ $value | humanizePercentage }} full"
+            description: "Above 80%: plan space before GarageDiskAlmostFull."
+        - alert: GarageDiskFullIn24h
+          expr: |
+            predict_linear(garage_local_disk_avail[6h], 24 * 3600) < 0
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Garage node {{ $labels.garage_node }}: {{ $labels.volume }} disk on course to fill within 24h"
+            description: "The last 6 hours' trend reaches zero free space within a day, however much is free now: on 2026-10-19 node c's metadata lost 1.7 GB/h while node a was hung (the writes a missed are queued in the others' metadata). Bring the missing node back first."
+    - name: garage-gateway.rules
+      rules:
+        - alert: GarageGatewayBackendDown
+          expr: |
+            max by (proxy, server) (haproxy_server_status{proxy=~"garage_.*", state="DOWN"}) == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "garage-gateway sees {{ $labels.server }} DOWN on {{ $labels.proxy }}"
+            description: "HAProxy's HTTP health check fails for this node, so the gateway no longer sends it traffic. Reads and writes go to the others; with replication factor 2 writes for the buckets it holds still fail. Compare with GarageNodeUnreachable."
+        - alert: GarageGatewayNoBackend
+          expr: |
+            max by (proxy) (haproxy_backend_active_servers{proxy=~"garage_.*"}) == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "garage-gateway has no healthy Garage node on {{ $labels.proxy }}"
+            description: "Every backup and the garage-config Job fail while this lasts. Check the three nodes and the Tailscale egress proxies (namespace tailscale)."

@@ -3,3 +3,6 @@ kind: Kustomization
 resources:
   - garage-metrics-token.enc.yaml
   - scrapeconfig.yaml
+  - podmonitor-gateway.yaml
+  - prometheusrule.yaml
+  - dashboard.yaml
