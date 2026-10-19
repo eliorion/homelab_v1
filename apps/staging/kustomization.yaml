@@ -13,4 +13,5 @@ resources:
   - linkding/
   - n8n/
   - nextcloud/
+  - quackback/
   - scraper/

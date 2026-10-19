@@ -1,0 +1,12 @@
+# Which namespaces receive the quackback key (Secret s3-quackback): Quackback's only. Every namespace
+# listed gets READ AND WRITE on the bucket.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-quackback
+  namespace: flux-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: quackback
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: quackback

@@ -160,7 +160,7 @@ proxy, and these four path rules are that restriction. The admin console is
 reached over the tailnet
 (`https://keycloak-admin.tail45b0ca.ts.net`), never here.
 
-### 3. `nao.eliorion.fr` — the only hostname behind Cloudflare Access
+### 3. `nao.eliorion.fr` — behind Cloudflare Access
 
 | Field | Value |
 |---|---|
@@ -255,6 +255,31 @@ not needed; the recipe below applies unchanged, and it conflicts with nothing
 here because AzuraCast has no OAuth flow of its own — unlike section 2, where a
 second flow would collide with Keycloak's.
 
+### 5. `scout.eliorion.fr` — Scout (asp fbref-webapp)
+
+| Field | Value |
+|---|---|
+| Path | *(empty — the whole host)* |
+| Service | `http://fbref-webapp.fbref.svc.cluster.local:3000` |
+
+Scout has its OWN login since asp `webapp.auth` (Keycloak client `scout`, realm `staging-apps`;
+an account outside the group `scout-users` gets a "waiting for approval" page). It was put
+behind a Cloudflare Access application before that existed (asp docs/17 §3; that application
+was never written down here). **Delete that Access application only after** the in-app login
+answers on the live hostname: `curl -sI https://scout.eliorion.fr/ | grep -i location` must
+show Access's redirect while it exists, and `/signin` once it is gone. Never the other way round.
+
+### 6. `feedback.eliorion.fr` — Quackback, behind Cloudflare Access
+
+| Field | Value |
+|---|---|
+| Path | *(empty — the whole host)* |
+| Service | `http://quackback.quackback.svc.cluster.local:3000` |
+
+**Create the Access application (below) BEFORE this route.** Quackback's first visitor owns its
+setup, and its own sign-up would be open to the internet for as long as the gap lasts.
+Quackback cannot serve under a path, so Scout's `/feedback` redirects here (asp fbref-webapp).
+
 ## Cloudflare Access — the login in front of nao
 
 Keycloak cannot be nao's own identity provider: self-hosted `getnao/nao` runs
@@ -317,6 +342,28 @@ use `Include → Everyone` with the IdP as the only gate — the `staging-apps` 
 
 Leaving One-time PIN enabled would let anyone with any email address bypass
 Keycloak entirely; it is on by default when an application is created.
+
+### The Quackback application — Zero Trust → Access → Applications → Add → Self-hosted
+
+Same identity provider as nao. The group, not an email list, is the policy: approving a Scout
+account (adding it to `scout-users`) is what opens the feedback site to that person.
+
+| Field | Value |
+|---|---|
+| Application name | `quackback` |
+| Session duration | 24h |
+| Public hostname | `feedback.eliorion.fr` (whole host, no path) |
+| Identity providers | `Keycloak` **only** — untick One-time PIN |
+| Instant Auth | On |
+
+Policy: **Allow**, `Include → OIDC Claims`, claim name `groups`, value `scout-users`. The claim
+must ALSO be listed on the identity provider (Settings → Authentication → Keycloak → OIDC
+Claims: `groups`), or Access never requests it and the policy silently matches nobody. The
+`cloudflare-access` client already emits it (realm-apps.yaml).
+
+Then Quackback's own login, once, in its admin UI (apps/base/quackback/README.md): a custom OIDC
+provider on the Keycloak client `quackback`. Same Keycloak session as the Access login, so no
+second password.
 
 ## WAF rule — the second layer
 

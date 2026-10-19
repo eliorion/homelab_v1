@@ -104,6 +104,26 @@ spec:
                 secretKeyRef:
                   name: nextcloud-oidc-client
                   key: client-secret
+            - name: SCOUT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: keycloak-realm-vars
+                  key: SCOUT_URL
+            - name: QUACKBACK_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: keycloak-realm-vars
+                  key: QUACKBACK_URL
+            - name: SCOUT_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: scout-oidc-client
+                  key: client-secret
+            - name: QUACKBACK_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: quackback-oidc-client
+                  key: client-secret
             # no-delete everywhere: the default (full management) deletes every
             # live object the realm files do not declare.
             - name: IMPORT_MANAGED_COMPONENT

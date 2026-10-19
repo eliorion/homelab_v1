@@ -264,6 +264,82 @@ clients:
           "access.token.claim": "true"
           "userinfo.token.claim": "false"
 
+  # Scout (asp services/fbref/webapp): the app's OWN login, Auth.js against this client.
+  # Confidential: the code exchange is server-side, from the webapp pod. The app reads the
+  # `groups` claim and holds an account outside scout-users on a "waiting for approval" page.
+  - clientId: scout
+    name: Scout
+    description: Scout's login (asp services/fbref/webapp, Auth.js)
+    protocol: openid-connect
+    enabled: true
+    publicClient: false
+    # From the scout-oidc-client Secret, reflected into `fbref` for the webapp.
+    secret: $(env:SCOUT_OIDC_CLIENT_SECRET)
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    attributes:
+      "pkce.code.challenge.method": "S256"
+    # Auth.js's callback for the provider id `keycloak`.
+    redirectUris:
+      - $(env:SCOUT_URL)/api/auth/callback/keycloak
+    webOrigins: []
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    fullScopeAllowed: false
+    consentRequired: false
+    protocolMappers:
+      # Auth.js reads the id_token's claims: flat names, matched against `scout-users`.
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          "claim.name": groups
+          "full.path": "false"
+          "id.token.claim": "true"
+          "access.token.claim": "false"
+          "userinfo.token.claim": "true"
+
+  # Quackback (apps/base/quackback), the feedback site: its own login, a "custom OIDC" provider
+  # set in Quackback's admin UI (stored encrypted in its DB; there is no env for it). Who may
+  # reach Quackback at all is decided BEFORE it, by the Cloudflare Access policy on
+  # feedback.<domain> (group scout-users through the cloudflare-access client): this client
+  # grants nothing by itself.
+  - clientId: quackback
+    name: Quackback
+    description: Quackback's login (apps/base/quackback) — reachable only through Cloudflare Access
+    protocol: openid-connect
+    enabled: true
+    publicClient: false
+    secret: $(env:QUACKBACK_OIDC_CLIENT_SECRET)
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    # Quackback (better-auth) names the callback after the provider id it gives in its admin UI,
+    # so only the prefix is known here: /api/auth/oauth2/callback/<id>.
+    redirectUris:
+      - $(env:QUACKBACK_URL)/api/auth/*
+    webOrigins: []
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    fullScopeAllowed: false
+    consentRequired: false
+
 # THE ACCESS CATALOGUE. One group per application; membership is the grant.
 # Kept by IMPORT_MANAGED_GROUP=no-delete, so a group added by hand in the admin
 # console survives the next import — but anything not listed here is undocumented
@@ -284,6 +360,10 @@ groups:
   # ENFORCED by agent-api (asp services/agent-platform/control): viewers read agents,
   # operators create/suspend/resume/delete them, admins add what later phases bring
   # (ModelProvider). Highest group wins. No group = 403 on every route but /healthz.
+  # ENFORCED by Scout itself (asp services/fbref/webapp src/proxy.ts: no group = the pending
+  # page) AND by the Cloudflare Access policy on Quackback, which must match this group via the
+  # `groups` claim. Membership is the owner granting an account Scout (and the board).
+  - name: scout-users
   - name: agent-platform-viewers
   - name: agent-platform-operators
   - name: agent-platform-admins

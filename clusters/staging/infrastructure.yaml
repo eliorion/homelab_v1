@@ -532,6 +532,7 @@ spec:
       - {kind: Secret, name: s3-ml-lake}
       - {kind: Secret, name: s3-ml-lake-vision}
       - {kind: Secret, name: s3-scraper-results}
+      - {kind: Secret, name: s3-quackback}
 ---
 # force: true so the Job is deleted and recreated when its script changes.
 apiVersion: kustomize.toolkit.fluxcd.io/v1

@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quackback
+  namespace: quackback
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quackback
+  template:
+    metadata:
+      labels:
+        app: quackback
+    spec:
+      securityContext:
+        # The image's `quackback` user: runAsNonRoot cannot verify a NAMED user.
+        runAsUser: 1001
+        runAsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: quackback
+          # 0.13.2 is the newest PUBLISHED image: v0.14.x have releases but no image tag.
+          image: ghcr.io/quackbackio/quackback:0.13.2@sha256:63660c1b32f2b841fb99e2502622b602cd08f49d2250c75fdac7aae1c7c2c151
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              valueFrom: {secretKeyRef: {name: quackback-db-app, key: uri}}
+            - name: SECRET_KEY
+              valueFrom: {secretKeyRef: {name: quackback-secrets, key: secret-key}}
+            # s3-quackback is reflected from flux-system (SeaweedFS bucket identity).
+            - name: S3_ACCESS_KEY_ID
+              valueFrom: {secretKeyRef: {name: s3-quackback, key: QUACKBACK_S3_ACCESS_KEY}}
+            - name: S3_SECRET_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: s3-quackback, key: QUACKBACK_S3_SECRET_KEY}}
+          envFrom:
+            - configMapRef:
+                name: quackback-config
+          # The entrypoint runs every migration before the server: the first boot builds the schema.
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            # BUN_INSTALL_CACHE_DIR, the image's one writable directory
+            - name: cache
+              mountPath: /app/.cache
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: cache
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

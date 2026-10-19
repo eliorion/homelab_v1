@@ -9,6 +9,7 @@ resources:
   - fbref/
   - n8n/
   - nextcloud/
+  - quackback/
   - scraper/
 
 # Staging only, never in base/databases: base also feeds the e2e vcluster, whose
@@ -43,6 +44,8 @@ patches:
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: n8n-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "256Mi"}, "limits": {"memory": "1Gi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: nextcloud-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: quackback-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: scraper-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "512Mi"}, "limits": {"memory": "1536Mi"}}}]'

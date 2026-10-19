@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-quackback
+    namespace: flux-system
+type: Opaque
+stringData:
+    QUACKBACK_S3_ACCESS_KEY: ENC[AES256_GCM,data:xyArNf5Tdr2IzphpyIoOeqni8FjP5oTG,iv:NZSOIzSX8voEe24CKO4/c3g/qKwbfi2HxMxU/zpLb6s=,tag:JRuu0VHFgxZulc+OMF41lw==,type:str]
+    QUACKBACK_S3_SECRET_KEY: ENC[AES256_GCM,data:zemJanqazMnEQ9BWND/uKLikDPy1jYcl6OIrCpg7ifpaVxjGWLuNlHBZU2P01MliAN90lVUl+45JZw4cHVwJUw==,iv:Ur36WdfJwjjFzDfZLxPsNXnI96TkW7IEPjXw8Q+A9J8=,tag:AEXZA2fTFSo5fyQa9jZrKA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBlR0libWdZVGZKK2Z2K2hW
+            b1VaU1Z3RG9PWUhYRndBZlFVVnVnMmF1N0dzCk9zMTFUMXBRYUczSHJ0WEY1SHRv
+            dm9pdjUramJQTkppWHVwU0szeTAvTmsKLS0tIFg4OGlNUFcveVdta1FRem1pM2FY
+            NW5FbDVhOGJQTzJnOW11dE1qMnVOc2MKLDj6U7OLfQ38DRP+sBpfVy3QyT/87IAZ
+            Dc05UyTv3kslpKc+Xtp7CpWTttx0tjPOevtTtXGqqI7FBgwKTU1cCQ==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-19T04:51:45Z"
+    mac: ENC[AES256_GCM,data:lIT4ImcifugAanewzOV4TRyG9aluAUbYD8/9GpLKws4eKciJn47wlsg69AUVk/wAqblO5lO4b3CAiZYNTsDzkK9rVQE89Whr9oLc3iDzQ28DukWqk5hpU9GtuRPWKXm5N5FeUC3Yf5CLOMtlOtJgATfFrybcFGA44jvT1yri5X8=,iv:pF5mtgXt/geDZzWDHE18u1KQAnUN3PVd8ZxlDqCk9Oc=,tag:pbsYScCDlkbOiGdMdrSNEg==,type:str]
+    mac_only_encrypted: true
+    version: 3.13.3
