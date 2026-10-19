@@ -8,12 +8,23 @@ so removing a line changes nothing on Garage.
 | File | What it holds |
 | --- | --- |
 | `buckets.txt` | One line per bucket: bucket, consumer namespace, Secret, and the two field names holding the key id and secret. |
-| `configure.py` | The Job's script (stdlib Python): `ListBuckets`, `ListKeys`, then per line `CreateBucket` if missing, `ImportKey` if missing, `AllowBucketKey`. Never prints a key secret. |
+| `configure.py` | The Job's script (stdlib Python): `ListBuckets`, `ListKeys`, then per line `CreateBucket` if missing, `ImportKey` if missing, `AllowBucketKey`. Never prints a key secret. Tolerates Garage's replication lag (below). |
 | `job.yaml` | Job `garage-config` in `garage-gw`, `python:3.13-alpine`, non-root, read-only root. |
 | `rbac.yaml` | ServiceAccount `garage-config`, and in each consumer namespace a Role allowing `get` on exactly one Secret. |
 
 Applied by Flux Kustomization `infra-garage-config` (`force: true`): a change to the script or the
 list renames the hashed ConfigMap, which changes the Job, which Flux deletes and recreates.
+
+## Garage answers from whichever node the gateway picked
+
+The nodes converge in seconds, so right after a run creates a bucket or imports a key, the next
+run (Flux retries a failed Job) can be answered by a node that has not seen it: the bucket is
+missing from `ListBuckets`, so `CreateBucket` gets `409 BucketAlreadyExists`, or `AllowBucketKey`
+gets `404`. Seen 2026-10-19 on `cnpg-staging-quackback`: created and granted at 20:42:44, then
+three runs failed on the 409 and the Job ended `Failed` with the bucket working. The script now
+reads a 409 on create as "list again until it appears", a 409 on import as "already imported",
+and retries a 404 grant, up to 6 tries waiting 1, 2, ... 5 s. Only `ListBuckets` is used to look a
+bucket up, because the token has no `GetBucketInfo` scope.
 
 ## Why the keys are imported, not created
 
