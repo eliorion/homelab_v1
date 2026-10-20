@@ -1,3 +1,9 @@
 - op: add
   path: /spec/storage/storageClass
   value: ssd
+# 5Gi filled on 2026-10-20: the Barman Cloud WAL archive to Garage (#284) falls behind the
+# scraper's write rate, so pg_wal grew to 3.3G of the 5Gi volume and Postgres stopped
+# ("Not enough disk space"). 20Gi gives the archive room to catch up; resizeInUseVolumes is on.
+- op: replace
+  path: /spec/storage/size
+  value: 20Gi
