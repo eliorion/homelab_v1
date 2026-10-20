@@ -10,6 +10,8 @@ resources:
   - garage-backup-credentials.enc.yaml
   - objectstore.yaml
   - scheduledbackup.yaml
+  # ONE-OFF: finish scraper-db-1's stuck PVC resize. Remove once the PVC reports 20Gi.
+  - finish-resize-job.yaml
 
 patches:
   # Attach the Barman Cloud plugin -> Garage.

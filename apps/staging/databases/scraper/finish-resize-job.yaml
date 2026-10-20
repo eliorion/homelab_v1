@@ -1,0 +1,26 @@
+# ONE-OFF, remove in the next PR. scraper-db-1's PVC (5Gi -> 20Gi, #7105d5b) is stuck in
+# FileSystemResizePending: the kubelet grows the filesystem only when a pod mounts the volume,
+# and CNPG will not recreate the instance pod until the volume is large enough. This Job only
+# mounts the volume (reads and writes nothing) so the resize completes; CNPG then recreates
+# scraper-db-1 on its own.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: scraper-db-1-finish-resize
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext: {fsGroup: 26, runAsGroup: 26, runAsNonRoot: true, runAsUser: 26, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: hold
+          image: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+          command: ["sleep", "120"]
+          resources: {requests: {cpu: 10m, memory: 16Mi}, limits: {memory: 64Mi}}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: ["ALL"]}}
+          volumeMounts: [{name: pgdata, mountPath: /pgdata}]
+      volumes:
+        - name: pgdata
+          persistentVolumeClaim: {claimName: scraper-db-1}
