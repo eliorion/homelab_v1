@@ -336,9 +336,10 @@ broken login rather than a denied one.
 | Identity providers | `Keycloak` **only** — untick everything else, including One-time PIN |
 | Instant Auth | On (single IdP, so skip the chooser) |
 
-Policy: **Allow**, `Include → Emails` listing the operator addresses. Do **not**
-use `Include → Everyone` with the IdP as the only gate — the `staging-apps` realm has
-`registrationAllowed: false`, but an emails include keeps the two independent.
+Policy: **Allow**, `Include → OIDC Claims`, claim `groups`, value `nao-users` — **not an email
+list**. The `staging-apps` realm takes self-registration WITHOUT email verification (2026-10-21),
+so an email-list policy can be satisfied by a stranger who registers an allowed address before its
+owner holds an account. Never `Include → Everyone`.
 
 Leaving One-time PIN enabled would let anyone with any email address bypass
 Keycloak entirely; it is on by default when an application is created.
