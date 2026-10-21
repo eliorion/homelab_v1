@@ -2,7 +2,8 @@
 
 The forge for the production repositories, starting with `eliorion/asp`, with CI on the shared
 Dagger engine. **Today GitHub is still the home** (PRs, releases, and Flux reads GitHub) and Forgejo
-receives every push and gives a second CI verdict from the same cache. **The target is the reverse**
+receives every push, and runs the same `ci.yaml` on the mirrored main (any branch by hand): a second
+CI verdict from the same cache. **The target is the reverse**
 (owner, 2026-10-16): Forgejo is the home and push-mirrors to GitHub, GitHub is the fallback, and
 `homelab_v1` alone stays on GitHub so the cluster can be rebuilt without anything running in it.
 The switch, the fallback runbook and what remains before the cutover: asp
@@ -11,7 +12,7 @@ The switch, the fallback runbook and what remains before the cutover: asp
 | file | what it declares |
 |---|---|
 | `release.yaml` | `HelmRelease forgejo`, chart `forgejo-helm` 17.3.0 (Forgejo 15.0.10 LTS), one replica, 20Gi `ssd` |
-| `bootstrap.yaml` | the bootstrap sidecar's script: org `eliorion`, repo `eliorion/asp`, the GitHub → Forgejo deploy key, org variables `DAGGER_RUNNER_HOST` and `CI_RUNNER`, runners `runner-0..3` |
+| `bootstrap.yaml` | the bootstrap sidecar's script: org `eliorion`, repo `eliorion/asp` (Actions OFF on creation, see below), the GitHub → Forgejo deploy key, org variables `DAGGER_RUNNER_HOST` and `CI_RUNNER`, runners `runner-0..3` |
 | `certificate.yaml` | `git-tls` for `git.eliorion.fr`, `letsencrypt-prod` (DNS-01) |
 | `gateway.yaml` | `HTTPRoute` on the shared `cilium-gw` listener `https-git`, plus the `ReferenceGrant` for the cert |
 | `ingress-tailscale.yaml` | tailnet UI at `https://forgejo.tail45b0ca.ts.net` |
@@ -62,6 +63,17 @@ The two R2 tokens stay sops files, like every CNPG backup token:
 `staging/databases/forgejo/r2-backup-credentials.enc.yaml` and
 `staging/forgejo/r2-dump-credentials.enc.yaml`, from their `.example` templates.
 
+## Turning it on (phase A), in this order
+
+1. Seed OpenBao, commit the two R2 sops files, add the DNS record (the PR's checklist).
+2. Merge; Flux deploys. The bootstrap sidecar creates `eliorion/asp` with **Actions OFF**.
+3. `ssh-keyscan -p 22 192.168.1.113` into the asp repo variable `FORGEJO_SSH_KNOWN_HOSTS`, the
+   mirror key into the secret `FORGEJO_MIRROR_SSH_KEY`, then run asp's `forgejo-mirror.yaml` BY
+   HAND once (a dispatch is the full sync: every branch and every tag).
+4. Only then switch Actions on (repo Settings → Units, or
+   `PATCH /repos/eliorion/asp {"has_actions":true}`). Seeding with Actions on would run each of
+   the ~240 old release tags' own `build-push.yaml`, from before those files were guarded.
+
 ## How code arrives
 
 **While GitHub is the home** (asp variable `FORGE_HOME` unset): asp
@@ -80,12 +92,16 @@ restart.
 ```bash
 curl -u forgejo-admin:<password> -H 'Content-Type: application/json' \
   -X POST https://git.eliorion.fr/api/v1/repos/eliorion/asp/push_mirrors \
-  -d '{"remote_address":"ssh://git@github.com/eliorion/asp.git","use_ssh":true,"sync_on_commit":true,"interval":"8h0m0s"}'
+  -d '{"remote_address":"ssh://git@github.com/eliorion/asp.git","use_ssh":true,"sync_on_commit":true,"interval":"0"}'
 # -> .public_key: add it at github.com/eliorion/asp/settings/keys, "Allow write access"
 ```
 
-The push mirror is `--mirror`: refs that exist only on GitHub (a release-please branch, a
-Dependabot branch) are pruned, which is why the release flow moves to Forgejo first.
+`interval: "0"` turns the periodic sync off: the mirror pushes only when someone commits to
+Forgejo, so a Forgejo that comes back after a fallback never overwrites what was done on GitHub
+meanwhile (asp `docs/30-forgejo-dagger-ci.md`, fallback runbook). The push mirror is `--mirror`:
+refs that exist only on GitHub (a release-please branch, a Dependabot branch) are pruned, which is
+why the release flow moves to Forgejo first. Set the org variable `FORGE_HOME=forgejo` at the same
+time as the GitHub repo variable: the home-only workflows key on it.
 
 ## Backups (Cloudflare R2, never Garage)
 

@@ -44,7 +44,15 @@ data:
       expect "$(call POST /orgs "{\"username\":\"$ORG\",\"visibility\":\"private\"}")" "org $ORG" 422 || return 1
       # The mirror target: a REGULAR repo, pushed to by GitHub (asp .github/workflows/
       # forgejo-mirror.yaml). A pull mirror would not fire Actions on a sync.
-      expect "$(call POST "/orgs/$ORG/repos" '{"name":"asp","private":true,"default_branch":"main"}')" "repo asp" 409 || return 1
+      code=$(call POST "/orgs/$ORG/repos" '{"name":"asp","private":true,"default_branch":"main"}')
+      expect "$code" "repo asp" 409 || return 1
+      # Created just now: Actions OFF until the first full sync has seeded it (README.md). That sync
+      # carries every old release tag, and each tag would otherwise run its OWN build-push.yaml,
+      # from before those files were guarded for two forges. Measured: pushes made while Actions
+      # are off create no run, and switching Actions on afterwards replays none.
+      if [ "$code" = 201 ]; then
+        expect "$(call PATCH "/repos/$ORG/asp" '{"has_actions":false}')" "repo asp: Actions off" || return 1
+      fi
       expect "$(call POST "/repos/$ORG/asp/keys" "{\"title\":\"github-mirror\",\"key\":\"$MIRROR_PUBKEY\",\"read_only\":false}")" "deploy key" 422 || return 1
       # Org variables read by the asp workflows, the same names GitHub uses: the engine, and the
       # runner label (`runs-on: ${{ vars.CI_RUNNER }}` resolves to these runners on this forge).

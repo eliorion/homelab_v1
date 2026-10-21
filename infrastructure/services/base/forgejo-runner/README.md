@@ -10,7 +10,7 @@ against the shared engine `tcp://dagger.dagger.svc:1234`. No Docker, no privileg
 | image `ghcr.io/actions/actions-runner:2.338.0` | the ARC image, already on every node: bash, git, curl and Node 24 (`/home/runner/externals/node24`), which `actions/checkout` and `ensure-tool.sh` need |
 | init container `code.forgejo.org/forgejo/runner:13.2.0` | copies the static `forgejo-runner` binary in. No image of our own to build or release |
 | `forgejo-runner-secrets` (reflected from `forgejo`) | pod N connects as `runner-N` with key `runner-N`; the Forgejo bootstrap sidecar registered the same secrets at org scope `eliorion` |
-| label `forgejo-host:host` | `runs-on: forgejo-host` in asp `.forgejo/workflows/ci.yaml` |
+| label `forgejo-host:host` | asp's workflows run `runs-on: ${{ vars.CI_RUNNER }}`; the bootstrap sets that org variable to `forgejo-host`. asp has ONE `.github/workflows/` tree for both forges (no `.forgejo/`) |
 | pod label `app.kubernetes.io/part-of: forgejo-runner` | the ONLY admission to the engine's plaintext `:1234` (`../dagger/networkpolicy.yaml`) |
 
 **Security.** Reaching `:1234` is root on cp1, so the control is who can trigger a workflow:

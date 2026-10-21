@@ -76,15 +76,17 @@ apiserver out of the data path.
 **What it costs.** Dagger's own documentation says `tcp://` sends every query and response in
 plaintext with no authentication. [`networkpolicy.yaml`](networkpolicy.yaml) is therefore the
 only authentication on :1234: a CiliumNetworkPolicy admitting the ARC runner pods
-(`app.kubernetes.io/part-of: gha-runner-scale-set` in `arc-runners`) to that port, and
-Prometheus to :9090. The reach it grants is the one `pods/exec` already granted (node-root
+(`app.kubernetes.io/part-of: gha-runner-scale-set` in `arc-runners`) and the Forgejo runner pods
+(`app.kubernetes.io/part-of: forgejo-runner` in `forgejo-runners`) to that port, and Prometheus
+to :9090. The reach it grants is the one `pods/exec` already granted (node-root
 through a privileged pod), minus the RBAC check, over a flat cluster network instead of TLS to
 the apiserver. Two rules keep that acceptable:
 
-1. Keep the selector tight. Anything else admitted to `arc-runners` that carries the
-   `part-of` label can run code as root on cp1.
+1. Keep the selectors tight. Anything else admitted to `arc-runners` or `forgejo-runners` that
+   carries its `part-of` label can run code as root on cp1.
 2. Fork pull requests never reach this engine (asp `dagger-engine.sh` gives them an ephemeral
-   one), and the runners hold no Docker daemon, so there is nothing privileged left in the
+   one on GitHub; on Forgejo a fork PR runs no job at all, see asp `.github/workflows/ci.yaml`),
+   and the runners hold no Docker daemon, so there is nothing privileged left in the
    runner pod to pivot from.
 
 The chart renders the ClusterIP Service `dagger` from `engine.containerPorts`; the
