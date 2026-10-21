@@ -1,8 +1,8 @@
 # PLACEHOLDER -- NOT ENCRYPTED YET. Bearer token Prometheus sends to each Garage node's
 # :3903/metrics (ScrapeConfig garage, scrapeconfig.yaml). Steps: README.md.
 #   cp garage-metrics-token.enc.yaml.exemple garage-metrics-token.enc.yaml
-#   # token: either the value Garage is configured with (GARAGE_METRICS_TOKEN / metrics_token),
-#   #        or the secret printed by: garage admin-token create --scope Metrics prometheus-staging
+#   # token: the secret printed by (ONE token for Prometheus and the bucket exporter):
+#   #   garage admin-token create --scope Metrics,ListBucketsInfo,ListBuckets,GetBucketInfo,GetClusterStatistics prometheus-staging
 #   sops -e -i garage-metrics-token.enc.yaml      (.sops.yaml encrypts stringData)
 apiVersion: v1
 kind: Secret

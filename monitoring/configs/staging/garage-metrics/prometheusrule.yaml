@@ -87,3 +87,23 @@ spec:
           annotations:
             summary: "garage-gateway has no healthy Garage node on {{ $labels.proxy }}"
             description: "Every backup and the garage-config Job fail while this lasts. Check the three nodes and the Tailscale egress proxies (namespace tailscale)."
+    - name: garage-buckets.rules
+      rules:
+        - alert: GarageBucketMetricsMissing
+          expr: |
+            garage_bucket_exporter_up == 0 or absent(garage_bucket_exporter_up)
+          for: 20m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Garage per-bucket statistics are not being collected"
+            description: "garage-bucket-exporter (namespace monitoring) cannot poll the Garage admin API, or is not running. The Buckets row of the Garage dashboard is frozen. Its logs say why; a 403 means the token in garage-metrics-token lacks a scope (README.md)."
+        - alert: GarageBucketMultipartLeak
+          expr: |
+            garage_bucket_unfinished_multipart_bytes > 5e9
+          for: 6h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Bucket {{ $labels.bucket }} holds {{ $value | humanize1024 }}B of unfinished multipart uploads"
+            description: "Uploads that never completed (typically backups cut off mid-upload) keep their parts until aborted, and count against the disks. Abort them with an S3 client (list-multipart-uploads / abort-multipart-upload) using the bucket's key."

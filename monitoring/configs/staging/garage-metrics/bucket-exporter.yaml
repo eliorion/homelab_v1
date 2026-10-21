@@ -1,0 +1,87 @@
+# Per-bucket Garage statistics: polls the admin API every 5 minutes with the same token Prometheus
+# uses for /metrics (garage-metrics-token, scopes in README.md) and serves the last answer.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garage-bucket-exporter
+  namespace: monitoring
+  labels:
+    app: garage-bucket-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: garage-bucket-exporter
+  template:
+    metadata:
+      labels:
+        app: garage-bucket-exporter
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          image: python:3.15-alpine
+          command: ["python3", "/app/bucket_exporter.py"]
+          env:
+            - name: GARAGE_ADMIN_URL
+              value: http://garage-admin.garage-gw.svc.cluster.local:3903
+            - name: GARAGE_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: garage-metrics-token
+                  key: token
+            - name: POLL_INTERVAL_S
+              value: "300"
+          ports:
+            - name: metrics
+              containerPort: 9101
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 5m
+              memory: 32Mi
+            limits:
+              memory: 96Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: app
+              mountPath: /app
+      volumes:
+        - name: app
+          configMap:
+            name: garage-bucket-exporter
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: garage-bucket-exporter
+  namespace: monitoring
+  labels:
+    # Matches Prometheus podMonitorSelector.
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: garage-bucket-exporter
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      # Cheap: answers from memory. The 5-minute Garage poll is POLL_INTERVAL_S.
+      interval: 60s
