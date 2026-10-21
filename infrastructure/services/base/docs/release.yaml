@@ -39,3 +39,8 @@ spec:
         - docs
         - docs.tail45b0ca.ts.net
         - docs-preview.docs.svc
+    # Read-only deploy key (SOPS, staging/docs/secrets): live main only. When the token is seeded in
+    # OpenBao (PR previews), REMOVE this in the same change and delete the key in GitHub: PR pages
+    # run in the same pod, so an unused key must not stay mounted. README.md.
+    deployKey:
+      secretName: docs-preview-deploy-key
