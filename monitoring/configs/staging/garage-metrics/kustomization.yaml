@@ -4,5 +4,12 @@ resources:
   - garage-metrics-token.enc.yaml
   - scrapeconfig.yaml
   - podmonitor-gateway.yaml
+  - bucket-exporter.yaml
   - prometheusrule.yaml
   - dashboard.yaml
+# Hashed: a script change renames the ConfigMap, which rolls the exporter.
+configMapGenerator:
+  - name: garage-bucket-exporter
+    namespace: monitoring
+    files:
+      - bucket_exporter.py
