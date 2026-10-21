@@ -12,8 +12,8 @@ This directory is the cluster wiring only.
 | File | What it does |
 |---|---|
 | `namespace.yaml` | Three namespaces, all PodSecurity `restricted`. `agent-platform` holds the control plane (agent-api and the Agent controller). `agent-sandboxes` holds the agents: one gVisor box per `Agent`, plus the chart's templates, warm pools, quota and CiliumNetworkPolicies. `agent-providers` holds only the custom model providers' Secrets (Settings › Model providers in the UI): agent-api writes them there and the broker reads them, so agent-api never reaches the subscription token in `agent-platform`. |
-| `release.yaml` | `HelmRelease agent-platform`, chart `k8s/charts/agent-platform` from the `agent-platform` GitRepository, with `reconcileStrategy: Revision` like the other asp-repo charts. It sets `crds: Create` / `upgrade.crds: CreateReplace` (the Agent CRD is in the chart's `crds/`), `retries: 3` and helm tests. Its values are environment overrides only: `ghcr-pull-secret`, and the Keycloak issuer and audience. |
-| `ingress-tailscale.yaml` | `Ingress agent-web` (`ingressClassName: tailscale`): the web UI at `https://agent-platform.tail45b0ca.ts.net`, which is one of the Keycloak client's redirect URIs. The chart's `agent-web` nginx serves the SPA and proxies `/api` to agent-api. |
+| `release.yaml` | `HelmRelease agent-platform`, chart `k8s/charts/agent-platform` from the `agent-platform` GitRepository, with `reconcileStrategy: Revision` like the other asp-repo charts. It sets `crds: Create` / `upgrade.crds: CreateReplace` (the Agent CRD is in the chart's `crds/`), `retries: 3` and helm tests. Its values are environment overrides only: `ghcr-pull-secret`, the Keycloak issuer and audience, and the two hostnames of the workbench (`api.workbench.appsHost` / `uiHost`). |
+| `ingress-tailscale.yaml` | Two Ingresses (`ingressClassName: tailscale`, tailnet only), both on the `agent-web` Service. `agent-web` is the web UI at `https://agent-platform.tail45b0ca.ts.net`, which is one of the Keycloak client's redirect URIs. The chart's `agent-web` nginx serves the SPA and proxies `/api` to agent-api. `agent-apps` is `https://agent-apps.tail45b0ca.ts.net`, the workbench panels' own hostname. On that `Host` the same nginx serves only `/api/v1/apps/` and `/healthz`, framed by the UI's origin alone, and the UI's host never serves them. A page an agent edits therefore never shares an origin with the operator's token. The apps host does no OIDC, so the Keycloak client needs no change. |
 | `kustomization.yaml` | The three files above. |
 
 The staging overlay adds `secrets/`, namespaced to `agent-platform`. It holds the `openbao` consumer
@@ -71,3 +71,6 @@ with `client_id=agent-platform`.
   HelmRelease does not delete them either. To clean up, delete the Agents through agent-api first.
 - **Keep `upgrade.crds: CreateReplace`.** Without it a new CRD field is pruned by the API server,
   silently.
+- **Rename `agent-apps` or `agent-web` together with `api.workbench`** in `release.yaml`: the
+  chart matches the apps server on the exact hostname and names the UI's in the frame CSP. A
+  mismatch fails closed, with panels that answer 404 or refuse to frame.

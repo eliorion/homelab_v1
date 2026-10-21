@@ -15,3 +15,23 @@ spec:
   tls:
     - hosts:
         - agent-platform
+---
+# The workbench panels (LikeC4, Docs, Changes) on a hostname of their own:
+# https://agent-apps.tail45b0ca.ts.net, chart api.workbench.appsHost (release.yaml). Same Service:
+# its nginx serves only /api/v1/apps/ on this Host, and never on the UI's, so a page an agent
+# edits cannot reach the UI's token (asp docs/22-agent-platform.md §12). No OIDC happens here.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agent-apps
+  namespace: agent-platform
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: agent-web
+      port:
+        number: 8080
+  tls:
+    - hosts:
+        - agent-apps

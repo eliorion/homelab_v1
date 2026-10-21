@@ -39,6 +39,11 @@ spec:
         # Public issuer: the in-cluster Keycloak's NetworkPolicy refuses other namespaces.
         issuerUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps
         audience: agent-platform
+      # The workbench panels, served from their own hostname (ingress-tailscale.yaml), never the
+      # UI's; uiHost is the only origin allowed to frame them.
+      workbench:
+        appsHost: agent-apps.tail45b0ca.ts.net
+        uiHost: agent-platform.tail45b0ca.ts.net
     broker:
       # The ExternalSecret in ../../staging/agent-platform/secrets.
       secretName: claude-subscription
