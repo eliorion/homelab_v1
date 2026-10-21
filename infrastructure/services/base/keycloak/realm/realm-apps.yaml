@@ -347,6 +347,58 @@ clients:
     fullScopeAllowed: false
     consentRequired: false
 
+  # The board's GATE: oauth2-proxy in front of Quackback (apps/base/quackback/feedback-gate.yaml),
+  # because Quackback cannot refuse an account by group and any account of this realm could sign
+  # in to it. Only `scout-users` passes; Quackback's own login (the client above) follows on the
+  # same Keycloak session, so a user types one password for Scout and the board.
+  - clientId: feedback-gate
+    name: Feedback gate
+    description: oauth2-proxy in front of Quackback — lets scout-users through, nobody else
+    protocol: openid-connect
+    enabled: true
+    publicClient: false
+    secret: $(env:FEEDBACK_GATE_CLIENT_SECRET)
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    attributes:
+      "pkce.code.challenge.method": "S256"
+    redirectUris:
+      - $(env:QUACKBACK_URL)/oauth2/callback
+    webOrigins: []
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    fullScopeAllowed: false
+    consentRequired: false
+    protocolMappers:
+      # oauth2-proxy refuses a token whose `aud` lacks its client id.
+      - name: feedback-gate-audience
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        consentRequired: false
+        config:
+          "included.client.audience": feedback-gate
+          "id.token.claim": "true"
+          "access.token.claim": "true"
+      # Flat names: --allowed-group=scout-users matches the string exactly.
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          "claim.name": groups
+          "full.path": "false"
+          "id.token.claim": "true"
+          "access.token.claim": "true"
+          "userinfo.token.claim": "true"
+
 # THE ACCESS CATALOGUE. One group per application; membership is the grant.
 # Kept by IMPORT_MANAGED_GROUP=no-delete, so a group added by hand in the admin
 # console survives the next import — but anything not listed here is undocumented
@@ -368,8 +420,8 @@ groups:
   # operators create/suspend/resume/delete them, admins add what later phases bring
   # (ModelProvider). Highest group wins. No group = 403 on every route but /healthz.
   # ENFORCED by Scout itself (asp services/fbref/webapp src/proxy.ts: no group = the pending
-  # page) AND by the Cloudflare Access policy on Quackback, which must match this group via the
-  # `groups` claim. Membership is the owner granting an account Scout (and the board).
+  # page) AND by the board's gate (client feedback-gate, oauth2-proxy --allowed-group), which reads
+  # this group from the `groups` claim. Membership is the owner granting an account Scout (and the board).
   - name: scout-users
   # THE QUEUE: every self-registered account starts here (defaultGroups), and NOTHING reads it.
   # Listing its members is the list of pending requests; approving moves an account to scout-users.

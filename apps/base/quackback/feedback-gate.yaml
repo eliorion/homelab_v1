@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedback-gate
+  namespace: quackback
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feedback-gate
+  template:
+    metadata:
+      labels:
+        app: feedback-gate
+    spec:
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: oauth2-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5@sha256:8498b0d0ef0a7b29686414000a08aee467f02d0299c9ed1e006a8f33fc017916
+          args:
+            - --provider=keycloak-oidc
+            - --client-id=feedback-gate
+            - --code-challenge-method=S256
+            # Not the provider's default "... groups": this realm has no `groups` scope (Keycloak
+            # would answer invalid_scope); the groups come from the client's own mapper.
+            - --scope=openid email profile
+            # Must equal the Keycloak group exactly (flat name, realm-apps.yaml).
+            - --allowed-group=scout-users
+            - --email-domain=*
+            - --upstream=http://quackback.quackback.svc.cluster.local:3000
+            - --http-address=0.0.0.0:4180
+            # Behind the Cloudflare tunnel: trust its X-Forwarded-* headers.
+            - --reverse-proxy=true
+            - --trusted-proxy-ip=10.244.0.0/16
+            - --skip-provider-button=true
+            - --cookie-name=_feedback_gate
+            - --cookie-secure=true
+            - --cookie-expire=24h
+            # Re-reads the groups every 5 min: a removed user is out within that.
+            - --cookie-refresh=5m
+            - --silence-ping-logging=true
+          env:
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: feedback-gate-client, key: client-secret}}
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom: {secretKeyRef: {name: quackback-secrets, key: gate-cookie-secret}}
+          envFrom:
+            # OAUTH2_PROXY_OIDC_ISSUER_URL, OAUTH2_PROXY_REDIRECT_URL
+            - configMapRef:
+                name: feedback-gate-config
+          ports:
+            - name: http
+              containerPort: 4180
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feedback-gate
+  namespace: quackback
+spec:
+  ports:
+    - name: http
+      port: 4180
+      targetPort: http
+  selector:
+    app: feedback-gate
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: feedback-gate
+  namespace: quackback
+spec:
+  podSelector:
+    matchLabels:
+      app: feedback-gate
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cloudflare
+      ports:
+        - protocol: TCP
+          port: 4180
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: quackback
+      ports:
+        - protocol: TCP
+          port: 3000
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16
+              - 100.64.0.0/10
+      ports:
+        - protocol: TCP
+          port: 443

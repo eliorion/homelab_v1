@@ -124,6 +124,11 @@ spec:
                 secretKeyRef:
                   name: quackback-oidc-client
                   key: client-secret
+            - name: FEEDBACK_GATE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: feedback-gate-client
+                  key: client-secret
             # no-delete everywhere: the default (full management) deletes every
             # live object the realm files do not declare.
             - name: IMPORT_MANAGED_COMPONENT
