@@ -114,6 +114,15 @@ spec:
           bucketKey: FBREF_RAW_S3_BUCKET
           accessKeyKey: FBREF_RAW_S3_ACCESS_KEY
           secretKeyKey: FBREF_RAW_S3_SECRET_KEY
+    backend:
+      # Undelivered results spill to the in-cluster bucket scraper-results past a tenant's
+      # result_hot_max_bytes, and come back in order when its consumer polls (asp scraper V65,
+      # backend src/result_spill.py). The Secret is the bucket's own key, reflected to scraper
+      # only; endpoint and bucket are the chart defaults. Inert on a backend image without it.
+      resultSpill:
+        secretName: s3-scraper-results
+        accessKeyKey: SCRAPER_RESULTS_S3_ACCESS_KEY
+        secretKeyKey: SCRAPER_RESULTS_S3_SECRET_KEY  # pragma: allowlist secret
     poolctl:
       # Chart default is false: the controller runs the BACKEND image, so enabling
       # it before images.backend.tag names an image carrying src/poolctl.py

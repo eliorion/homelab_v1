@@ -47,5 +47,8 @@ patches:
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: quackback-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
+  # scraper-db: 3Gi limit (asp docs/29 P0). It now also holds the result-spill manifest and, from
+  # P1, every tenant's frontier; the request stays 512Mi so scheduling is unchanged. Changing the
+  # limit restarts both instances (replica first, then a switchover).
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: scraper-db}
-    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "512Mi"}, "limits": {"memory": "1536Mi"}}}]'
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "512Mi"}, "limits": {"memory": "3Gi"}}}]'
