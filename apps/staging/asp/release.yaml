@@ -50,6 +50,14 @@ spec:
     # enough, asp must rejoin the scraper platform first (README.md).
     ingest:
       enabled: false
+    # ADR 13 step 2a (asp PR #789): shadow asp's frontier into the scraper platform's seen-set
+    # for these sites (nothing is fetched because of it), and check the copy every night. After
+    # three clean `asp-frontier-diff` runs, the site's queue moves to the platform (step 2b).
+    engine:
+      config:
+        FRONTIER_SHADOW_SITES: "leboncoin,autoscout24"
+    frontierDiff:
+      enabled: true
     adminUi:
       enabled: true
       service:
