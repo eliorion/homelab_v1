@@ -936,7 +936,7 @@ data:
           },
           "gridPos": {
             "h": 5,
-            "w": 6,
+            "w": 8,
             "x": 0,
             "y": 43
           },
@@ -975,58 +975,7 @@ data:
             "overrides": []
           },
           "options": {},
-          "description": "Logical bytes the cluster can still take before its FIRST node's data disk is full: with replication, writes then fail for that node's share of every bucket. Per node: free space / (raw bytes that node takes per logical byte stored, as measured now \u2014 replication plus overhead such as data awaiting garbage collection). The minimum over the nodes. An estimate: assumes new data spreads like the existing data."
-        },
-        {
-          "type": "stat",
-          "title": "\u2026before a node reaches 90 %",
-          "id": 22,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 6,
-            "x": 6,
-            "y": 43
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "min((garage_local_disk_avail{volume=\"data\"} - 0.1 * garage_local_disk_total{volume=\"data\"}) / ((garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / scalar((sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes)))))",
-              "legendFormat": "",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "bytes",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "orange",
-                    "value": 100000000000.0
-                  },
-                  {
-                    "color": "green",
-                    "value": 250000000000.0
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "options": {},
-          "description": "Same estimate, stopping where GarageDiskAlmostFull (90 %) fires."
+          "description": "How much more data the cluster can store before its first node runs out of space. With replication, every file is written to several nodes, so once one node is full Garage refuses new writes for its share of every bucket, even if the other nodes still have room. Per node: free space divided by the raw bytes that node takes for each byte stored (measured from what is on the disks now, so it includes replication and overhead). The smallest value over the nodes. An estimate: it assumes new data spreads like the existing data."
         },
         {
           "type": "stat",
@@ -1038,8 +987,8 @@ data:
           },
           "gridPos": {
             "h": 5,
-            "w": 4,
-            "x": 12,
+            "w": 6,
+            "x": 8,
             "y": 43
           },
           "targets": [
@@ -1078,7 +1027,7 @@ data:
               ]
             }
           },
-          "description": "The node whose data disk bounds the cluster's capacity."
+          "description": "The node that will run out of space first. It sets the limit for the whole cluster: when it is full, writes fail even if the other nodes still have room."
         },
         {
           "type": "stat",
@@ -1090,8 +1039,8 @@ data:
           },
           "gridPos": {
             "h": 5,
-            "w": 4,
-            "x": 16,
+            "w": 5,
+            "x": 14,
             "y": 43
           },
           "targets": [
@@ -1142,8 +1091,8 @@ data:
           },
           "gridPos": {
             "h": 5,
-            "w": 4,
-            "x": 20,
+            "w": 5,
+            "x": 19,
             "y": 43
           },
           "targets": [
@@ -1212,18 +1161,9 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "min((garage_local_disk_avail{volume=\"data\"} - 0.1 * garage_local_disk_total{volume=\"data\"}) / ((garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / scalar((sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes)))))",
-              "legendFormat": "until a node reaches 90 %",
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
               "expr": "(sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes))",
               "legendFormat": "stored (logical)",
-              "refId": "C"
+              "refId": "B"
             }
           ],
           "fieldConfig": {
