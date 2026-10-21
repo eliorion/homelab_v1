@@ -12,7 +12,7 @@ series.
 | `garage-metrics-token.enc.yaml.exemple` | Its plaintext template: copy it, never an existing `.enc.yaml`. |
 | `podmonitor-gateway.yaml` | `PodMonitor garage-gateway`: HAProxy's built-in exporter on each gateway pod's `health` port (`/metrics`) — the gateway's own view of each node (`haproxy_server_status`, `haproxy_backend_active_servers`). |
 | `prometheusrule.yaml` | `PrometheusRule garage-alerts`, below. |
-| `dashboard.yaml` | Grafana dashboard **Garage object storage** (uid `garage-overview`): cluster stats, per-node disks (data and metadata, used %, free, 24 h forecast), reachability and response time, the gateway's health check per node, and the CNPG backups stored on Garage (WAL waiting, archive failures, hours since the last base backup). `$node` filters the per-node panels. |
+| `dashboard.yaml` | Grafana dashboard **Garage object storage** (uid `garage-overview`): cluster stats, per-node disks (data and metadata, used %, free, 24 h forecast), reachability and response time, the gateway's health check per node, and the CNPG backups stored on Garage (WAL waiting, archive failures, hours since the last base backup). `$node` filters the per-node panels; **Cluster capacity** and **Buckets** rows, below. |
 
 ## Alerts
 
@@ -63,6 +63,27 @@ quota_max_bytes,quota_max_objects}{bucket,bucket_id}`, `garage_cluster_{object_b
 data_avail_bytes,metadata_avail_bytes,stats_incomplete}`, and `garage_bucket_exporter_up` (0 = the
 last poll failed; the last good values keep being served). Garage maintains its bucket counters in
 the background: read them as trends, not as exact live values.
+
+## Cluster capacity: how much more the cluster can take
+
+Replication puts every logical byte on several nodes, and once ONE node's data disk is full the
+writes for its share of every bucket fail, so the cluster's free space is not the sum of the
+nodes'. The dashboard estimates it per node as
+
+    free space / (raw bytes this node takes per logical byte stored)
+
+where the denominator is measured, not assumed: the node's used bytes divided by the logical bytes
+stored (`sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes)`). It therefore
+includes replication AND overhead (data awaiting garbage collection, other files on the disk) — on
+2026-10-21 that was 2.7 raw bytes per logical byte, not the 2 replication alone gives. The cluster
+figure is the minimum over the nodes ("Node that fills first"), shown until full and until a node
+reaches 90 % (GarageDiskAlmostFull). It assumes new data spreads like the existing data, and a node
+that is down is missing from it, which overstates the headroom. Metadata headroom is the same idea
+for the metadata disks, as a multiple of today's size.
+
+Garage 2.1's `GetClusterStatistics` returns none of the totals the 2.4 API lists, so the
+`garage_cluster_*` metrics are empty on this version; the dashboard derives its totals from the
+per-bucket series instead.
 
 ## Why the token is in sops, not OpenBao
 

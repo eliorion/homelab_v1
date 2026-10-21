@@ -915,7 +915,7 @@ data:
         },
         {
           "type": "row",
-          "title": "Buckets",
+          "title": "Cluster capacity",
           "id": 20,
           "collapsed": false,
           "gridPos": {
@@ -928,14 +928,14 @@ data:
         },
         {
           "type": "stat",
-          "title": "Logical data stored",
+          "title": "Cluster can still accept",
           "id": 21,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
           "gridPos": {
-            "h": 4,
+            "h": 5,
             "w": 6,
             "x": 0,
             "y": 43
@@ -946,7 +946,362 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "garage_cluster_object_bytes",
+              "expr": "min(garage_local_disk_avail{volume=\"data\"} / ((garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / scalar((sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes)))))",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 100000000000.0
+                  },
+                  {
+                    "color": "green",
+                    "value": 250000000000.0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {},
+          "description": "Logical bytes the cluster can still take before its FIRST node's data disk is full: with replication, writes then fail for that node's share of every bucket. Per node: free space / (raw bytes that node takes per logical byte stored, as measured now \u2014 replication plus overhead such as data awaiting garbage collection). The minimum over the nodes. An estimate: assumes new data spreads like the existing data."
+        },
+        {
+          "type": "stat",
+          "title": "\u2026before a node reaches 90 %",
+          "id": 22,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 6,
+            "y": 43
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "min((garage_local_disk_avail{volume=\"data\"} - 0.1 * garage_local_disk_total{volume=\"data\"}) / ((garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / scalar((sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes)))))",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 100000000000.0
+                  },
+                  {
+                    "color": "green",
+                    "value": 250000000000.0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {},
+          "description": "Same estimate, stopping where GarageDiskAlmostFull (90 %) fires."
+        },
+        {
+          "type": "stat",
+          "title": "Node that fills first",
+          "id": 23,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 4,
+            "x": 12,
+            "y": 43
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "bottomk(1, garage_local_disk_avail{volume=\"data\"} / ((garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / scalar((sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes)))))",
+              "legendFormat": "node {{garage_node}}",
+              "instant": true,
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "textMode": "name",
+            "colorMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "description": "The node whose data disk bounds the cluster's capacity."
+        },
+        {
+          "type": "stat",
+          "title": "Metadata headroom",
+          "id": 24,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 4,
+            "x": 16,
+            "y": 43
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "min(garage_local_disk_avail{volume=\"metadata\"} / ((garage_local_disk_total{volume=\"metadata\"} - garage_local_disk_avail{volume=\"metadata\"}) / scalar(sum(garage_local_disk_total{volume=\"metadata\"} - garage_local_disk_avail{volume=\"metadata\"}))))  / scalar(sum(garage_local_disk_total{volume=\"metadata\"} - garage_local_disk_avail{volume=\"metadata\"}))",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 1,
+              "unit": "none",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 2
+                  },
+                  {
+                    "color": "green",
+                    "value": 4
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {},
+          "description": "How many times its current size the metadata can grow before the first metadata disk is full. Metadata grows with object count, and with the writes a down node misses."
+        },
+        {
+          "type": "stat",
+          "title": "Raw bytes per logical byte",
+          "id": 25,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 4,
+            "x": 20,
+            "y": 43
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / (sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes))",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 2.5
+                  },
+                  {
+                    "color": "red",
+                    "value": 3.5
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {},
+          "description": "Data-disk bytes used per logical byte stored. About 2 with replication factor 2; more means data awaiting garbage collection or other files on the disks."
+        },
+        {
+          "type": "timeseries",
+          "title": "Cluster capacity over time",
+          "id": 26,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 16,
+            "x": 0,
+            "y": 48
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "min(garage_local_disk_avail{volume=\"data\"} / ((garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / scalar((sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes)))))",
+              "legendFormat": "until a node is full",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "min((garage_local_disk_avail{volume=\"data\"} - 0.1 * garage_local_disk_total{volume=\"data\"}) / ((garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / scalar((sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes)))))",
+              "legendFormat": "until a node reaches 90 %",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "(sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes))",
+              "legendFormat": "stored (logical)",
+              "refId": "C"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {}
+        },
+        {
+          "type": "timeseries",
+          "title": "Capacity per node",
+          "id": 27,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 48
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "garage_local_disk_avail{volume=\"data\"} / ((garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / scalar((sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes))))",
+              "legendFormat": "node {{garage_node}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {},
+          "description": "Logical bytes each node could still absorb; the lowest line is the cluster's limit."
+        },
+        {
+          "type": "row",
+          "title": "Buckets",
+          "id": 28,
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 56
+          },
+          "panels": []
+        },
+        {
+          "type": "stat",
+          "title": "Logical data stored",
+          "id": 29,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 57
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(garage_bucket_bytes)",
               "legendFormat": "",
               "refId": "A"
             }
@@ -967,12 +1322,12 @@ data:
             "overrides": []
           },
           "options": {},
-          "description": "All objects' bytes before replication (GetClusterStatistics)."
+          "description": "Sum of the buckets' sizes, before replication."
         },
         {
           "type": "stat",
-          "title": "Raw disk per logical byte",
-          "id": 22,
+          "title": "Objects stored",
+          "id": 30,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -981,7 +1336,7 @@ data:
             "h": 4,
             "w": 6,
             "x": 6,
-            "y": 43
+            "y": 57
           },
           "targets": [
             {
@@ -989,15 +1344,14 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(garage_local_disk_total{volume=\"data\"} - garage_local_disk_avail{volume=\"data\"}) / garage_cluster_object_bytes",
+              "expr": "sum(garage_bucket_objects)",
               "legendFormat": "",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "decimals": 2,
-              "unit": "none",
+              "unit": "short",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1010,13 +1364,12 @@ data:
             },
             "overrides": []
           },
-          "options": {},
-          "description": "Raw bytes used on the data disks for each logical byte stored: replication factor plus overhead. Expect about 2 with replication factor 2."
+          "options": {}
         },
         {
           "type": "stat",
           "title": "Buckets",
-          "id": 23,
+          "id": 31,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1025,7 +1378,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 43
+            "y": 57
           },
           "targets": [
             {
@@ -1033,7 +1386,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "garage_cluster_buckets",
+              "expr": "count(garage_bucket_bytes)",
               "legendFormat": "",
               "refId": "A"
             }
@@ -1056,8 +1409,8 @@ data:
         },
         {
           "type": "stat",
-          "title": "Statistics complete",
-          "id": 24,
+          "title": "Unfinished multipart",
+          "id": 32,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1066,7 +1419,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 16,
-            "y": 43
+            "y": 57
           },
           "targets": [
             {
@@ -1074,38 +1427,28 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "1 - garage_cluster_stats_incomplete",
+              "expr": "sum(garage_bucket_unfinished_multipart_bytes)",
               "legendFormat": "",
               "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "mappings": [
-                {
-                  "type": "value",
-                  "options": {
-                    "0": {
-                      "text": "incomplete",
-                      "color": "orange"
-                    },
-                    "1": {
-                      "text": "complete",
-                      "color": "green"
-                    }
-                  }
-                }
-              ],
+              "unit": "bytes",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "orange",
+                    "color": "green",
                     "value": null
                   },
                   {
-                    "color": "green",
-                    "value": 1
+                    "color": "orange",
+                    "value": 5000000000.0
+                  },
+                  {
+                    "color": "red",
+                    "value": 50000000000.0
                   }
                 ]
               }
@@ -1113,12 +1456,12 @@ data:
             "overrides": []
           },
           "options": {},
-          "description": "Garage could not reach every node when computing its statistics: bucket numbers may be partial."
+          "description": "Space held by uploads that never completed (backups cut off mid-upload)."
         },
         {
           "type": "stat",
           "title": "Last bucket poll",
-          "id": 25,
+          "id": 33,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1127,7 +1470,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 20,
-            "y": 43
+            "y": 57
           },
           "targets": [
             {
@@ -1163,22 +1506,21 @@ data:
             },
             "overrides": []
           },
-          "options": {},
-          "description": "Age of the exporter's last successful poll (every 5 minutes)."
+          "options": {}
         },
         {
-          "type": "table",
-          "title": "Buckets now",
-          "id": 26,
+          "type": "bargauge",
+          "title": "Size per bucket",
+          "id": 34,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
           "gridPos": {
-            "h": 8,
-            "w": 24,
+            "h": 10,
+            "w": 12,
             "x": 0,
-            "y": 47
+            "y": 61
           },
           "targets": [
             {
@@ -1186,7 +1528,113 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "garage_bucket_bytes",
+              "expr": "sort_desc(garage_bucket_bytes)",
+              "legendFormat": "{{bucket}}",
+              "instant": true,
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "type": "bargauge",
+          "title": "Objects per bucket",
+          "id": 35,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 61
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sort_desc(garage_bucket_objects)",
+              "legendFormat": "{{bucket}}",
+              "instant": true,
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          }
+        },
+        {
+          "type": "table",
+          "title": "Bucket housekeeping",
+          "id": 36,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 71
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "garage_bucket_unfinished_multipart_bytes",
               "legendFormat": "",
               "instant": true,
               "range": false,
@@ -1198,7 +1646,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "garage_bucket_objects",
+              "expr": "garage_bucket_unfinished_multipart_uploads",
               "legendFormat": "",
               "instant": true,
               "range": false,
@@ -1210,7 +1658,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "garage_bucket_unfinished_multipart_bytes",
+              "expr": "garage_bucket_keys",
               "legendFormat": "",
               "instant": true,
               "range": false,
@@ -1222,37 +1670,21 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "garage_bucket_keys",
-              "legendFormat": "",
-              "instant": true,
-              "range": false,
-              "format": "table",
-              "refId": "D"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
               "expr": "delta(garage_bucket_bytes[24h])",
               "legendFormat": "",
               "instant": true,
               "range": false,
               "format": "table",
-              "refId": "E"
+              "refId": "D"
             }
           ],
           "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "align": "auto"
-              }
-            },
+            "defaults": {},
             "overrides": [
               {
                 "matcher": {
                   "id": "byName",
-                  "options": "size"
+                  "options": "unfinished multipart (bytes)"
                 },
                 "properties": [
                   {
@@ -1264,19 +1696,7 @@ data:
               {
                 "matcher": {
                   "id": "byName",
-                  "options": "unfinished multipart"
-                },
-                "properties": [
-                  {
-                    "id": "unit",
-                    "value": "bytes"
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "change 24h"
+                  "options": "size change 24h"
                 },
                 "properties": [
                   {
@@ -1287,9 +1707,7 @@ data:
               }
             ]
           },
-          "options": {
-            "showHeader": true
-          },
+          "options": {},
           "transformations": [
             {
               "id": "merge"
@@ -1308,12 +1726,10 @@ data:
                   "endpoint": true
                 },
                 "renameByName": {
-                  "bucket": "bucket",
-                  "Value #A": "size",
-                  "Value #B": "objects",
-                  "Value #C": "unfinished multipart",
-                  "Value #D": "keys",
-                  "Value #E": "change 24h"
+                  "Value #A": "unfinished multipart (bytes)",
+                  "Value #B": "unfinished multipart (uploads)",
+                  "Value #C": "keys",
+                  "Value #D": "size change 24h"
                 }
               }
             },
@@ -1322,7 +1738,7 @@ data:
               "options": {
                 "sort": [
                   {
-                    "field": "size",
+                    "field": "unfinished multipart (bytes)",
                     "desc": true
                   }
                 ]
@@ -1332,8 +1748,8 @@ data:
         },
         {
           "type": "timeseries",
-          "title": "Size per bucket",
-          "id": 27,
+          "title": "Size per bucket over time",
+          "id": 37,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1342,7 +1758,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 55
+            "y": 78
           },
           "targets": [
             {
@@ -1372,8 +1788,8 @@ data:
         },
         {
           "type": "timeseries",
-          "title": "Growth per bucket (per day)",
-          "id": 28,
+          "title": "Objects per bucket over time",
+          "id": 38,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1382,7 +1798,46 @@ data:
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 55
+            "y": 78
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "garage_bucket_objects",
+              "legendFormat": "{{bucket}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "stacking": {
+                  "mode": "normal"
+                },
+                "fillOpacity": 30
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {}
+        },
+        {
+          "type": "timeseries",
+          "title": "Size change per day",
+          "id": 39,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 87
           },
           "targets": [
             {
@@ -1402,43 +1857,12 @@ data:
             "overrides": []
           },
           "options": {},
-          "description": "Change over the previous 24 hours. A backup bucket at steady state hovers around zero; a climbing line is retention not keeping up."
-        },
-        {
-          "type": "timeseries",
-          "title": "Objects per bucket",
-          "id": 29,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 64
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "garage_bucket_objects",
-              "legendFormat": "{{bucket}}",
-              "refId": "A"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {},
-            "overrides": []
-          },
-          "options": {}
+          "description": "Change over the previous 24 hours. A backup bucket at steady state hovers around zero."
         },
         {
           "type": "timeseries",
           "title": "Unfinished multipart uploads",
-          "id": 30,
+          "id": 40,
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1447,7 +1871,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 64
+            "y": 87
           },
           "targets": [
             {
@@ -1466,8 +1890,7 @@ data:
             },
             "overrides": []
           },
-          "options": {},
-          "description": "Space held by uploads that never completed, e.g. backups cut off mid-upload. Garage keeps it until the upload is aborted."
+          "options": {}
         }
       ]
     }
