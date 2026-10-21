@@ -49,6 +49,15 @@ spec:
       enabled: true
     collection:
       enabled: true
+      # advisor-mot-backfill (asp docs/19 PR 1, docs/29): always suspended, run by hand with
+      # `kubectl -n advisor create job --from=cronjob/advisor-mot-backfill mot-2022-2025`. Capacity confirmed
+      # on 2026-10-19: advisor-db storage is 100Gi (apps/base/databases/advisor), and mot-archive-pvc.yaml is
+      # the kept volume a year's raw events are archived to before its staged rows are purged.
+      motBackfill:
+        enabled: true
+        capacityConfirmed: true
+        archive:
+          claimName: advisor-mot-archive
     pipeline:
       enabled: true
       llm:
