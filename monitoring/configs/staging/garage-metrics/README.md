@@ -76,8 +76,9 @@ where the denominator is measured, not assumed: the node's used bytes divided by
 stored (`sum(garage_bucket_bytes) + sum(garage_bucket_unfinished_multipart_bytes)`). It therefore
 includes replication AND overhead (data awaiting garbage collection, other files on the disk) — on
 2026-10-21 that was 2.7 raw bytes per logical byte, not the 2 replication alone gives. The cluster
-figure is the minimum over the nodes ("Node that fills first"), shown until full and until a node
-reaches 90 % (GarageDiskAlmostFull). It assumes new data spreads like the existing data, and a node
+figure is the minimum over the nodes: the node that runs out of space first ("Node that fills
+first") sets the limit, because once it is full writes fail for its share of every bucket even if
+the other nodes still have room. It assumes new data spreads like the existing data, and a node
 that is down is missing from it, which overstates the headroom. Metadata headroom is the same idea
 for the metadata disks, as a multiple of today's size.
 
