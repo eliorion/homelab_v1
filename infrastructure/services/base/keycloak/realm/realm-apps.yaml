@@ -33,15 +33,22 @@ displayName: Apps
 # Every flow here crosses the public internet.
 sslRequired: all
 
-# Nobody self-registers. Accounts are created in the admin console over the
-# tailnet, exactly like the `mcp` realm — see documentations/02-keycloak.md.
-registrationAllowed: false
+# ANYONE MAY ASK FOR AN ACCOUNT; ONLY THE OWNER GRANTS ACCESS (owner, 2026-10-21). A sign-up
+# lands in the group scout-requests (defaultGroups below), the queue, which NO application reads.
+# Approving = moving the account to scout-users in the admin console. Safe only because every app
+# here gates on a GROUP: never make defaultGroups a group an application trusts.
+# NO EMAIL VERIFICATION (no SMTP yet): a registered address is unproven, so a policy that trusts an
+# EMAIL (a Cloudflare Access email list) can be satisfied by a stranger who registers that address
+# first. Gate on groups only.
+registrationAllowed: true
 registrationEmailAsUsername: false
 resetPasswordAllowed: false
 loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
 verifyEmail: false
 rememberMe: false
+defaultGroups:
+  - /scout-requests
 
 # The login page is on the public internet, so brute-force protection is not
 # optional. Same shape as the `mcp` realm: five failures, exponential wait
@@ -364,6 +371,9 @@ groups:
   # page) AND by the Cloudflare Access policy on Quackback, which must match this group via the
   # `groups` claim. Membership is the owner granting an account Scout (and the board).
   - name: scout-users
+  # THE QUEUE: every self-registered account starts here (defaultGroups), and NOTHING reads it.
+  # Listing its members is the list of pending requests; approving moves an account to scout-users.
+  - name: scout-requests
   - name: agent-platform-viewers
   - name: agent-platform-operators
   - name: agent-platform-admins

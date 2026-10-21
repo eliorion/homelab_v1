@@ -93,11 +93,15 @@ rest of the production tree on 2026-09-15.
 
 ### Scout and Quackback (2026-10-19)
 
-The `staging-apps` realm takes two more clients, `scout` and `quackback`, and the group
-`scout-users`. **No self-registration** (owner, 2026-10-19): the owner creates each Scout user in the
-admin console (with an email address: Cloudflare Access needs one) and adds it to `scout-users`;
-an account without the group sees Scout's "waiting for approval" page. **No mail sender** either:
-the owner sets the first password and resets forgotten ones. The clients' credentials are application credentials, so they live in **OpenBao**, not SOPS:
+The `staging-apps` realm takes two more clients, `scout` and `quackback`, and two groups. **Anyone
+may ask for an account; only the owner grants access** (2026-10-21): Keycloak's sign-up form
+creates the account in `scout-requests` (the realm's `defaultGroups`), which no application reads.
+Approving = Keycloak admin console (tailnet) → Groups → `scout-requests` → Members → move the
+account to `scout-users`; rejecting = disable or delete it. An account outside `scout-users` sees
+Scout's "waiting for approval" page. **No mail sender** (no SMTP yet): addresses are NOT verified
+and there is no self-service password reset. So nothing may trust an EMAIL from this realm —
+every gate reads a group (a Cloudflare Access email list included: nao's must be a group rule).
+The clients' credentials are application credentials, so they live in **OpenBao**, not SOPS:
 `staging/keycloak/realm/externalsecrets.yaml` makes two Secrets in `identity`
 (this namespace is a SecretStore consumer), read by the import Job as `$(env:...)`:
 
@@ -129,7 +133,8 @@ to that group. This is the whole authorization model:
 | `nextcloud-users` | Nextcloud | **user_oidc itself** — `--group-restrict-login-to-whitelist=1` with `--group-whitelist-regex '^nextcloud-'`. Live. |
 | `nextcloud-admins` | Nextcloud | Provisioned as a Nextcloud group; grants no admin rights on its own (Nextcloud's admin group is `admin`). |
 | `nao-users` | nao | **A Cloudflare Access policy** matching the `groups` claim. Until that policy is switched from an email list to a group rule, this group grants nothing. |
-| `scout-users` | Scout (asp) + Quackback | **Scout itself** (`src/proxy.ts`: no group = the "waiting for approval" page) and **the Cloudflare Access policy** on `feedback.eliorion.fr` (OIDC claim `groups`). Accounts are created by the owner; adding one here grants Scout and the board. |
+| `scout-users` | Scout (asp) + Quackback | **Scout itself** (`src/proxy.ts`: no group = the "waiting for approval" page) and **the Cloudflare Access policy** on `feedback.eliorion.fr` (OIDC claim `groups`). Moving an account here from `scout-requests` is the owner's approval. |
+| `scout-requests` | — (the queue) | **Nothing reads it, by design**: every self-registered account starts here (`defaultGroups`). Its member list is the list of pending requests. |
 | `agent-platform-viewers` / `-operators` / `-admins` | agent-platform (asp) | **agent-api itself**: it maps the token's `groups` claim to a role (highest wins). No group = 403 on every route but `/healthz`. |
 
 The right-hand column is the point. A group is inert unless something reads it,
