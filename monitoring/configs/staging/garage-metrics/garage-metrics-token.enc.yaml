@@ -1,8 +1,8 @@
 # PLACEHOLDER -- NOT ENCRYPTED YET. Bearer token Prometheus sends to each Garage node's
 # :3903/metrics (ScrapeConfig garage, scrapeconfig.yaml). Steps: README.md.
 #   cp garage-metrics-token.enc.yaml.exemple garage-metrics-token.enc.yaml
-#   # token: either the value Garage is configured with (GARAGE_METRICS_TOKEN / metrics_token),
-#   #        or the secret printed by: garage admin-token create --scope Metrics prometheus-staging
+#   # token: the secret printed by (ONE token for Prometheus and the bucket exporter):
+#   #   garage admin-token create --scope Metrics,ListBucketsInfo,ListBuckets,GetBucketInfo,GetClusterStatistics prometheus-staging
 #   sops -e -i garage-metrics-token.enc.yaml      (.sops.yaml encrypts stringData)
 apiVersion: v1
 kind: Secret
@@ -11,19 +11,19 @@ metadata:
     namespace: monitoring
 type: Opaque
 stringData:
-    token: ENC[AES256_GCM,data:MSO6RM/6vQXEzXH1rXl5EaSM3odwN1IHHHiTyg9UR1suKwtW4NnAisb1aMDGdGnZxpEz3u2mMjE4k69kPvjn2FK8hJU=,iv:Vg3oVdsAtLpOHPHrkKjzO59pLnwrzxtCxl07BE5fw2Y=,tag:jKKOW6B32SYrH8jNaDZw/g==,type:str]
+    token: ENC[AES256_GCM,data:DAveViYSp+jaRObRrD8zU5n/DpKxDhBrVG9dkF44BA86pMP1MPWWkFZ6C0lGfJaDtgfsbbMcvXyrEItWcyQJCKW/Ohc=,iv:QdTOfTV94L47zdzIougOOsWsg4Sl6gt3js/SN1chGSY=,tag:F3JdjGq1QhUbXOhwwN3svQ==,type:str]
 sops:
     age:
         - enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA1VFFzMXhEM0twOWVtZGxm
-            MlRsc000dlhWbHd1TlNnNkpiN2FORkkrREFVCjR3WlRkQ2xNK1d6NHVpSkVYOFdh
-            L0VWalp6QUZOeGpFeThvS1o2KzRwMWMKLS0tIEVLWUdObUUrc1pHR3ZPK0xQOHZi
-            WU1DR0duMCt1OUhjMXI4aDArYXdNY1EKWQDfVdPo8j1BX9DO0aFs8W0oB8+Mtr1y
-            uhsrWyjjJ8mekw2ZejEyxK0Voay/ZBnNSKJVGpimqpEZR4fC8Regkw==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3TlByVHRIbTZIcnYvN2U4
+            QkVCZ09qa3hQWERrZ2FSVElIdE00SFZjR3lzCjJ0bEFMRzlmZEFENHo3Z0F3V2RM
+            MXI4ZnEyenZleWNuSFNZT04veWp6ZU0KLS0tIFBIOGRGaFJKcnZCQVlYUlJFcUNt
+            Wm1wRFZLWjBuakFHamU0ODluRnh2clEK5y7dzr/Hvw2YpYPkX+1wdoC6M1mrwQDZ
+            PNNexbr3IZtdz5VuJPg32hKZfoqjupVpAkmC2w4NVeSq4nhfb2YPtQ==
             -----END AGE ENCRYPTED FILE-----
           recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
     encrypted_regex: ^(data|stringData)$
-    lastmodified: "2026-10-18T17:00:13Z"
-    mac: ENC[AES256_GCM,data:PA4XPKsIRkabNNGZWu9ZmIIA9iyZTm02MNBN14c6jEJ0D6g0yXlDBuqgO/yslevlXpV3wDMjnRjIQAIEd2Dq0dhXtO8ppKBACN7YwLCymEiqKdtN2VRcFPlVZMjDAghZld4oahVoZ/3GBgTQt2fYffuXhJVNZEXYczwQgBrUs6E=,iv:P/k0I3PxvMUo3UPaLGd/rI58mHT7wZ04fcmuRJXrJ7A=,tag:3W+f4cxCF0utZ6jCqsdR6g==,type:str]
+    lastmodified: "2026-10-21T04:44:00Z"
+    mac: ENC[AES256_GCM,data:9ecPFhZ7X4i2mrVhe0rzP0jIGxC/hcNxo0MsKCnAL373DkEOdvw/P4AG58Ur00qT6WG9tvR0kpUC1bLsnYFnjSM+JmxPjzt8x0DjQ+rM2Xw2iGYRULDUD2M8vcMHAU68go3knNqWzGOgvCdp5ct8DTdZ3/w7dcQwxXckiB5fJNo=,iv:QgCVmaPInhxFizbPVyDtWu+FUE91fEGKMLgVWyR74kc=,tag:6D+9lSrVX0V2O8QxYEc4XQ==,type:str]
     version: 3.13.3
