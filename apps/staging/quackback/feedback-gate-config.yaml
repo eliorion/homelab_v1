@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feedback-gate-config
+  namespace: quackback
+data:
+  OAUTH2_PROXY_OIDC_ISSUER_URL: https://staging-keycloak.eliorion.fr/realms/staging-apps
+  # Must equal QUACKBACK_URL (realm-vars.yaml) + /oauth2/callback: the feedback-gate client's redirect URI.
+  OAUTH2_PROXY_REDIRECT_URL: https://feedback.eliorion.fr/oauth2/callback

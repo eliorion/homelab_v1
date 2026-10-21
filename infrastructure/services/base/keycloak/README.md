@@ -102,13 +102,14 @@ Scout's "waiting for approval" page. **No mail sender** (no SMTP yet): addresses
 and there is no self-service password reset. So nothing may trust an EMAIL from this realm —
 every gate reads a group (a Cloudflare Access email list included: nao's must be a group rule).
 The clients' credentials are application credentials, so they live in **OpenBao**, not SOPS:
-`staging/keycloak/realm/externalsecrets.yaml` makes two Secrets in `identity`
+`staging/keycloak/realm/externalsecrets.yaml` makes three Secrets in `identity`
 (this namespace is a SecretStore consumer), read by the import Job as `$(env:...)`:
 
 | OpenBao key `kv/identity/...` | Keys | Also reflected to |
 |---|---|---|
 | `scout-oidc-client` | `client-secret`, `auth-secret` (signs Scout's session cookie) | `fbref` (the webapp) |
 | `quackback-oidc-client` | `client-secret` (typed into Quackback's admin UI: apps/base/quackback/README.md) | — |
+| `feedback-gate-client` | `client-secret` (the board's gate, oauth2-proxy) | `quackback` |
 
 **Seed them BEFORE the change reconciles**: the import Job cannot start without them, and it
 applies every realm, so a missing key holds every realm edit back (existing logins keep
@@ -117,7 +118,8 @@ working). With the `bao` login from infrastructure/services/base/openbao/README.
 ```bash
 bao kv put kv/identity/scout-oidc-client client-secret="$(openssl rand -base64 32)" auth-secret="$(openssl rand -base64 32)"
 bao kv put kv/identity/quackback-oidc-client client-secret="$(openssl rand -base64 32)"
-bao kv put kv/quackback/quackback-secrets secret-key="$(openssl rand -base64 32)"
+bao kv put kv/identity/feedback-gate-client client-secret="$(openssl rand -base64 32)"
+bao kv put kv/quackback/quackback-secrets secret-key="$(openssl rand -base64 32)" gate-cookie-secret="$(openssl rand -hex 16)"
 ```
 
 ## Why it is like this
