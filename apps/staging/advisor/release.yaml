@@ -65,6 +65,15 @@ spec:
     components:
       advisor-engine:
         enabled: true
+      # The step-1 chat (asp docs/13 section 8, docs/14 Phase 8). advisor-chat runs from the adcheck image;
+      # the hand-off links it gives are built on the public origin. Rules only: no model is called
+      # (CHAT_CHIP_SLOTS covers every slot, the generative reply is off), so no Secret is needed yet.
+      advisor-chat:
+        env:
+          CHAT_GUIDE_BASE: https://auto-advisor.eliorion.fr
+      advisor-webapp:
+        env:
+          CHAT_ENABLED: "true"
       # The review queue, on the tailnet only (review-ingress-tailscale.yaml). The proxy's identity
       # header names the reviewer; never set this to a header a client could send on its own.
       advisor-review:
