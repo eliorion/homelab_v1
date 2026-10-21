@@ -300,6 +300,7 @@ own login still follows it. **Two logins is expected, not a misconfiguration.**
 | Token URL | `https://staging-keycloak.eliorion.fr/realms/staging-apps/protocol/openid-connect/token` |
 | Certificate (JWKS) URL | `https://staging-keycloak.eliorion.fr/realms/staging-apps/protocol/openid-connect/certs` |
 | OIDC scopes | `openid`, `email`, `profile` |
+| OIDC Claims | `groups` — without it Access never requests the claim, and a group policy (nao's) silently matches nobody |
 | PKCE | On |
 
 The realm is `apps` — declared in

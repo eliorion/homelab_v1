@@ -111,16 +111,23 @@ The clients' credentials are application credentials, so they live in **OpenBao*
 | `quackback-oidc-client` | `client-secret` (typed into Quackback's admin UI: apps/base/quackback/README.md) | — |
 | `feedback-gate-client` | `client-secret` (the board's gate, oauth2-proxy) | `quackback` |
 
-**Seed them BEFORE the change reconciles**: the import Job cannot start without them, and it
-applies every realm, so a missing key holds every realm edit back (existing logins keep
-working). With the `bao` login from infrastructure/services/base/openbao/README.md:
+**Seed them in this order — FIRST TIME ONLY** (`bao kv put` replaces the whole key: re-running a
+line rotates a live secret and breaks the logins using it; add a field with `bao kv patch`):
 
 ```bash
+# 1. any time: the realm import Job cannot start without all three, and Scout's login neither
 bao kv put kv/identity/scout-oidc-client client-secret="$(openssl rand -base64 32)" auth-secret="$(openssl rand -base64 32)"
 bao kv put kv/identity/quackback-oidc-client client-secret="$(openssl rand -base64 32)"
 bao kv put kv/identity/feedback-gate-client client-secret="$(openssl rand -base64 32)"
+# 2. ONLY once Quackback is behind its gate (kubectl -n quackback get netpol quackback shows ingress
+#    from app=feedback-gate only) and the tunnel route targets feedback-gate:4180: this key starts
+#    Quackback, and an unclaimed Quackback reachable from the tunnel is a public setup page.
 bao kv put kv/quackback/quackback-secrets secret-key="$(openssl rand -base64 32)" gate-cookie-secret="$(openssl rand -hex 16)"
 ```
+
+Then, if the fbref HelmRelease stalled while Scout's Secret was missing (its pod waited for it):
+`flux reconcile helmrelease fbref -n flux-system --force` once `kubectl -n fbref rollout status
+deploy/fbref-webapp` succeeds, so a deployed revision exists again to roll back to.
 
 ## Why it is like this
 
