@@ -26,7 +26,7 @@ spec:
       containers:
         - name: configure
           # sh + curl + jq; keep the kubectl minor within one of the cluster's.
-          image: docker.io/alpine/k8s:1.36.4
+          image: docker.io/alpine/k8s:1.37.1
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "/script/configure.sh"]
           env:

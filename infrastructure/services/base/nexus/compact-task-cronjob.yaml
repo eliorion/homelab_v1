@@ -31,7 +31,7 @@ spec:
           containers:
             - name: ensure
               # curl + jq + sh
-              image: docker.io/alpine/k8s:1.31.2
+              image: docker.io/alpine/k8s:1.37.1
               imagePullPolicy: IfNotPresent
               securityContext:
                 allowPrivilegeEscalation: false
