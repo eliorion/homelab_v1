@@ -1,0 +1,72 @@
+# Run by the `bootstrap` sidecar of the Forgejo pod (release.yaml): everything Forgejo needs that the
+# chart cannot declare. Idempotent; re-runs on every pod start. A failure retries forever and never
+# exits, because a crashlooping sidecar would take the pod out of the Service.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-bootstrap
+  namespace: forgejo
+data:
+  bootstrap.sh: |
+    #!/bin/sh
+    set -u
+    api=http://127.0.0.1:3000/api/v1
+    auth="$FORGEJO_ADMIN_USERNAME:$FORGEJO_ADMIN_PASSWORD"
+
+    # call METHOD PATH [JSON] -> prints the HTTP status, body in /tmp/bootstrap.resp
+    call() {
+      if [ $# -ge 3 ]; then
+        curl -sS -o /tmp/bootstrap.resp -w '%{http_code}' -u "$auth" -X "$1" \
+          -H 'Content-Type: application/json' -d "$3" "$api$2"
+      else
+        curl -sS -o /tmp/bootstrap.resp -w '%{http_code}' -u "$auth" -X "$1" "$api$2"
+      fi
+    }
+    # expect STATUS WHAT [ALREADY...] -- 2xx or one of the "already there" codes is success
+    expect() {
+      code=$1; what=$2; shift 2
+      case "$code" in 2??) return 0 ;; esac
+      for ok in "$@"; do [ "$code" = "$ok" ] && return 0; done
+      echo "bootstrap: $what -> HTTP $code: $(cat /tmp/bootstrap.resp)"
+      return 1
+    }
+
+    # set_var NAME VALUE -- create the org variable, or update it if it exists
+    set_var() {
+      body="{\"value\":\"$2\"}"
+      code=$(call POST "/orgs/$ORG/actions/variables/$1" "$body")
+      case "$code" in 2??) ;; *) code=$(call PUT "/orgs/$ORG/actions/variables/$1" "$body") ;; esac
+      expect "$code" "variable $1"
+    }
+
+    bootstrap() {
+      # The org that owns the mirror and scopes the runners (never instance-wide runners).
+      expect "$(call POST /orgs "{\"username\":\"$ORG\",\"visibility\":\"private\"}")" "org $ORG" 422 || return 1
+      # The mirror target: a REGULAR repo, pushed to by GitHub (asp .github/workflows/
+      # forgejo-mirror.yaml). A pull mirror would not fire Actions on a sync.
+      code=$(call POST "/orgs/$ORG/repos" '{"name":"asp","private":true,"default_branch":"main"}')
+      expect "$code" "repo asp" 409 || return 1
+      # Created just now: Actions OFF until the first full sync has seeded it (README.md). That sync
+      # carries every old release tag, and each tag would otherwise run its OWN build-push.yaml,
+      # from before those files were guarded for two forges. Measured: pushes made while Actions
+      # are off create no run, and switching Actions on afterwards replays none.
+      if [ "$code" = 201 ]; then
+        expect "$(call PATCH "/repos/$ORG/asp" '{"has_actions":false}')" "repo asp: Actions off" || return 1
+      fi
+      expect "$(call POST "/repos/$ORG/asp/keys" "{\"title\":\"github-mirror\",\"key\":\"$MIRROR_PUBKEY\",\"read_only\":false}")" "deploy key" 422 || return 1
+      # Org variables read by the asp workflows, the same names GitHub uses: the engine, and the
+      # runner label (`runs-on: ${{ vars.CI_RUNNER }}` resolves to these runners on this forge).
+      set_var DAGGER_RUNNER_HOST "$DAGGER_RUNNER_HOST" || return 1
+      set_var CI_RUNNER forgejo-host || return 1
+      # One runner identity per StatefulSet pod (../forgejo-runner/statefulset.yaml), each from
+      # its own 40-hex shared secret. `register` is idempotent for the same arguments.
+      for i in 0 1 2 3; do
+        forgejo forgejo-cli actions register --name "runner-$i" --scope "$ORG" \
+          --labels forgejo-host --secret "$(cat "/runner-secrets/runner-$i")" || return 1
+      done
+    }
+
+    until curl -fsS http://127.0.0.1:3000/api/healthz >/dev/null 2>&1; do sleep 5; done
+    until bootstrap; do sleep 30; done
+    echo "bootstrap: done"
+    exec sleep infinity

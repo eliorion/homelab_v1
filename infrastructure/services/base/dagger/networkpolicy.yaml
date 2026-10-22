@@ -2,7 +2,8 @@
 # THIS POLICY IS THE ONLY AUTHENTICATION ON IT. Anything that reaches :1234 can run code in
 # the privileged engine, which is node-root-equivalent -- the same reach `pods/exec` in
 # rbac.yaml grants, minus the RBAC check. Hence ingress is a closed list:
-#   - the ARC runner pods (the two scale sets' pods carry the part-of label below);
+#   - the ARC runner pods (the scale set's pods carry the part-of label below);
+#   - the Forgejo runner pods (infrastructure/services/base/forgejo-runner, same label key);
 #   - Prometheus, on the metrics port only.
 # Fork pull requests never get this engine (asp .github/scripts/dagger-engine.sh), but that is
 # the workflow's promise, not the network's: keep the runner selector tight.
@@ -25,6 +26,15 @@ spec:
             # Set by the gha-runner-scale-set chart on every runner pod (and not on the
             # listener, which sits in arc-systems anyway).
             k8s:app.kubernetes.io/part-of: gha-runner-scale-set
+      toPorts:
+        - ports:
+            - port: "1234"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: forgejo-runners
+            # Set by the forgejo-runner StatefulSet's pod template.
+            k8s:app.kubernetes.io/part-of: forgejo-runner
       toPorts:
         - ports:
             - port: "1234"

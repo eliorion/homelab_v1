@@ -24,3 +24,6 @@ data:
   # Scheme, no trailing slash; each must equal its Cloudflare public hostname.
   SCOUT_URL: https://scout.eliorion.fr
   QUACKBACK_URL: https://feedback.eliorion.fr
+  # Forgejo's ROOT_URL (infrastructure/services/base/forgejo/release.yaml), used to build its
+  # OIDC redirect URI. Must equal ROOT_URL without the trailing slash.
+  FORGEJO_URL: https://git.eliorion.fr

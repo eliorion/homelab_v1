@@ -7,3 +7,4 @@ docs
 garage-gw
 identity
 quackback
+forgejo

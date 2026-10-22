@@ -1,0 +1,110 @@
+# Four long-lived runners (owner, 2026-10-15: 4 replicas x capacity 4). A StatefulSet, not a
+# Deployment, because each pod is one registered runner: pod N reads secret key runner-N, which
+# the Forgejo bootstrap sidecar registered as runner-N (../forgejo/bootstrap.yaml).
+#
+# The image is the ARC runner image, already on every node: it carries bash, git, curl and Node,
+# which the asp workflows and ensure-tool.sh need. forgejo-runner itself is a static binary,
+# copied in from the official image by the init container. No image of our own to build.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: forgejo-runner
+  namespace: forgejo-runners
+spec:
+  replicas: 4
+  serviceName: forgejo-runner
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: forgejo-runner
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: forgejo-runner
+        # The Dagger engine's CiliumNetworkPolicy admits :1234 by THIS label in THIS namespace
+        # (../dagger/networkpolicy.yaml). It is the only fence on that listener.
+        app.kubernetes.io/part-of: forgejo-runner
+    spec:
+      serviceAccountName: forgejo-runner
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 600
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: forgejo-runner
+      initContainers:
+        - name: install-runner
+          image: code.forgejo.org/forgejo/runner:13.2.0
+          command: ["cp", "/bin/forgejo-runner", "/tools/forgejo-runner"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tools
+              mountPath: /tools
+      containers:
+        - name: runner
+          image: ghcr.io/actions/actions-runner:2.338.0
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              n="${HOSTNAME##*-}"
+              # The identity is derived from the secret, so recreating .runner on every start
+              # is the same runner, never a new one.
+              /tools/forgejo-runner create-runner-file --connect \
+                --instance https://git.eliorion.fr --name "runner-$n" \
+                --secret "$(cat "/runner-secrets/runner-$n")" --config /config/config.yaml
+              exec /tools/forgejo-runner daemon --config /config/config.yaml
+          workingDir: /data
+          env:
+            - name: PATH
+              value: /home/runner/externals/node24/bin:/home/runner/.local/bin:/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 4Gi
+          volumeMounts:
+            - name: tools
+              mountPath: /tools
+            - name: data
+              mountPath: /data
+            - name: work
+              mountPath: /work
+            - name: config
+              mountPath: /config
+            - name: runner-secrets
+              mountPath: /runner-secrets
+              readOnly: true
+      volumes:
+        - name: tools
+          emptyDir: {}
+        - name: data
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: forgejo-runner-config
+        # Reflected from forgejo/forgejo-runner-secrets (staging/forgejo).
+        - name: runner-secrets
+          secret:
+            secretName: forgejo-runner-secrets
