@@ -21,8 +21,10 @@ spec:
     createNamespace: false
   upgrade:
     remediation:
-      retries: 3
-      strategy: rollback
+      # 0 during the Raft -> PostgreSQL switch: a rollback across it restores the Raft config on a
+      # pod with no data volume, and OpenBao then self-initializes an EMPTY vault. Back to
+      # `retries: 3, strategy: rollback` once the switch is verified (README).
+      retries: 0
   values:
     global:
       tlsDisable: false
@@ -53,11 +55,23 @@ spec:
         size: 2Gi
       extraEnvironmentVars:
         BAO_CACERT: /openbao/tls/ca.crt
+        PGHOST: openbao-db-rw.openbao.svc
+        PGDATABASE: openbao
+        # The server certificate is checked against openbao-db's CA and its name.
+        PGSSLMODE: verify-full
+        PGSSLROOTCERT: /openbao/db-ca/ca.crt
       extraSecretEnvironmentVars:
         # Read once, by self-initialization on the very first start. See README.
         - envName: INITIAL_ADMIN_PASSWORD
           secretName: openbao-admin
           secretKey: INITIAL_ADMIN_PASSWORD
+        # CNPG's generated credential for the owner role of openbao-db.
+        - envName: PGUSER
+          secretName: openbao-db-app
+          secretKey: username
+        - envName: PGPASSWORD
+          secretName: openbao-db-app
+          secretKey: password
       volumes:
         - name: tls
           secret:
@@ -66,6 +80,12 @@ spec:
           secret:
             secretName: openbao-unseal
             defaultMode: 0400
+        - name: db-ca
+          secret:
+            secretName: openbao-db-ca
+            items:
+              - key: ca.crt
+                path: ca.crt
       volumeMounts:
         - name: tls
           mountPath: /openbao/tls
@@ -73,132 +93,137 @@ spec:
         - name: unseal
           mountPath: /openbao/unseal
           readOnly: true
+        - name: db-ca
+          mountPath: /openbao/db-ca
+          readOnly: true
       ha:
         enabled: true
         # One replica: self-initialization cannot bootstrap a multi-node cluster. See README.
         replicas: 1
         disruptionBudget:
           enabled: false
+        # Raft is OFF: the data is in the CNPG cluster openbao-db (storage "postgresql" below).
+        # The Raft volume (dataStorage) is kept, untouched, as the way back. See README.
         raft:
-          enabled: true
-          setNodeId: true
-          # Self-initialization runs ONCE, on the first start against an empty volume.
-          # Editing an `initialize` block afterwards changes nothing. See README.
-          config: |
-            ui = true
+          enabled: false
+        # Self-initialization runs ONCE, on the first start against EMPTY storage: never point
+        # this at an empty openbao-db (README: the switch-over copies the data first).
+        config: |
+          ui = true
 
-            listener "tcp" {
-              address         = "[::]:8200"
-              cluster_address = "[::]:8201"
-              tls_cert_file   = "/openbao/tls/tls.crt"
-              tls_key_file    = "/openbao/tls/tls.key"
-              telemetry {
-                unauthenticated_metrics_access = true
-              }
-            }
-
-            storage "raft" {
-              path = "/openbao/data"
-            }
-
-            # The key id must change whenever the key does; the old pair moves to previous_key.
-            seal "static" {
-              current_key_id = "20261007"
-              current_key    = "file:///openbao/unseal/unseal-20261007.key"
-            }
-
-            service_registration "kubernetes" {}
-
-            # Declared here: OpenBao rejects audit devices created through self-initialization.
-            audit "file" "stdout" {
-              description = "Audit log to the pod output, collected into Loki."
-              options {
-                file_path = "stdout"
-              }
-            }
-
+          listener "tcp" {
+            address         = "[::]:8200"
+            cluster_address = "[::]:8201"
+            tls_cert_file   = "/openbao/tls/tls.crt"
+            tls_key_file    = "/openbao/tls/tls.key"
             telemetry {
-              prometheus_retention_time = "30s"
-              disable_hostname          = true
+              unauthenticated_metrics_access = true
             }
+          }
 
-            initialize "engines" {
-              request "kv" {
-                operation = "update"
-                path      = "sys/mounts/kv"
-                data = {
-                  type        = "kv"
-                  description = "Application secrets, kv/<namespace>/<name>"
-                  options = {
-                    version = "2"
-                  }
-                }
-              }
-            }
+          # Connection from the PG* environment (openbao-db-app + the cluster CA, verify-full).
+          storage "postgresql" {
+            ha_enabled = "true"
+          }
 
-            initialize "auth" {
-              request "kubernetes" {
-                operation = "update"
-                path      = "sys/auth/kubernetes"
-                data = {
-                  type = "kubernetes"
-                }
-              }
-              request "kubernetes-config" {
-                operation = "update"
-                path      = "auth/kubernetes/config"
-                data = {
-                  kubernetes_host = "https://kubernetes.default.svc:443"
-                }
-              }
-              request "userpass" {
-                operation = "update"
-                path      = "sys/auth/userpass"
-                data = {
-                  type = "userpass"
-                }
-              }
-            }
+          # The key id must change whenever the key does; the old pair moves to previous_key.
+          seal "static" {
+            current_key_id = "20261007"
+            current_key    = "file:///openbao/unseal/unseal-20261007.key"
+          }
 
-            initialize "policies" {
-              request "admin" {
-                operation = "update"
-                path      = "sys/policies/acl/admin"
-                data = {
-                  policy = "path \"*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\", \"sudo\"] }"
-                }
-              }
-              request "config" {
-                operation = "update"
-                path      = "sys/policies/acl/config"
-                data = {
-                  policy = "path \"sys/policies/acl/*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"] }\npath \"auth/kubernetes/role/*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"] }\npath \"sys/auth\" { capabilities = [\"read\"] }\npath \"sys/auth/kubernetes\" { capabilities = [\"read\", \"sudo\"] }"
-                }
-              }
-            }
+          service_registration "kubernetes" {}
 
-            initialize "identities" {
-              request "admin" {
-                operation = "update"
-                path      = "auth/userpass/users/admin"
-                data = {
-                  token_policies = "admin"
-                  password = {
-                    eval_source     = "env"
-                    eval_type       = "string"
-                    env_var         = "INITIAL_ADMIN_PASSWORD"
-                    require_present = true
-                  }
-                }
-              }
-              request "config" {
-                operation = "update"
-                path      = "auth/kubernetes/role/config"
-                data = {
-                  bound_service_account_names      = "openbao-config"
-                  bound_service_account_namespaces = "openbao"
-                  token_policies                   = "config"
-                  token_ttl                        = "15m"
+          # Declared here: OpenBao rejects audit devices created through self-initialization.
+          audit "file" "stdout" {
+            description = "Audit log to the pod output, collected into Loki."
+            options {
+              file_path = "stdout"
+            }
+          }
+
+          telemetry {
+            prometheus_retention_time = "30s"
+            disable_hostname          = true
+          }
+
+          initialize "engines" {
+            request "kv" {
+              operation = "update"
+              path      = "sys/mounts/kv"
+              data = {
+                type        = "kv"
+                description = "Application secrets, kv/<namespace>/<name>"
+                options = {
+                  version = "2"
                 }
               }
             }
+          }
+
+          initialize "auth" {
+            request "kubernetes" {
+              operation = "update"
+              path      = "sys/auth/kubernetes"
+              data = {
+                type = "kubernetes"
+              }
+            }
+            request "kubernetes-config" {
+              operation = "update"
+              path      = "auth/kubernetes/config"
+              data = {
+                kubernetes_host = "https://kubernetes.default.svc:443"
+              }
+            }
+            request "userpass" {
+              operation = "update"
+              path      = "sys/auth/userpass"
+              data = {
+                type = "userpass"
+              }
+            }
+          }
+
+          initialize "policies" {
+            request "admin" {
+              operation = "update"
+              path      = "sys/policies/acl/admin"
+              data = {
+                policy = "path \"*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\", \"sudo\"] }"
+              }
+            }
+            request "config" {
+              operation = "update"
+              path      = "sys/policies/acl/config"
+              data = {
+                policy = "path \"sys/policies/acl/*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"] }\npath \"auth/kubernetes/role/*\" { capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"] }\npath \"sys/auth\" { capabilities = [\"read\"] }\npath \"sys/auth/kubernetes\" { capabilities = [\"read\", \"sudo\"] }"
+              }
+            }
+          }
+
+          initialize "identities" {
+            request "admin" {
+              operation = "update"
+              path      = "auth/userpass/users/admin"
+              data = {
+                token_policies = "admin"
+                password = {
+                  eval_source     = "env"
+                  eval_type       = "string"
+                  env_var         = "INITIAL_ADMIN_PASSWORD"
+                  require_present = true
+                }
+              }
+            }
+            request "config" {
+              operation = "update"
+              path      = "auth/kubernetes/role/config"
+              data = {
+                bound_service_account_names      = "openbao-config"
+                bound_service_account_namespaces = "openbao"
+                token_policies                   = "config"
+                token_ttl                        = "15m"
+              }
+            }
+          }

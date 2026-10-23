@@ -1,0 +1,74 @@
+# ONE-OFF, applied by hand during the switch-over (README "Switching storage"), never by Flux:
+# no kustomization lists this directory. It needs OpenBao STOPPED (it opens the Raft files).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openbao-migrate-to-postgres
+  namespace: openbao
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: quay.io/openbao/openbao:2.7.1@sha256:6d2b93856e3fcf7b18ad855a0b51eaba474dc8b79cf554379ea32034797d2acf
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              cat > /tmp/migrate.hcl <<EOF
+              storage_source "raft" {
+                path    = "/openbao/data"
+                node_id = "$(cat /openbao/data/node-id 2>/dev/null)"
+              }
+              storage_destination "postgresql" {}
+              cluster_addr = "https://127.0.0.1:8201"
+              EOF
+              bao operator migrate -config=/tmp/migrate.hcl
+          env:
+            - name: HOME
+              value: /tmp
+            - name: PGHOST
+              value: openbao-db-rw.openbao.svc
+            - name: PGDATABASE
+              value: openbao
+            - name: PGSSLMODE
+              value: verify-full
+            - name: PGSSLROOTCERT
+              value: /openbao/db-ca/ca.crt
+            - name: PGUSER
+              valueFrom: {secretKeyRef: {name: openbao-db-app, key: username}}
+            - name: PGPASSWORD
+              valueFrom: {secretKeyRef: {name: openbao-db-app, key: password}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            # Read by the migration; never written (the source stays intact as the way back).
+            - name: data
+              mountPath: /openbao/data
+            - name: db-ca
+              mountPath: /openbao/db-ca
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: data-openbao-0
+        - name: db-ca
+          secret:
+            secretName: openbao-db-ca
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - name: tmp
+          emptyDir: {}
