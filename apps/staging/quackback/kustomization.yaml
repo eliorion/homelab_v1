@@ -6,6 +6,7 @@ namespace: quackback
 resources:
   - ../../base/quackback
   - configmap.yaml
+  - feedback-gate-config.yaml
   - externalsecret.yaml
 components:
   - ../../../infrastructure/services/base/openbao/consumer

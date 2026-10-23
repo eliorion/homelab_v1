@@ -11,10 +11,11 @@ spec:
     - Ingress
     - Egress
   ingress:
+    # Only through the gate: a tunnel route straight to :3000 would skip the group check.
     - from:
-        - namespaceSelector:
+        - podSelector:
             matchLabels:
-              kubernetes.io/metadata.name: cloudflare
+              app: feedback-gate
       ports:
         - protocol: TCP
           port: 3000
