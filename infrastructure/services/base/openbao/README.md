@@ -152,7 +152,8 @@ application credential and belongs in OpenBao.
   over Raft to operators new to it. Until the switch-over below has run, losing the
   `data-openbao-0` volume still loses everything in it. A backup holds data encrypted
   by OpenBao's barrier, so restoring also needs the unseal key (`openbao-unseal`,
-  SOPS); the entry NAMES are visible in the database files.
+  SOPS). Neither secret values nor secret names are readable in the database: storage
+  keys are mount ids and salted hashes (measured 2026-10-23 on a rehearsal migration).
 - **Never point OpenBao at an EMPTY `openbao-db`.** It would self-initialize a new,
   empty vault (the `initialize` blocks), and the migration then refuses the non-empty
   destination. The storage switch in `release.yaml` lands only AFTER the data is copied.
