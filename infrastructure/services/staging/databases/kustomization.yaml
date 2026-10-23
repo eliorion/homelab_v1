@@ -9,6 +9,7 @@ resources:
   - dbtools/
   - harbor/
   - mlops/
+  - openbao/
 
 # Same rules as apps/staging/databases; mlops-db keeps the resources in its base.
 patches:
@@ -29,6 +30,8 @@ patches:
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: ai-gateway-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "256Mi"}, "limits": {"memory": "1Gi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: dbtools-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: openbao-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: harbor-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "256Mi"}, "limits": {"memory": "1Gi"}}}]'

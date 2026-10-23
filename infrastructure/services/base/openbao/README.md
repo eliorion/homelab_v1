@@ -151,6 +151,22 @@ application credential and belongs in OpenBao.
 - **A namespace not in `eso-namespaces.txt` gets `permission denied`** at login,
   which the SecretStore reports as `InvalidProviderConfig`.
 
+## Switching storage from Raft to `openbao-db` (once)
+
+1. `openbao-db` exists and its first backup succeeded (`kubectl -n openbao get cluster,backup`).
+2. A last Raft snapshot, kept off-cluster: `mise bao operator raft snapshot save openbao-raft-final.snap`.
+3. Stop OpenBao (ESO keeps the Secrets it already wrote; only new syncs wait):
+   `flux suspend helmrelease openbao -n openbao && kubectl -n openbao scale statefulset openbao --replicas=0`.
+4. Copy the data: a one-off Job mounting `data-openbao-0`, running
+   `bao operator migrate` from `storage_source "raft" { path = "/openbao/data" }` to
+   `storage_destination "postgresql"` on `openbao-db` (credentials from `openbao-db-app`).
+5. Merge the change that switches `release.yaml` to `storage "postgresql"`, then
+   `flux resume helmrelease openbao -n openbao`. OpenBao starts, unseals with the same static key,
+   and every secret is there: check `mise bao kv get kv/garage-gw/bucket-manager` and the
+   ExternalSecrets.
+6. Way back, until the volume is deleted: switch `release.yaml` back to `storage "raft"`. The Raft
+   volume is untouched by the migration.
+
 ## Operating it
 
 Onboard a namespace:

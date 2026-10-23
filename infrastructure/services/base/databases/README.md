@@ -38,6 +38,7 @@ Base — the shape of the cluster, environment-independent:
 | `keycloak/cluster.yaml` | `Cluster keycloak-db`, `instances: 2`, `initdb` database/owner `keycloak`, `storage.size: 10Gi` |
 | `ai-gateway/cluster.yaml` | `Cluster ai-gateway-db` in namespace `ai-gateway`, `instances: 2`, `initdb` database/owner `bifrost` with `encoding: UTF8`, `storage.size: 20Gi` |
 | `harbor/cluster.yaml` | `Cluster harbor-db`, `instances: 2`, `initdb` database/owner `harbor`, `storage.size: 20Gi`. Namespace `registry` comes from the staging overlay. No backup wiring yet — see `../harbor/README.md`. |
+| `openbao/cluster.yaml` | `Cluster openbao-db`, `instances: 2`, `initdb` database/owner `openbao`, `storage.size: 2Gi`, pinned image. Namespace `openbao` (PodSecurity `restricted`: every CNPG container, Barman sidecar included, already meets it). OpenBao's storage once migrated off Raft — see `../openbao/README.md`. Backed up to Garage `cnpg-staging-openbao` (Barman, WAL + daily 03:50, 7 days). |
 | `mlops/cluster.yaml` | `Cluster mlops-db` in namespace `mlops`, `instances: 1`, `initdb` database/owner `mlflow` (CNPG generates `mlops-db-app`), managed role `dagster` (password from an OpenBao ExternalSecret in `staging/mlops/secrets`), `Database` objects `dagster` + `mlflow_auth` (`retain`), `storage.size: 5Gi`. No backup, by design — `../mlops/README.md` |
 | `*/kustomization.yaml` | one resource each, `cluster.yaml` |
 

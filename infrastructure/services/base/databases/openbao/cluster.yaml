@@ -1,0 +1,18 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: openbao-db
+spec:
+  # OpenBao cannot start without it: two instances, so a node loss is a failover, not an outage.
+  instances: 2
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+  postgresql:
+    parameters:
+      max_connections: "50"
+  bootstrap:
+    initdb:
+      database: openbao
+      owner: openbao
+      # No postInit: OpenBao creates its two tables (openbao_kv_store, openbao_ha_locks) itself.
+  storage:
+    size: 2Gi
