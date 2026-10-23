@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: openbao-db-daily
+  namespace: openbao
+spec:
+  # 6-field CNPG cron. 3:50 UTC, staggered with the other clusters.
+  schedule: "0 50 3 * * *"
+  immediate: true
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  cluster:
+    name: openbao-db
