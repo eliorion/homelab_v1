@@ -21,8 +21,10 @@ spec:
     createNamespace: false
   upgrade:
     remediation:
-      retries: 3
-      strategy: rollback
+      # 0 during the Raft -> PostgreSQL switch: a rollback across it restores the Raft config on a
+      # pod with no data volume, and OpenBao then self-initializes an EMPTY vault. Back to
+      # `retries: 3, strategy: rollback` once the switch is verified (README).
+      retries: 0
   values:
     global:
       tlsDisable: false
