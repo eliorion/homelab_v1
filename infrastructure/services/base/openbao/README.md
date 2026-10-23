@@ -145,9 +145,17 @@ application credential and belongs in OpenBao.
 - **Replacing the CA** means replacing `ca.crt`, the `caBundle` in
   `consumer/secretstore.yaml` and `openbao-ca` together; a mismatch breaks every
   SecretStore at once.
-- **No backups yet.** Raft snapshots to Garage, encrypted with the offline etcd age
-  key, are the next step and need a Garage bucket and key. Until then only
-  low-criticality secrets move here: losing the volume loses everything in it.
+- **Backups: moving from Raft to CNPG (2026-10-23).** Raft has no backup. The chosen
+  path is OpenBao's PostgreSQL storage on the CNPG cluster `openbao-db`
+  (`../databases/openbao/`), backed up like every other database (Barman → Garage
+  `cnpg-staging-openbao`: WAL + daily, 7 days); OpenBao's own docs recommend PostgreSQL
+  over Raft to operators new to it. Until the switch-over below has run, losing the
+  `data-openbao-0` volume still loses everything in it. A backup holds data encrypted
+  by OpenBao's barrier, so restoring also needs the unseal key (`openbao-unseal`,
+  SOPS); the entry NAMES are visible in the database files.
+- **Never point OpenBao at an EMPTY `openbao-db`.** It would self-initialize a new,
+  empty vault (the `initialize` blocks), and the migration then refuses the non-empty
+  destination. The storage switch in `release.yaml` lands only AFTER the data is copied.
 - **A namespace not in `eso-namespaces.txt` gets `permission denied`** at login,
   which the SecretStore reports as `InvalidProviderConfig`.
 
