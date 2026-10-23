@@ -162,19 +162,29 @@ application credential and belongs in OpenBao.
 
 ## Switching storage from Raft to `openbao-db` (once)
 
-1. `openbao-db` exists and its first backup succeeded (`kubectl -n openbao get cluster,backup`).
-2. A last Raft snapshot, kept off-cluster: `mise bao operator raft snapshot save openbao-raft-final.snap`.
-3. Stop OpenBao (ESO keeps the Secrets it already wrote; only new syncs wait):
-   `flux suspend helmrelease openbao -n openbao && kubectl -n openbao scale statefulset openbao --replicas=0`.
-4. Copy the data: a one-off Job mounting `data-openbao-0`, running
-   `bao operator migrate` from `storage_source "raft" { path = "/openbao/data" }` to
-   `storage_destination "postgresql"` on `openbao-db` (credentials from `openbao-db-app`).
-5. Merge the change that switches `release.yaml` to `storage "postgresql"`, then
-   `flux resume helmrelease openbao -n openbao`. OpenBao starts, unseals with the same static key,
-   and every secret is there: check `mise bao kv get kv/garage-gw/bucket-manager` and the
-   ExternalSecrets.
-6. Way back, until the volume is deleted: switch `release.yaml` back to `storage "raft"`. The Raft
-   volume is untouched by the migration.
+Rehearsed 2026-10-23 on the real 2.7.1 image (Raft vault with secrets → `bao operator migrate`
+→ restart on PostgreSQL with the same static seal: unsealed by itself, every secret readable;
+`verify-full` against the right CA connects, against a wrong one OpenBao refuses to start).
+OpenBao is down from step 3 to step 6, a few minutes; ESO keeps every Secret it already wrote.
+
+1. `openbao-db` is healthy and its first backup succeeded:
+   `kubectl -n openbao get cluster openbao-db; kubectl -n openbao get backup`.
+2. A last Raft snapshot, kept OFF the cluster: `mise bao operator raft snapshot save openbao-raft-final.snap`.
+3. Stop OpenBao: `flux suspend helmrelease openbao -n openbao && kubectl -n openbao scale statefulset openbao --replicas=0`,
+   and wait for `openbao-0` to be gone.
+4. Copy: `kubectl apply -f infrastructure/services/base/openbao/switchover/migrate-job.yaml`, then
+   `kubectl -n openbao logs -f job/openbao-migrate-to-postgres` must end with
+   `Success! All of the keys have been migrated.` Then `kubectl -n openbao delete job openbao-migrate-to-postgres`.
+5. `kubectl -n openbao delete statefulset openbao --cascade=orphan` — the chart drops the `data`
+   volume template once Raft is off, and a StatefulSet's templates cannot be updated in place; the
+   PVC `data-openbao-0` is NOT deleted (it is the way back).
+6. Merge the `storage "postgresql"` change, then `flux resume helmrelease openbao -n openbao`.
+   Check: `kubectl -n openbao logs openbao-0 | grep -i -E "unseal|postgres"`,
+   `mise bao status` (Storage Type `postgresql`, Sealed `false`), `mise bao kv get kv/garage-gw/bucket-manager`,
+   and `kubectl get externalsecret -A` all Ready.
+
+**Way back** (as long as `data-openbao-0` exists): revert the `release.yaml` change, repeat 3 and 5,
+resume. Raft resumes from the state of step 3; anything written to OpenBao since is lost.
 
 ## Operating it
 
