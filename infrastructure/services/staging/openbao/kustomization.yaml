@@ -5,3 +5,5 @@ resources:
   - openbao-unseal.enc.yaml
   - openbao-admin.enc.yaml
   - openbao-ca.enc.yaml
+  # The Raft -> PostgreSQL switch-over (README): present between steps A and B only.
+  - switchover/
