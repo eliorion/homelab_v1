@@ -95,8 +95,8 @@ spec:
           readOnly: true
       ha:
         enabled: true
-        # 0 DURING THE RAFT -> POSTGRESQL SWITCH (README): the copy Job needs the Raft files released.
-        replicas: 0
+        # One replica: self-initialization cannot bootstrap a multi-node cluster. See README.
+        replicas: 1
         disruptionBudget:
           enabled: false
         raft:
@@ -117,8 +117,11 @@ spec:
               }
             }
 
-            storage "raft" {
-              path = "/openbao/data"
+            # PostgreSQL (CNPG openbao-db, PG* env above) since the switch-over. Kept INSIDE
+            # ha.raft.config on purpose: the chart then keeps the Raft data volume (the way back,
+            # by reverting this) and the StatefulSet's immutable fields (README).
+            storage "postgresql" {
+              ha_enabled = "true"
             }
 
             # The key id must change whenever the key does; the old pair moves to previous_key.

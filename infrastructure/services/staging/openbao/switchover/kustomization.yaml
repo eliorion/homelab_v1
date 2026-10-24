@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # The Raft -> PostgreSQL switch-over, step A (README). Removed again by step B.
+# Step B: the copy Job is pruned; a backup of openbao-db now that it holds the data.
 resources:
-  - backup-pre.yaml
-  - migrate-job.yaml
+  - backup-post.yaml
