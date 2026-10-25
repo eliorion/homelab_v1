@@ -53,11 +53,22 @@ spec:
         size: 2Gi
       extraEnvironmentVars:
         BAO_CACERT: /openbao/tls/ca.crt
+        # openbao-db (CNPG): read by storage "postgresql"; unused while the storage is Raft.
+        PGHOST: openbao-db-rw.openbao.svc
+        PGDATABASE: openbao
+        PGSSLMODE: verify-full
+        PGSSLROOTCERT: /openbao/db-ca/ca.crt
       extraSecretEnvironmentVars:
         # Read once, by self-initialization on the very first start. See README.
         - envName: INITIAL_ADMIN_PASSWORD
           secretName: openbao-admin
           secretKey: INITIAL_ADMIN_PASSWORD
+        - envName: PGUSER
+          secretName: openbao-db-app
+          secretKey: username
+        - envName: PGPASSWORD
+          secretName: openbao-db-app
+          secretKey: password
       volumes:
         - name: tls
           secret:
@@ -66,6 +77,12 @@ spec:
           secret:
             secretName: openbao-unseal
             defaultMode: 0400
+        - name: db-ca
+          secret:
+            secretName: openbao-db-ca
+            items:
+              - key: ca.crt
+                path: ca.crt
       volumeMounts:
         - name: tls
           mountPath: /openbao/tls
@@ -73,10 +90,13 @@ spec:
         - name: unseal
           mountPath: /openbao/unseal
           readOnly: true
+        - name: db-ca
+          mountPath: /openbao/db-ca
+          readOnly: true
       ha:
         enabled: true
-        # One replica: self-initialization cannot bootstrap a multi-node cluster. See README.
-        replicas: 1
+        # 0 DURING THE RAFT -> POSTGRESQL SWITCH (README): the copy Job needs the Raft files released.
+        replicas: 0
         disruptionBudget:
           enabled: false
         raft:

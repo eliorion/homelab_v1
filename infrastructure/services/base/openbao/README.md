@@ -129,8 +129,9 @@ application credential and belongs in OpenBao.
 
 - **Self-initialization runs once.** Editing an `initialize` block, or
   `openbao-admin`, after the first start changes nothing; change the live
-  configuration with the `admin` login (or `config/`) instead. Re-running it means
-  deleting the `data-openbao-0` PVC, which deletes every secret.
+  configuration with the `admin` login (or `config/`) instead. Once on `openbao-db`,
+  re-running it means emptying its tables, which deletes every secret; `data-openbao-0`
+  is only the Raft way back: never delete it to "reset".
 - **The admin password in `openbao-admin` is only the first one.** If it is
   changed in OpenBao, update the SOPS file too, or it stops being a break-glass.
 - **There are no recovery keys.** Self-initialization does not generate any. The
@@ -155,26 +156,60 @@ application credential and belongs in OpenBao.
   SOPS). Neither secret values nor secret names are readable in the database: storage
   keys are mount ids and salted hashes (measured 2026-10-23 on a rehearsal migration).
 - **Never point OpenBao at an EMPTY `openbao-db`.** It would self-initialize a new,
-  empty vault (the `initialize` blocks), and the migration then refuses the non-empty
-  destination. The storage switch in `release.yaml` lands only AFTER the data is copied.
+  empty vault (the `initialize` blocks). The storage switch in `release.yaml` lands only
+  AFTER the data is copied. `bao operator migrate` does NOT check that its destination is
+  empty: it upserts into whatever is there, so a destination that ever held data must be
+  emptied first (step 4).
 - **A namespace not in `eso-namespaces.txt` gets `permission denied`** at login,
   which the SecretStore reports as `InvalidProviderConfig`.
 
-## Switching storage from Raft to `openbao-db` (once)
+## Switching storage from Raft to `openbao-db` (once, by GitOps)
 
-1. `openbao-db` exists and its first backup succeeded (`kubectl -n openbao get cluster,backup`).
-2. A last Raft snapshot, kept off-cluster: `mise bao operator raft snapshot save openbao-raft-final.snap`.
-3. Stop OpenBao (ESO keeps the Secrets it already wrote; only new syncs wait):
-   `flux suspend helmrelease openbao -n openbao && kubectl -n openbao scale statefulset openbao --replicas=0`.
-4. Copy the data: a one-off Job mounting `data-openbao-0`, running
-   `bao operator migrate` from `storage_source "raft" { path = "/openbao/data" }` to
-   `storage_destination "postgresql"` on `openbao-db` (credentials from `openbao-db-app`).
-5. Merge the change that switches `release.yaml` to `storage "postgresql"`, then
-   `flux resume helmrelease openbao -n openbao`. OpenBao starts, unseals with the same static key,
-   and every secret is there: check `mise bao kv get kv/garage-gw/bucket-manager` and the
-   ExternalSecrets.
-6. Way back, until the volume is deleted: switch `release.yaml` back to `storage "raft"`. The Raft
-   volume is untouched by the migration.
+Rehearsed 2026-10-23 on the real 2.7.1 image (Raft vault → `bao operator migrate` → restart on
+PostgreSQL with the same static seal: unsealed by itself, every secret readable; `verify-full`
+connects with the right CA and refuses a wrong one). Two merges, no `kubectl` write:
+
+**Why it stays in the chart's Raft mode.** The chart only renders the `data` volume (and keeps the
+StatefulSet's immutable `volumeClaimTemplates` unchanged) while `ha.raft.enabled` is true, and it
+never reads the HCL. So step B swaps only the `storage` block inside `ha.raft.config`: no
+StatefulSet recreation, the Raft volume stays mounted, and REVERTING step B brings OpenBao back on
+its Raft data, never on an empty vault. The leftover `BAO_RAFT_NODE_ID` env is ignored by PostgreSQL.
+
+- **Step A** (`switchover/` in the staging overlay, `ha.replicas: 0`, the `PG*` env and `openbao-db-ca`
+  mount, which nothing reads while the storage is Raft): OpenBao stops; the Job
+  `openbao-migrate-to-postgres` copies Raft into `openbao-db`; a one-off `Backup` proves the Garage
+  backup works. The Job cannot read a live vault — the Raft files are locked (1 s timeout) or the
+  volume is attached elsewhere — so it retries (`backoffLimit: 8`) until OpenBao is gone.
+  OpenBao is down from here to step B; ESO keeps every Secret it already wrote.
+  Optional, before merging A: an off-cluster copy, `mise bao operator raft snapshot save
+  openbao-raft-final.snap` (read-only). The copy itself only reads `data-openbao-0`.
+- **Gate:** `kubectl -n openbao logs job/openbao-migrate-to-postgres` ends with
+  `Success! All of the keys have been migrated.` and `kubectl -n openbao get backup
+  openbao-db-pre-switchover` is `completed`.
+- **Step B**: `storage "postgresql" { ha_enabled = "true" }` replaces the Raft block, `replicas: 1`,
+  `switchover/` removed (Flux prunes the Job), a post-switch `Backup`. Check `mise bao status`
+  (Storage Type `postgresql`, Sealed `false`), a `mise bao kv get`, all ExternalSecrets Ready.
+- **Way back**: revert step B. OpenBao returns on Raft as of step A; anything written since is lost,
+  and `openbao-db` keeps it — empty it before a retry (migrate does not check).
+
+## Restoring `openbao-db` (disaster recovery)
+
+What a restore needs: git, the SOPS age key (for `garage-backup-credentials` and the unseal key
+`openbao-unseal`), and Garage. Never OpenBao itself. Order matters, because an EMPTY `openbao-db`
+makes OpenBao self-initialize a new vault:
+
+1. Keep OpenBao stopped: `flux suspend helmrelease openbao -n flux-system`,
+   `kubectl -n openbao scale statefulset openbao --replicas=0`.
+2. Recreate the cluster FROM the backup instead of `initdb`: in `../databases/openbao/cluster.yaml`,
+   `bootstrap.recovery: {source: openbao-db-backup, database: openbao, owner: openbao}` with
+   `externalClusters: [{name: openbao-db-backup, plugin: {name: barman-cloud.cloudnative-pg.io,
+   parameters: {barmanObjectName: garage-store, serverName: openbao-db}}}]`, and the archiving plugin's
+   `serverName` changed (e.g. `openbao-db-v2`) so the new timeline does not overwrite the old one.
+3. Once the cluster is healthy, resume OpenBao: it unseals with the static key from SOPS and
+   serves the restored data; the `initialize` blocks do not run (the storage is initialized).
+4. Afterwards, return `cluster.yaml` to `initdb` (bootstrap is read only at creation).
+
+Not drilled yet: a throwaway restore (`openbao-db-restore-test`) is the next check.
 
 ## Operating it
 

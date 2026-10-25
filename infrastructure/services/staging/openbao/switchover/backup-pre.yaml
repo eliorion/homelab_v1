@@ -1,0 +1,13 @@
+# One-off: proves openbao-db backs up to Garage before it holds the data (the scheduled
+# "immediate" backup ran before garage-config had imported the key).
+apiVersion: postgresql.cnpg.io/v1
+kind: Backup
+metadata:
+  name: openbao-db-pre-switchover
+  namespace: openbao
+spec:
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  cluster:
+    name: openbao-db

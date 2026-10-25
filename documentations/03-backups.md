@@ -14,6 +14,7 @@ Four clusters are protected:
 | `asp-db` | `asp` | Cloudflare R2 | `asp-cnpg-staging` | Automarket scraper data |
 | `fbref-db` | `fbref` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-fbref` | fbref scraper data, the largest DB in the cluster |
 | `ai-gateway-db` | `ai-gateway` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-ai-gateway` | Bifrost providers, virtual keys, routing rules |
+| `openbao-db` | `openbao` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-openbao` | OpenBao's storage (every application credential), encrypted by its barrier: a restore also needs the unseal key from SOPS. Restore order in `infrastructure/services/base/openbao/README.md` |
 
 Three are **not** protected, deliberately or otherwise:
 
@@ -273,6 +274,7 @@ Repeat the pair from the cluster's own `initdb` in every recovery patch:
 | `n8n-db` | `n8n` | `app` |
 | `scraper-db` | `scraper` | `app` |
 | `dbtools-db` | `nao` | `app` |
+| `openbao-db` | `openbao` | `openbao` |
 | `keycloak-db` | `keycloak` | `keycloak` |
 | `ai-gateway-db` | `bifrost` | `bifrost` |
 | `seaweedfs-db` | `seaweedfs` | `seaweedfs` |
