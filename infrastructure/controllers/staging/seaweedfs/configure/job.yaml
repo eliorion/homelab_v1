@@ -13,7 +13,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: configure
-          image: chrislusf/seaweedfs:4.44
+          image: chrislusf/seaweedfs:4.51
           command: ["/bin/sh", "/script/configure.sh"]
           volumeMounts:
             - name: script
