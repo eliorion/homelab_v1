@@ -23,7 +23,7 @@ spec:
       containers:
         - name: configure
           # Keep on the server's version.
-          image: quay.io/openbao/openbao:2.7.1
+          image: quay.io/openbao/openbao:2.7.2
           command: ["/bin/sh", "/config/configure.sh"]
           env:
             - name: HOME
