@@ -12,7 +12,7 @@ series.
 | `garage-metrics-token.enc.yaml.exemple` | Its plaintext template: copy it, never an existing `.enc.yaml`. |
 | `podmonitor-gateway.yaml` | `PodMonitor garage-gateway`: HAProxy's built-in exporter on each gateway pod's `health` port (`/metrics`) — the gateway's own view of each node (`haproxy_server_status`, `haproxy_backend_active_servers`). |
 | `prometheusrule.yaml` | `PrometheusRule garage-alerts`, below. |
-| `dashboard.yaml` | Grafana dashboard **Garage object storage** (uid `garage-overview`): cluster stats, per-node disks (data and metadata, used %, free, 24 h forecast), reachability and response time, the gateway's health check per node, and the CNPG backups stored on Garage (WAL waiting, archive failures, hours since the last base backup). `$node` filters the per-node panels; **Cluster capacity** and **Buckets** rows, below. |
+| `dashboard.yaml` | Grafana dashboard **Garage object storage** (uid `garage-overview`): cluster stats, per-node disks (data and metadata, used %, free, 24 h forecast), reachability and response time, the gateway's health check per node, and the CNPG backups stored on Garage (WAL waiting, archive failures, hours since the last base backup, for every CNPG cluster that exports it plus the etcd backup — no namespace list to maintain). `$node` filters the per-node panels; **Cluster capacity** and **Buckets** rows, below. |
 
 ## Alerts
 

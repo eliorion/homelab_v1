@@ -877,9 +877,20 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "(time() - max by (namespace) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace=~\"fbref|ai-gateway|nextcloud|seaweedfs|scraper|advisor|n8n|registry\"})) / 3600",
+              "expr": "(time() - max by (namespace) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp)) / 3600",
               "legendFormat": "{{namespace}}",
               "refId": "A",
+              "instant": true,
+              "range": false
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "(time() - max(kube_cronjob_status_last_successful_time{namespace=\"etcd-backup\", cronjob=\"etcd-backup\"})) / 3600",
+              "legendFormat": "etcd",
+              "refId": "B",
               "instant": true,
               "range": false
             }
