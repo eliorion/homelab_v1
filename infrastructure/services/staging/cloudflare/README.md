@@ -277,7 +277,7 @@ show Access's redirect while it exists, and `/signin` once it is gone. Never the
 | Service | `http://feedback-gate.quackback.svc.cluster.local:4180` |
 
 The target is the **gate** (oauth2-proxy, `apps/base/quackback/feedback-gate.yaml`), never
-Quackback's :3000: the gate is what lets only the Keycloak group `scout-users` through, and
+Quackback's :3000: the gate is what lets only the Keycloak group `feedback-users` through, and
 Quackback's NetworkPolicy admits nothing else, so a route to :3000 answers 502. **No Cloudflare
 Access application** (owner, 2026-10-21: Keycloak is the only login). Quackback cannot serve under
 a path, so Scout's `/feedback` redirects here (asp fbref-webapp).

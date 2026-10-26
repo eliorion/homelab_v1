@@ -11,13 +11,14 @@ there, because Quackback serves only at the root of a hostname.
 ```
 Internet ─► Cloudflare tunnel ─► feedback-gate (oauth2-proxy) ─► Quackback
                                    │ no session  → Keycloak login (realm staging-apps)
-                                   │ not in scout-users → 403, never reaches Quackback
+                                   │ not in feedback-users → 403, never reaches Quackback
                                    └ re-reads the groups every 5 min (--cookie-refresh)
 ```
 
 **One account, one password**: the Keycloak account Scout uses. The gate (Keycloak client
-`feedback-gate`) lets through `scout-users` only, so approving a Scout account is what opens the
-board, and removing it closes the board within 5 minutes. Behind it, **Quackback's own login** is a
+`feedback-gate`) lets through the Keycloak group `feedback-users` only, which the owner grants per
+person, independently of Scout (owner, 2026-10-27): Scout access does not include the board.
+Removing someone from the group closes the board to them within 5 minutes. Behind it, **Quackback's own login** is a
 custom OIDC provider on the Keycloak client `quackback`, with password and magic-link sign-in
 turned off: it rides the same Keycloak session, so the user never types a second password and
 Quackback stores none. No Cloudflare Access application (owner, 2026-10-21: Keycloak is the only
@@ -29,7 +30,7 @@ login). See `infrastructure/services/staging/cloudflare/README.md` §6.
 |---|---|
 | `deployment.yaml` | Quackback by digest, as its own non-root user (1001) with a read-only root; its entrypoint runs the migrations before the server |
 | `service.yaml` | ClusterIP :3000, reached through the gate only |
-| `feedback-gate.yaml` | oauth2-proxy v7.15.5 (Deployment, Service :4180 = **the tunnel's target**, NetworkPolicy: in from `cloudflare` only, out to Quackback, DNS, public 443 for Keycloak). `--allowed-group=scout-users`, PKCE, scopes `openid email profile` (this realm has no `groups` scope: the client's mapper adds the claim), `--trusted-proxy-ip` = the pod network |
+| `feedback-gate.yaml` | oauth2-proxy v7.15.5 (Deployment, Service :4180 = **the tunnel's target**, NetworkPolicy: in from `cloudflare` only, out to Quackback, DNS, public 443 for Keycloak). `--allowed-group=feedback-users`, PKCE, scopes `openid email profile` (this realm has no `groups` scope: the client's mapper adds the claim), `--trusted-proxy-ip` = the pod network |
 | `networkpolicy.yaml` | in: the gate only (a tunnel route straight to :3000 would skip the group check, so it gets nothing). out: `quackback-db`, `quackback-redis`, the SeaweedFS S3 gateway (:8333), DNS, public 443 (the OAuth code exchange with Keycloak's public hostname) |
 | `redis.yaml` | the Redis 0.13.2 refuses to run without (`REDIS_URL`): cache and job state, nothing on disk, reachable from Quackback only |
 | `../databases/quackback/` | the namespace and the CNPG cluster `quackback-db` (with `vector` and `pg_trgm`) |
@@ -70,7 +71,7 @@ Two Secrets arrive by reflector: `feedback-gate-client` (the gate's Keycloak cli
 
 ## First run (once, after the tunnel route points at the gate)
 
-1. Open `https://feedback.eliorion.fr` signed in as a `scout-users` account (the gate keeps everyone
+1. Open `https://feedback.eliorion.fr` signed in as a `feedback-users` account (the gate keeps everyone
    else off the setup page): the first account created owns the setup (workspace name, first
    admin). **Use the same email as your Keycloak account**, so the Keycloak sign-in of step 2
    lands on this admin rather than on a second user.
