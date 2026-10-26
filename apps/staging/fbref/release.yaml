@@ -62,6 +62,10 @@ spec:
         sofascore: 3
     # Scout's login (README "Scout login"); scout-oidc-client is reflected from `identity`.
     webapp:
+      # The public origin: with the login on, the chart passes it as AUTH_URL. Behind the tunnel
+      # (no X-Forwarded-Host) Auth.js otherwise builds its callback from 0.0.0.0:3000 and
+      # Keycloak refuses the code exchange ("Incorrect redirect_uri").
+      siteUrl: https://scout.eliorion.fr
       auth:
         enabled: true
         issuerUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps
