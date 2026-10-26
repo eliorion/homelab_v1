@@ -1,9 +1,8 @@
-# One-off: proves openbao-db backs up to Garage before it holds the data (the scheduled
-# "immediate" backup ran before garage-config had imported the key).
+# One-off: the first backup of openbao-db holding OpenBao's data (the daily one follows at 03:50).
 apiVersion: postgresql.cnpg.io/v1
 kind: Backup
 metadata:
-  name: openbao-db-pre-switchover
+  name: openbao-db-post-switchover
   namespace: openbao
 spec:
   method: plugin
