@@ -13,7 +13,7 @@ resources:
   # The Nextcloud OIDC client secret, read by the import Job as $(env:...) and
   # mirrored into the `nextcloud` namespace by reflector.
   - nextcloud-oidc-client.enc.yaml
-  # scout-oidc-client, quackback-oidc-client: from OpenBao kv/identity/* (README).
+  # scout-oidc-client, quackback-oidc-client, feedback-gate-client: from OpenBao kv/identity/* (README).
   - externalsecrets.yaml
 components:
   - ../../../base/openbao/consumer
