@@ -21,7 +21,8 @@ spec:
       # only) -- setting AES256 would fail every WAL/base upload.
     data:
       compression: gzip
-      jobs: 2
+      # 4 parallel uploads: the 207GB base backup took ~4h over Garage with 2.
+      jobs: 4
   instanceSidecarConfiguration:
     env:
       # Garage's own region -- must match it. A wrong region 400s the HeadBucket

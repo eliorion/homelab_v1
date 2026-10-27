@@ -1,0 +1,15 @@
+# Ride out the control plane's API-server drops instead of restarting Postgres.
+# Default (period 10s, timeout 5s, 3 failures, isolation pings 1s) restarted
+# fbref-db-3 53 times in 9 days and killed both 4h base backups on 2026-10-27.
+# Worst-case /healthz = 0.5s cluster GET + one 4s peer ping, under the 10s timeout.
+# Trade-off: a truly isolated primary now stops after ~60-100s instead of ~30s.
+- op: add
+  path: /spec/probes
+  value:
+    liveness:
+      timeoutSeconds: 10
+      failureThreshold: 6
+      isolationCheck:
+        enabled: true
+        connectionTimeout: 2000
+        requestTimeout: 4000
