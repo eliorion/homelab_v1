@@ -18,7 +18,12 @@ Internet ─► Cloudflare tunnel ─► feedback-gate (oauth2-proxy) ─► Qua
 **One account, one password**: the Keycloak account Scout uses. The gate (Keycloak client
 `feedback-gate`) lets through the Keycloak group `feedback-users` only, which the owner grants per
 person, independently of Scout (owner, 2026-10-27): Scout access does not include the board.
-Removing someone from the group closes the board to them within 5 minutes. Behind it, **Quackback's own login** is a
+Removing someone from the group closes the board to them within 5 minutes.
+A refused account gets the gate's 403 page, whose **"Sign in with another account"** button ends the
+Keycloak session (logout, with `post.logout.redirect.uris` on the `feedback-gate` client) and comes
+back to the board. A plain "Sign in" would loop: Keycloak's session silently returns the same account.
+The page is oauth2-proxy's own `error.html` with that one change, in the staging overlay
+(`feedback-gate-templates`, it holds the staging URLs): keep it in step when the image moves. Behind it, **Quackback's own login** is a
 custom OIDC provider on the Keycloak client `quackback`, with password and magic-link sign-in
 turned off: it rides the same Keycloak session, so the user never types a second password and
 Quackback stores none. No Cloudflare Access application (owner, 2026-10-21: Keycloak is the only
