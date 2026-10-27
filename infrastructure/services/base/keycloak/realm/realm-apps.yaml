@@ -288,6 +288,8 @@ clients:
     serviceAccountsEnabled: false
     attributes:
       "pkce.code.challenge.method": "S256"
+      # Sign-out ends this session too and returns here, which lands on /signin.
+      "post.logout.redirect.uris": "$(env:SCOUT_URL)/signed-out"
     # Auth.js's callback for the provider id `keycloak`.
     redirectUris:
       - $(env:SCOUT_URL)/api/auth/callback/keycloak
