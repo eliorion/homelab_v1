@@ -349,11 +349,11 @@ clients:
 
   # The board's GATE: oauth2-proxy in front of Quackback (apps/base/quackback/feedback-gate.yaml),
   # because Quackback cannot refuse an account by group and any account of this realm could sign
-  # in to it. Only `scout-users` passes; Quackback's own login (the client above) follows on the
-  # same Keycloak session, so a user types one password for Scout and the board.
+  # in to it. Only `feedback-users` passes (granted per person, independently of Scout); Quackback's
+  # own login (the client above) follows on the same Keycloak session: one password for both.
   - clientId: feedback-gate
     name: Feedback gate
-    description: oauth2-proxy in front of Quackback — lets scout-users through, nobody else
+    description: oauth2-proxy in front of Quackback — lets feedback-users through, nobody else
     protocol: openid-connect
     enabled: true
     publicClient: false
@@ -387,7 +387,7 @@ clients:
           "included.client.audience": feedback-gate
           "id.token.claim": "true"
           "access.token.claim": "true"
-      # Flat names: --allowed-group=scout-users matches the string exactly.
+      # Flat names: --allowed-group=feedback-users matches the string exactly.
       - name: groups
         protocol: openid-connect
         protocolMapper: oidc-group-membership-mapper
@@ -420,9 +420,13 @@ groups:
   # operators create/suspend/resume/delete them, admins add what later phases bring
   # (ModelProvider). Highest group wins. No group = 403 on every route but /healthz.
   # ENFORCED by Scout itself (asp services/fbref/webapp src/proxy.ts: no group = the pending
-  # page) AND by the board's gate (client feedback-gate, oauth2-proxy --allowed-group), which reads
-  # this group from the `groups` claim. Membership is the owner granting an account Scout (and the board).
+  # page). Membership is the owner granting an account Scout. It does NOT open the board.
   - name: scout-users
+  # ENFORCED by the board's gate (client feedback-gate, oauth2-proxy --allowed-group), which reads
+  # this group from the `groups` claim. Granted per person by the owner, independently of Scout
+  # (owner, 2026-10-27). Never a defaultGroups entry: sign-up is open, so that would hand the board
+  # to every stranger who registers.
+  - name: feedback-users
   # THE QUEUE: every self-registered account starts here (defaultGroups), and NOTHING reads it.
   # Listing its members is the list of pending requests; approving moves an account to scout-users.
   - name: scout-requests

@@ -30,7 +30,7 @@ spec:
             # would answer invalid_scope); the groups come from the client's own mapper.
             - --scope=openid email profile
             # Must equal the Keycloak group exactly (flat name, realm-apps.yaml).
-            - --allowed-group=scout-users
+            - --allowed-group=feedback-users
             - --email-domain=*
             # The realm verifies no address (no SMTP): without this every account is refused with a
             # 500 at /oauth2/callback. Safe: the gate decides on the GROUP, never on the email.

@@ -142,7 +142,8 @@ to that group. This is the whole authorization model:
 | `nextcloud-users` | Nextcloud | **user_oidc itself** — `--group-restrict-login-to-whitelist=1` with `--group-whitelist-regex '^nextcloud-'`. Live. |
 | `nextcloud-admins` | Nextcloud | Provisioned as a Nextcloud group; grants no admin rights on its own (Nextcloud's admin group is `admin`). |
 | `nao-users` | nao | **A Cloudflare Access policy** matching the `groups` claim. Until that policy is switched from an email list to a group rule, this group grants nothing. |
-| `scout-users` | Scout (asp) + Quackback | **Scout itself** (`src/proxy.ts`: no group = the "waiting for approval" page) and **the Cloudflare Access policy** on `feedback.eliorion.fr` (OIDC claim `groups`). Moving an account here from `scout-requests` is the owner's approval. |
+| `scout-users` | Scout (asp) | **Scout itself** (`src/proxy.ts`: no group = the "waiting for approval" page). Moving an account here from `scout-requests` is the owner's approval. Does NOT open the board. |
+| `feedback-users` | Quackback (the feedback board) | **The board's gate** (oauth2-proxy `feedback-gate`, `--allowed-group=feedback-users`, re-read every 5 min). Granted per person, independently of Scout; never a default group (sign-up is open). |
 | `scout-requests` | — (the queue) | **Nothing reads it, by design**: every self-registered account starts here (`defaultGroups`). Its member list is the list of pending requests. |
 | `agent-platform-viewers` / `-operators` / `-admins` | agent-platform (asp) | **agent-api itself**: it maps the token's `groups` claim to a role (highest wins). No group = 403 on every route but `/healthz`. |
 
