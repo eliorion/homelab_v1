@@ -36,3 +36,8 @@ patches:
     target:
       kind: Cluster
       name: fbref-db
+  # Tolerant liveness probe: API-server drops no longer restart Postgres mid-backup.
+  - path: cluster-probes-patch.yaml
+    target:
+      kind: Cluster
+      name: fbref-db
