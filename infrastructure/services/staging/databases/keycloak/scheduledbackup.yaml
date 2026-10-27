@@ -3,7 +3,9 @@ kind: ScheduledBackup
 metadata:
   name: keycloak-db-daily
 spec:
-  schedule: "0 0 3 * * *"
+  # 6-field CNPG cron. 3:15 UTC, staggered with the other clusters: the four
+  # schedules that shared 03:00:00 all froze on 2026-10-21 (CNPG #10562).
+  schedule: "0 15 3 * * *"
   immediate: true
   backupOwnerReference: self
   method: plugin

@@ -3,7 +3,9 @@ kind: ScheduledBackup
 metadata:
   name: fbref-db-daily
 spec:
-  schedule: "0 0 3 * * *"
+  # 6-field CNPG cron. 1:00 UTC, staggered with the other clusters: the four
+  # schedules that shared 03:00:00 all froze on 2026-10-21 (CNPG #10562). fbref takes ~4h over Garage, so it runs before the 02:20-03:50 block.
+  schedule: "0 0 1 * * *"
   immediate: true
   backupOwnerReference: self
   method: plugin

@@ -39,6 +39,22 @@ spec:
           annotations:
             summary: "{{ $labels.namespace }}/{{ $labels.pod }} wrote {{ $value | humanize1024 }}B of WAL in the last hour"
             description: "Sustained WAL above 3GiB/h fills the volume within days if archiving stalls (fbref-db did on 2026-10-15). Check the full-page-image share (pg_stat_wal.wal_fpi), checkpoint frequency (pg_stat_checkpointer.num_requested) and no-op upserts. See apps/base/databases/fbref/README.md, WAL volume."
+    - name: cnpg-backup.rules
+      rules:
+        # The plugin's own catalog timestamp, not cnpg_collector_last_available_backup_timestamp:
+        # that one is 0 on every cluster backed up with method: plugin. Covers both a
+        # ScheduledBackup that stops creating Backups (asp/fbref/ai-gateway/keycloak froze
+        # 2026-10-21 for 6 days, CNPG #10562) and backups that run but fail.
+        - alert: CNPGBaseBackupStale
+          expr: |
+            time() - max by (namespace) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp)
+              > 30 * 3600
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No base backup of {{ $labels.namespace }} for {{ $value | humanizeDuration }}"
+            description: "Daily backups should keep this under 24h. Check the ScheduledBackup first: kubectl -n {{ $labels.namespace }} get scheduledbackup -o wide -- a stale LAST BACKUP with BackupCreation 'already exists' events is the CNPG 1.29.1 deadlock (fix: change the schedule's time of day). Otherwise check the latest Backup's status.error and the plugin-barman-cloud sidecar logs."
     - name: cnpg-replication.rules
       rules:
         # Streaming replicas seen by each primary vs. instance pods minus one; the

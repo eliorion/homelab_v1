@@ -13,3 +13,8 @@
               - key: kubernetes.io/hostname
                 operator: In
                 values: [staging-controlplane-2, staging-controlplane-3]
+# The base 20Gi was 96% full on 2026-10-27. ssd-cnpg expands online
+# (allowVolumeExpansion, resizeInUseVolumes); the base stays 20Gi for the e2e.
+- op: replace
+  path: /spec/storage/size
+  value: 40Gi
