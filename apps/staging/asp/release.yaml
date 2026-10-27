@@ -51,11 +51,16 @@ spec:
     ingest:
       enabled: false
     # ADR 13 step 2a (asp PR #789): shadow asp's frontier into the scraper platform's seen-set
-    # for these sites (nothing is fetched because of it), and check the copy every night. After
-    # three clean `asp-frontier-diff` runs, the site's queue moves to the platform (step 2b).
+    # for these sites (nothing is fetched because of it), and check the copy every night.
+    # Step 2b (asp PR #820, asp ADR 14): three clean nights (2026-10-24..26, 0 missing), so these
+    # sites hand their URL queue to the platform: every pending row is forwarded at once
+    # (POST /v1/scrape/batch, no MAX_IN_FLIGHT); scrape_queue stays asp's ledger, and a forwarded
+    # row is reset only after PLATFORM_STALE_LOCK_S (chart default 24 h). Rollback: empty
+    # PLATFORM_QUEUE_SITES.
     engine:
       config:
         FRONTIER_SHADOW_SITES: "leboncoin,autoscout24"
+        PLATFORM_QUEUE_SITES: "leboncoin,autoscout24"
     frontierDiff:
       enabled: true
     adminUi:
