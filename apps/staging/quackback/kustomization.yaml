@@ -7,6 +7,7 @@ resources:
   - ../../base/quackback
   - configmap.yaml
   - feedback-gate-config.yaml
+  - feedback-gate-templates.yaml
   - externalsecret.yaml
 components:
   - ../../../infrastructure/services/base/openbao/consumer

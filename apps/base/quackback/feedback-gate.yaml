@@ -47,6 +47,8 @@ spec:
             # Re-reads the groups every 5 min: a removed user is out within that.
             - --cookie-refresh=5m
             - --silence-ping-logging=true
+            # error.html only (overlay ConfigMap): a 403 offers to sign in with another account.
+            - --custom-templates-dir=/templates
           env:
             - name: OAUTH2_PROXY_CLIENT_SECRET
               valueFrom: {secretKeyRef: {name: feedback-gate-client, key: client-secret}}
@@ -56,6 +58,10 @@ spec:
             # OAUTH2_PROXY_OIDC_ISSUER_URL, OAUTH2_PROXY_REDIRECT_URL
             - configMapRef:
                 name: feedback-gate-config
+          volumeMounts:
+            - name: templates
+              mountPath: /templates
+              readOnly: true
           ports:
             - name: http
               containerPort: 4180
@@ -81,6 +87,10 @@ spec:
             capabilities:
               drop:
                 - ALL
+      volumes:
+        - name: templates
+          configMap:
+            name: feedback-gate-templates
 ---
 apiVersion: v1
 kind: Service

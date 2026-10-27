@@ -364,6 +364,8 @@ clients:
     serviceAccountsEnabled: false
     attributes:
       "pkce.code.challenge.method": "S256"
+      # The gate's 403 page logs out of Keycloak and returns here ("sign in with another account").
+      "post.logout.redirect.uris": "$(env:QUACKBACK_URL)/"
     redirectUris:
       - $(env:QUACKBACK_URL)/oauth2/callback
     webOrigins: []
