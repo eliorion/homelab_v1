@@ -16,11 +16,15 @@ spec:
         name: garage-backup-credentials
         key: ACCESS_KEY_SECRET
     wal:
-      compression: gzip
+      # zstd: 7% smaller than gzip and ~3x less CPU per segment (measured 2026-10-28).
+      compression: zstd
       # NO `encryption:` here. Garage does not support SSE-S3/AES256 (SSE-C
       # only) -- setting AES256 would fail every WAL/base upload.
     data:
-      compression: gzip
+      # snappy, not gzip: barman gzips the base tar on ONE core at level 9, which capped
+      # the upload at ~1.6 MB/s (4-5h per base) while Garage took 24-65 MB/s. Larger
+      # files, much shorter window for a failure to hit.
+      compression: snappy
       # 4 parallel uploads: the 207GB base backup took ~4h over Garage with 2.
       jobs: 4
   instanceSidecarConfiguration:
