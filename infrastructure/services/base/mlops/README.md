@@ -93,8 +93,9 @@ and retry; nothing breaks, nothing starts.
   blunts). Artifacts are proxied (`--serve-artifacts`), so MLflow is the only holder of the bucket key.
 - **Artifacts on SeaweedFS, never Garage.** Garage is off-site, low-bandwidth and small, kept for
   disaster-recovery data.
-- **No backup of `mlops-db` yet**, for the same reason; revisit once registered models are in use.
-  One instance: staging memory is short.
+- **`mlops-db` is backed up to Garage** (bucket `cnpg-staging-mlops`, daily 04:00 UTC, 7d, WAL
+  archived; staging overlay `infrastructure/services/staging/databases/mlops`, 2026-10-28).
+  One instance: staging memory is short, so the backup is the only second copy.
 - **Separate database roles.** MLflow, the component with the CVE history, cannot read Dagster's
   storage, which decides which Jobs the run launcher creates.
 - **MLflow's database login from CNPG, the rest in OpenBao.** A login CNPG generates needs no seeding

@@ -12,3 +12,4 @@ cnpg-staging-n8n             n8n          garage-backup-credentials             
 cnpg-staging-harbor          registry     garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
 cnpg-staging-quackback       quackback    garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
 cnpg-staging-openbao         openbao      garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET
+cnpg-staging-mlops           mlops        garage-backup-credentials             ACCESS_KEY_ID      ACCESS_KEY_SECRET

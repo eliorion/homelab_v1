@@ -289,3 +289,29 @@ subjects:
   - kind: ServiceAccount
     name: garage-config
     namespace: garage-gw
+---
+# Read ONE Secret in mlops: the key for bucket cnpg-staging-mlops.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: garage-config-read-key
+  namespace: mlops
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["garage-backup-credentials"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: garage-config-read-key
+  namespace: mlops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: garage-config-read-key
+subjects:
+  - kind: ServiceAccount
+    name: garage-config
+    namespace: garage-gw
