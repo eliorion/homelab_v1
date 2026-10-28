@@ -4,7 +4,10 @@ metadata:
   name: seaweedfs-db
   namespace: seaweedfs
 spec:
-  instances: 2
+  # One instance per node (required anti-affinity): synchronous `any 1` then has two standbys to
+  # choose from, so writes no longer stop when the only standby restarts. The filer behind the
+  # whole hdd tier keeps its metadata here.
+  instances: 3
   failoverDelay: 30
   affinity:
     podAntiAffinityType: required
