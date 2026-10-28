@@ -5,6 +5,14 @@ metadata:
   namespace: quackback
 spec:
   replicas: 1
+  # The old pod stops before the new one starts: an upgrade's migrations never run under a server
+  # of the previous version. (Not Recreate: the live object holds rollingUpdate defaults, and the
+  # server-side apply then refuses the switch.)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: quackback
@@ -22,8 +30,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: quackback
-          # 0.13.2 is the newest PUBLISHED image: v0.14.x have releases but no image tag.
-          image: ghcr.io/quackbackio/quackback:0.13.2@sha256:63660c1b32f2b841fb99e2502622b602cd08f49d2250c75fdac7aae1c7c2c151
+          image: ghcr.io/quackbackio/quackback:0.14.1@sha256:a2d85f5f4506bf4a6de2af424f26b00f8f1e9582f8c5e975c4fb6a1f0417ad93
           ports:
             - name: http
               containerPort: 3000
@@ -40,13 +47,14 @@ spec:
           envFrom:
             - configMapRef:
                 name: quackback-config
-          # The entrypoint runs every migration before the server: the first boot builds the schema.
+          # The entrypoint runs every migration before the server, in ONE transaction: a kill midway
+          # rolls them all back and starts over, so the first start after an upgrade gets 15 min.
           startupProbe:
             httpGet:
               path: /api/health
               port: http
             periodSeconds: 10
-            failureThreshold: 30
+            failureThreshold: 90
           readinessProbe:
             httpGet:
               path: /api/health

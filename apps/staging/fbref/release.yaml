@@ -70,7 +70,9 @@ spec:
         enabled: true
         issuerUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps
         secretName: scout-oidc-client
-      feedbackUrl: https://feedback.eliorion.fr
+      # Quackback's own sign-in entry: with Keycloak its only method, it signs the visitor in on the
+      # way (apps/base/quackback/README.md), so Scout's button lands on the board signed in.
+      feedbackUrl: https://feedback.eliorion.fr/auth/login
     # Switched off (memory on staging-controlplane-1). mcp.enabled also drops its Service, egress
     # policy, family-counts CronJob and the mcp_ro helm test; the Cloudflare route then answers 502.
     components:
