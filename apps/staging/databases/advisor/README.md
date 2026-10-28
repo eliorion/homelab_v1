@@ -1,7 +1,7 @@
 # advisor — staging database overlay
 
-What this PR wires: the `advisor` namespace and the `advisor-db` CNPG Cluster (2 instances, 20Gi
-`ssd`, schema owned by Flyway — see `k8s/charts/advisor` in the `asp` repo). `advisor-db-app` (the
+What this PR wires: the `advisor` namespace and the `advisor-db` CNPG Cluster (2 instances, 100Gi
+`ssd-cnpg` pinned one per node to node-2 and node-3 since 2026-10-28, schema owned by Flyway — see `k8s/charts/advisor` in the `asp` repo). `advisor-db-app` (the
 `app` role's connection Secret) is created automatically by CNPG's `bootstrap.initdb` — nothing to
 add for that one.
 
@@ -29,3 +29,17 @@ that file; only the credential itself lives in the sibling `.enc.yaml`).
 
 Neither remaining item blocks this PR: the chart is inert until `advisor-db-migrations`' first
 release writes a real image tag (see `apps/staging/advisor/README.md`).
+
+## Moving the instances onto `ssd-cnpg` (2026-10-28)
+
+The storage patch moves nothing by itself: each instance is re-cloned onto the new class, one at a
+time (procedure: `apps/base/databases/fbref/README.md`, "Operating it").
+
+1. Delete the stuck replica: `kubectl -n advisor delete pvc advisor-db-1 --wait=false && kubectl -n advisor delete pod advisor-db-1`.
+   CNPG clones `advisor-db-3` from the primary onto node-2.
+2. When `advisor-db-3` is ready, CNPG restarts the primary `advisor-db-2` in place on its own (the
+   new affinity is a pod spec change, `primaryUpdateMethod: restart`): a short write outage, no
+   data loss, it stays on node-3 with its volume. Wait for it to be ready again.
+3. Switch over to `advisor-db-3` (`targetPrimary`), then delete `advisor-db-2`'s PVC and pod; CNPG
+   clones `advisor-db-4` onto node-3. Do this only with a recent completed backup and
+   `ContinuousArchiving=True`.
