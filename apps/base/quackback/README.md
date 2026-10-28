@@ -108,9 +108,15 @@ needs mail or SQL. Keep the password on until step 6.
    `/admin`, still the admin. (Without this step the first Keycloak sign-in fails `account_not_linked`:
    the admin's email was never verified, and with no mail it cannot be.)
 6. Sign-in tab → **Email** card → **Password** OFF (saves at once). Magic link is already off.
-7. **Portal access** tab: visibility **Everyone** and **Let visitors create an account** ON (both already
-   are). The gate decides who gets in; a member's account is created at their first sign-in, role user.
-8. Check from a private window, signed in to Scout: Scout's feedback button lands on the board signed
+7. **Members by default**: provider page → **Roles** card → Claim `groups`, one rule: value
+   `feedback-users` → **Member**. Keycloak sends the claim (the `quackback` client's `groups` mapper);
+   a domain would not do, members' addresses are on any domain. Leave **sync on every sign-in** off:
+   with no rule giving Admin it would demote the admin (Quackback refuses, but do not lean on it).
+   An account still a portal user is promoted at its next Keycloak sign-in.
+8. **Portal access** tab: visibility **Everyone** and **Let visitors create an account** ON. The gate
+   decides who gets in; **Private** would add Quackback's own invite list on top, and a gate-approved
+   member without an invite would land on a "no access" page.
+9. Check from a private window, signed in to Scout: Scout's feedback button lands on the board signed
    in, with no form. Typing `feedback.eliorion.fr` shows **Log in**: one click, no form.
 
 What a `feedback-users` member sees then: from Scout's button (`/auth/login`), nothing; a direct visit,

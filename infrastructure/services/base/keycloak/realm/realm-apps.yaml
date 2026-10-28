@@ -349,6 +349,18 @@ clients:
     optionalClientScopes: []
     fullScopeAllowed: false
     consentRequired: false
+    protocolMappers:
+      # Quackback's role rule (provider page, Roles card) reads `groups`: feedback-users = Member.
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          "claim.name": groups
+          "full.path": "false"
+          "id.token.claim": "true"
+          "access.token.claim": "false"
+          "userinfo.token.claim": "true"
 
   # The board's GATE: oauth2-proxy in front of Quackback (apps/base/quackback/feedback-gate.yaml),
   # because Quackback cannot refuse an account by group and any account of this realm could sign
