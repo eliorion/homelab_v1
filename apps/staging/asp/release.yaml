@@ -57,12 +57,20 @@ spec:
     # (POST /v1/scrape/batch, no MAX_IN_FLIGHT); scrape_queue stays asp's ledger, and a forwarded
     # row is reset only after PLATFORM_STALE_LOCK_S (chart default 24 h). Rollback: empty
     # PLATFORM_QUEUE_SITES.
+    # Step 3 (asp PRs #832/#834, asp ADR 15): shadow recurring searches as platform series
+    # `search:<id>`. asp still runs every search; each run also names its series, so the platform
+    # holds a backup follow-up (2 x interval) that asp's next run moves forward. The nightly
+    # diff-searches container checks the series. Needs asp-worker >= v0.6.0. Exit: three clean
+    # diff-searches nights, then cut one site at a time (PLATFORM_SEARCH_SITES). Rollback: empty
+    # PLATFORM_SEARCH_SHADOW_SITES (the engine cancels every series within one pass).
     engine:
       config:
         FRONTIER_SHADOW_SITES: "leboncoin,autoscout24"
         PLATFORM_QUEUE_SITES: "leboncoin,autoscout24"
+        PLATFORM_SEARCH_SHADOW_SITES: "leboncoin,autoscout24"
     frontierDiff:
       enabled: true
+      searches: true
     adminUi:
       enabled: true
       service:
