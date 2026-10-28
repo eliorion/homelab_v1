@@ -14,3 +14,12 @@ parameters:
   # Its own group, so autoplace settings here cannot leak onto the `ssd` class.
   linstor.csi.linbit.com/resourceGroup: ssd-single
   csi.storage.k8s.io/fstype: xfs
+# New volumes are provisioned on node-2/node-3, not on node-1, whose SSD pool (the smallest, full on
+# 2026-10-28) is kept for the Dagger engine. Only the disk is fenced: pods are unaffected, and one
+# may still run on node-1 and read its volume over DRBD. Existing volumes are not moved.
+# Dagger itself is pinned to node-1: before recreating data-dagger-engine-0, give it a class that
+# allows node-1 (infrastructure/services/base/dagger/README.md), or it stays Pending.
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: kubernetes.io/hostname
+        values: [staging-controlplane-2, staging-controlplane-3]

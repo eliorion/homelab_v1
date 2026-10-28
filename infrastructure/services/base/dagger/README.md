@@ -206,6 +206,11 @@ waits on disk up to 45% of the time. **Contention**: cp1 has 16 cores at 16% req
 against cp3's 8 at 54%, which is what a six-leg CI matrix competes for. Measured cache use
 before the move was 50GB of 200Gi.
 
+**`ssd-single` no longer provisions on cp1** (2026-10-28, `allowedTopologies` node-2/node-3, so
+cp1's pool stays for this engine). The bound `data-dagger-engine-0` is unaffected, but a NEW claim
+on `ssd-single` can never bind while the engine is pinned to cp1: before deleting or recreating it,
+switch the claim template to a class that allows cp1.
+
 **Resizing.** The chart renders the claim as a StatefulSet `volumeClaimTemplate`, which
 Kubernetes refuses to change, so editing `storage` alone fails the Helm upgrade. In order:
 
