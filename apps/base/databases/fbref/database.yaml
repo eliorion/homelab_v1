@@ -15,11 +15,41 @@ spec:
       number: 1
       # `required` here would block writes whenever the replica is unavailable.
       dataDurability: preferred
+    # Loaded at start (a change here is a rolling restart: replica first, then a switchover
+    # of the primary, about a minute during which the Scout webapp, which reads the replica
+    # only, answers "Data unavailable"). The 2026-10-28 Scout latency study had to reproduce
+    # every slow statement by hand: nothing recorded which ones were slow in production.
+    shared_preload_libraries:
+      - pg_stat_statements
+      - auto_explain
     parameters:
       max_connections: "100"
       effective_cache_size: "512MB"
       work_mem: "4MB"
       maintenance_work_mem: "64MB"
+      # Observability (asp docs: the study's section 5). The view itself needs
+      # CREATE EXTENSION in `fbref`, which the Database object below does as superuser:
+      # the extension is not trusted, so a Flyway V-file running as `app` cannot.
+      pg_stat_statements.max: "5000"
+      pg_stat_statements.track: "top"
+      # The plans of the real slow statements, sampled: per-node timing stays off (it is
+      # the expensive part), buffers on (cold vs warm is the question).
+      auto_explain.log_min_duration: "500ms"
+      auto_explain.log_analyze: "on"
+      auto_explain.log_timing: "off"
+      auto_explain.log_buffers: "on"
+      auto_explain.sample_rate: "0.2"
+      # I/O wait apart from CPU in plans and in pg_stat_statements; cheap on a TSC clock
+      # (pg_test_timing on the node if in doubt).
+      track_io_timing: "on"
+      log_min_duration_statement: "1s"
+      log_lock_waits: "on"
+      # The background writer could not keep up with the replica's cache churn: user
+      # queries wrote a dirty page for almost every page they read (pg_stat_io, 10-28).
+      # Reloaded live, no restart. Verify with pg_stat_io: writes by client backends fall.
+      bgwriter_lru_maxpages: "1000"
+      bgwriter_lru_multiplier: "4.0"
+      bgwriter_delay: "100ms"
       # Do NOT lower toward the 30s default: the analytics readers on
       # `fbref-db-ro` then get "canceling statement due to conflict with
       # recovery". hot_standby_feedback=on is not the alternative — see README.
@@ -98,3 +128,20 @@ spec:
 
   storage:
     size: 10Gi
+---
+# The fbref database as an object, so the operator creates pg_stat_statements in it as the
+# superuser (untrusted extension; `app` cannot). `retain`: deleting this must NOT drop the data.
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: fbref
+  namespace: fbref
+spec:
+  cluster:
+    name: fbref-db
+  name: fbref
+  owner: app
+  databaseReclaimPolicy: retain
+  extensions:
+    - name: pg_stat_statements
+      ensure: present
