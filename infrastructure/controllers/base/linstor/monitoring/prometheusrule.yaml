@@ -96,6 +96,23 @@ spec:
               The pools are LVM-thin and over-commit. A full thin pool does not
               fail a provision, it fails a WRITE on every volume backed by it.
 
+        - alert: LinstorStoragePoolAlmostFull
+          # 2026-10-28: cp1's pool reached 0 with only the 15% warning above, and DRBD cut cp1's
+          # disk off 15 volumes. Act at 5%, before the first write fails.
+          expr: >-
+            linstor_storage_pool_capacity_free_bytes
+              / linstor_storage_pool_capacity_total_bytes < 0.05
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: LINSTOR pool {{ $labels.storage_pool }} on {{ $labels.node }} below 5% free
+            description: >-
+              Writes start failing at 0 and DRBD detaches the disk of every diskful volume on the
+              node (SkipDisk). Free space now: trim the largest volumes (FITRIM) or move a replica
+              off the node. Runbook: infrastructure/controllers/base/linstor/README.md,
+              "A full thin pool".
+
         - alert: LinstorErrorReportsRising
           expr: increase(linstor_error_reports_count[1h]) > 0
           for: 15m
