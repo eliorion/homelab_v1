@@ -105,7 +105,8 @@ needs mail or SQL. Keep the password on until step 6.
 5. Link the admin to its Keycloak account, still signed in with the password: open
    `https://feedback.eliorion.fr/auth/link-sso?provider=oidc_xxxxxxxx&type=oidc&next=/admin`. It
    comes back to `/admin`. Check: avatar → **Sign out**, then **Sign in with Keycloak**: you land on
-   `/admin`, still the admin. (Without this step the first Keycloak sign-in fails `account_not_linked`:
+   `/admin`, still the admin. The audit log shows one `auth.signin.failed` (`OIDC_SIGNIN_FAILED`) at
+   that moment: a link opens no new session, which Quackback logs as a failed sign-in. Harmless. (Without this step the first Keycloak sign-in fails `account_not_linked`:
    the admin's email was never verified, and with no mail it cannot be.)
 6. Sign-in tab → **Email** card → **Password** OFF (saves at once). Magic link is already off.
 7. **Members by default**: provider page → **Roles** card → Claim `groups`, one rule: value
@@ -133,3 +134,14 @@ Keycloak form once, at the gate.
   account by email: never rename or delete the admin's Keycloak account, and when someone leaves
   `feedback-users` for good, delete their board account too, so no one can take over the address.
 - **Signing out of the board** does not sign out of Keycloak: the next **Log in** is silent again.
+- **After any edit to the provider** (prompt, scopes, URL), run **Test sign-in** again: 0.14.1 only
+  logs a provider whose details changed after its last test, a later release refuses to link with it.
+- **Only one sign-in method may exist** for the board to sign in by itself: Google and GitHub show as
+  on in `auth_config`, but have no credentials (checked 2026-10-28), so they do not count. Giving them
+  credentials would bring back the sign-in dialog.
+- **Other admins**: an account created at first sign-in is a portal user. Promote it under
+  Members & Teams; `/admin` refuses it otherwise.
+- **The admin's old password** stays stored, unused while password sign-in is off. Turning password
+  back on brings it back.
+- **Recovery codes** (`/auth/recovery`: the admin's email + one code) are the break-glass while password
+  is off. Not tried yet: try one once, then generate a fresh set.
