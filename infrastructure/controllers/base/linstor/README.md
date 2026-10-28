@@ -282,3 +282,33 @@ expected and correct — it is a diskless quorum vote, not a missing replica.
 - **The GUI loads but every panel errors** — the browser has an absolute controller
   origin pinned in `localStorage.LINSTOR_HOST`, which wins over the same-origin
   default. Clear site data for `linstor-gui.tail45b0ca.ts.net`.
+
+## A full thin pool
+
+Seen 2026-10-28 on cp1 (223 GiB, the smallest pool): 0 KiB free, and DRBD detached cp1's disk
+from every diskful volume there (`DrbdOptions/SkipDisk=True` on 15 resources). Volumes with a copy
+elsewhere kept running; single-copy volumes on cp1 could not be mounted. `LinstorStoragePoolAlmostFull`
+(5% free) is the alert to act on. What frees space, cheapest first:
+
+1. **Trim.** Thin LVs never give back what a filesystem freed (nothing issues discards), but DRBD
+   and the thin pool pass them down. FITRIM a mounted volume from a privileged debug container in
+   its pod, through the target's root (the images ship no `fstrim`, and `fstrim` cannot resolve a
+   path under `/proc/<pid>/root`):
+
+   ```bash
+   kubectl -n <ns> debug <pod> --target=<container> --profile=sysadmin \
+     --image=registry.eliorion.fr/dockerhub-proxy/library/debian:bookworm-slim -c trim-$(date +%s) -- \
+     perl -e 'use Fcntl; sysopen(my $f,"/proc/1/root<mount>",O_RDONLY|O_DIRECTORY) or die $!;
+              my $b=pack("QQQ",0,0xFFFFFFFFFFFFFFFF,0); ioctl($f,0xC0185879,$b) or die $!'
+   ```
+
+   On cp2/cp3 the pool shares a SATA SSD with etcd: trim one volume at a time, off-peak.
+2. **Move a replica off the node** (a volume with `PlaceCount` 2): make the node that has none
+   diskful (`linstor r td <other> <res> --storage-pool ssd`), wait for `UpToDate`, then
+   `linstor r d <full-node> <res>`.
+3. **A detached copy (`SkipDisk`) is not deleted by LINSTOR.** `toggle-disk --diskless`, clearing
+   `SkipDisk`, or deleting the resource leaves its LV behind as an orphan. Remove it in the node's
+   satellite pod only when `drbdadm status <res>` shows `disk:Diskless` (or `No such resource`),
+   `drbdsetup show <res>` has no `disk "/dev/...`, the LV is not open (6th `lv_attr` char not `o`)
+   and the other copies are `UpToDate`: `lvremove -y linstor_ssd/<res>_00000`.
+
