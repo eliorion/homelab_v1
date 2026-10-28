@@ -130,6 +130,10 @@ spec:
       replicas: 2
       enableAuth: true
       existingConfigSecret: seaweedfs-s3-config
+      # The gateway reads that Secret at startup only: bump this with every identity change
+      # (../s3/README.md) and Flux rolls the gateway.
+      podAnnotations:
+        homelab.eliorion.fr/s3-config-revision: "2026-10-28-quackback"
       logs:
         type: emptyDir
       resources:

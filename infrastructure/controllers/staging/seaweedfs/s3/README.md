@@ -16,8 +16,10 @@ the bucket Secrets; `infra-seaweedfs-s3-config` depends on it and renders the id
 and this is how that one file is assembled from separate secrets.
 
 Two rules the gateway imposes:
-- it reads the file at STARTUP only, so a change needs
-  `kubectl -n seaweedfs rollout restart deployment seaweedfs-seaweedfs-s3` (2 replicas, rolling);
+- it reads the file at STARTUP only, so a change also bumps `homelab.eliorion.fr/s3-config-revision`
+  under `s3.podAnnotations` in `../cluster/release.yaml`: Flux then rolls the gateway (2 replicas,
+  rolling). Forgetting it is silent: the new identity gets `InvalidAccessKeyId` (403) until the
+  pods restart for some other reason (quackback, 2026-10-19 to 10-28);
 - it turns authentication OFF when it starts with no identity at all: never empty the file.
 
 ## Add a bucket `<b>` (consumer namespace `<ns>`)
@@ -32,7 +34,7 @@ Two rules the gateway imposes:
 3. `clusters/staging/infrastructure.yaml`: `- {kind: Secret, name: s3-<b>}` under the config unit's
    `substituteFrom`.
 4. `../configure/configure.sh`: `s3.bucket.create -name <b>`.
-5. After Flux applied it: restart the gateway (above).
+5. `../cluster/release.yaml`: bump `s3-config-revision` (above), in the same PR.
 
 ### Consumer namespaces outside the encrypted file (ml-lake; the pattern for new buckets)
 
