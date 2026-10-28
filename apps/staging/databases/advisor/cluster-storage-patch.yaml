@@ -2,7 +2,8 @@
   path: /spec/storage/storageClass
   value: ssd-cnpg
 # ssd-cnpg is node-local (one copy, no remote access): Postgres replication is the redundancy, one
-# instance per node, off node-1's full pool (2026-10-28: 0 KiB free, advisor-db-1 unmountable).
+# instance per node, never on node-1, which with its small SSD pool is kept for the Dagger engine
+# (2026-10-28: pool 0 KiB free, advisor-db-1 unmountable).
 # Changing the class moves nothing by itself: each instance is re-cloned onto it, one at a time
 # (apps/base/databases/fbref/README.md, "Operating it").
 - op: add
@@ -14,5 +15,5 @@
         nodeSelectorTerms:
           - matchExpressions:
               - key: kubernetes.io/hostname
-                operator: In
-                values: [staging-controlplane-2, staging-controlplane-3]
+                operator: NotIn
+                values: [staging-controlplane-1]

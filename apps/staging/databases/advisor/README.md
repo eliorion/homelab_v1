@@ -1,7 +1,7 @@
 # advisor — staging database overlay
 
 What this PR wires: the `advisor` namespace and the `advisor-db` CNPG Cluster (2 instances, 100Gi
-`ssd-cnpg` pinned one per node to node-2 and node-3 since 2026-10-28, schema owned by Flyway — see `k8s/charts/advisor` in the `asp` repo). `advisor-db-app` (the
+`ssd-cnpg`, one per node and never on node-1 (kept for the Dagger engine) since 2026-10-28, schema owned by Flyway — see `k8s/charts/advisor` in the `asp` repo). `advisor-db-app` (the
 `app` role's connection Secret) is created automatically by CNPG's `bootstrap.initdb` — nothing to
 add for that one.
 
