@@ -1,4 +1,4 @@
-# One instance, no backup: ../../mlops/README.md.
+# One instance; staging backs it up to Garage (../../../staging/databases/mlops): ../../mlops/README.md.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:

@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: mlops-db-daily
+  namespace: mlops
+spec:
+  # 6-field CNPG cron. 4:00 UTC, after the other clusters (02:20-03:50).
+  schedule: "0 0 4 * * *"
+  immediate: true
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  cluster:
+    name: mlops-db
