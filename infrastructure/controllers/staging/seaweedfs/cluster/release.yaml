@@ -130,6 +130,12 @@ spec:
       replicas: 2
       enableAuth: true
       existingConfigSecret: seaweedfs-s3-config
+      # Restart switch. The gateway loads seaweedfs-s3-config (the S3 accounts) only when it starts,
+      # and editing that Secret does not restart it. Changing this text does: Kubernetes replaces the
+      # pods, which load the accounts again. The value means nothing else; write the date and what
+      # changed whenever an account is added or removed (../s3/README.md, step 5).
+      podAnnotations:
+        homelab.eliorion.fr/s3-config-revision: "2026-10-28-quackback"
       logs:
         type: emptyDir
       resources:
