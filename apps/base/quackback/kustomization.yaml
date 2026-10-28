@@ -6,5 +6,4 @@ resources:
   - deployment.yaml
   - service.yaml
   - networkpolicy.yaml
-  - redis.yaml
   - feedback-gate.yaml

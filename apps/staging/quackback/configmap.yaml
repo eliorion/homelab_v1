@@ -6,7 +6,6 @@ metadata:
 data:
   # Must equal QUACKBACK_URL in infrastructure/services/staging/keycloak/realm/realm-vars.yaml.
   BASE_URL: https://feedback.eliorion.fr
-  REDIS_URL: redis://quackback-redis:6379
   S3_ENDPOINT: http://seaweedfs-seaweedfs-s3.seaweedfs.svc.cluster.local:8333
   S3_BUCKET: quackback
   S3_REGION: us-east-1
@@ -14,3 +13,6 @@ data:
   # The bucket is in-cluster: the browser reaches uploads through the app only.
   S3_PROXY: "true"
   DISABLE_TELEMETRY: "true"
+  # The visitor's address for rate limits and audit, as Cloudflare saw it. Trusted only because
+  # nothing but the gate reaches :3000 (networkpolicy.yaml).
+  TRUSTED_CLIENT_IP_HEADER: cf-connecting-ip

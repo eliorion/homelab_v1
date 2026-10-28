@@ -36,8 +36,7 @@ login). See `infrastructure/services/staging/cloudflare/README.md` §6.
 | `deployment.yaml` | Quackback by digest, as its own non-root user (1001) with a read-only root; its entrypoint runs the migrations before the server |
 | `service.yaml` | ClusterIP :3000, reached through the gate only |
 | `feedback-gate.yaml` | oauth2-proxy v7.15.5 (Deployment, Service :4180 = **the tunnel's target**, NetworkPolicy: in from `cloudflare` only, out to Quackback, DNS, public 443 for Keycloak). `--allowed-group=feedback-users`, PKCE, scopes `openid email profile` (this realm has no `groups` scope: the client's mapper adds the claim), `--trusted-proxy-ip` = the pod network |
-| `networkpolicy.yaml` | in: the gate only (a tunnel route straight to :3000 would skip the group check, so it gets nothing). out: `quackback-db`, `quackback-redis`, the SeaweedFS S3 gateway (:8333), DNS, public 443 (the OAuth code exchange with Keycloak's public hostname) |
-| `redis.yaml` | the Redis 0.13.2 refuses to run without (`REDIS_URL`): cache and job state, nothing on disk, reachable from Quackback only |
+| `networkpolicy.yaml` | in: the gate only (a tunnel route straight to :3000 would skip the group check, so it gets nothing). out: `quackback-db`, the SeaweedFS S3 gateway (:8333), DNS, public 443 (the OAuth code exchange with Keycloak's public hostname) |
 | `../databases/quackback/` | the namespace and the CNPG cluster `quackback-db` (with `vector` and `pg_trgm`) |
 | `../../staging/quackback/` | `BASE_URL`, the S3 settings, the gate's issuer + redirect URL (`feedback-gate-config`), and the ExternalSecret `quackback-secrets` (`secret-key`, `gate-cookie-secret`; OpenBao `kv/quackback/quackback-secrets`) |
 
@@ -52,20 +51,22 @@ Two Secrets arrive by reflector: `feedback-gate-client` (the gate's Keycloak cli
   Neither can serve under a path (Fider issues #1453/#1455 open, ClearFlask's maintainer: "not
   designed" for it), so the board keeps its own hostname and Scout redirects. Quackback has OIDC
   built in, Fider only a generic OAuth form.
-- **Image 0.13.2.** The newest image published: v0.14.x have GitHub releases and no image tag.
-  0.13.2 already has custom OIDC (since 0.12) and OAuth-only sign-in.
+- **Image 0.14.1, not 0.13.2.** 0.13.2 sent `prompt=login` with every OIDC sign-in, so Keycloak asked
+  for the password again even with a live session. 0.14.1 lets the provider send no prompt
+  ("Don't send a prompt"), and with Keycloak as the only method it starts the sign-in by itself
+  ("instant SSO"). It also no longer needs Redis. Upgrade measured 2026-10-28 on a copy of the
+  0.13.2 schema, read-only root, user 1001, no Redis: 144 migrations, 3.2 s, healthy. No way back:
+  a downgrade needs the backup from before the upgrade.
 - **Uploads in SeaweedFS, proxied by the app** (`S3_PROXY`): the bucket stays private and
   in-cluster, so the browser never needs to reach it.
 - **One CNPG instance, backed up to Garage** (off-site, daily + WAL, 7 days: databases/quackback/README.md).
   The uploads in the SeaweedFS bucket are NOT backed up: screenshots attached to feedback.
-- **Redis is required**, not optional: measured 2026-10-19 on 0.13.2, every config read fails
-  `redisUrl: invalid_type` without it. It holds nothing durable, so it runs without persistence.
 - **Not under `scout.eliorion.fr/feedback`** (tested 2026-10-19 behind Caddy `handle_path`): the
   redirects can be rewritten, but every one of the page's 35 assets is a root path, the main bundle
   builds 198 more at runtime, and the client router matches the real address bar. The board
   needs its own hostname.
-- **No mail.** No SMTP account yet; Quackback then writes the notifications it would have sent to its
-  log (its documented behaviour). Adding one = the `EMAIL_SMTP_*` / `EMAIL_FROM` variables and
+- **No mail.** No SMTP account yet. 0.14.1 then sends nothing and logs no link or code, so no step
+  below may depend on an email. Adding one = the `EMAIL_SMTP_*` / `EMAIL_FROM` variables and
   587/465 in the NetworkPolicy.
 - **A gate in front, not Cloudflare Access and not inside Quackback.** Quackback cannot refuse an
   account by group, and Keycloak alone cannot stop a brand-new sign-up from reaching a client (the
@@ -74,24 +75,55 @@ Two Secrets arrive by reflector: `feedback-gate-client` (the gate's Keycloak cli
   sees the request. Scout does NOT get one: it checks the group itself, and stays closed even if a
   route ever points straight at it.
 
-## First run (once, after the tunnel route points at the gate)
+## Keycloak as the only sign-in (once, after the 0.14.1 rollout)
 
-1. Open `https://feedback.eliorion.fr` signed in as a `feedback-users` account (the gate keeps everyone
-   else off the setup page): the first account created owns the setup (workspace name, first
-   admin). **Use the same email as your Keycloak account**, so the Keycloak sign-in of step 2
-   lands on this admin rather than on a second user.
-   Without SMTP, any code or link Quackback would mail is in its log instead:
-   `kubectl -n quackback logs deploy/quackback | grep -i -E "code|link"`.
-2. Settings → Sign-in → custom OIDC (fields as Quackback asks for them):
+Played end to end on 2026-10-28 against a local Keycloak 26 and this image, with a 0.13.2-era admin
+(password, `email_verified=false`), the same `auth_config` as staging and SSO idle 30 min. No step
+needs mail or SQL. Keep the password on until step 6.
+
+1. Sign in to `https://feedback.eliorion.fr` as the admin, with the password.
+2. Settings → Access & Security → **Sign-in** tab → **Single sign-on (OIDC)** → **New provider** →
+   the **Keycloak** tile:
 
    | Field | Value |
    |---|---|
-   | Issuer / discovery | `https://staging-keycloak.eliorion.fr/realms/staging-apps` |
+   | Keycloak base URL | `https://staging-keycloak.eliorion.fr` |
+   | Realm | `staging-apps` |
    | Client ID | `quackback` |
    | Client secret | `bao kv get -field=client-secret kv/identity/quackback-oidc-client` |
-   | Scopes | `openid email profile` |
+   | Connection options → **Sign-in prompt** | **Don't send a prompt** (the default, "Re-authenticate", makes Keycloak ask the password again) |
 
-   The callback it shows is under `https://feedback.eliorion.fr/api/auth/`, which the Keycloak
-   client allows. Sign in once through it before turning anything else off.
-3. Turn off password and magic-link sign-in: Keycloak is then the only way in, and Quackback holds
-   no password. Check before: sign out, sign in with Keycloak, and confirm you are still the admin.
+   Leave the rest as it is (scopes `openid email profile`, credentials in the body, nonce on).
+   **Save and test** → **Start test sign-in** (a Keycloak popup) → "Your SSO connection works."
+   Then the header switch **Enable Keycloak**. Note the provider id in the page's Redirect URI
+   (`.../api/auth/callback/oidc_xxxxxxxx`).
+3. Same page, **Sign-in & access** card: **Show sign-in button** ON, then **Save changes** (the switch
+   alone is not saved). **Create accounts on first sign-in** is already ON.
+4. Sign-in tab → **Recovery codes** → **Generate new codes**. Store the 10 codes in OpenBao
+   (`bao kv put kv/quackback/recovery-codes codes=@codes.txt`, then delete the file). They are the only
+   way in once the password is off and the provider is broken (`/auth/recovery`).
+5. Link the admin to its Keycloak account, still signed in with the password: open
+   `https://feedback.eliorion.fr/auth/link-sso?provider=oidc_xxxxxxxx&type=oidc&next=/admin`. It
+   comes back to `/admin`. Check: avatar → **Sign out**, then **Sign in with Keycloak**: you land on
+   `/admin`, still the admin. (Without this step the first Keycloak sign-in fails `account_not_linked`:
+   the admin's email was never verified, and with no mail it cannot be.)
+6. Sign-in tab → **Email** card → **Password** OFF (saves at once). Magic link is already off.
+7. **Portal access** tab: visibility **Everyone** and **Let visitors create an account** ON (both already
+   are). The gate decides who gets in; a member's account is created at their first sign-in, role user.
+8. Check from a private window, signed in to Scout: Scout's feedback button lands on the board signed
+   in, with no form. Typing `feedback.eliorion.fr` shows **Log in**: one click, no form.
+
+What a `feedback-users` member sees then: from Scout's button (`/auth/login`), nothing; a direct visit,
+one click on **Log in**; with no live Keycloak session (idle more than 30 min, or never signed in), the
+Keycloak form once, at the gate.
+
+## Keep in mind
+
+- **`SECRET_KEY` never changes**: the Keycloak client secret is stored encrypted under it in the
+  database, and a restore needs the same key (`kv/quackback/quackback-secrets`).
+- **Rotating `kv/identity/quackback-oidc-client`** breaks the board's sign-in until the new secret is
+  typed in step 2's form.
+- **The admin's Keycloak email stays as it is.** Quackback links a Keycloak sign-in to an existing
+  account by email: never rename or delete the admin's Keycloak account, and when someone leaves
+  `feedback-users` for good, delete their board account too, so no one can take over the address.
+- **Signing out of the board** does not sign out of Keycloak: the next **Log in** is silent again.
