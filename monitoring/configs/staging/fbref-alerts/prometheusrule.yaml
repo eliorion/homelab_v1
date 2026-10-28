@@ -1,0 +1,72 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: fbref-alerts
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: fbref-scout-refresh.rules
+      rules:
+        # The scout refresh (asp k8s/charts/fbref, CronJob fbref-scout-refresh) is what the Scout
+        # webapp's whole read model comes from. It failed on every run from 2026-10-20 to
+        # 2026-10-28 and nothing said so: the webapp served eight-day-old data, and the replica
+        # replayed the rolled-back rewrites of ~30 GB of matviews every six hours. Same shape as
+        # etcd-backup: one failed run is a warning scoped to the last 48h (a Failed Job latches
+        # kube_job_status_failed for as long as the object exists), the stale read model is the
+        # critical.
+        - alert: FbrefScoutRefreshJobFailed
+          expr: |
+            max by (namespace, job_name) (
+              kube_job_status_failed{namespace="fbref", job_name=~"fbref-scout-refresh-.*"} > 0
+              and on (namespace, job_name)
+              (time() - kube_job_status_start_time{namespace="fbref", job_name=~"fbref-scout-refresh-.*"} < 172800)
+            )
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "scout refresh {{ $labels.job_name }} failed"
+            description: "A step of the scout refresh failed (its log names it: kubectl -n fbref logs job/{{ $labels.job_name }}). Scout keeps serving the previous read model; if the next run fails too, FbrefScoutRefreshStale fires."
+        # 2 missed daily runs (schedule "47 18 * * *", activeDeadlineSeconds 5h): 48h + the run.
+        # Absent until the first successful run, so a fresh install does not page.
+        - alert: FbrefScoutRefreshStale
+          expr: |
+            time() - max by (namespace, cronjob) (
+              kube_cronjob_status_last_successful_time{namespace="fbref", cronjob="fbref-scout-refresh"}
+            ) > 190800
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Scout's read model is over 2 days old"
+            description: "fbref-scout-refresh has not completed in over 53h (expected daily). The Scout webapp is serving stale players, clubs and market values, and every failed run still rewrites the matviews the replica must replay. Read the last Job's log for the step that fails."
+        # A run that fills most of its 5h deadline is one data increment from failing: see it
+        # before the next run does. kube_job_status_completion_time is set on success only.
+        - alert: FbrefScoutRefreshSlow
+          expr: |
+            max by (namespace, job_name) (
+              kube_job_status_completion_time{namespace="fbref", job_name=~"fbref-scout-refresh-.*"}
+              - kube_job_status_start_time{namespace="fbref", job_name=~"fbref-scout-refresh-.*"}
+            ) > 14400
+          labels:
+            severity: warning
+          annotations:
+            summary: "scout refresh {{ $labels.job_name }} took over 4h of its 5h deadline"
+            description: "The run succeeded but is close to activeDeadlineSeconds. The person-season matviews are the usual cause (each rewrites every row): see the step durations in the Job log."
+    - name: fbref-replica.rules
+      rules:
+        # The Scout webapp reads the replica only. Replay lag this large means the replica is
+        # digesting a matview rewrite (or cannot keep up): reads there are cold and minutes behind
+        # the primary, which is what the webapp's version-keyed caches assume never happens.
+        - alert: FbrefReplicaLagging
+          expr: |
+            max by (namespace, pod) (cnpg_pg_replication_lag{namespace="fbref"}) > 300
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "fbref replica {{ $labels.pod }} is over 5 min behind the primary"
+            description: "Replay lag on the replica the Scout webapp reads has exceeded 5 min for 10 min. Usually a scout refresh step rewriting a large matview; if no refresh is running, check the replica's disk (node_disk_io_time_seconds_total) and WAL receiver restarts."
