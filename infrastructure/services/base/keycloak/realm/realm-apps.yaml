@@ -46,7 +46,9 @@ resetPasswordAllowed: false
 loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
 verifyEmail: false
-rememberMe: false
+# A "Remember me" box on the login page (owner, 2026-10-28): ticked, the session outlives the
+# browser and lasts the RememberMe timeouts below instead of 30 min idle; unticked, nothing changes.
+rememberMe: true
 defaultGroups:
   - /scout-requests
 
@@ -76,6 +78,12 @@ otpPolicyLookAheadWindow: 1
 accessTokenLifespan: 300
 ssoSessionIdleTimeout: 1800
 ssoSessionMaxLifespan: 36000
+# Only for a sign-in with "Remember me" ticked (a value not above the two above falls back to
+# them): a day away, or a week in all, before the password is asked again. Longer than Scout's
+# 8 h sign-in cap, so Scout's next sign-in (its own button, one click) and the feedback board pass
+# without the password. A stolen device: admin console > Users > Sessions > Sign out.
+ssoSessionIdleTimeoutRememberMe: 86400
+ssoSessionMaxLifespanRememberMe: 604800
 
 clients:
   # The ONE client. Cloudflare Access speaks generic OIDC authorization code
