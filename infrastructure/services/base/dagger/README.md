@@ -185,7 +185,14 @@ size is what actually bounds the cache here.
 ## Cache sizing
 
 120Gi `ssd-single` (`data-dagger-engine-0`) on **cp1**, with `engine.json` GC set to
-`maxUsedSpace: 100GB`, `reservedSpace: 10GB`, `minFreeSpace: 15%`. The GC ceiling is
+`maxUsedSpace: 65GB` (100GB until 2026-10-28), `reservedSpace: 10GB`, `minFreeSpace: 15%`.
+
+2026-10-28: cp1's thin pool hit 0 KiB free with this volume fully allocated (120 GiB, 101 GiB in
+the filesystem), and DRBD cut cp1's disk off 15 other volumes. A GC eviction does not give
+blocks back to the thin pool: the volume must be trimmed afterwards (FITRIM; the engine image
+has no `fstrim`, so from a privileged ephemeral container through `/proc/1/root/var/lib/dagger`,
+e.g. `perl -e` with ioctl 0xC0185879). The one-off trim that day freed ~17 GiB (pool 100% ->
+92.5%); the 65GB ceiling plus another trim is what returns the rest. The GC ceiling is
 deliberately well under the volume size: BuildKit measures its own store, not the
 filesystem, and a full volume fails builds in confusing ways rather than evicting.
 
