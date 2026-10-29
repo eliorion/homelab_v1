@@ -1,3 +1,6 @@
+# ONE document only: the dev-platform e2e reads this file through the e2e-db-templates
+# ConfigMap (infrastructure/services/dev/dev-platform/virtual) with a single-document YAML
+# load, so a second object here fails every fbref e2e run. Other objects go in their own file.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -128,20 +131,3 @@ spec:
 
   storage:
     size: 10Gi
----
-# The fbref database as an object, so the operator creates pg_stat_statements in it as the
-# superuser (untrusted extension; `app` cannot). `retain`: deleting this must NOT drop the data.
-apiVersion: postgresql.cnpg.io/v1
-kind: Database
-metadata:
-  name: fbref
-  namespace: fbref
-spec:
-  cluster:
-    name: fbref-db
-  name: fbref
-  owner: app
-  databaseReclaimPolicy: retain
-  extensions:
-    - name: pg_stat_statements
-      ensure: present

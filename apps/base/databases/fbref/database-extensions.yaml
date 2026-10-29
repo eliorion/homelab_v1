@@ -1,0 +1,16 @@
+# The fbref database as an object, so the operator creates pg_stat_statements in it as the
+# superuser (untrusted extension; `app` cannot). `retain`: deleting this must NOT drop the data.
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: fbref
+  namespace: fbref
+spec:
+  cluster:
+    name: fbref-db
+  name: fbref
+  owner: app
+  databaseReclaimPolicy: retain
+  extensions:
+    - name: pg_stat_statements
+      ensure: present
