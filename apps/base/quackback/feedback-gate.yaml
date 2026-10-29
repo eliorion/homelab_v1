@@ -41,6 +41,12 @@ spec:
             - --reverse-proxy=true
             - --trusted-proxy-ip=10.244.0.0/16
             - --skip-provider-button=true
+            # Scout's feedback widget: the SDK script and its config are fetched cross-origin without
+            # cookies, so behind the gate they would answer a login redirect and the launcher never
+            # shows. Both are public by design (static JS, the widget's look and switches); the
+            # panel itself (/widget) and every API it calls still need a gate session.
+            - --skip-auth-route=GET=^/api/widget/sdk\.js$
+            - --skip-auth-route=GET=^/api/widget/config\.json$
             - --cookie-name=_feedback_gate
             - --cookie-secure=true
             - --cookie-expire=24h

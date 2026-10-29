@@ -35,6 +35,11 @@ spec:
             - cloudflared
             - tunnel
             - --no-autoupdate
+            # TCP, not QUIC (the default): QUIC streams were cancelled mid-request ("Incoming request
+            # ended abruptly: context canceled", 18 in 24 h on 2026-10-29), which broke video uploads
+            # to the feedback board and some Scout requests.
+            - --protocol
+            - http2
             - --loglevel
             - info
             - --metrics
