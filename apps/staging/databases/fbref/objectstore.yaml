@@ -25,8 +25,13 @@ spec:
       # the upload at ~1.6 MB/s (4-5h per base) while Garage took 24-65 MB/s. Larger
       # files, much shorter window for a failure to hit.
       compression: snappy
-      # 4 parallel uploads: the 207GB base backup took ~4h over Garage with 2.
-      jobs: 4
+      # Uploads only: barman compresses on ONE core either way. snappy is network-bound
+      # (~2 MB/s per connection on Garage nodes a/b, ~0.4 on c), so 8 parallel parts
+      # carry ~6-10 MB/s instead of 2-5 (est., 2026-10-29: 55 GB in ~2 h instead of 3-9 h).
+      jobs: 8
+      # On a standby, backup start otherwise waits for a restartpoint spread over
+      # 0.9 x checkpoint_timeout (27 min at 30min). Those restartpoints write 2-5k buffers.
+      immediateCheckpoint: true
   instanceSidecarConfiguration:
     env:
       # Garage's own region -- must match it. A wrong region 400s the HeadBucket
