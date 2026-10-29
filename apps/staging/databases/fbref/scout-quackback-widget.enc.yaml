@@ -1,0 +1,27 @@
+# The feedback board's widget on Scout: the signing secret Quackback gave when the widget was paired
+# (Admin -> Settings -> Widget -> Install, redeemed 2026-10-29). The fbref chart reads key
+# signing-secret (webapp.feedbackWidget.secretName); Scout signs each feedback-users account's
+# ssoToken with it. Re-pairing in Quackback issues a new one: re-encrypt this file.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: scout-quackback-widget
+    namespace: fbref
+type: Opaque
+stringData:
+    signing-secret: ENC[AES256_GCM,data:p6ToozUahucdEINICkrB7q79VChLRNdE4Ybq1mFcyKL45buit3I6W87R2U176YVPmefOZ8Ej6dGHSvRK61S3K/lG/WY=,iv:pZqKfI8bd+DUIMwi5t9b/fXOREKdjoVI4d2BolDLna8=,tag:v6Jj9FNSwqUoNF8co5FbdQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBOMUN2RFhKeWMxVjJEQTUw
+            Sk55NXY2MjNHUzQ2aEFSb2FHQ3JkMlh1UVJ3ClVEQi9vbjRYVjNQejFScWZmK3Rj
+            OUkxS3FYTm5YRFJReEZrT01CamcvOWcKLS0tIFpXTGhsRy9Jdm9YdzZpYnNBcUEw
+            NmJDYTVzTUsrT0Q0dDIzSFB2cGZSUDAKn2VChB/Ax5xrMYKoIVxQBI2dHrQI0hJ3
+            85skKNwZKp3JneR3BZ/cKALMmdLlxfNlJWhMULwaGQ8atgrD+NJwow==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-29T04:38:33Z"
+    mac: ENC[AES256_GCM,data:eedQnkUx99hsg8hDzzbWITm3MEt3qvkV1NjZEgE2b3Ky06rVTb6wKQWUgb01hDpH+AH51fKmmCPqdUHjMuixVQIec+RSBRj/7CJDAdJYLMfcYIXkGdZEk3faBmpg7IMjidFD9fA4ClcmJv5nbPLmwIdzCPFu/XHD7UpXgPG+CdI=,iv:7wfIlENhoX210cZuTiyO9kLv0Qhl27PjmyN4tE0LVuc=,tag:WQqCVFVbrLh40ja6c1r3lQ==,type:str]
+    version: 3.13.3

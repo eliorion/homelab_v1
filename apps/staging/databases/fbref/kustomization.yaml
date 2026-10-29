@@ -13,6 +13,8 @@ resources:
   - fbref-grafana-ro.enc.yaml
   - fbref-mcp-ro.enc.yaml
   - fbref-scout-ro.enc.yaml
+  # The signing secret of Scout's feedback widget (Quackback), read by the fbref chart.
+  - scout-quackback-widget.enc.yaml
   # ml_ro / model_rw logins and the pipelines' MLflow login, from OpenBao (asp docs/25).
   - externalsecrets.yaml
   # CNPG -> Garage backup (bucket cnpg-staging-fbref, via the in-cluster gateway).
