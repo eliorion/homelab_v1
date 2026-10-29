@@ -87,7 +87,7 @@ spec:
               memory: 64Mi
       containers:
         - name: pgadmin
-          image: dpage/pgadmin4:9.18
+          image: dpage/pgadmin4:9.19
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
