@@ -118,6 +118,15 @@ spec:
         login: true
         passwordSecret:
           name: fbref-model-rw
+      # asp repo fbref V96 (asp docs/38): Scout's judging write path. EXECUTE on four SECURITY DEFINER
+      # functions of schema `judge` and nothing else (no table privilege anywhere); the webapp's second
+      # pool, on the primary, behind the `scout-raters` Keycloak group. Two connections per pod at most.
+      - name: scout_judge
+        ensure: present
+        login: true
+        connectionLimit: 10
+        passwordSecret:
+          name: fbref-scout-judge
       # Flyway V3 creates the worker-control/nocodb roles while connected as
       # app — needs CREATEROLE.
       - name: app
