@@ -254,15 +254,14 @@ nothing else), used by the webapp's second pool on the primary.
 | Object | Where | What |
 |---|---|---|
 | role `scout_judge` (LOGIN) | `../../base/databases/fbref/database.yaml` | managed role, password from Secret `fbref-scout-judge` |
-| Secrets `fbref-scout-judge`, `fbref-scout-judge-key` | `../databases/fbref/externalsecrets.yaml` | OpenBao `kv/fbref/scout-judge` (password), `kv/fbref/scout-judge-key` (the raters' pseudonym key) |
+| Secret `fbref-scout-judge` | `../databases/fbref/externalsecrets.yaml` | OpenBao `kv/fbref/scout-judge` (password) |
 | Keycloak group `scout-raters` | realm `staging-apps`, by hand | no mapper change: the existing `groups` claim carries it |
 
 **Seed before merging** (hex only):
 
 ```sh
 mise bao kv put kv/fbref/scout-judge password="$(openssl rand -hex 32)"
-mise bao kv put kv/fbref/scout-judge-key key="$(openssl rand -hex 32)"
 ```
 
 Then turn the feature on in `release.yaml` (`webapp.judge.enabled: true`) once the webapp release that
-carries it is deployed. Never rotate `scout-judge-key` casually: every rater gets a new pseudonym.
+carries it is deployed. Each judgement stores the rater's Keycloak account id (asp fbref V97).
