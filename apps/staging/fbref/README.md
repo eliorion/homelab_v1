@@ -243,3 +243,25 @@ kubectl -n fbref get externalsecret,secret | grep -E 'ml-ro|model-rw|mlflow-pipe
 kubectl -n mlops get secret | grep -E 'fbref-|s3-ml-lake|mlops-dagster-db'
 kubectl -n fbref get cluster fbref-db -o jsonpath='{.status.managedRolesStatus.byStatus}'; echo
 ```
+
+## Scout judging (asp docs/38)
+
+Experts in the Keycloak group **`scout-raters`** (realm `staging-apps`, members added by hand) rate the
+similar-players lists in Scout; the judgements train and evaluate the model and are never shown to
+customers. The write path is the role `scout_judge` (asp fbref V96: EXECUTE on four `judge.*` functions,
+nothing else), used by the webapp's second pool on the primary.
+
+| Object | Where | What |
+|---|---|---|
+| role `scout_judge` (LOGIN) | `../../base/databases/fbref/database.yaml` | managed role, password from Secret `fbref-scout-judge` |
+| Secret `fbref-scout-judge` | `../databases/fbref/externalsecrets.yaml` | OpenBao `kv/fbref/scout-judge` (password) |
+| Keycloak group `scout-raters` | realm `staging-apps`, by hand | no mapper change: the existing `groups` claim carries it |
+
+**Seed before merging** (hex only):
+
+```sh
+mise bao kv put kv/fbref/scout-judge password="$(openssl rand -hex 32)"
+```
+
+Then turn the feature on in `release.yaml` (`webapp.judge.enabled: true`) once the webapp release that
+carries it is deployed. Each judgement stores the rater's Keycloak account id (asp fbref V97).
