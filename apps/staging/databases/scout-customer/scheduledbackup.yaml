@@ -1,0 +1,14 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: scout-customer-daily
+spec:
+  # 6-field CNPG cron. 03:20 UTC, staggered with the other clusters.
+  schedule: "0 20 3 * * *"
+  immediate: true
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  cluster:
+    name: scout-customer

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: scout-customer-garage-backup
+type: Opaque
+stringData:
+    ACCESS_KEY_ID: ENC[AES256_GCM,data:mcsEOd82MJnnYYgcbtDTrdjLbgEetbW8TBg=,iv:pT2LQs5c+FpZN3EmD65JzG8QWx7HPlDZ4sxWdrumGKo=,tag:P0U8oNoR3EN8seEUiy3hBQ==,type:str]
+    ACCESS_KEY_SECRET: ENC[AES256_GCM,data:QHW7E4yoQEi0jRpgeaoa/xAdaGhCJ2PgS42Fpty5npqGNvHealh9tAQIcC7x/06Mfrw4i2FYIwJx493ef3xTdg==,iv:xep3UZ+hqFt37z8lyBFwYaMil9lqaqcin6LuyDmQktw=,tag:P5P9EYrzrSvkJ7ZNDi8ORw==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBCQUNpNUkwK2NvUU44cFRx
+            YlIzL1o5RStzYWE0WXlBSXR1Skp5b1hCcWpBClRnU0llTGVaYlVCRStCb3MvVi9S
+            MGJMYmIyUnZMSHdXVVFLRzhJcm1TbTAKLS0tIERzaWcvSTdyNHVHZ2cwUDZyN01x
+            UEZkaWtyTFMwTTZEYVdaSjcrcWcxdVEKRVRiv/SSgrSzitTpJlPoX0uhL7RI8EG7
+            i95X5zbkIkXoa9aGr0sWvt4QvuX+s43BrB9g4QU21xEFMp44PZXqhA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-11-01T04:12:33Z"
+    mac: ENC[AES256_GCM,data:UwMeZxKcTkTWMj5dci2yB5LCUH9mHpgvxsjBfK1eSTtJndZOtWRxFIWIczDyhLRMyMe1AP8ht56LMwtzjWyI8eViRgH5/D9tJxM7dLtFa32F8HIvgmdJx6uY4Kf1MVRys8n0dc33Go8sVTsfYxsnWZ1bm1gQjBQtbJvbZ+KUPoQ=,iv:RZ0Qnbj7+koq3QjvGxbhwN/66EI1+H4Ju4afbFBl3Gs=,tag:et/hdBV+R2GLa4SHw59l3g==,type:str]
+    version: 3.13.3
