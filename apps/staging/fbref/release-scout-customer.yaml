@@ -1,0 +1,32 @@
+# Scout's customer database schema (asp k8s/charts/scout-customer, docs/39): the chart deploys
+# nothing but its Flyway pre-install/pre-upgrade hook, run as `app` against the CNPG cluster
+# ../../databases/scout-customer (Secret scout-customer-app). Its own release so a failed customer
+# migration never blocks an fbref upgrade. Values here are environment overrides only.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: scout-customer
+  namespace: flux-system
+spec:
+  targetNamespace: fbref
+  interval: 30m
+  chart:
+    spec:
+      chart: k8s/charts/scout-customer
+      sourceRef:
+        kind: GitRepository
+        name: scout-customer
+      interval: 12h
+      reconcileStrategy: Revision
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    global:
+      # Private GHCR image (flyway-migration); the Secret is mirrored into the ns by reflector.
+      imagePullSecrets:
+        - name: ghcr-pull-secret

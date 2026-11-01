@@ -77,6 +77,11 @@ spec:
       # ../databases/fbref/scout-quackback-widget.enc.yaml.
       feedbackWidget:
         secretName: scout-quackback-widget
+      # Scout's customer database (asp docs/39: layouts, history, notes, lists), the CNPG cluster
+      # ../databases/scout-customer as its managed role scout_customer; schema from
+      # release-scout-customer.yaml.
+      customer:
+        enabled: true
     # Switched off (memory on staging-controlplane-1). mcp.enabled also drops its Service, egress
     # policy, family-counts CronJob and the mcp_ro helm test; the Cloudflare route then answers 502.
     components:
