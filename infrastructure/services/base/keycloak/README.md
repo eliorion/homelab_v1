@@ -144,6 +144,7 @@ to that group. This is the whole authorization model:
 | `nao-users` | nao | **A Cloudflare Access policy** matching the `groups` claim. Until that policy is switched from an email list to a group rule, this group grants nothing. |
 | `scout-users` | Scout (asp) | **Scout itself** (`src/proxy.ts`: no group = the "waiting for approval" page). Moving an account here from `scout-requests` is the owner's approval. Does NOT open the board. |
 | `feedback-users` | Quackback (the feedback board) | **The board's gate** (oauth2-proxy `feedback-gate`, `--allowed-group=feedback-users`, re-read every 5 min). Granted per person, independently of Scout; never a default group (sign-up is open). |
+| `scout-raters` | Scout (asp), expert judging | **Scout itself** (asp fbref-webapp, docs/38): the rating buttons and `/evaluate` render only for this group and both server actions re-check it. Granted per person; still needs `scout-users` to open Scout at all. |
 | `scout-requests` | — (the queue) | **Nothing reads it, by design**: every self-registered account starts here (`defaultGroups`). Its member list is the list of pending requests. |
 | `agent-platform-viewers` / `-operators` / `-admins` | agent-platform (asp) | **agent-api itself**: it maps the token's `groups` claim to a role (highest wins). No group = 403 on every route but `/healthz`. |
 
