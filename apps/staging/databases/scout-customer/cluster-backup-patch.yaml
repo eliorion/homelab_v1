@@ -1,0 +1,12 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: scout-customer
+spec:
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        # NOT garage-store: that name is fbref-db's ObjectStore in the same namespace.
+        barmanObjectName: scout-customer-garage-store
+        serverName: scout-customer

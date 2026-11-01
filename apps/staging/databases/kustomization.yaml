@@ -10,6 +10,7 @@ resources:
   - n8n/
   - nextcloud/
   - quackback/
+  - scout-customer/
   - scraper/
 
 # Staging only, never in base/databases: base also feeds the e2e vcluster, whose
@@ -46,6 +47,8 @@ patches:
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: nextcloud-db}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
   - target: {group: postgresql.cnpg.io, kind: Cluster, name: quackback-db}
+    patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
+  - target: {group: postgresql.cnpg.io, kind: Cluster, name: scout-customer}
     patch: '[{"op": "add", "path": "/spec/resources", "value": {"requests": {"memory": "128Mi"}, "limits": {"memory": "512Mi"}}}]'
   # scraper-db: 3Gi limit (asp docs/29 P0). It now also holds the result-spill manifest and, from
   # P1, every tenant's frontier; the request stays 512Mi so scheduling is unchanged. Changing the

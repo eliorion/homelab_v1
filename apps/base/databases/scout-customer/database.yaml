@@ -1,0 +1,38 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: scout-customer
+  namespace: fbref
+spec:
+  instances: 2
+  # imageName, not image: the operator image must never be used here.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      # `required` would block every write while the replica is unavailable.
+      dataDurability: preferred
+
+  bootstrap:
+    initdb:
+      database: scout_customer
+      owner: app
+      # Schema is owned by Flyway (the fbref chart's customer migration hook): no postInit here.
+
+  managed:
+    roles:
+      # The customer migrations create scout_customer NOLOGIN, connected as `app` (needs CREATEROLE).
+      - name: app
+        ensure: present
+        login: true
+        createrole: true
+      - name: scout_customer
+        ensure: present
+        login: true
+        passwordSecret:
+          name: scout-customer-login # pragma: allowlist secret
+
+  storage:
+    size: 5Gi
