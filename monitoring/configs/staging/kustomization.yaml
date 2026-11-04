@@ -8,6 +8,7 @@ resources:
   - etcd-backup-alerts
   - cnpg-alerts
   - fbref-alerts
+  - advisor-alerts
   - n8n-metrics
   - node-capacity-alerts
   - control-plane-alerts

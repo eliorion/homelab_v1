@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: advisor-alerts
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: advisor-batch.rules
+      rules:
+        # advisor-pipeline filed nothing from 2026-10-11 to 2026-11-04 and nothing said so: a daily
+        # Job that fails keeps only three failed objects, so it read as "three bad nights". The signal
+        # is the age of the last success, and a suspended CronJob (by hand or by values) stays quiet.
+        - alert: AdvisorDailyJobStale
+          expr: |
+            (time() - kube_cronjob_status_last_successful_time{namespace="advisor"} > 129600)
+            and on (namespace, cronjob)
+            (kube_cronjob_spec_suspend{namespace="advisor"} == 0)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.cronjob }} has not succeeded for over 36h"
+            description: "{{ $labels.cronjob }} is a daily CronJob and is not suspended. Check its last Job's logs in namespace advisor."
