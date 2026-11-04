@@ -50,16 +50,22 @@ spec:
     collection:
       enabled: true
       # advisor-mot-backfill (asp docs/19 PR 1, docs/29): always suspended, run by hand with
-      # `kubectl -n advisor create job --from=cronjob/advisor-mot-backfill mot-2022-2025`. Capacity confirmed
-      # on 2026-10-19: advisor-db storage is 100Gi (apps/base/databases/advisor), and mot-archive-pvc.yaml is
-      # the kept volume a year's raw events are archived to before its staged rows are purged.
+      # `kubectl -n advisor create job --from=cronjob/advisor-mot-backfill mot-2022-r3`. Capacity confirmed
+      # on 2026-10-19: advisor-db storage is 100Gi (apps/base/databases/advisor).
+      # claimName is EMPTY on purpose (2026-11-04): with an archive the script purges a year's staged rows and
+      # closes it, production has no reader of those Parquet files, and the catalogue is about to grow, so 2022
+      # would freeze at about 13% of tests placed. Empty = the year stays staged and the run stops after it.
+      # mot-archive-pvc.yaml stays for when a re-aggregator exists.
       motBackfill:
         enabled: true
         capacityConfirmed: true
         archive:
-          claimName: advisor-mot-archive
+          claimName: ""
     pipeline:
       enabled: true
+      # Suspended 2026-11-04: it spends the shared free quota on 0.28% of a night's passages and has filed nothing
+      # since 2026-10-11. Comes back when the placed-first, batched pipeline passes its benchmark (asp docs/29).
+      suspend: true
       llm:
         model: ai/normal
     tests:
@@ -74,6 +80,10 @@ spec:
     components:
       advisor-engine:
         enabled: true
+        env:
+          # caradisiac is paused with the pipeline (2026-11-04): 95% of stored documents were never parsed and its
+          # later thread pages look unread. honestjohn and planete-citroen never produced anything.
+          SITES: "www.largus.fr,www.forum-peugeot.com,forum.quechoisir.org,www.fiches-auto.fr,www.adac.de,data.economie.gouv.fr,api.nhtsa.gov,opendata.rdw.nl,open.data.dvsa.gov.uk,www.utac-otc.com"
       # The review queue, on the tailnet only (review-ingress-tailscale.yaml). The proxy's identity
       # header names the reviewer; never set this to a header a client could send on its own.
       advisor-review:
