@@ -14,7 +14,7 @@ Three Flux Kustomizations in
 
 | Kustomization | Path | Notes |
 |---|---|---|
-| `databases` | `./apps/staging/databases` | `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, `wait: true` — Ready once every CNPG Cluster has a serving primary (`healthCheckExprs`) |
+| `databases` | `./apps/staging/databases` | `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, `healthChecks` naming each CNPG Cluster — Ready once each has a serving primary (`healthCheckExprs`). A new Cluster must be added to that list; other objects here do not gate |
 | `db-migrations` | `./apps/staging/databases/db-migrations` | `dependsOn` `databases`, `force: true`, `wait: true` — Ready only when the Flyway Job completes |
 | `apps` | `./apps/staging` | `dependsOn` `db-migrations`, `prune: true`, SOPS decryption |
 

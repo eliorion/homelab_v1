@@ -15,7 +15,42 @@ spec:
     name: flux-system
   path: ./apps/staging/databases
   prune: true
-  wait: true
+  # NOT wait: true. That health-checks everything applied here, ExternalSecrets included, so a sealed OpenBao stopped
+  # every app rollout for 24 h on 2026-11-04. The gate is for the schema, so it names the CNPG Clusters. A new Cluster
+  # under apps/staging/databases must be added to this list to gate.
+  healthChecks:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      name: advisor-db
+      namespace: advisor
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      name: asp-db
+      namespace: asp
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      name: fbref-db
+      namespace: fbref
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      name: scout-customer
+      namespace: fbref
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      name: n8n-db
+      namespace: n8n
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      name: nextcloud-db
+      namespace: nextcloud
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      name: quackback-db
+      namespace: quackback
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      name: scraper-db
+      namespace: scraper
   # Healthy once the primary serves, or when deliberately hibernated; a missing replica alerts instead of gating apps. See apps/README.md.
   healthCheckExprs:
     - apiVersion: postgresql.cnpg.io/v1
