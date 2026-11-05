@@ -5,9 +5,9 @@ per project (`asp`, `fbref`, `scraper`) that runs `flyway migrate` against the
 CNPG-generated `<cluster>-app` Secret of the matching Postgres cluster. Those
 clusters (`apps/base/databases/<project>/`, overlaid in
 `apps/<env>/databases/<project>/`) create the database; the Flyway Jobs own its
-schema. The Jobs are applied by their own Flux Kustomization, which sits between
-`databases` and `apps` so a schema change lands before the application images
-that need it, and a failed migration stops the apps tier from rolling. This
+schema. The Jobs are applied by their own Flux Kustomization, which follows `databases`.
+It does not gate `apps` (2026-11-05): each chart's pre-upgrade hook migrates before
+its own Deployments, so a failed migration stops only that app. This
 README covers the `db-migrations` component and the aggregating
 `apps/<env>/databases/kustomization.yaml`; each Postgres cluster has its own
 README under `apps/base/databases/<project>/`

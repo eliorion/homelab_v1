@@ -10,13 +10,13 @@ chart that lives in another repository.
 ## How it is wired
 
 Three Flux Kustomizations in
-[`../clusters/staging/apps.yaml`](../clusters/staging/apps.yaml) drive this tier, in order:
+[`../clusters/staging/apps.yaml`](../clusters/staging/apps.yaml) drive this tier. `db-migrations` follows `databases`; `apps` depends on neither, only on `infra-reflector`, so a database or secrets problem cannot stop every rollout. Each chart's pre-upgrade migrate hook keeps a schema ahead of its own code:
 
 | Kustomization | Path | Notes |
 |---|---|---|
-| `databases` | `./apps/staging/databases` | `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, `wait: true` — Ready once every CNPG Cluster has a serving primary (`healthCheckExprs`) |
+| `databases` | `./apps/staging/databases` | `dependsOn` `infra-cnpg-plugin` and `infra-reflector`, `healthChecks` naming each CNPG Cluster — Ready once each has a serving primary (`healthCheckExprs`). A new Cluster must be added to that list; other objects here do not gate |
 | `db-migrations` | `./apps/staging/databases/db-migrations` | `dependsOn` `databases`, `force: true`, `wait: true` — Ready only when the Flyway Job completes |
-| `apps` | `./apps/staging` | `dependsOn` `db-migrations`, `prune: true`, SOPS decryption |
+| `apps` | `./apps/staging` | `dependsOn` `infra-reflector`, `prune: true`, SOPS decryption |
 
 On a release, running pods keep the previous image tags while the migration Job runs; the new
 tags only apply once the Job has completed. A fourth Kustomization, `lab`
