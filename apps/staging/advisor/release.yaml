@@ -78,6 +78,11 @@ spec:
           review: {secretName: advisor-review-login}  # pragma: allowlist secret
           publish: {secretName: advisor-publish-login}  # pragma: allowlist secret
     components:
+      # Valuation fits, then hazard fits from the MOT cells and projections (asp #908, advisor-worker v0.5.0+):
+      # fills thin price bands now, and the cost-of-keeping block once hazards exist. Fits a scope at most every
+      # REFIT_INTERVAL_DAYS (chart default), so the 1Gi database is not refit daily.
+      advisor-economics:
+        enabled: true
       advisor-engine:
         enabled: true
         env:
