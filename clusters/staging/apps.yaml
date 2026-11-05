@@ -81,7 +81,7 @@ spec:
   path: ./apps/staging/databases/db-migrations
   prune: true
   force: true # Job is immutable — image-tag bump must delete+recreate
-  wait: true # Ready only when the Job COMPLETES; failed Job = NotReady gates `apps`
+  wait: true # Ready only when the Job COMPLETES
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -90,8 +90,11 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1m0s
+  # Not on databases or db-migrations (owner, 2026-11-05): a database or secrets problem must not stop every app
+  # rollout. Each chart's pre-upgrade migrate hook already runs before its own Deployments, so a database problem
+  # now fails only that app's HelmRelease. infra-reflector mirrors the image pull secrets the releases use.
   dependsOn:
-    - name: db-migrations
+    - name: infra-reflector
   retryInterval: 1m
   timeout: 5m
   sourceRef:
