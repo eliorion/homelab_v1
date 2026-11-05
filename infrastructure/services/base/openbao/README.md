@@ -94,6 +94,12 @@ the pod can restart on another node and unseal itself. While it is down, existin
 Kubernetes Secrets written by External Secrets stay as they are; only refreshes
 and new secrets wait. Adding Raft peers later is a `bao operator raft join` away.
 
+**Sealed means restart.** Auto-unseal runs only at process start, so a core that
+shuts itself down stays sealed until the process ends. `-exit-on-core-shutdown`
+makes it exit (2026-11-04: a failover during lease restore sealed it for 24 h, with
+the process alive and 0 restarts). The StatefulSet is OrderedReady, so a pod that is
+already sealed cannot roll: delete it by hand first.
+
 **An offline CA, not a cert-manager self-signed one.** A namespaced `SecretStore`
 can only take its CA from its own namespace or inline. A CA generated inside the
 cluster would have to be copied into every consuming namespace; one generated
