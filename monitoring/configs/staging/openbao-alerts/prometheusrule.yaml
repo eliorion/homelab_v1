@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: openbao-alerts
+  namespace: monitoring
+  labels:
+    # Matches Prometheus ruleSelector.
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: openbao.rules
+      rules:
+        # Readiness is `bao status`, so not ready means sealed or down. Nothing scrapes OpenBao itself.
+        # While it is out every SecretStore is invalid and ExternalSecrets stop refreshing.
+        - alert: OpenBaoNotReady
+          expr: |
+            kube_pod_status_ready{namespace="openbao", pod="openbao-0", condition="true"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "OpenBao is sealed or down"
+            description: "openbao-0 has not been Ready for 5m. Check `bao status` in the pod and its log for 'vault is sealed'. Restarting the pod unseals it."

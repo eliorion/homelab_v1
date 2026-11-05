@@ -35,6 +35,10 @@ spec:
     server:
       # Chart default is OnDelete, which never rolls a single replica on its own.
       updateStrategyType: RollingUpdate
+      # A core that shuts itself down stays sealed until the process restarts, and auto-unseal only runs at
+      # start. On 2026-11-04 a database failover during lease restore sealed it for 24 h, and nothing restarted
+      # it. With this flag the process exits, Kubernetes restarts it, and the stored key unseals it.
+      extraArgs: "-exit-on-core-shutdown"
       resources:
         requests:
           cpu: 20m

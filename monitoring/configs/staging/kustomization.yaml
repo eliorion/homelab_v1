@@ -9,6 +9,7 @@ resources:
   - cnpg-alerts
   - fbref-alerts
   - advisor-alerts
+  - openbao-alerts
   - n8n-metrics
   - node-capacity-alerts
   - control-plane-alerts
