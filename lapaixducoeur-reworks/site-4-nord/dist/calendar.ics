@@ -32,7 +32,7 @@ END:STANDARD
 END:VTIMEZONE
 BEGIN:VEVENT
 UID:2026-11-19-maraude-centre-ville@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20261119T183000
 DTEND;TZID=America/Toronto:20261119T213000
 SUMMARY:Maraude du jeudi soir — centre-ville / Thursday-night outreach 
@@ -52,7 +52,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-21-collecte-montreal-nord@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20261121T100000
 DTEND;TZID=America/Toronto:20261121T160000
 SUMMARY:Collecte alimentaire — Montréal-Nord / Food drive — Montréal-
@@ -73,7 +73,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-11-28-atelier-budget@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20261128T133000
 DTEND;TZID=America/Toronto:20261128T160000
 SUMMARY:Atelier : budget familial et autonomie / Workshop: family budgeting
@@ -93,7 +93,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-12-04-soiree-priere@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20261204T190000
 DTEND;TZID=America/Toronto:20261204T210000
 SUMMARY:Soirée de prière et de louange pour Montréal / Evening of prayer
@@ -112,7 +112,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-12-10-maraude-grand-froid@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20261210T183000
 DTEND;TZID=America/Toronto:20261210T213000
 SUMMARY:Maraude « grand froid » — centre-ville / “Deep cold” outrea
@@ -130,7 +130,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-12-12-souper-gala-noel@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20261212T180000
 DTEND;TZID=America/Toronto:20261212T223000
 SUMMARY:Souper-gala de Noël du Cœur / Christmas Benefit Dinner
@@ -148,7 +148,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-12-19-grande-collecte-noel@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20261219T093000
 DTEND;TZID=America/Toronto:20261219T170000
 SUMMARY:Grande collecte de Noël — Saint-Michel / Great Christmas food dr
@@ -169,7 +169,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2026-12-24-maraude-veille-noel@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20261224T170000
 DTEND;TZID=America/Toronto:20261224T200000
 SUMMARY:Maraude de la veille de Noël / Christmas Eve outreach
@@ -188,7 +188,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2027-01-09-priere-nouvel-an@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20270109T100000
 DTEND;TZID=America/Toronto:20270109T120000
 SUMMARY:Matinée de prière du Nouvel An / New Year prayer morning
@@ -206,7 +206,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2027-01-16-atelier-cv-emploi@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20270116T133000
 DTEND;TZID=America/Toronto:20270116T163000
 SUMMARY:Atelier : CV\, entrevue et premier emploi / Workshop: CVs\, intervi
@@ -225,7 +225,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2027-01-21-maraude-janvier@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20270121T183000
 DTEND;TZID=America/Toronto:20270121T213000
 SUMMARY:Maraude du jeudi soir — Hochelaga / Thursday-night outreach — H
@@ -243,7 +243,7 @@ TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
 UID:2027-02-06-collecte-villeray@lapaixducoeur.ca
-DTSTAMP:20261109T083624Z
+DTSTAMP:20261109T083723Z
 DTSTART;TZID=America/Toronto:20270206T100000
 DTEND;TZID=America/Toronto:20270206T150000
 SUMMARY:Collecte alimentaire — Villeray / Food drive — Villeray
