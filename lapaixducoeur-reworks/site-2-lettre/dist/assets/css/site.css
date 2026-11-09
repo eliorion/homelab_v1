@@ -100,7 +100,7 @@ ul, ol { padding-left: 1.2em; }
 .deckle--bottom { bottom: -1px; }
 .deckle--top { top: -1px; transform: scaleY(-1); }
 
-.tbc { background: rgba(201, 120, 106, .16); color: var(--rose-deep); border-radius: 3px; padding: 0 .3em; font-size: .92em; white-space: nowrap; font-weight: 500; }
+.tbc { background: rgba(201, 120, 106, .16); color: var(--rose-deep); border-radius: 3px; padding: 0 .3em; font-size: .92em; font-weight: 500; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .badge-sample { display: inline-block; font: 600 .68rem/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--rose-deep); background: #FFF6F1; border: 1px dashed var(--rose-deep); padding: .4em .6em; border-radius: 3px; vertical-align: middle; white-space: nowrap; }
 .kicker { font: 600 .8rem/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--rose-deep); margin-bottom: .9rem; display: flex; align-items: center; gap: .7rem; }
 .kicker::before { content: ""; width: 28px; height: 1.5px; background: currentColor; }
@@ -451,7 +451,8 @@ textarea { resize: vertical; min-height: 7rem; }
   background-image: linear-gradient(90deg, transparent 2.2rem, rgba(201, 120, 106, .55) 2.2rem, rgba(201, 120, 106, .55) calc(2.2rem + 1.5px), transparent calc(2.2rem + 1.5px)), repeating-linear-gradient(to bottom, transparent 0 calc(2rem - 1px), rgba(70, 110, 170, .2) calc(2rem - 1px) 2rem);
   background-attachment: local; background-position: 0 .2rem; box-shadow: none; }
 .field--ruled textarea:focus-visible { box-shadow: 0 0 0 3px rgba(162, 72, 58, .28); border-radius: 4px; }
-.input-sign { font: italic 400 1.15rem/1.4 var(--serif) !important; }
+.input-sign { font-family: var(--serif); font-style: italic; font-size: 1.1rem; }
+.field-row { align-items: start; }
 .btn--seal { background: var(--rose-deep); color: #fff; padding: .55rem 1.5rem .55rem .55rem; justify-self: start; }
 .btn--seal:hover { background: #8E3B2F; color: #fff; }
 .btn-seal { width: 44px; height: 44px; filter: none; }
@@ -715,3 +716,4 @@ code { font: 500 .95rem/1.4 ui-monospace, "SFMono-Regular", Menlo, monospace; ba
 .ep-lines a:hover { color: var(--rose-deep); text-decoration: underline; }
 .ep-lines small { display: block; font: 400 .82rem/1.4 var(--sans); color: var(--ink-soft); }
 .ep-lines .btn { padding: .45rem .75rem; }
+@media (min-width: 1100px) { .gallery { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.6rem; } }

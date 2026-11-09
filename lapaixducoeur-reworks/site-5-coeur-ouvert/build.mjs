@@ -43,7 +43,7 @@ const bannerCfg = settings.fr.banner;
 if (bannerCfg && bannerCfg.enabled) {
   const camp = campaigns.find((c) => c.id === bannerCfg.campaign || pick(c, 'fr').slug === bannerCfg.campaign);
   if (camp && pick(camp, 'fr').status === 'active') {
-    const days = Math.max(0, Math.ceil((new Date(pick(camp, 'fr').end) - ctx.now) / 864e5));
+    const days = Math.max(0, Math.floor((new Date(pick(camp, 'fr').end) - ctx.now) / 864e5));
     ctx.banner = Object.fromEntries(LANGS.map((l) => [l, { text: settings[l].banner.text, url: P.urlFor('campaign', camp, l), days }]));
   }
 }

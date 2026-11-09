@@ -69,29 +69,29 @@
     ctx.font = `300px ${DISPLAY}`;
     ctx.fillText('“', M - 8, top + 210);
 
-    const textTop = top + 200;
-    const bottomReserve = s.ref ? 260 : 190;
-    const boxH = H - textTop - bottomReserve - (s.format === 'story' ? 260 : 0);
+    const textTop = top + 170;
+    const limit = H - M - 70 - 40 - (s.ref ? 90 : 0) - (s.format === 'story' ? 240 : 0);
     const maxW = W - 2 * M;
     const upper = s.text.toLocaleUpperCase(cfg.lang === 'fr' ? 'fr-CA' : 'en-CA');
+    const LH = 1.04;
     let size = 150; let lines = [];
     for (; size >= 40; size -= 4) {
       ctx.font = `${size}px ${DISPLAY}`;
       lines = wrap(upper, maxW);
-      if (lines.length * size * 1.02 <= boxH) break;
+      if (textTop + size + (lines.length - 1) * size * LH <= limit) break;
     }
     ctx.fillStyle = P.fg;
     let y = textTop + size;
     lines.forEach((l, i) => {
       if (i === lines.length - 1 && s.style !== 'coral') ctx.fillStyle = P.accent;
       ctx.fillText(l, M, y);
-      y += size * 1.02;
+      if (i < lines.length - 1) y += size * LH;
     });
 
     if (s.ref) {
       ctx.fillStyle = s.style === 'coral' ? P.fg : P.accent;
       ctx.font = `italic 46px ${SERIF}`;
-      ctx.fillText(`— ${s.ref}`, M, y + 40);
+      ctx.fillText(`— ${s.ref}`, M, y + 84);
     }
 
     ctx.fillStyle = P.rule; ctx.fillRect(M, H - M - 70, W - 2 * M, 5);

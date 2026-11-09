@@ -1,5 +1,5 @@
 import { ROUTES, UI } from './i18n.mjs';
-import { esc, t, icon, typo } from './lib.mjs';
+import { esc, t, icon, typo, inline } from './lib.mjs';
 
 export const ctx = { site: '', settings: null, assetV: {}, banner: null };
 
@@ -127,7 +127,7 @@ function footer(lang, alt) {
   const link = (k) => `<li><a href="${ROUTES[k][lang]}">${t(L.nav[k], lang)}</a></li>`;
   const social = (s.social || []).map((x) => x.url
     ? `<li><a href="${esc(x.url)}" rel="noopener">${esc(x.name)}</a></li>`
-    : `<li>${esc(x.name)} <span class="tbc">${esc(L.tbc)}</span></li>`).join('');
+    : `<li>${esc(x.name)}\u00A0<span class="tbc">${esc(L.tbc)}</span></li>`).join('');
   const year = 2026;
   return `<footer class="site-footer">
   <div class="wrap">
@@ -148,7 +148,7 @@ function footer(lang, alt) {
       </div>
     </div>
     <div class="footer-bottom">
-      <p>© ${year} La Paix du Cœur — Kimia Na Motema. ${esc(L.rights)} ${esc(L.charity)}${lang === 'fr' ? '\u202F:' : ':'} ${t(s.charity_number, lang)}</p>
+      <p>© ${year} La Paix du Cœur — Kimia Na Motema. ${esc(L.rights)} ${esc(L.charity)}${lang === 'fr' ? '\u202F:' : ':'} ${inline(s.charity_number, lang)}</p>
       <ul class="footer-legal">
         <li><a href="${ROUTES.privacy[lang]}">${esc(L.privacyLink)}</a></li>
         <li><a href="${ROUTES.press[lang]}">${esc(L.pressLink)}</a></li>

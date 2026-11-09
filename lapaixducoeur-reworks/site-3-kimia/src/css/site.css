@@ -655,3 +655,8 @@ legend{padding:0}
   .stamp__m{padding:.45rem .6rem}.stamp__d{font-size:1.3rem;padding:0}.stamp__y{padding:0}
   .cal-links .btn{flex:1 1 auto}
 }
+.aid-card__front{grid-template-columns:1fr;justify-items:center;align-content:center;text-align:center;gap:.75rem;padding-block:2.25rem}
+.aid-card__front .emblem{width:150px}
+.aid-card__front p{max-width:30rem;margin-inline:auto}
+@media (max-width:520px){.aid-card__front .emblem{width:120px}}
+.info-box h2{font-size:1.45rem}

@@ -3,6 +3,7 @@ import { esc, t, md, picture, mediaImg, fmtDate, fmtDay, fmtTime, stampParts, im
 import { crumbs } from './layout.mjs';
 import { hoop, emblems, icon, ui, serveMap, stitchedHeart, vine, heartPath, C, mark } from './svg.mjs';
 
+const money = (n, lang) => (lang === 'fr' ? `${n}&nbsp;$` : `$${n}`);
 const sampleBadge = (lang, on = true) => on ? `<span class="badge badge--sample">${UI[lang].sample}</span>` : '';
 const sec = (cls, inner, attrs = '') => `<section class="section ${cls}"${attrs}>${inner}</section>`;
 const head = (kicker, title, intro, { center = false, id = '' } = {}) => `<div class="section-head${center ? ' section-head--center' : ''}">${kicker ? `<p class="kicker">${kicker}</p>` : ''}<h2${id ? ` id="${id}"` : ''}>${title}</h2>${intro ? `<p>${t(intro)}</p>` : ''}</div>`;
@@ -84,7 +85,7 @@ ${sec('section--cream section--tight', `<div class="wrap">${head(U.nav.media, es
 
 ${sec('section--mustard', `<div class="wrap split"><div>${head(U.nav.give, esc(P.giveTitle), P.giveText)}
 <div class="btn-row"><a class="btn" href="${ROUTES.give[lang]}">${ui.heart}${U.donate}</a><a class="btn btn--ghost" href="${ROUTES.contact[lang]}">${U.contactUs}</a></div></div>
-<ul class="impact-list" role="list">${giveP.amounts.slice(0, 3).map((a) => `<li class="impact reveal"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="${heartPath(20, 21, 36)}" fill="${C.terra}"/></svg><span><strong>${a.amount}&nbsp;$</strong> = ${t(a.label)}</span></li>`).join('')}</ul></div>
+<ul class="impact-list" role="list">${giveP.amounts.slice(0, 3).map((a) => `<li class="impact reveal"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="${heartPath(20, 21, 36)}" fill="${C.terra}"/></svg><span><strong>${money(a.amount, lang)}</strong> =${t(a.label)}</span></li>`).join('')}</ul></div>
 <p class="wrap"><small>${t(giveP.amountsNote)}</small></p>`, ' data-knot')}
 
 <section class="section verse-band on-dark" data-knot><div class="wrap"><svg class="mark-heart" viewBox="0 0 48 44" aria-hidden="true">${stitchedHeart(24, 22, 46, C.terra, C.mustardL)}</svg><figure class="mb-0"><blockquote>«&nbsp;${esc(S.verseOfWeek.text)}&nbsp;»</blockquote><figcaption>${esc(S.verseOfWeek.ref)}</figcaption></figure></div></section>`;
@@ -306,7 +307,7 @@ ${head('', esc(P.galleryTitle), '')}
 </div></section>
 <section class="section section--sand2" data-knot><div class="wrap media-row">
 <div><h2>${esc(P.videoTitle)}</h2>
-<div class="yt" data-yt="${esc(video.youtubeId)}" data-yt-title="${esc(video.title)}"><img src="${video.src}" alt="${esc(video.alt)}" width="1280" height="720" loading="lazy"><button class="yt__play" type="button" hidden><span class="circle">${ui.play}</span><span class="yt__label">${M.play} : ${esc(video.title)}</span></button></div>
+<div class="yt" data-yt="${esc(video.youtubeId)}" data-yt-title="${esc(video.title)}"><img src="${video.src}" alt="${esc(video.alt)}" width="1280" height="720" loading="lazy"><button class="yt__play" type="button" hidden><span class="circle">${ui.play}</span><span class="yt__label">${M.play}${lang === 'fr' ? '&nbsp;:' : ':'} ${esc(video.title)}</span></button></div>
 <p class="media-note">${sampleBadge(lang, video.sample)} ${t(video.caption)} ${M.loadNote}</p>
 <noscript><p><a href="https://www.youtube.com/watch?v=${esc(video.youtubeId)}">${M.play} (YouTube)</a></p></noscript></div>
 <div><h2>${esc(P.audioTitle)}</h2>
@@ -331,9 +332,9 @@ export function give(lang, { P, S }) {
 <div class="give-box"><h2 id="give-title">${esc(P.amountsTitle)}</h2>
 <form data-give action="${esc(S.donateUrl)}" method="get" aria-labelledby="give-title" data-demo="${esc(G.demo)}" data-impact="${esc(G.impact)}" data-makes="${esc(G.makes)}" data-month="${esc(G.perMonth)}">
 <fieldset><legend class="sr-only">${lang === 'fr' ? 'Fréquence' : 'Frequency'}</legend><div class="freq"><label><input type="radio" name="frequency" value="once" checked> ${G.once}</label><label><input type="radio" name="frequency" value="monthly"> ${G.monthly}</label></div></fieldset>
-<fieldset><legend class="sr-only">${lang === 'fr' ? 'Montant' : 'Amount'}</legend><div class="amounts">${P.amounts.map((a, i) => `<label class="amount"><input type="radio" name="amount" value="${a.amount}" data-label="${esc(a.label)}"${i === 1 ? ' checked' : ''}><strong>${a.amount}&nbsp;$</strong><small>${t(a.label)}</small></label>`).join('')}</div></fieldset>
+<fieldset><legend class="sr-only">${lang === 'fr' ? 'Montant' : 'Amount'}</legend><div class="amounts">${P.amounts.map((a, i) => `<label class="amount"><input type="radio" name="amount" value="${a.amount}" data-label="${esc(a.label)}"${i === 1 ? ' checked' : ''}><strong>${money(a.amount, lang)}</strong><small>${t(a.label)}</small></label>`).join('')}</div></fieldset>
 <div class="field"><label for="g-custom">${G.custom}</label><input id="g-custom" name="custom" type="number" min="5" step="1" inputmode="numeric"></div>
-<p class="impact" aria-live="polite" data-impact-out><svg viewBox="0 0 40 40" aria-hidden="true"><path d="${heartPath(20, 21, 36)}" fill="${C.terra}"/></svg><span>${G.impact} <strong>${P.amounts[1].amount}&nbsp;$</strong> ${G.makes} ${t(P.amounts[1].label)}.</span></p>
+<p class="impact" aria-live="polite" data-impact-out><svg viewBox="0 0 40 40" aria-hidden="true"><path d="${heartPath(20, 21, 36)}" fill="${C.terra}"/></svg><span>${G.impact} <strong>${money(P.amounts[1].amount, lang)}</strong> ${G.makes} ${t(P.amounts[1].label)}.</span></p>
 <button class="btn" type="submit">${ui.heart}${G.cta}</button>
 <p class="zeffy-note">${t(P.zeffyNote)}</p><p class="status" aria-live="polite" data-give-status></p>
 <p class="zeffy-note"><small>${t(P.amountsNote)}</small></p>

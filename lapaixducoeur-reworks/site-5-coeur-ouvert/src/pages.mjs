@@ -729,7 +729,7 @@ export function press(lang, D) {
 <section class="section" aria-labelledby="pp-h"><div class="wrap">
   <h2 id="pp-h" class="section__title display">${esc(L.pressPhotos)}</h2>
   <ul class="press-photos">${photos.map((ph) => { const m = D.media.find((x) => x.id === `photo-${ph}`); const alt = m ? pick(m, lang).alt : ''; return `<li>${picture(`/assets/img/${ph}.jpg`, alt, { cls: 'ph ph--bw', sizes: '(min-width: 900px) 25vw, 50vw' })}<a class="chip" href="/assets/img/${ph}.jpg" download>${icon('download')} JPG</a></li>`; }).join('')}</ul>
-  <p class="notice">${t(p.photo_note, lang)}</p>
+  <p class="notice">${inline(p.photo_note, lang)}</p>
 </div></section>`;
   return { title: p.title, description: p.description, body, crumbs: crumbs(lang, { name: L.nav.press, url: ROUTES.press[lang] }) };
 }
