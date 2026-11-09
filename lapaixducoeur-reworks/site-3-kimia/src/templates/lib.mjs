@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 
 const IMAGES = JSON.parse(readFileSync(new URL('../images.json', import.meta.url), 'utf8'));
 
-// Escapes HTML and applies French typographic non-breaking spaces (« x », x : y, x ! x ?).
+// Escapes HTML and applies typography: curly apostrophes, French non-breaking spaces (« x », x : y, x ! x ?).
 export const esc = (s = '') => String(s)
+  .replace(/(\p{L})'(?=\p{L})/gu, '$1’')
   .replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0»').replace(/ ([:;!?])(?=\s|$)/g, '\u202f$1')
   .replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

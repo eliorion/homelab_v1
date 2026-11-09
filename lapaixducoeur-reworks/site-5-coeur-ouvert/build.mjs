@@ -131,7 +131,8 @@ writeFile(path.join(DIST, 'index.html'), `${head('La Paix du Cœur — Kimia Na 
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">${rootLD}</script>`)}
 <body class="chooser">
-<main id="main" class="chooser__main">
+<a class="skip" href="#main">Aller au contenu / Skip to content</a>
+<main id="main" class="chooser__main" tabindex="-1">
   <img class="chooser__logo" src="/assets/img/logo-mark-160.png" alt="" width="160" height="143">
   <h1 class="chooser__title display">La Paix du Cœur <span>Kimia Na Motema</span></h1>
   <ul class="chooser__langs">
@@ -145,7 +146,8 @@ writeFile(path.join(DIST, 'index.html'), `${head('La Paix du Cœur — Kimia Na 
 `);
 writeFile(path.join(DIST, '404.html'), `${head('Page introuvable / Page not found | La Paix du Cœur', 'Page introuvable. Page not found.', '<meta name="robots" content="noindex">')}
 <body class="chooser">
-<main id="main" class="chooser__main">
+<a class="skip" href="#main">Aller au contenu / Skip to content</a>
+<main id="main" class="chooser__main" tabindex="-1">
   <p class="nf__num display" aria-hidden="true">404</p>
   <h1 class="chooser__title display">Page introuvable <span lang="en">Page not found</span></h1>
   <ul class="chooser__langs">
