@@ -383,7 +383,7 @@ a.float-chip:hover { box-shadow: var(--shadow-l); color: var(--ink); }
 @media (max-width: 520px) { .event-card { grid-template-columns: 1fr; } .date-block { flex-direction: row; gap: 8px; width: auto; height: auto; padding: 10px 14px; justify-self: start; border-radius: 14px; } .db-day { font-size: 1.4rem; } .db-mon, .db-year { margin: 0; } }
 .event-detail { display: grid; gap: 32px; align-items: start; }
 /* calendar subscription */
-.cal-sub { overflow: hidden; isolation: isolate; background: var(--sunrise-soft); border-color: #f6dcc3; }
+.cal-sub, .cal-sub.card { overflow: hidden; isolation: isolate; background: var(--sunrise-soft); border-color: #f6dcc3; }
 .cal-sub-sun { position: absolute; z-index: -1; width: 280px; aspect-ratio: 1; border-radius: 50%; right: -90px; top: -150px; background: var(--sunrise); opacity: .45; filter: blur(28px); }
 .cal-sub .card-head .h3 { margin: 0; }
 .cal-sub-intro { max-width: 60ch; margin: 0 0 20px; }

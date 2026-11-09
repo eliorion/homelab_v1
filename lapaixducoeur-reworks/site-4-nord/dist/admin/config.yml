@@ -28,7 +28,7 @@ collections:
   - name: events
     label: Événements
     label_singular: Événement
-    description: Maraudes, collectes, ateliers, cultes et galas. Chaque événement génère sa page, son fichier .ics et apparaît dans /calendar.ics.
+    description: "Astuce : les événements réguliers (maraudes, collectes) se gèrent plus simplement dans Google Agenda ; ils apparaissent ici automatiquement après la synchronisation (fichiers gcal-…, ne pas les modifier ici : la prochaine synchronisation écraserait vos changements). Utilisez ce formulaire pour les événements spéciaux avec photo et texte long."
     folder: content/events
     format: json
     extension: json
@@ -88,6 +88,7 @@ collections:
           - { label: "Formulaire « Je participe »", value: form }
           - { label: "Billets Zeffy", value: zeffy }
       - { label: "Prix (texte, si billets)", name: price, widget: string, i18n: true, required: false }
+      - { label: "Lien de billetterie ou d’inscription (facultatif)", name: ticket_url, widget: string, i18n: duplicate, required: false, hint: "Sinon, le lien de billetterie Zeffy des Réglages est utilisé." }
       - label: Quarts de bénévolat
         name: shifts
         widget: list
@@ -103,6 +104,7 @@ collections:
           - { label: Places, name: spots, widget: number, value_type: int, min: 1 }
           - { label: Inscrits, name: taken, widget: number, value_type: int, min: 0 }
       - { label: "Exemple (afficher le badge « à confirmer »)", name: sample, widget: boolean, i18n: duplicate, default: false }
+      - { label: Source, name: source, widget: hidden, i18n: duplicate, required: false }
 
   # ------------------------------------------------------------------ DROP-OFF POINTS
   - name: dropoffs
@@ -224,6 +226,8 @@ collections:
           - { label: Courriel Interac, name: interac_email, widget: string, i18n: duplicate }
           - { label: "Adresse du formulaire de don Zeffy", name: zeffy_donate_url, widget: string, i18n: duplicate, required: false }
           - { label: "Adresse de la billetterie Zeffy", name: zeffy_tickets_url, widget: string, i18n: duplicate, required: false }
+          - { label: "Google Agenda : lien public (affichage web)", name: calendar_google_public_url, widget: string, i18n: duplicate, required: false, hint: "Lien « URL publique de cet agenda » dans les paramètres de Google Agenda. S’il est rempli, un lien « Voir dans Google Agenda » s’affiche dans le bloc « S’abonner »." }
+          - { label: "Google Agenda : adresse iCal (synchronisation)", name: calendar_ics_source, widget: string, i18n: duplicate, required: false, hint: "« Adresse publique au format iCal » de l’agenda. Lue par la tâche de synchronisation; jamais affichée sur le site." }
           - { label: "Numéro d’organisme de bienfaisance (ARC)", name: charity_number, widget: string, i18n: duplicate, required: false }
           - { label: Année de fondation, name: founding_year, widget: number, i18n: duplicate }
           - label: Réseaux sociaux

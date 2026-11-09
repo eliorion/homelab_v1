@@ -82,7 +82,7 @@ node tests/verify.cjs 8120     # Playwright: every page × FR/EN × 375/1440 px
 - **Give:**
   - a mock Zeffy form with one-time/monthly and amounts tied to what they fund, all labelled as samples; the button label updates live
   - Interac card with a copy button; bank details on request only; CRA receipts marked «&nbsp;[si enregistré]&nbsp;»
-- **Events:** invitation-style cards, `.ics` per event (UTC, RFC 5545 folding), Google Calendar links, Event JSON-LD and a Zeffy registration placeholder.
+- **Events:** invitation-style cards, `.ics` per event (UTC, RFC 5545 folding), Google Calendar links, Event JSON-LD and a Zeffy registration placeholder (a real link when `registration_url` is set). A «&nbsp;S’abonner à l’agenda&nbsp;» block subscribes visitors to the whole calendar (see *Calendar sync*).
 - **Media:**
   - YouTube click-to-load facade using a local poster (no request to YouTube before the click), then a `youtube-nocookie` iframe; the video id is a labelled sample
   - polaroid gallery with a `<dialog>` lightbox; audio item
@@ -122,6 +122,22 @@ Open `/admin/`. `admin/config.yml` is set up as follows:
 - collections: **stories, episodes, prayers, news, events, media, pages** (each page has its own file) and **settings** (verse of the week, email, CRA number, social links)
 
 Each content file is JSON shaped as `{ "fr": {…}, "en": {…} }`. Fields that are not translated live only under `fr`, and `build.mjs` falls back to them for English. Slugs are translated per language. An image path under `/assets/img/<name>.jpg` automatically gets the responsive WebP and 640 w variants when they exist.
+
+## Calendar sync (Google Agenda)
+
+Regular events (weekly maraudes, collectes) live in the association's public **Google Calendar**; staff follow the conventions in `../shared/EDITOR-GUIDE.md` (title `FR | EN`, an `EN` line before the English description, `Catégorie:`, `Inscription:`, `Image:` …). Special events with a photo and long text stay in the CMS.
+
+```bash
+node ../shared/tools/calendar-sync.mjs --site . --ics "<calendar_ics_source>"   # writes content/events/gcal-*.json
+node build.mjs
+```
+
+- The sync only creates and deletes `content/events/gcal-*.json` (`"source": "google-calendar"`); CMS events are never touched. Edit synced events in Google Calendar, not in the CMS — the next run overwrites them.
+- Settings: `calendar_ics_source` (the Google "public address in iCal format" the job reads; staff only, never rendered) and optional `calendar_google_public_url` (adds «&nbsp;Voir dans Google Agenda&nbsp;» to the subscribe block).
+- Synced events render without a registration button when they have no ticket URL, and an untranslated English body is marked `lang="fr"`. Occurrences of a series share a title, so the page `<title>` gets the date appended when a title repeats.
+- All-day events (`T00:00`–`T23:59`) show «&nbsp;Toute la journée / All day&nbsp;» and use `DTSTART;VALUE=DATE` in the `.ics`.
+- **Feeds** (built by `build.mjs`, upcoming events only, UTC times, `UID` = `<event file name>@lapaixducoeur.ca`, `URL` to the event page, CRLF, folded at 75 octets): `/calendar.ics` (bilingual), `/fr/calendrier.ics`, `/en/calendar.ics`. The per-event `/ics/<slug>.ics` files use the same `vevent()` code and UIDs.
+- The subscribe block (events list `#s-abonner` / `#subscribe`, compact in each event's invitation card, link from the home agenda) offers `webcal://`, Google Calendar (`render?cid=`), Outlook.com (`addfromweb`) and «&nbsp;Copier le lien&nbsp;» (the existing `data-copy` button, with `data-copy-text`).
 
 ## Known gaps / to confirm with the client
 

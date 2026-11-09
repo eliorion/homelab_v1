@@ -566,10 +566,11 @@ textarea { resize: vertical; min-height: 7rem; }
 .subscribe h2 { padding-right: 64px; }
 .subscribe__help { font: italic 400 1.05rem/1.55 var(--serif); color: var(--ink-soft); }
 .subscribe .btn-row { margin: 1rem 0; }
-.subscribe__copy code { flex: 1 1 16rem; min-width: 0; font-size: .82rem; }
-.subscribe--compact { margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px dashed var(--line); border-bottom: 0; }
+.subscribe__copy code { flex: 0 1 auto; min-width: 0; font-size: .82rem; }
+.subscribe--compact { margin: 1.4rem 0 1.2rem; padding-top: 1.1rem; border-top: 1px dashed var(--line); }
 .subscribe--compact .subscribe__title { font: 600 .72rem/1.3 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--rose-deep); display: flex; gap: .45rem; align-items: center; margin: 0 0 .5rem; }
 .subscribe__inline { font-size: .92rem; line-height: 1.7; margin: 0 0 .4rem; }
+.subscribe__inline a { white-space: nowrap; }
 .subscribe--compact .subscribe__help { font-size: .9rem; margin: 0 0 .7rem; }
 .link-quiet { display: inline-flex; gap: .4rem; align-items: center; font-size: .92rem; color: var(--rose-deep); }
 .news-lines { list-style: none; padding: 0; margin: 0 0 1.4rem; }

@@ -143,6 +143,22 @@ Contact, volunteer, prayer and newsletter forms each have a honeypot field (`web
 
 The donation CTA would open the real **Zeffy** form at `settings.donate_url`.
 
+## Calendar sync
+
+Regular events (outreach, food drives) are best kept in the association's public **Google Calendar**; the CMS form stays for special events with a photo and long text. Staff conventions (title `FR | EN`, `Catégorie:` and `Inscription:` lines, an `EN` line before the English text…) are in `../shared/EDITOR-GUIDE.md`.
+
+A scheduled job imports the calendar, then the site rebuilds:
+
+```bash
+node ../shared/tools/calendar-sync.mjs --site . --ics "<settings.calendar_ics_source>"   # writes content/events/gcal-*.json
+node build.mjs
+```
+
+- Only `gcal-*.json` files are created or deleted; never edit them in the CMS (the next sync overwrites them). Their `source` is `google-calendar`: bodies keep simple line breaks, and an event from `00:00` to `23:59` is shown as «Toute la journée / All day» (`DTSTART;VALUE=DATE` in the .ics, a date-only `startDate` in JSON-LD). When several events share a title (a weekly series), the page `<title>` gets the date.
+- Feeds, with every upcoming event (end ≥ build time): `/calendar.ics` (bilingual), `/fr/calendrier.ics`, `/en/calendar.ics`. UTC times, `X-WR-CALNAME`, CRLF, 75-octet folding; the `UID` is the event file name, so it is stable across rebuilds and identical in the per-event `.ics`.
+- The **S'abonner / Subscribe** block (events list, `#s-abonner` / `#subscribe`; compact in each event's sidebar; a link from the home page events section) offers `webcal://`, Google Calendar (`render?cid=`), Outlook.com (`addfromweb`) and a copy-link button for the page language's feed.
+- Settings: `calendar_google_public_url` (optional; adds «Voir dans Google Agenda») and `calendar_ics_source` (staff only, read by the sync job, never rendered).
+
 ## Verify
 
 ```bash

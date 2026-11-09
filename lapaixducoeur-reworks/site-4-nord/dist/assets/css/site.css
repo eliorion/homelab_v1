@@ -378,7 +378,8 @@ fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
 .addcal-block ul { position: static; width: 100%; }
 .addcal .linkish { display: flex; width: 100%; padding: .6rem .75rem; text-decoration: none; font-weight: 600; font-size: .92rem; border-radius: 2px; text-align: left; }
 .addcal .linkish:hover { background: var(--birch-soft); }
-.addcal a .i { width: 1em; height: 1em; vertical-align: -.1em; margin-left: .3rem; }
+.subscribe-mini a { display: flex; align-items: center; gap: .4rem; }
+.subscribe-mini a .i { width: 1em; height: 1em; flex: none; }
 .subscribe-mini { margin-top: .6rem; }
 .subscribe-mini > p { margin: .5rem 0 0; }
 .subscribe-help { margin: .85rem 0 0; }

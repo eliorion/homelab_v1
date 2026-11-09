@@ -37,10 +37,12 @@ Preview: `node build.mjs && node tools/serve.mjs 8140`, then open <http://localh
   - each event page has an RSVP form, or a Zeffy ticket placeholder for the gala
   - volunteer shifts with the number of spots left, and Event JSON-LD
 - **Calendar feeds:**
-  - `/calendar.ics`: combined and bilingual, subscribable through `webcal://` or a Google "add by URL" link
-  - `/fr/evenements/calendrier.ics` and `/en/events/calendar.ics`: one feed per language
+  - `/fr/calendrier.ics` and `/en/calendar.ics`: one feed per language, the ones the "S'abonner / Subscribe" block points to
+  - `/fr/evenements/calendrier.ics` and `/en/events/calendar.ics`: the same per-language feeds at their older addresses, kept so existing subscriptions keep working
+  - `/calendar.ics`: combined and bilingual (offered as a download in the subscribe block)
   - one `.ics` file per event
-  - every feed carries a VTIMEZONE for America/Toronto
+  - every feed carries a VTIMEZONE for America/Toronto, `UID`s built from the event file name, and a `URL` to the event page; all-day events use `DTSTART;VALUE=DATE`
+- **Subscribe block:** a full card on the events page (anchor `#abonnement` / `#subscribe`), a compact drop-down on each event page and a link in the home page's events section. It offers `webcal://` (Apple, Outlook desktop), Google Calendar (`render?cid=`), Outlook.com (`addfromweb`), a copy-the-address button and, when `calendar_google_public_url` is set, "Voir dans Google Agenda / View in Google Calendar".
 - **Food-drive finder** (`/fr/collectes/`, `/en/food-drives/`):
   - sample partner drop-off points with dates and hours
   - filters by neighbourhood (Montréal-Nord, Saint-Michel, Villeray, Rivière-des-Prairies, Saint-Léonard) and by "next 30 days"
@@ -172,6 +174,24 @@ The build runs at build time, so past events move to "Past events" and past food
 - **Before going live:** replace `repo` and `base_url` in the config (GitHub OAuth via `sveltia-cms-auth` on Cloudflare Workers).
 
 Staff workflow: log in, fill in the form, save. Each save is a commit, and Cloudflare Pages rebuilds the site in about 30 s.
+
+## Calendar sync (Google Calendar)
+
+Staff manage **recurring events** (Thursday outreach, food drives) in the association's public Google Calendar; the CMS stays for special events with a photo and long text. The title, description and location conventions (`Titre FR | Title EN`, `Catégorie :`, `Quartier :`, `Rendez-vous :`, `Inscription :`, an `EN:` line before the English text, `#exemple`) are in `shared/EDITOR-GUIDE.md`; the parser that applies them is `shared/tools/calendar-sync.mjs`.
+
+```bash
+# from the repo root: writes content/events/gcal-*.json, then rebuild
+node shared/tools/calendar-sync.mjs --site site-4-nord \
+  --ics "$(node -p "require('./site-4-nord/content/settings.json').fr.calendar_ics_source")"
+node site-4-nord/build.mjs
+```
+
+- In production, a scheduled job (GitHub Actions cron or the daily Pages rebuild) runs the sync, commits the `gcal-*.json` changes and rebuilds.
+- The sync owns only `gcal-*.json` files; it creates, updates and deletes them. **Do not edit them in the CMS**: the next sync overwrites them. Change the event in Google Calendar instead.
+- Settings (Réglages): `calendar_ics_source` is the calendar's "public address in iCal format" that the job reads. It is never shown on the site. `calendar_google_public_url` is optional; when it is set, the subscribe block shows a "View in Google Calendar" link.
+- Synced events have no shifts, no "what to bring" list and often no meeting point. The templates skip those blocks. A Zeffy link from Google becomes the ticket button (`ticket_url`); without one, the RSVP form is shown. The "Exemple" badge only shows when an event has `sample: true`, which comes from `#exemple`.
+- **All-day events** (stored as `T00:00`–`T23:59`) read "Toute la journée / All day" in the list, the cards, the month grid and the event page. Their `.ics` uses `DTSTART;VALUE=DATE`, and their JSON-LD uses plain dates.
+- The feeds are listed under **Calendar feeds** above. To test, sync `shared/tools/fixtures/google-calendar-sample.ics`, build, run `tools/verify.mjs`, then delete `content/events/gcal-*.json` and rebuild.
 
 ## Production notes
 

@@ -72,25 +72,6 @@ STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
-UID:gcal-2026-11-26-a3cae38092@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261126T183000
-DTEND;TZID=America/Toronto:20261126T213000
-SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
- es sans-abri du centre-ville. (jeudi 26 novembre 2026)\nhttps://lapaixduco
- eur.ca/fr/evenements/maraude-du-jeudi-soir-2026-11-26/\n\nHot meals\, warm
-  clothes and a listening ear downtown. (Thursday\, November 26\, 2026)\nht
- tps://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2026-11-26
- /\n\nExemple — à confirmer / Sample — to confirm
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-11-26
- /
-CATEGORIES:Maraude / Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
 UID:2026-11-28-atelier-budget@lapaixducoeur.ca
 DTSTAMP:20261109T000000Z
 DTSTART;TZID=America/Toronto:20261128T133000
@@ -107,25 +88,6 @@ LOCATION:Salle communautaire\, quartier Saint-Michel [adresse à confirmer]
 URL:https://lapaixducoeur.ca/fr/evenements/atelier-budget-familial-28-novem
  bre/
 CATEGORIES:Atelier / Workshop
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-03-3626496d3d@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261203T183000
-DTEND;TZID=America/Toronto:20261203T213000
-SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
- es sans-abri du centre-ville. (jeudi 3 décembre 2026)\nhttps://lapaixduco
- eur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-03/\n\nHot meals\, warm
-  clothes and a listening ear downtown. (Thursday\, December 3\, 2026)\nhtt
- ps://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2026-12-03/
- \n\nExemple — à confirmer / Sample — to confirm
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-03
- /
-CATEGORIES:Maraude / Street outreach
 STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
@@ -149,24 +111,6 @@ STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
-UID:gcal-2026-12-05-c0efdbceba@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261205T100000
-DTEND;TZID=America/Toronto:20261205T160000
-SUMMARY:Collecte alimentaire — Saint-Michel / Food drive — Saint-Michel
-DESCRIPTION:Ajoutez un article à votre panier pour une famille.\nhttps://l
- apaixducoeur.ca/fr/evenements/collecte-alimentaire-saint-michel-2026-12-05
- /\n\nAdd one item to your basket for a family.\nhttps://lapaixducoeur.ca/e
- n/events/food-drive-saint-michel-2026-12-05/\n\nExemple — à confirmer /
-  Sample — to confirm
-LOCATION:Épicerie partenaire\, Saint-Michel\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-saint-miche
- l-2026-12-05/
-CATEGORIES:Collecte alimentaire / Food drive
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
 UID:2026-12-10-maraude-grand-froid@lapaixducoeur.ca
 DTSTAMP:20261109T000000Z
 DTSTART;TZID=America/Toronto:20261210T183000
@@ -180,24 +124,6 @@ DESCRIPTION:Distribution de trousses d’hiver : bas de laine\, tuques\, mi
  treach-december-10/\n\nExemple — à confirmer / Sample — to confirm
 LOCATION:Adresse exacte communiquée aux inscrits [à confirmer]
 URL:https://lapaixducoeur.ca/fr/evenements/maraude-grand-froid-10-decembre/
-CATEGORIES:Maraude / Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-11-4267d7ef1a@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261211T190000
-DTEND;TZID=America/Toronto:20261211T220000
-SUMMARY:Maraude spéciale de Noël / Christmas street outreach
-DESCRIPTION:Édition spéciale avec cadeaux. (vendredi 11 décembre 2026)\n
- https://lapaixducoeur.ca/fr/evenements/maraude-speciale-de-noel-2026-12-11
- /\n\nSpecial edition with gifts. (Friday\, December 11\, 2026)\nhttps://la
- paixducoeur.ca/en/events/christmas-street-outreach-2026-12-11/\n\nExemple 
- — à confirmer / Sample — to confirm
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-speciale-de-noel-2026-12
- -11/
 CATEGORIES:Maraude / Street outreach
 STATUS:CONFIRMED
 TRANSP:OPAQUE
@@ -217,25 +143,6 @@ DESCRIPTION:Un souper festif au profit des orphelins et des familles accomp
 LOCATION:Salle de réception\, Saint-Léonard [adresse à confirmer]
 URL:https://lapaixducoeur.ca/fr/evenements/souper-gala-de-noel-12-decembre/
 CATEGORIES:Gala / Gala
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-17-336e6170d6@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261217T183000
-DTEND;TZID=America/Toronto:20261217T213000
-SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
- es sans-abri du centre-ville. (jeudi 17 décembre 2026)\nhttps://lapaixduc
- oeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-17/\n\nHot meals\, war
- m clothes and a listening ear downtown. (Thursday\, December 17\, 2026)\nh
- ttps://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2026-12-1
- 7/\n\nExemple — à confirmer / Sample — to confirm
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-17
- /
-CATEGORIES:Maraude / Street outreach
 STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
@@ -280,44 +187,6 @@ STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
-UID:gcal-2026-12-31-1588dc5db5@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261231T183000
-DTEND;TZID=America/Toronto:20261231T213000
-SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
- es sans-abri du centre-ville. (jeudi 31 décembre 2026)\nhttps://lapaixduc
- oeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-31/\n\nHot meals\, war
- m clothes and a listening ear downtown. (Thursday\, December 31\, 2026)\nh
- ttps://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2026-12-3
- 1/\n\nExemple — à confirmer / Sample — to confirm
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-31
- /
-CATEGORIES:Maraude / Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2027-01-07-c713618948@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20270107T183000
-DTEND;TZID=America/Toronto:20270107T213000
-SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
- es sans-abri du centre-ville. (jeudi 7 janvier 2027)\nhttps://lapaixducoeu
- r.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-07/\n\nHot meals\, warm c
- lothes and a listening ear downtown. (Thursday\, January 7\, 2027)\nhttps:
- //lapaixducoeur.ca/en/events/thursday-night-street-outreach-2027-01-07/\n\
- nExemple — à confirmer / Sample — to confirm
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-07
- /
-CATEGORIES:Maraude / Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
 UID:2027-01-09-priere-nouvel-an@lapaixducoeur.ca
 DTSTAMP:20261109T000000Z
 DTSTART;TZID=America/Toronto:20270109T100000
@@ -331,44 +200,6 @@ DESCRIPTION:Confier l’année 2027 au Seigneur\, avec un temps de partage
 LOCATION:Église partenaire\, secteur Ahuntsic [adresse à confirmer]
 URL:https://lapaixducoeur.ca/fr/evenements/matinee-de-priere-nouvel-an-9-ja
  nvier/
-CATEGORIES:Culte / prière / Worship / prayer
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2027-01-14-44366e5514@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20270114T183000
-DTEND;TZID=America/Toronto:20270114T213000
-SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
- es sans-abri du centre-ville. (jeudi 14 janvier 2027)\nhttps://lapaixducoe
- ur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-14/\n\nHot meals\, warm 
- clothes and a listening ear downtown. (Thursday\, January 14\, 2027)\nhttp
- s://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2027-01-14/\
- n\nExemple — à confirmer / Sample — to confirm
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-14
- /
-CATEGORIES:Maraude / Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2027-01-16-c2c115da40@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;VALUE=DATE:20270116
-DTEND;VALUE=DATE:20270117
-SUMMARY:Journée de prière et de jeûne / Day of prayer and fasting
-DESCRIPTION:Une journée pour porter les orphelins et les veuves dans la pr
- ière.\nhttps://lapaixducoeur.ca/fr/evenements/journee-de-priere-et-de-jeu
- ne-2027-01-16/\n\n(In French) Une journée pour porter les orphelins et le
- s veuves dans la prière.\nhttps://lapaixducoeur.ca/en/events/day-of-praye
- r-and-fasting-2027-01-16/\n\nExemple — à confirmer / Sample — to conf
- irm
-LOCATION:Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/journee-de-priere-et-de-jeune-20
- 27-01-16/
 CATEGORIES:Culte / prière / Worship / prayer
 STATUS:CONFIRMED
 TRANSP:OPAQUE

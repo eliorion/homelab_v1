@@ -61,22 +61,6 @@ STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
-UID:gcal-2026-11-26-a3cae38092@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261126T183000
-DTEND;TZID=America/Toronto:20261126T213000
-SUMMARY:Thursday-night street outreach
-DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thursda
- y\, November 26\, 2026)\nSample — to confirm\nhttps://lapaixducoeur.ca/e
- n/events/thursday-night-street-outreach-2026-11-26/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2026-
- 11-26/
-CATEGORIES:Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
 UID:2026-11-28-atelier-budget@lapaixducoeur.ca
 DTSTAMP:20261109T000000Z
 DTSTART;TZID=America/Toronto:20261128T133000
@@ -88,22 +72,6 @@ DESCRIPTION:A practical afternoon to take charge of your budget\, with on-s
 LOCATION:Community hall\, Saint-Michel neighbourhood [address to confirm]
 URL:https://lapaixducoeur.ca/en/events/family-budget-workshop-november-28/
 CATEGORIES:Workshop
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-03-3626496d3d@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261203T183000
-DTEND;TZID=America/Toronto:20261203T213000
-SUMMARY:Thursday-night street outreach
-DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thursda
- y\, December 3\, 2026)\nSample — to confirm\nhttps://lapaixducoeur.ca/en
- /events/thursday-night-street-outreach-2026-12-03/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2026-
- 12-03/
-CATEGORIES:Street outreach
 STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
@@ -123,20 +91,6 @@ STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
-UID:gcal-2026-12-05-c0efdbceba@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261205T100000
-DTEND;TZID=America/Toronto:20261205T160000
-SUMMARY:Food drive — Saint-Michel
-DESCRIPTION:Add one item to your basket for a family.\nSample — to confir
- m\nhttps://lapaixducoeur.ca/en/events/food-drive-saint-michel-2026-12-05/
-LOCATION:Épicerie partenaire\, Saint-Michel\, Montréal
-URL:https://lapaixducoeur.ca/en/events/food-drive-saint-michel-2026-12-05/
-CATEGORIES:Food drive
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
 UID:2026-12-10-maraude-grand-froid@lapaixducoeur.ca
 DTSTAMP:20261109T000000Z
 DTSTART;TZID=America/Toronto:20261210T183000
@@ -147,22 +101,6 @@ DESCRIPTION:Handing out winter kits: wool socks\, toques\, mittens and hand
  cold-outreach-december-10/
 LOCATION:Exact address sent to registered volunteers [to confirm]
 URL:https://lapaixducoeur.ca/en/events/deep-cold-outreach-december-10/
-CATEGORIES:Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-11-4267d7ef1a@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261211T190000
-DTEND;TZID=America/Toronto:20261211T220000
-SUMMARY:Christmas street outreach
-DESCRIPTION:Special edition with gifts. (Friday\, December 11\, 2026)\nSamp
- le — to confirm\nhttps://lapaixducoeur.ca/en/events/christmas-street-out
- reach-2026-12-11/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/en/events/christmas-street-outreach-2026-12-11
- /
 CATEGORIES:Street outreach
 STATUS:CONFIRMED
 TRANSP:OPAQUE
@@ -180,22 +118,6 @@ LOCATION:Reception hall\, Saint-Léonard [address to confirm]
 URL:https://lapaixducoeur.ca/en/events/christmas-benefit-dinner-december-12
  /
 CATEGORIES:Gala
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-17-336e6170d6@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261217T183000
-DTEND;TZID=America/Toronto:20261217T213000
-SUMMARY:Thursday-night street outreach
-DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thursda
- y\, December 17\, 2026)\nSample — to confirm\nhttps://lapaixducoeur.ca/e
- n/events/thursday-night-street-outreach-2026-12-17/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2026-
- 12-17/
-CATEGORIES:Street outreach
 STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
@@ -231,38 +153,6 @@ STATUS:CONFIRMED
 TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
-UID:gcal-2026-12-31-1588dc5db5@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20261231T183000
-DTEND;TZID=America/Toronto:20261231T213000
-SUMMARY:Thursday-night street outreach
-DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thursda
- y\, December 31\, 2026)\nSample — to confirm\nhttps://lapaixducoeur.ca/e
- n/events/thursday-night-street-outreach-2026-12-31/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2026-
- 12-31/
-CATEGORIES:Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2027-01-07-c713618948@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20270107T183000
-DTEND;TZID=America/Toronto:20270107T213000
-SUMMARY:Thursday-night street outreach
-DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thursda
- y\, January 7\, 2027)\nSample — to confirm\nhttps://lapaixducoeur.ca/en/
- events/thursday-night-street-outreach-2027-01-07/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2027-
- 01-07/
-CATEGORIES:Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
 UID:2027-01-09-priere-nouvel-an@lapaixducoeur.ca
 DTSTAMP:20261109T000000Z
 DTSTART;TZID=America/Toronto:20270109T100000
@@ -273,38 +163,6 @@ DESCRIPTION:Committing 2027 to the Lord\, followed by fellowship over coffe
  yer-morning-january-9/
 LOCATION:Partner church\, Ahuntsic area [address to confirm]
 URL:https://lapaixducoeur.ca/en/events/new-year-prayer-morning-january-9/
-CATEGORIES:Worship / prayer
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2027-01-14-44366e5514@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;TZID=America/Toronto:20270114T183000
-DTEND;TZID=America/Toronto:20270114T213000
-SUMMARY:Thursday-night street outreach
-DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thursda
- y\, January 14\, 2027)\nSample — to confirm\nhttps://lapaixducoeur.ca/en
- /events/thursday-night-street-outreach-2027-01-14/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2027-
- 01-14/
-CATEGORIES:Street outreach
-STATUS:CONFIRMED
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2027-01-16-c2c115da40@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
-DTSTART;VALUE=DATE:20270116
-DTEND;VALUE=DATE:20270117
-SUMMARY:Day of prayer and fasting
-DESCRIPTION:(In French) Une journée pour porter les orphelins et les veuve
- s dans la prière.\nSample — to confirm\nhttps://lapaixducoeur.ca/en/eve
- nts/day-of-prayer-and-fasting-2027-01-16/
-LOCATION:Montréal
-URL:https://lapaixducoeur.ca/en/events/day-of-prayer-and-fasting-2027-01-16
- /
 CATEGORIES:Worship / prayer
 STATUS:CONFIRMED
 TRANSP:OPAQUE

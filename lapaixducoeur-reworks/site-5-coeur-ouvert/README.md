@@ -5,6 +5,7 @@ A bold editorial, magazine-style rework of lapaixducoeur.ca for **La Paix du Cœ
 ```bash
 node build.mjs                          # content/ + src/ + static/ -> dist/  (Node 22, zero dependencies)
 python3 -m http.server -d dist 8150     # preview at http://localhost:8150
+node scripts/verify.mjs [http://localhost:8150] [--shots dir]   # needs the preview server running
 ```
 
 `BUILD_DATE=2026-11-09T12:00:00-05:00 node build.mjs` pins "now". It drives the countdowns, the "days until Christmas" ticker and which events count as upcoming.
@@ -67,7 +68,7 @@ Every unknown fact is visibly marked: «Exemple — à confirmer» / "Sample —
 
 - Every page has: `<html lang="fr-CA|en-CA">`, a unique title and description, a canonical link, reciprocal hreflang (fr-CA, en-CA, x-default — `/` for the homes, the FR page otherwise), and Open Graph + Twitter card tags. OG images for the site, campaign and ambassadors are 1200×630 JPGs in the site's style.
 - JSON-LD `@graph`: **NGO** (`@id` `…/#org`, `potentialAction` DonateAction) and WebPage on every page; **BreadcrumbList** on inner pages; **NewsArticle**; **Event** (on the list and on detail pages).
-- `sitemap.xml` with `xhtml:link` alternates, `robots.txt`, RSS per language, `.ics` per event per language (RFC 5545 folded lines), plus a Google Calendar link.
+- `sitemap.xml` with `xhtml:link` alternates, `robots.txt`, RSS per language, `.ics` per event per language plus subscribable feeds (RFC 5545, CRLF, folded at 75 octets), plus a Google Calendar link.
 - `dist/_headers` (Cloudflare Pages):
   - HSTS, nosniff, Referrer-Policy, Permissions-Policy, `X-Frame-Options: DENY` + `frame-ancestors 'none'`, COOP.
   - A strict CSP: `script-src 'self'`, `style-src 'self'` (no inline scripts or `style=` attributes anywhere; progress bars are SVG `width` attributes and runtime values use CSSOM), and `frame-src` limited to youtube-nocookie.
@@ -95,6 +96,19 @@ Rules the build relies on:
 - Event dates are ISO with an offset (`2026-12-19T18:00:00-05:00`).
 - Only **one** campaign should be `active` at a time. It is the one shown in the home spotlight, the give page and the ticker.
 
+## Calendar sync
+
+The association's regular events (outreach, food drives) are kept in a **public Google Calendar**. Staff only add or edit them in Google Calendar, following the title and description conventions in `shared/EDITOR-GUIDE.md` (`Titre FR | EN title`, `Catégorie:`, `Inscription:`, `Prix:`, an `EN:` line before the English text, `#exemple`). One-off events with a photo and long text are still created in the CMS (**Événements**).
+
+```bash
+node ../shared/tools/calendar-sync.mjs --site . --ics "<calendar_ics_source>"   # writes/removes content/events/gcal-*.json
+node build.mjs
+```
+
+- `calendar_ics_source` (Settings, staff only, never rendered) is the calendar's secret or public iCal address that the scheduled job reads. `calendar_google_public_url` (optional) adds a "Voir dans Google Agenda / View in Google Calendar" link.
+- The sync only touches `gcal-*.json`. Those files have `"source": "google-calendar"`: no ticket placeholder or empty price row is shown, the address is hidden when it repeats the location, single line breaks in the body are kept, and all-day events (`T00:00`–`T23:59`) read "Toute la journée / All day" and use `DTSTART;VALUE=DATE` in the .ics. A series has one page per date, so repeated titles get the date appended to the `<title>`.
+- **Feeds** (upcoming events only, UTC times, `UID` = event file id): `/fr/calendrier.ics`, `/en/calendar.ics`, and `/calendar.ics` (French). The **S'abonner / Subscribe** band on the events list (`#subscribe`), the compact block on each event page and the home agenda link offer webcal (Apple, Outlook desktop), Google Calendar (`?cid=`), Outlook.com (`addfromweb`) and copy-link.
+
 ## Layout of this folder
 
 ```
@@ -107,6 +121,7 @@ src/css/site.css     the whole design system
 src/js/              site.js (core), campaign.js (gift basket), cards.js (canvas generator)
 content/             staff-editable JSON
 admin/               Sveltia CMS
+scripts/verify.mjs   Playwright check: every dist page, 375 + 1440 px (console errors, 404s, one H1, alt, overflow, unique titles/descriptions, JSON-LD, .ics format)
 static/              _headers, robots.txt, favicon, fonts, images, audio, press logos
 dist/                build output (committed for preview)
 screenshots/         home-desktop.png, home-mobile.png (full page, reduced-motion render so the ESPOIR section shows its final state)

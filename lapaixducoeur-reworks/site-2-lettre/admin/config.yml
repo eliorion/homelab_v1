@@ -158,6 +158,7 @@ collections:
   - name: events
     label: Événements / Events
     label_singular: Événement
+    description: "Astuce : les événements réguliers (maraudes, collectes) se gèrent plus simplement dans Google Agenda ; ils apparaissent ici automatiquement après la synchronisation (fichiers gcal-…, à ne pas modifier ici). Utilisez ce formulaire pour les événements spéciaux avec photo et texte long."
     folder: content/events
     format: json
     extension: json
@@ -433,6 +434,8 @@ collections:
           - { name: email, label: "Courriel de contact", widget: string, i18n: false }
           - { name: interac_email, label: "Courriel Interac", widget: string, i18n: false }
           - { name: donate_url, label: "Lien du formulaire Zeffy", widget: string, required: false, i18n: false }
+          - { name: calendar_google_public_url, label: "Google Agenda — lien public", widget: string, required: false, i18n: false, hint: "Facultatif. Le lien « public » de l’agenda Google (Paramètres de l’agenda > Intégrer l’agenda > URL publique). S’il est rempli, un lien « Voir dans Google Agenda » s’affiche sur la page Agenda." }
+          - { name: calendar_ics_source, label: "Google Agenda — adresse iCal (synchronisation)", widget: string, required: false, i18n: false, hint: "Réservé à l’équipe, jamais affiché sur le site. L’« adresse publique au format iCal » que lit la synchronisation automatique (se termine par basic.ics)." }
           - { name: founded, label: "Année de fondation", widget: string, i18n: false }
           - { name: cra_number, label: "N° d’organisme de bienfaisance (ARC)", widget: string, required: false, i18n: false }
           - { name: social, label: "Réseaux sociaux", widget: list, i18n: false, fields: [{ name: name, label: Nom, widget: string }, { name: url, label: URL, widget: string, required: false }] }
