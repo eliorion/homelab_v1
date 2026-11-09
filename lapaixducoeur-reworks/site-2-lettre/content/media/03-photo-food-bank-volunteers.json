@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 3,
+    "image": "/assets/img/food-bank-volunteers.jpg",
+    "title": "Préparer les paniers",
+    "alt": "Des bénévoles préparent des barquettes de nourriture.",
+    "sample": true
+  },
+  "en": {
+    "title": "Packing the baskets",
+    "alt": "Volunteers prepare trays of food."
+  }
+}

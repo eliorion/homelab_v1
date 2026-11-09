@@ -1,0 +1,17 @@
+{
+  "fr": {
+    "type": "video",
+    "order": 20,
+    "youtube_id": "M7lc1UVf-VE",
+    "image": "/assets/img/bread-sharing.jpg",
+    "title": "Une soirée de maraude en 2 minutes",
+    "alt": "Aperçu de la vidéo : des mains tendent du pain.",
+    "caption": "Vidéo d’exemple — identifiant YouTube à remplacer.",
+    "sample": true
+  },
+  "en": {
+    "title": "An outreach night in 2 minutes",
+    "alt": "Video preview: hands holding out bread.",
+    "caption": "Sample video — YouTube ID to replace."
+  }
+}

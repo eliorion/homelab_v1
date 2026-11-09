@@ -1,0 +1,46 @@
+{
+  "fr": {
+    "type": "video",
+    "order": 4,
+    "sample": true,
+    "title": "Message de Noël 2026",
+    "description": "Un mot de l’équipe pour lancer la campagne de Noël.",
+    "youtube_id": "M7lc1UVf-VE",
+    "duration": "1:30",
+    "poster": "/assets/img/elders.jpg",
+    "poster_alt": "Trois femmes âgées rient ensemble",
+    "captions": "Sous-titres français et anglais",
+    "chapters": [
+      {
+        "time": "0:00",
+        "label": "Le message"
+      },
+      {
+        "time": "1:05",
+        "label": "L’appel"
+      }
+    ]
+  },
+  "en": {
+    "type": "video",
+    "order": 4,
+    "sample": true,
+    "title": "Christmas message 2026",
+    "description": "A word from the team to launch the Christmas campaign.",
+    "youtube_id": "M7lc1UVf-VE",
+    "duration": "1:30",
+    "poster": "/assets/img/elders.jpg",
+    "poster_alt": "Three older women laughing together",
+    "captions": "French and English captions",
+    "chapters": [
+      {
+        "time": "0:00",
+        "label": "The message"
+      },
+      {
+        "time": "1:05",
+        "label": "The call"
+      }
+    ]
+  }
+}

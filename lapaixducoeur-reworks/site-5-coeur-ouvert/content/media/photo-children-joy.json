@@ -1,0 +1,18 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 1,
+    "sample": false,
+    "title": "La joie, d’abord.",
+    "image": "/assets/img/children-joy.jpg",
+    "alt": "Des enfants rient ensemble dans une rue"
+  },
+  "en": {
+    "type": "photo",
+    "order": 1,
+    "sample": false,
+    "title": "Joy, first.",
+    "image": "/assets/img/children-joy.jpg",
+    "alt": "Children laughing together in a street"
+  }
+}

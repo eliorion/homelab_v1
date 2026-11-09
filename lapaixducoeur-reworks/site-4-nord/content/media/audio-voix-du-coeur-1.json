@@ -1,0 +1,26 @@
+{
+  "fr": {
+    "title": "Les voix du cœur — épisode 1 : pourquoi la rue ?",
+    "description": "Extrait audio d’exemple. Le premier épisode du balado donnera la parole aux bénévoles de maraude.",
+    "image_alt": "Deux femmes assises côte à côte devant un mur de briques",
+    "transcript": "[Extrait d’exemple — tonalité douce, sans paroles.]\n\nTranscription prévue pour l’épisode : « Je m’appelle [prénom à confirmer]. La première fois que je suis sortie en maraude, j’avais peur de ne pas savoir quoi dire. J’ai compris qu’il fallait surtout écouter… »",
+    "kind": "audio",
+    "audio_file": "/assets/audio/voix-du-coeur-extrait.mp3",
+    "image": "/assets/img/widows-800.jpg",
+    "date": "2026-10-25",
+    "sample": true,
+    "duration": "0:08"
+  },
+  "en": {
+    "title": "Voices of the Heart — episode 1: why the street?",
+    "description": "Sample audio clip. The podcast’s first episode will give outreach volunteers the microphone.",
+    "image_alt": "Two women sitting side by side in front of a brick wall",
+    "transcript": "[Sample clip — soft tone, no speech.]\n\nPlanned transcript for the episode: “My name is [first name to confirm]. The first time I went on an outreach walk, I was afraid I wouldn’t know what to say. I learned that, above all, you listen…”",
+    "kind": "audio",
+    "audio_file": "/assets/audio/voix-du-coeur-extrait.mp3",
+    "image": "/assets/img/widows-800.jpg",
+    "date": "2026-10-25",
+    "sample": true,
+    "duration": "0:08"
+  }
+}

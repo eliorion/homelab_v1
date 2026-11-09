@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "title": "Contact — écrire à La Paix du Cœur",
+    "description": "Écrivez à La Paix du Cœur pour une demande d’aide, du bénévolat, un don en nature, une intention de prière ou une demande médias.",
+    "kicker": "Contact",
+    "heading": "Écrivez-nous. Une personne vous répondra.",
+    "lede": "Demande d’aide, bénévolat, don en nature, intention de prière ou demande médias : nous lisons chaque message.",
+    "subjects": ["Demande d’aide", "Bénévolat", "Don en nature", "Intention de prière", "Ambassadeurs et collectes", "Médias et presse", "Autre"],
+    "note": "Nous répondons habituellement sous deux jours ouvrables. En cas d’urgence, composez le 911 ; pour une aide immédiate à Montréal, le 211 oriente vers les ressources locales."
+  },
+  "en": {
+    "title": "Contact — write to La Paix du Cœur",
+    "description": "Write to La Paix du Cœur about a request for help, volunteering, a gift in kind, a prayer request or a media enquiry.",
+    "kicker": "Contact",
+    "heading": "Write to us. A real person will reply.",
+    "lede": "A request for help, volunteering, a gift in kind, a prayer request or a media enquiry: we read every message.",
+    "subjects": ["Request for help", "Volunteering", "Gift in kind", "Prayer request", "Ambassadors and fundraising", "Media and press", "Other"],
+    "note": "We usually reply within two business days. In an emergency, call 911; for immediate help in Montréal, 211 points you to local resources."
+  }
+}

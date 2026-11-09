@@ -1,0 +1,226 @@
+{
+  "fr": {
+    "metaTitle": "Devenir bénévole à Montréal | La Paix du Cœur — Kimia Na Motema",
+    "description": "Rejoignez nos bénévoles : collectes alimentaires, maraudes, aide aux devoirs, traduction, prière. Inscription en 4 étapes selon vos talents et vos disponibilités.",
+    "title": "Devenir bénévole",
+    "intro": "Chaque talent est un fil de couleur. Dites-nous ce que vous aimez faire et quand vous êtes disponible : nous vous proposerons une mission à votre mesure.",
+    "rolesTitle": "Où vous pourriez servir",
+    "roles": [
+      {
+        "title": "Collectes",
+        "text": "Accueillir les clients en magasin, trier, emballer.",
+        "icon": "collecte"
+      },
+      {
+        "title": "Maraudes",
+        "text": "Marcher en équipe le soir, servir, écouter.",
+        "icon": "maraude"
+      },
+      {
+        "title": "Ateliers",
+        "text": "Animer, tutorer, accueillir les enfants.",
+        "icon": "atelier"
+      },
+      {
+        "title": "Prière",
+        "text": "Porter les familles et l'équipe dans la prière.",
+        "icon": "priere"
+      }
+    ],
+    "formTitle": "Inscription en 4 étapes",
+    "skills": [
+      {
+        "key": "cuisine",
+        "label": "Cuisine"
+      },
+      {
+        "key": "transport",
+        "label": "Transport / chauffeur"
+      },
+      {
+        "key": "enseignement",
+        "label": "Enseignement / aide aux devoirs"
+      },
+      {
+        "key": "traduction",
+        "label": "Traduction / interprétation"
+      },
+      {
+        "key": "priere",
+        "label": "Prière / intercession"
+      },
+      {
+        "key": "photo",
+        "label": "Photo et vidéo"
+      },
+      {
+        "key": "tri",
+        "label": "Tri des dons"
+      },
+      {
+        "key": "accueil",
+        "label": "Accueil et écoute"
+      },
+      {
+        "key": "couture",
+        "label": "Couture et tricot"
+      },
+      {
+        "key": "numerique",
+        "label": "Communication numérique"
+      },
+      {
+        "key": "comptabilite",
+        "label": "Comptabilité"
+      },
+      {
+        "key": "musique",
+        "label": "Musique et louange"
+      }
+    ],
+    "languages": [
+      "Français",
+      "Anglais",
+      "Lingala",
+      "Swahili",
+      "Kikongo",
+      "Espagnol",
+      "Arabe",
+      "Créole haïtien"
+    ],
+    "consent": "J'accepte que La Paix du Cœur conserve ces informations pour me contacter au sujet du bénévolat. Je peux retirer mon consentement à tout moment.",
+    "confirmTitle": "Merci, de tout cœur !",
+    "confirmText": "Votre inscription est bien reçue. Un membre de l'équipe vous écrira dans la semaine pour une courte rencontre de bienvenue.",
+    "faqTitle": "Questions fréquentes",
+    "faq": [
+      {
+        "q": "Faut-il être chrétien pour être bénévole ?",
+        "a": "Non. Notre œuvre est chrétienne et nous prions ensemble, mais toute personne de bonne volonté qui respecte nos valeurs est la bienvenue."
+      },
+      {
+        "q": "Y a-t-il un engagement minimum ?",
+        "a": "Non. Certains donnent deux heures par an, d'autres chaque semaine. Vous choisissez."
+      },
+      {
+        "q": "Faut-il une vérification d'antécédents ?",
+        "a": "Oui, pour toute activité auprès d'enfants ou de personnes vulnérables, comme le recommandent les bonnes pratiques de protection [processus à confirmer]."
+      },
+      {
+        "q": "Les mineurs peuvent-ils participer ?",
+        "a": "Oui, dès 14 ans avec l'accord d'un parent, et accompagnés d'un adulte lors des activités [à confirmer]."
+      }
+    ]
+  },
+  "en": {
+    "metaTitle": "Volunteer in Montréal | La Paix du Cœur — Kimia Na Motema",
+    "description": "Join our volunteers: food drives, street outreach, homework help, translation, prayer. A 4-step sign-up matched to your skills and availability.",
+    "title": "Volunteer with us",
+    "intro": "Every gift is a coloured thread. Tell us what you love to do and when you are free, and we will suggest a role that fits you.",
+    "rolesTitle": "Where you could serve",
+    "roles": [
+      {
+        "title": "Food drives",
+        "text": "Greet shoppers, sort and pack donations.",
+        "icon": "collecte"
+      },
+      {
+        "title": "Street outreach",
+        "text": "Walk as a team in the evening, serve, listen.",
+        "icon": "maraude"
+      },
+      {
+        "title": "Workshops",
+        "text": "Lead, tutor, welcome the children.",
+        "icon": "atelier"
+      },
+      {
+        "title": "Prayer",
+        "text": "Carry the families and the team in prayer.",
+        "icon": "priere"
+      }
+    ],
+    "formTitle": "Sign up in 4 steps",
+    "skills": [
+      {
+        "key": "cuisine",
+        "label": "Cooking"
+      },
+      {
+        "key": "transport",
+        "label": "Transport / driving"
+      },
+      {
+        "key": "enseignement",
+        "label": "Teaching / homework help"
+      },
+      {
+        "key": "traduction",
+        "label": "Translation / interpreting"
+      },
+      {
+        "key": "priere",
+        "label": "Prayer / intercession"
+      },
+      {
+        "key": "photo",
+        "label": "Photo and video"
+      },
+      {
+        "key": "tri",
+        "label": "Sorting donations"
+      },
+      {
+        "key": "accueil",
+        "label": "Welcome and listening"
+      },
+      {
+        "key": "couture",
+        "label": "Sewing and knitting"
+      },
+      {
+        "key": "numerique",
+        "label": "Digital communication"
+      },
+      {
+        "key": "comptabilite",
+        "label": "Bookkeeping"
+      },
+      {
+        "key": "musique",
+        "label": "Music and worship"
+      }
+    ],
+    "languages": [
+      "French",
+      "English",
+      "Lingala",
+      "Swahili",
+      "Kikongo",
+      "Spanish",
+      "Arabic",
+      "Haitian Creole"
+    ],
+    "consent": "I agree that La Paix du Cœur may keep this information to contact me about volunteering. I can withdraw my consent at any time.",
+    "confirmTitle": "Thank you, with all our heart!",
+    "confirmText": "We have received your sign-up. A team member will write to you within the week to set up a short welcome meeting.",
+    "faqTitle": "Frequently asked questions",
+    "faq": [
+      {
+        "q": "Do I have to be a Christian to volunteer?",
+        "a": "No. Our work is Christian and we pray together, but anyone of good will who respects our values is welcome."
+      },
+      {
+        "q": "Is there a minimum commitment?",
+        "a": "No. Some give two hours a year, others every week. You choose."
+      },
+      {
+        "q": "Is a background check required?",
+        "a": "Yes, for any activity with children or vulnerable people, in line with good safeguarding practice [process to confirm]."
+      },
+      {
+        "q": "Can minors take part?",
+        "a": "Yes, from age 14 with a parent's permission, and accompanied by an adult during activities [to confirm]."
+      }
+    ]
+  }
+}

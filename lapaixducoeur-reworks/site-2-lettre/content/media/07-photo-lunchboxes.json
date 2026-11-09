@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 7,
+    "image": "/assets/img/lunchboxes.jpg",
+    "title": "Boîtes à lunch de la rentrée",
+    "alt": "Des boîtes à lunch remplies de repas colorés.",
+    "sample": true
+  },
+  "en": {
+    "title": "Back-to-school lunch boxes",
+    "alt": "Lunch boxes filled with colourful meals."
+  }
+}

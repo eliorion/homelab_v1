@@ -1,0 +1,54 @@
+{
+  "fr": {
+    "type": "video",
+    "order": 2,
+    "sample": true,
+    "title": "Une nuit de maraude",
+    "description": "Suivez l’équipe le temps d’une soirée dans les rues du centre-ville.",
+    "youtube_id": "M7lc1UVf-VE",
+    "duration": "4:30",
+    "poster": "/assets/img/bread-sharing.jpg",
+    "poster_alt": "Des mains tendent des paniers de pain",
+    "captions": "Sous-titres français et anglais",
+    "chapters": [
+      {
+        "time": "0:00",
+        "label": "Le départ"
+      },
+      {
+        "time": "1:20",
+        "label": "Les rencontres"
+      },
+      {
+        "time": "3:40",
+        "label": "Le retour"
+      }
+    ]
+  },
+  "en": {
+    "type": "video",
+    "order": 2,
+    "sample": true,
+    "title": "One outreach night",
+    "description": "Follow the team for one evening on the downtown streets.",
+    "youtube_id": "M7lc1UVf-VE",
+    "duration": "4:30",
+    "poster": "/assets/img/bread-sharing.jpg",
+    "poster_alt": "Hands holding out baskets of bread",
+    "captions": "French and English captions",
+    "chapters": [
+      {
+        "time": "0:00",
+        "label": "Heading out"
+      },
+      {
+        "time": "1:20",
+        "label": "The encounters"
+      },
+      {
+        "time": "3:40",
+        "label": "Coming home"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 5,
+    "sample": false,
+    "title": "Le droit d’être un enfant.",
+    "image": "/assets/img/children-play.jpg",
+    "alt": "Deux enfants jouent dans l’herbe"
+  },
+  "en": {
+    "type": "photo",
+    "order": 5,
+    "sample": false,
+    "title": "The right to be a child.",
+    "image": "/assets/img/children-play.jpg",
+    "alt": "Two children playing in the grass"
+  }
+}

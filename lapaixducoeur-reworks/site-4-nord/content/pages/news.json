@@ -1,0 +1,16 @@
+{
+  "fr": {
+    "title": "Nouvelles du terrain",
+    "meta_title": "Nouvelles — La Paix du Cœur",
+    "meta_description": "Nouvelles de La Paix du Cœur : retours de maraude, collectes alimentaires, vie de l’association et sujets de prière.",
+    "eyebrow": "Nouvelles",
+    "lead": "Retours de maraude, collectes, prière et vie de l’association, à lire ou à recevoir par RSS."
+  },
+  "en": {
+    "title": "News from the field",
+    "meta_title": "News — La Paix du Cœur",
+    "meta_description": "News from La Paix du Cœur: outreach reports, food drives, life of the charity and prayer requests.",
+    "eyebrow": "News",
+    "lead": "Outreach reports, food drives, prayer and life of the charity, to read here or follow by RSS."
+  }
+}

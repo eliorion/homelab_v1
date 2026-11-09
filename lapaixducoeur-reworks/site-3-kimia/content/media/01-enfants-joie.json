@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "communaute",
+    "src": "/assets/img/children-joy-960.jpg",
+    "title": "Des rires partagés",
+    "alt": "Un groupe d'enfants souriants, serrés les uns contre les autres.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 1
+  },
+  "en": {
+    "type": "photo",
+    "category": "communaute",
+    "src": "/assets/img/children-joy-960.jpg",
+    "title": "Shared laughter",
+    "alt": "A group of smiling children huddled close together.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 1
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "fr": {
+    "title": "Soutenir — faire un don en ligne ou par virement Interac",
+    "description": "Donnez en ligne de façon sécurisée (Zeffy, 0 % de frais) ou par virement Interac. Chaque montant dit ce qu’il finance. Reçus fiscaux si l’organisme est enregistré.",
+    "kicker": "Soutenir",
+    "heading": "Votre don devient un repas, un manteau, un cahier.",
+    "lede": "Choisissez un montant : nous vous disons ce qu’il rend possible. Le formulaire sécurisé est hébergé par Zeffy, une plateforme montréalaise gratuite pour les organismes.",
+    "amounts": [
+      { "value": 15, "label": "trois repas chauds lors d’une maraude" },
+      { "value": 40, "label": "un sac de fournitures scolaires" },
+      { "value": 75, "label": "un panier alimentaire familial" },
+      { "value": 150, "label": "un manteau, des bottes et des mitaines pour deux enfants" }
+    ],
+    "interac_title": "Virement Interac",
+    "interac_text": "Depuis votre banque, envoyez un virement Interac à l’adresse ci-dessous. Indiquez votre nom et votre adresse postale dans le message si vous souhaitez un reçu.",
+    "bank_text": "Coordonnées bancaires sur demande. Nous ne les publions jamais en ligne, pour vous protéger contre la fraude.",
+    "receipt_text": "Reçus officiels pour fins d’impôt : [si enregistré] — numéro d’organisme de bienfaisance [à confirmer].",
+    "other_title": "D’autres façons de donner",
+    "other": [
+      { "name": "Prier", "text": "Portez nos maraudes et les familles que nous rencontrons dans la prière. Écrivez-nous vos intentions." },
+      { "name": "Donner du temps", "text": "Collectes en supermarché, tri de vêtements, maraudes, ateliers : chaque talent compte." },
+      { "name": "Donner en nature", "text": "Vêtements d’hiver propres, fournitures scolaires, denrées non périssables. Écrivez-nous avant de vous déplacer." },
+      { "name": "Collecter pour nous", "text": "Anniversaire, course, groupe d’église : créez votre page d’ambassadeur." }
+    ]
+  },
+  "en": {
+    "title": "Give — donate online or by Interac e-Transfer",
+    "description": "Give securely online (Zeffy, 0% fees) or by Interac e-Transfer. Every amount says what it pays for. Tax receipts if the organization is registered.",
+    "kicker": "Give",
+    "heading": "Your gift becomes a meal, a coat, a notebook.",
+    "lede": "Pick an amount and we’ll tell you what it makes possible. The secure form is hosted by Zeffy, a Montréal platform that is free for charities.",
+    "amounts": [
+      { "value": 15, "label": "three hot meals on a street outreach night" },
+      { "value": 40, "label": "a bag of school supplies" },
+      { "value": 75, "label": "a family food basket" },
+      { "value": 150, "label": "a coat, boots and mittens for two children" }
+    ],
+    "interac_title": "Interac e-Transfer",
+    "interac_text": "From your bank, send an Interac e-Transfer to the address below. Add your name and mailing address in the message if you would like a receipt.",
+    "bank_text": "Bank details on request. We never publish them online, to protect you from fraud.",
+    "receipt_text": "Official tax receipts: [if registered] — charity registration number [to confirm].",
+    "other_title": "Other ways to give",
+    "other": [
+      { "name": "Pray", "text": "Carry our outreach nights and the families we meet in prayer. Send us your prayer requests." },
+      { "name": "Give time", "text": "Supermarket drives, sorting clothes, street outreach, workshops: every gift matters." },
+      { "name": "Give in kind", "text": "Clean winter clothes, school supplies, non-perishable food. Write to us before you come by." },
+      { "name": "Fundraise for us", "text": "Birthday, run, church group: start your own ambassador page." }
+    ]
+  }
+}

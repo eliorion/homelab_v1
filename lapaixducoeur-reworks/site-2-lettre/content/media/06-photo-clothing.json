@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 6,
+    "image": "/assets/img/clothing.jpg",
+    "title": "Le vestiaire",
+    "alt": "Des vêtements chauds suspendus sur un portant.",
+    "sample": true
+  },
+  "en": {
+    "title": "The clothing room",
+    "alt": "Warm clothes hanging on a rack."
+  }
+}

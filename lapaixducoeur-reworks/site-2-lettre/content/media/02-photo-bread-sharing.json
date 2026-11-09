@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 2,
+    "image": "/assets/img/bread-sharing.jpg",
+    "title": "Le pain des maraudes",
+    "alt": "Des mains gantées tendent une corbeille de petits pains.",
+    "sample": true
+  },
+  "en": {
+    "title": "Outreach bread",
+    "alt": "Gloved hands hold out a basket of bread rolls."
+  }
+}

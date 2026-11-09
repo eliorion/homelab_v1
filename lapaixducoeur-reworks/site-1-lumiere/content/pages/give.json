@@ -1,0 +1,204 @@
+{
+  "fr": {
+    "title": "Soutenir — faire un don mensuel ou unique",
+    "description": "Donnez en ligne via Zeffy, par virement Interac ou en nature. Chaque montant dit ce qu’il finance. Reçu fiscal [si enregistré].",
+    "heading": "Votre don allume une lumière",
+    "intro": "Un don mensuel, même modeste, nous permet de planifier l’aide avec confiance. Choisissez ce qui vous ressemble : chaque geste compte.",
+    "widget_title": "Faire un don",
+    "amounts_monthly": [
+      {
+        "amount": 15,
+        "impact": "des collations saines pour un enfant pendant un mois"
+      },
+      {
+        "amount": 25,
+        "impact": "un panier alimentaire pour une famille, chaque mois"
+      },
+      {
+        "amount": 50,
+        "impact": "la trousse scolaire de deux enfants par trimestre"
+      },
+      {
+        "amount": 100,
+        "impact": "une maraude complète : repas chauds et vêtements"
+      }
+    ],
+    "amounts_once": [
+      {
+        "amount": 25,
+        "impact": "un panier alimentaire pour une famille"
+      },
+      {
+        "amount": 60,
+        "impact": "une tenue d’hiver complète pour un enfant"
+      },
+      {
+        "amount": 120,
+        "impact": "les fournitures scolaires de trois enfants"
+      },
+      {
+        "amount": 250,
+        "impact": "une aide d’urgence pour une veuve et ses enfants"
+      }
+    ],
+    "fees_note": "Zeffy ne prélève aucun frais aux organismes; cette option sert seulement si une autre plateforme est retenue [à confirmer].",
+    "interac_title": "Virement Interac",
+    "interac_steps": [
+      "Dans votre application bancaire, choisissez « Virement Interac ».",
+      "Ajoutez notre adresse comme destinataire.",
+      "Indiquez votre nom et votre adresse courriel dans le message pour recevoir un reçu [si enregistré]."
+    ],
+    "bank_title": "Coordonnées bancaires sur demande",
+    "bank_text": "Pour un virement bancaire ou un don important, écrivez-nous : nous vous transmettrons les coordonnées de façon sécurisée. Nous ne les publions jamais en ligne, pour vous protéger contre la fraude.",
+    "inkind_title": "Dons en nature",
+    "inkind_intro": "Vos dons matériels sont triés avec soin et remis directement. Écrivez-nous avant de venir pour organiser la remise.",
+    "wishlist": [
+      {
+        "item": "Denrées non périssables",
+        "note": "riz, pâtes, conserves, céréales"
+      },
+      {
+        "item": "Manteaux, bottes et mitaines",
+        "note": "propres, toutes tailles"
+      },
+      {
+        "item": "Fournitures scolaires",
+        "note": "sacs, cahiers, crayons, calculatrices"
+      },
+      {
+        "item": "Produits d’hygiène",
+        "note": "savon, dentifrice, produits menstruels"
+      },
+      {
+        "item": "Couvertures et sacs de couchage",
+        "note": "pour les maraudes d’hiver"
+      },
+      {
+        "item": "Ordinateurs portables",
+        "note": "en état de marche, pour les étudiants"
+      }
+    ],
+    "prayer_title": "Soutenir par la prière",
+    "prayer_text": "Votre soutien par les prières, les courriels et les encouragements est une bénédiction. Confiez-nous un sujet de prière ou rejoignez la chaîne de prière de l’association.",
+    "other_title": "D’autres façons de donner",
+    "other_ways": [
+      {
+        "title": "Donner de votre temps",
+        "text": "Collectes, maraudes, tri, accompagnement scolaire : il y a une place pour vous.",
+        "link": "contact"
+      },
+      {
+        "title": "Don en hommage",
+        "text": "Un anniversaire, un deuil, une fête : dédiez votre don à une personne aimée.",
+        "link": "give"
+      },
+      {
+        "title": "Entreprises et Églises",
+        "text": "Collecte au bureau, jumelage de dons, offrande spéciale : parlons-en.",
+        "link": "contact"
+      }
+    ],
+    "image": "/img/food-bank-volunteers.jpg"
+  },
+  "en": {
+    "title": "Give — make a monthly or one-time gift",
+    "description": "Give online through Zeffy, by Interac e-Transfer or in kind. Every amount says what it funds. Tax receipt [if registered].",
+    "heading": "Your gift switches on a light",
+    "intro": "A monthly gift, however modest, lets us plan help with confidence. Choose what suits you: every act counts.",
+    "widget_title": "Make a gift",
+    "amounts_monthly": [
+      {
+        "amount": 15,
+        "impact": "healthy snacks for a child for a month"
+      },
+      {
+        "amount": 25,
+        "impact": "a food basket for a family, every month"
+      },
+      {
+        "amount": 50,
+        "impact": "school kits for two children each term"
+      },
+      {
+        "amount": 100,
+        "impact": "a full outreach round: hot meals and warm clothes"
+      }
+    ],
+    "amounts_once": [
+      {
+        "amount": 25,
+        "impact": "a food basket for one family"
+      },
+      {
+        "amount": 60,
+        "impact": "a complete winter outfit for a child"
+      },
+      {
+        "amount": 120,
+        "impact": "school supplies for three children"
+      },
+      {
+        "amount": 250,
+        "impact": "emergency help for a widow and her children"
+      }
+    ],
+    "fees_note": "Zeffy charges charities no fees; this option only applies if another platform is chosen [to confirm].",
+    "interac_title": "Interac e-Transfer",
+    "interac_steps": [
+      "In your banking app, choose “Interac e-Transfer”.",
+      "Add our address as a recipient.",
+      "Put your name and email in the message to receive a receipt [if registered]."
+    ],
+    "bank_title": "Bank details on request",
+    "bank_text": "For a bank transfer or a major gift, write to us and we will send the details securely. We never publish them online, to protect you from fraud.",
+    "inkind_title": "Gifts in kind",
+    "inkind_intro": "Donated goods are sorted with care and handed out directly. Please write to us before dropping anything off.",
+    "wishlist": [
+      {
+        "item": "Non-perishable food",
+        "note": "rice, pasta, canned goods, cereal"
+      },
+      {
+        "item": "Coats, boots and mittens",
+        "note": "clean, all sizes"
+      },
+      {
+        "item": "School supplies",
+        "note": "backpacks, notebooks, pencils, calculators"
+      },
+      {
+        "item": "Hygiene products",
+        "note": "soap, toothpaste, menstrual products"
+      },
+      {
+        "item": "Blankets and sleeping bags",
+        "note": "for winter outreach"
+      },
+      {
+        "item": "Laptops",
+        "note": "in working order, for students"
+      }
+    ],
+    "prayer_title": "Support us in prayer",
+    "prayer_text": "Your support through prayer, emails and encouragement is a blessing. Share a prayer request with us or join the association’s prayer chain.",
+    "other_title": "Other ways to give",
+    "other_ways": [
+      {
+        "title": "Give your time",
+        "text": "Food drives, outreach, sorting, homework help: there is a place for you.",
+        "link": "contact"
+      },
+      {
+        "title": "Tribute gift",
+        "text": "A birthday, a loss, a celebration: dedicate your gift to someone you love.",
+        "link": "give"
+      },
+      {
+        "title": "Businesses and churches",
+        "text": "Office drives, matching gifts, a special offering: let’s talk.",
+        "link": "contact"
+      }
+    ],
+    "image": "/img/food-bank-volunteers.jpg"
+  }
+}

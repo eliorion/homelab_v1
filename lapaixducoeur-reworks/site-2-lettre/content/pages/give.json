@@ -1,0 +1,104 @@
+{
+  "fr": {
+    "meta_title": "Soutenir — faire un don, Interac, bénévolat | La Paix du Cœur",
+    "meta_description": "Soutenez La Paix du Cœur par la prière, un don en ligne (Zeffy), un virement Interac, un don matériel ou du bénévolat. Tout ce que nous offrons est gratuit.",
+    "kicker": "Soutenir",
+    "title": "Prêter à YHWH",
+    "intro": "« Celui qui a pitié du pauvre prête à YHWH, qui lui rendra son bienfait. » Votre soutien par la prière, les courriels et l’encouragement est une bénédiction. Vous pouvez aussi soutenir l’association financièrement, matériellement ou humainement.",
+    "amounts": [
+      {
+        "amount": 25,
+        "text": "des fournitures scolaires pour un enfant"
+      },
+      {
+        "amount": 50,
+        "text": "les sacs d’une soirée de maraude"
+      },
+      {
+        "amount": 100,
+        "text": "un panier alimentaire pour une famille, pendant un mois"
+      },
+      {
+        "amount": 250,
+        "text": "un manteau, des bottes et des gants pour trois personnes"
+      }
+    ],
+    "amounts_note": "Montants et équivalences donnés à titre d’exemple — à confirmer.",
+    "zeffy_note": "Paiement sécurisé propulsé par Zeffy (0 % de frais pour l’association). Formulaire réel à intégrer [à confirmer].",
+    "receipt_note": "Reçus fiscaux de l’ARC : [si enregistré] — numéro d’organisme de bienfaisance [à confirmer].",
+    "interac_title": "Virement Interac",
+    "interac_text": "Envoyez votre don par virement Interac à l’adresse ci-dessous. Indiquez votre nom et votre adresse courriel dans le message si vous souhaitez un reçu [si enregistré].",
+    "bank_title": "Virement bancaire",
+    "bank_text": "Coordonnées bancaires sur demande. Pour votre sécurité, nous ne les publions pas en ligne : écrivez-nous et nous vous répondrons personnellement.",
+    "other_title": "D’autres façons de donner",
+    "other": [
+      {
+        "title": "Prier",
+        "text": "Portez l’association et les personnes servies dans la prière, et rejoignez nos soirées de prière.",
+        "link": "prayer"
+      },
+      {
+        "title": "Écrire",
+        "text": "Une lettre d’encouragement remise par l’équipe à quelqu’un qui en a besoin.",
+        "link": "letters"
+      },
+      {
+        "title": "Donner de votre temps",
+        "text": "Collectes, maraudes, ateliers, traduction, photo : chaque talent compte.",
+        "link": "contact"
+      },
+      {
+        "title": "Donner en nature",
+        "text": "Vêtements chauds, fournitures scolaires, denrées non périssables : écrivez-nous avant de déposer.",
+        "link": "contact"
+      }
+    ]
+  },
+  "en": {
+    "meta_title": "Give — donate, Interac, volunteer | La Paix du Cœur",
+    "meta_description": "Support La Paix du Cœur through prayer, an online gift (Zeffy), an Interac e-Transfer, in-kind donations or volunteering. Everything we offer is free.",
+    "kicker": "Give",
+    "title": "Lending to YHWH",
+    "intro": "“Whoever is kind to the poor lends to YHWH, and he will repay him for his deed.” Your support through prayer, emails and encouragement is a blessing. You can also support the association financially, materially, or with your time.",
+    "amounts": [
+      {
+        "text": "school supplies for one child"
+      },
+      {
+        "text": "the bags for one night of street outreach"
+      },
+      {
+        "text": "a month of groceries for one family"
+      },
+      {
+        "text": "a coat, boots and gloves for three people"
+      }
+    ],
+    "amounts_note": "Amounts and what they provide are samples — to confirm.",
+    "zeffy_note": "Secure payment powered by Zeffy (0% fees for the association). Real form to embed [to confirm].",
+    "receipt_note": "CRA tax receipts: [if registered] — charity number [to confirm].",
+    "interac_title": "Interac e-Transfer",
+    "interac_text": "Send your gift by Interac e-Transfer to the address below. Include your name and email in the message if you would like a receipt [if registered].",
+    "bank_title": "Bank transfer",
+    "bank_text": "Bank details on request. For your safety, we do not publish them online: write to us and we will answer personally.",
+    "other_title": "Other ways to give",
+    "other": [
+      {
+        "title": "Pray",
+        "text": "Carry the association and the people we serve in prayer, and join our prayer evenings."
+      },
+      {
+        "title": "Write",
+        "text": "A letter of encouragement, delivered by the team to someone who needs it."
+      },
+      {
+        "title": "Give your time",
+        "text": "Food drives, outreach, workshops, translation, photography: every talent counts."
+      },
+      {
+        "title": "Give in kind",
+        "text": "Warm clothing, school supplies, non-perishable food: write to us before dropping off."
+      }
+    ]
+  }
+}

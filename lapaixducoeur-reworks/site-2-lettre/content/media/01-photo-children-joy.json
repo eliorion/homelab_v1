@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 1,
+    "image": "/assets/img/children-joy.jpg",
+    "title": "Rires partagés",
+    "alt": "Un groupe d’enfants sourit à l’objectif dans une rue ensoleillée.",
+    "sample": true
+  },
+  "en": {
+    "title": "Shared laughter",
+    "alt": "A group of children smile at the camera on a sunny street."
+  }
+}

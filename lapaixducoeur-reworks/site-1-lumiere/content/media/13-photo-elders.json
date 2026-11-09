@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Le thé des aînées",
+    "caption": "",
+    "alt": "Trois aînées rient autour d’un thé.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/elders.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  },
+  "en": {
+    "title": "Tea with our elders",
+    "caption": "",
+    "alt": "Three older women laugh over tea.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/elders.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  }
+}

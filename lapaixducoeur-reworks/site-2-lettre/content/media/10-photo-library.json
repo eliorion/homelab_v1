@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 10,
+    "image": "/assets/img/library.jpg",
+    "title": "Coin lecture",
+    "alt": "Une allée de bibliothèque remplie de livres.",
+    "sample": true
+  },
+  "en": {
+    "title": "Reading corner",
+    "alt": "A library aisle full of books."
+  }
+}

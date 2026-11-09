@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "alimentaire",
+    "src": "/assets/img/bread-sharing-960.jpg",
+    "title": "Le pain partagé",
+    "alt": "Des mains déposent des petits pains dans des paniers d'osier.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 3
+  },
+  "en": {
+    "type": "photo",
+    "category": "alimentaire",
+    "src": "/assets/img/bread-sharing-960.jpg",
+    "title": "Bread shared",
+    "alt": "Hands placing bread rolls into wicker baskets.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 3
+  }
+}

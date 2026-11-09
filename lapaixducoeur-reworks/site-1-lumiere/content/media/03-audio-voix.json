@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "title": "Les voix du cœur — épisode 0 (extrait d’exemple)",
+    "caption": "Notre balado, en français et en anglais. Cet extrait est un simple son d’exemple.",
+    "alt": "Deux femmes souriantes assises devant un mur de briques.",
+    "transcript": "[Musique douce]\n\nBienvenue dans *Les voix du cœur*, le balado de La Paix du Cœur. Dans chaque épisode, une bénévole, une maman ou un étudiant nous raconte un moment où l’espérance est revenue.\n\n[Transcription d’exemple — à remplacer par la transcription réelle de l’épisode.]",
+    "type": "audio",
+    "audio_file": "/audio/voix-du-coeur-exemple.mp3",
+    "image": "/img/widows.jpg",
+    "date": "2026-11-01",
+    "sample": true
+  },
+  "en": {
+    "title": "Voices of the Heart — episode 0 (sample clip)",
+    "caption": "Our podcast, in French and English. This clip is a simple sample tone.",
+    "alt": "Two smiling women sitting in front of a brick wall.",
+    "transcript": "[Soft music]\n\nWelcome to *Voices of the Heart*, the La Paix du Cœur podcast. In each episode a volunteer, a mother or a student tells us about a moment when hope came back.\n\n[Sample transcript — to be replaced with the episode’s real transcript.]",
+    "type": "audio",
+    "audio_file": "/audio/voix-du-coeur-exemple.mp3",
+    "image": "/img/widows.jpg",
+    "date": "2026-11-01",
+    "sample": true
+  }
+}

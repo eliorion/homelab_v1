@@ -1,0 +1,26 @@
+{
+  "fr": {
+    "title": "Une soirée de maraude, de l’intérieur",
+    "description": "Suivez une équipe de rue un jeudi soir de novembre (vidéo d’exemple — à remplacer par la vidéo de l’association).",
+    "image_alt": "Des mains gantées tendent des paniers de petits pains",
+    "transcript": "",
+    "kind": "video",
+    "youtube_id": "aqz-KE-bpKQ",
+    "image": "/assets/img/bread-sharing-1600.jpg",
+    "date": "2026-11-01",
+    "sample": true,
+    "duration": "3:12"
+  },
+  "en": {
+    "title": "An outreach night, from the inside",
+    "description": "Follow a street team on a Thursday night in November (sample video — to be replaced with the charity’s own).",
+    "image_alt": "Gloved hands holding out baskets of bread rolls",
+    "transcript": "",
+    "kind": "video",
+    "youtube_id": "aqz-KE-bpKQ",
+    "image": "/assets/img/bread-sharing-1600.jpg",
+    "date": "2026-11-01",
+    "sample": true,
+    "duration": "3:12"
+  }
+}

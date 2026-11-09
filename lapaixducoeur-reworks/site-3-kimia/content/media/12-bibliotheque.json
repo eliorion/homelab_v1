@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "academique",
+    "src": "/assets/img/library-768.jpg",
+    "title": "Le goût de lire",
+    "alt": "Une allée de bibliothèque bordée de livres.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 12
+  },
+  "en": {
+    "type": "photo",
+    "category": "academique",
+    "src": "/assets/img/library-768.jpg",
+    "title": "A love of reading",
+    "alt": "A library aisle lined with books.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 12
+  }
+}

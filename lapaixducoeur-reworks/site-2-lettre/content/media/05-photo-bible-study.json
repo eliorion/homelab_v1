@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 5,
+    "image": "/assets/img/bible-study.jpg",
+    "title": "Autour de la Parole",
+    "alt": "Un groupe réuni autour d’une Bible ouverte.",
+    "sample": true
+  },
+  "en": {
+    "title": "Around the Word",
+    "alt": "A group gathered around an open Bible."
+  }
+}

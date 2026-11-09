@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "illustration",
+    "category": "communaute",
+    "src": "/assets/illustrations/communaute.svg",
+    "title": "Autour de la table",
+    "alt": "Illustration : des personnes rassemblées en cercle autour d'une table ronde.",
+    "caption": "Illustration originale, faite main pour le site",
+    "order": 16
+  },
+  "en": {
+    "type": "illustration",
+    "category": "communaute",
+    "src": "/assets/illustrations/communaute.svg",
+    "title": "Around the table",
+    "alt": "Illustration: people gathered in a circle around a round table.",
+    "caption": "Original hand-made illustration for the website",
+    "order": 16
+  }
+}

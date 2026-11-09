@@ -1,0 +1,38 @@
+{
+  "fr": {
+    "metaTitle": "Médiathèque : photos, vidéos et balado | La Paix du Cœur",
+    "description": "Photos, illustrations, vidéo et balado « Les voix du cœur » de La Paix du Cœur / Kimia Na Motema.",
+    "title": "Médiathèque",
+    "intro": "Photos, illustrations faites main, vidéo et balado. Les visages d'enfants ne sont publiés qu'avec consentement ; sinon, une illustration les remplace.",
+    "galleryTitle": "Galerie",
+    "videoTitle": "Vidéo",
+    "audioTitle": "Balado « Les voix du cœur »",
+    "categories": {
+      "all": "Tout",
+      "alimentaire": "Alimentaire",
+      "vestimentaire": "Vestimentaire",
+      "academique": "Académique",
+      "communaute": "Communauté",
+      "foi": "Foi",
+      "maraude": "Maraudes"
+    }
+  },
+  "en": {
+    "metaTitle": "Media: photos, video and podcast | La Paix du Cœur",
+    "description": "Photos, illustrations, video and the \"Voices of the Heart\" podcast from La Paix du Cœur / Kimia Na Motema.",
+    "title": "Media",
+    "intro": "Photos, hand-made illustrations, video and a podcast. Children's faces are only published with consent; otherwise an illustration takes their place.",
+    "galleryTitle": "Gallery",
+    "videoTitle": "Video",
+    "audioTitle": "“Voices of the Heart” podcast",
+    "categories": {
+      "all": "All",
+      "alimentaire": "Food",
+      "vestimentaire": "Clothing",
+      "academique": "School",
+      "communaute": "Community",
+      "foi": "Faith",
+      "maraude": "Outreach"
+    }
+  }
+}

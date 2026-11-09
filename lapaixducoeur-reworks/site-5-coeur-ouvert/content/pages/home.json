@@ -1,0 +1,102 @@
+{
+  "fr": {
+    "title": "La Paix du Cœur — Défendre le faible et l’orphelin, à Montréal",
+    "description": "Association chrétienne fondée en 2014 à Montréal : aide alimentaire, vestimentaire, scolaire et matérielle, offerte gratuitement aux orphelins, aux veuves, aux démunis et aux sans-abri.",
+    "masthead": "Montréal · depuis 2014 · Kimia Na Motema",
+    "verse_lines": ["Défendez", "le faible", "et l’orphelin,"],
+    "verse_rest": "rendez justice à l’affligé et au pauvre.",
+    "verse_ref": "Tehilim (Psaumes) 82:3",
+    "intro": "*Kimia na motema*, en lingala, veut dire « la paix du cœur ». Depuis 2014, notre association chrétienne apporte gratuitement nourriture, vêtements, soutien scolaire et aide matérielle aux orphelins, aux veuves, aux démunis et aux sans-abri.",
+    "need": {
+      "kicker": "Le besoin",
+      "title": "Derrière chaque porte, quelqu’un attend.",
+      "lines": [
+        "Un enfant qui grandit sans ses parents.",
+        "Une veuve qui affronte l’hiver seule.",
+        "Un étudiant qui saute un repas pour payer ses livres.",
+        "Un homme qui dort dehors, un soir de janvier."
+      ],
+      "body": "Nous ne publions pas de visages en détresse. Nous racontons le moment où les choses changent — parce que chaque personne que nous rencontrons est d’abord une personne, avant d’être un besoin."
+    },
+    "heart": {
+      "kicker": "Le cœur du Seigneur",
+      "title": "Un cœur tourné vers les plus faibles.",
+      "body": "Par la grâce du Seigneur, le Pourvoyeur et le Rémunérateur de ceux qui le cherchent, La Paix du Cœur a pour mission de révéler aux nations le Cœur du Seigneur, tourné vers les plus faibles : les veuves, les veufs, les orphelins, les démunis et les sans-abri, sans distinction de langue, de couleur ou de race.",
+      "quote": "La religion pure et sans souillure devant notre Elohîm et Père, c’est de visiter les orphelins et les veuves dans leurs tribulations…",
+      "quote_ref": "Yaacov (Jacques) 1:27"
+    },
+    "hope": {
+      "lead": "Là où il manque tout, nous apportons d’abord",
+      "word": "Espoir",
+      "after": "Puis du pain, un manteau, un cahier — et une main tendue."
+    },
+    "do": {
+      "kicker": "Ce que nous faisons",
+      "title": "Quatre façons d’aimer, concrètement.",
+      "body": "Tout est offert gratuitement, dans un esprit d’amour et de service, pour la seule gloire d’Elohim.",
+      "figures": [
+        { "value": "2014", "label": "Fondation à Montréal" },
+        { "value": "4", "label": "domaines d’aide" },
+        { "value": "3", "label": "programmes" },
+        { "value": "0 $", "label": "demandé à ceux que nous aidons" }
+      ]
+    },
+    "act": {
+      "kicker": "Ce que vous pouvez faire",
+      "title": "À votre tour d’ouvrir votre cœur.",
+      "body": "Votre soutien par les prières, les courriels et les encouragements est une bénédiction. Vous pouvez aussi soutenir l’association financièrement, matériellement ou humainement.",
+      "quote": "Celui qui a pitié du pauvre prête à YHWH, qui lui rendra son bienfait.",
+      "quote_ref": "Proverbes 19:17"
+    }
+  },
+  "en": {
+    "title": "La Paix du Cœur — Defending the weak and the fatherless in Montréal",
+    "description": "A Christian association founded in Montréal in 2014, giving food, clothing, school support and material help free of charge to orphans, widows, the poor and the homeless.",
+    "masthead": "Montréal · since 2014 · Kimia Na Motema",
+    "verse_lines": ["Defend the", "weak and the", "fatherless;"],
+    "verse_rest": "uphold the cause of the poor and the oppressed.",
+    "verse_ref": "Psalm 82:3",
+    "intro": "*Kimia na motema* is Lingala for “peace of the heart”. Since 2014, our Christian association has given food, clothing, school support and material help — free of charge — to orphans, widows, the poor and the homeless.",
+    "need": {
+      "kicker": "The need",
+      "title": "Behind every door, someone is waiting.",
+      "lines": [
+        "A child growing up without parents.",
+        "A widow facing winter alone.",
+        "A student skipping a meal to pay for books.",
+        "A man sleeping outside on a January night."
+      ],
+      "body": "We don’t publish faces in distress. We tell the moment things turn around — because everyone we meet is a person first, long before they are a need."
+    },
+    "heart": {
+      "kicker": "The heart of the Lord",
+      "title": "A heart turned toward the weakest.",
+      "body": "By the grace of the Lord, the Provider and Rewarder of those who seek him, La Paix du Cœur exists to reveal to the nations the Heart of the Lord, turned toward the weakest: widows and widowers, orphans, the poor and the homeless, regardless of language, colour or race.",
+      "quote": "Religion that is pure and undefiled before our Elohim and Father is this: to visit orphans and widows in their affliction…",
+      "quote_ref": "James 1:27"
+    },
+    "hope": {
+      "lead": "Where everything is missing, we bring first",
+      "word": "Hope",
+      "after": "Then bread, a coat, a notebook — and an outstretched hand."
+    },
+    "do": {
+      "kicker": "What we do",
+      "title": "Four ways to love, in practice.",
+      "body": "Everything is given free of charge, in a spirit of love and service, for the glory of Elohim alone.",
+      "figures": [
+        { "value": "2014", "label": "Founded in Montréal" },
+        { "value": "4", "label": "areas of aid" },
+        { "value": "3", "label": "programmes" },
+        { "value": "$0", "label": "asked of the people we help" }
+      ]
+    },
+    "act": {
+      "kicker": "What you can do",
+      "title": "Your turn to open your heart.",
+      "body": "Your support through prayer, emails and encouragement is a blessing. You can also support the association financially, materially or by giving your time.",
+      "quote": "Whoever is kind to the poor lends to YHWH, and he will repay them for their deed.",
+      "quote_ref": "Proverbs 19:17"
+    }
+  }
+}

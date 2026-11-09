@@ -1,0 +1,126 @@
+{
+  "fr": {
+    "meta_title": "La Paix du Cœur — maraudes, collectes alimentaires et bénévolat à Montréal",
+    "meta_description": "Association chrétienne fondée à Montréal en 2014. Calendrier des maraudes et collectes alimentaires, quarts de bénévolat, trousses pour églises et écoles.",
+    "hero_eyebrow": "Montréal · depuis 2014",
+    "hero_title": "Une main tendue, chaque semaine, dans nos quartiers.",
+    "hero_lead": "Maraudes du jeudi soir, collectes alimentaires en épicerie, ateliers et prière : rejoignez celles et ceux qui gardent Montréal au chaud, pour la seule gloire d’Elohim.",
+    "hero_verse": "«Défendez le faible et l’orphelin, rendez justice à l’affligé et au pauvre.»",
+    "hero_verse_ref": "Tehilim (Psaumes) 82:3",
+    "hero_image_alt": "Deux bénévoles préparent des denrées et des conserves dans des caisses",
+    "ways_title": "Quatre façons de s’impliquer cette saison",
+    "ways": [
+      {
+        "title": "Marcher avec nous",
+        "text": "Un jeudi soir par mois, en équipe de trois, avec repas chauds et vêtements chauds.",
+        "link": "volunteer",
+        "cta": "Voir les quarts"
+      },
+      {
+        "title": "Donner à une collecte",
+        "text": "Ajoutez un article à votre panier dans une épicerie partenaire de votre quartier.",
+        "link": "drives",
+        "cta": "Trouver une collecte"
+      },
+      {
+        "title": "Organiser chez vous",
+        "text": "Église, école ou bureau : une trousse complète pour lancer votre propre collecte.",
+        "link": "toolkits",
+        "cta": "Ouvrir les trousses"
+      },
+      {
+        "title": "Porter dans la prière",
+        "text": "Recevez chaque lundi trois sujets de prière pour les équipes et les familles.",
+        "link": "newsletter",
+        "cta": "S’abonner"
+      }
+    ],
+    "aid_title": "Quatre domaines d’aide, offerts gratuitement",
+    "aid": [
+      {
+        "key": "alimentaire",
+        "title": "Alimentaire",
+        "text": "Paniers, repas chauds en maraude et collectes en épicerie."
+      },
+      {
+        "key": "vestimentaire",
+        "title": "Vestimentaire",
+        "text": "Manteaux, bottes, bas de laine et tuques pour passer l’hiver."
+      },
+      {
+        "key": "academique",
+        "title": "Académique",
+        "text": "Fournitures, boîtes-repas et soutien scolaire pour les orphelins."
+      },
+      {
+        "key": "materielle",
+        "title": "Matérielle ou financière",
+        "text": "Un coup de main ponctuel quand tout le reste manque."
+      }
+    ],
+    "verse2": "«La religion pure et sans souillure devant notre Elohîm et Père, c’est de visiter les orphelins et les veuves dans leurs tribulations…»",
+    "verse2_ref": "Yaacov (Jacques) 1:27"
+  },
+  "en": {
+    "meta_title": "La Paix du Cœur — street outreach, food drives and volunteering in Montréal",
+    "meta_description": "A Christian charity founded in Montréal in 2014. Calendar of street outreach and food drives, volunteer shifts, toolkits for churches and schools.",
+    "hero_eyebrow": "Montréal · since 2014",
+    "hero_title": "A hand held out, every week, in our neighbourhoods.",
+    "hero_lead": "Thursday-night outreach walks, grocery-store food drives, workshops and prayer: join the people keeping Montréal warm, for the glory of Elohim alone.",
+    "hero_verse": "“Defend the weak and the fatherless; uphold the cause of the poor and the oppressed.”",
+    "hero_verse_ref": "Psalm 82:3",
+    "hero_image_alt": "Two volunteers packing food and canned goods into crates",
+    "ways_title": "Four ways to get involved this season",
+    "ways": [
+      {
+        "title": "Walk with us",
+        "text": "One Thursday night a month, in teams of three, carrying hot meals and warm clothing.",
+        "link": "volunteer",
+        "cta": "See shifts"
+      },
+      {
+        "title": "Give at a food drive",
+        "text": "Add one item to your cart at a partner grocery store in your neighbourhood.",
+        "link": "drives",
+        "cta": "Find a food drive"
+      },
+      {
+        "title": "Organize your own",
+        "text": "Church, school or office: a complete toolkit to launch your own food drive.",
+        "link": "toolkits",
+        "cta": "Open the toolkits"
+      },
+      {
+        "title": "Carry it in prayer",
+        "text": "Get three prayer requests every Monday for the teams and the families.",
+        "link": "newsletter",
+        "cta": "Subscribe"
+      }
+    ],
+    "aid_title": "Four areas of help, always free",
+    "aid": [
+      {
+        "key": "alimentaire",
+        "title": "Food",
+        "text": "Food baskets, hot meals on outreach walks and grocery-store food drives."
+      },
+      {
+        "key": "vestimentaire",
+        "title": "Clothing",
+        "text": "Coats, boots, wool socks and toques to get through winter."
+      },
+      {
+        "key": "academique",
+        "title": "School",
+        "text": "Supplies, lunch boxes and tutoring for orphans."
+      },
+      {
+        "key": "materielle",
+        "title": "Material or financial",
+        "text": "Practical help when everything else falls short."
+      }
+    ],
+    "verse2": "“Religion that is pure and undefiled before our Elohim and Father is this: to visit orphans and widows in their affliction…”",
+    "verse2_ref": "James 1:27"
+  }
+}

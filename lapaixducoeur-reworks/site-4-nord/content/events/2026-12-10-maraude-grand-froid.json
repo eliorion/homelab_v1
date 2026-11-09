@@ -1,0 +1,84 @@
+{
+  "fr": {
+    "slug": "maraude-grand-froid-10-decembre",
+    "title": "Maraude « grand froid » — centre-ville",
+    "summary": "Distribution de trousses d’hiver : bas de laine, tuques, mitaines et chauffe-mains.",
+    "address": "Adresse exacte communiquée aux inscrits [à confirmer]",
+    "meeting_point": "Point de rencontre : sortie du métro Atwater [à confirmer]",
+    "image_alt": "Une tringle de manteaux et de vêtements chauds",
+    "body": "Chaque sortie commence par un court temps de prière et un briefing de sécurité. Nous formons ensuite des équipes de trois ou quatre personnes, toujours accompagnées d’un bénévole d’expérience.\n\nNous apportons des repas chauds, des boissons, des bas, des tuques et surtout du temps : un sourire, une conversation, une écoute sans jugement.\n\nPour cette sortie, chaque équipe transporte des trousses « grand froid » préparées la veille : bas de laine, tuque, mitaines, chauffe-mains et une carte avec les ressources d’hébergement d’urgence.\n\n**Première fois ?** Aucune expérience requise. Arrivez 15 minutes à l’avance; nous vous jumelons à une personne qui connaît le parcours.",
+    "bring": [
+      "Vêtements chauds en couches, bottes et gants",
+      "Une gourde (thermos fourni)",
+      "Votre bonne humeur — et une pièce d’identité"
+    ],
+    "type": "maraude",
+    "start": "2026-12-10T18:30",
+    "end": "2026-12-10T21:30",
+    "neighbourhood": "centre-ville",
+    "image": "/assets/img/clothing-768.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "prep",
+        "role_fr": "Préparation des trousses d’hiver",
+        "role_en": "Winter kit preparation",
+        "start": "2026-12-10T17:00",
+        "end": "2026-12-10T18:30",
+        "spots": 6,
+        "taken": 6
+      },
+      {
+        "id": "rue",
+        "role_fr": "Équipe de rue",
+        "role_en": "Street team",
+        "start": "2026-12-10T18:30",
+        "end": "2026-12-10T21:30",
+        "spots": 12,
+        "taken": 4
+      }
+    ]
+  },
+  "en": {
+    "slug": "deep-cold-outreach-december-10",
+    "title": "“Deep cold” outreach — downtown",
+    "summary": "Handing out winter kits: wool socks, toques, mittens and hand warmers.",
+    "address": "Exact address sent to registered volunteers [to confirm]",
+    "meeting_point": "Meeting point: Atwater metro exit [to confirm]",
+    "image_alt": "A rail of coats and warm clothing",
+    "body": "Every outing starts with a short time of prayer and a safety briefing. We then form teams of three or four, always with an experienced volunteer.\n\nWe bring hot meals, drinks, socks, toques and, above all, time: a smile, a conversation, listening without judgment.\n\nFor this outing, every team carries “deep cold” kits prepared the day before: wool socks, a toque, mittens, hand warmers and a card listing emergency shelter resources.\n\n**First time?** No experience needed. Arrive 15 minutes early and we will pair you with someone who knows the route.",
+    "bring": [
+      "Warm layers, boots and gloves",
+      "A water bottle (thermoses provided)",
+      "A good mood — and a piece of ID"
+    ],
+    "type": "maraude",
+    "start": "2026-12-10T18:30",
+    "end": "2026-12-10T21:30",
+    "neighbourhood": "centre-ville",
+    "image": "/assets/img/clothing-768.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "prep",
+        "role_fr": "Préparation des trousses d’hiver",
+        "role_en": "Winter kit preparation",
+        "start": "2026-12-10T17:00",
+        "end": "2026-12-10T18:30",
+        "spots": 6,
+        "taken": 6
+      },
+      {
+        "id": "rue",
+        "role_fr": "Équipe de rue",
+        "role_en": "Street team",
+        "start": "2026-12-10T18:30",
+        "end": "2026-12-10T21:30",
+        "spots": 12,
+        "taken": 4
+      }
+    ]
+  }
+}

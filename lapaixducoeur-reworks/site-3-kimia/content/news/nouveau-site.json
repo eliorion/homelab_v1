@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "slug": "nouveau-site-bilingue",
+    "title": "Bienvenue sur notre nouveau site, en français et en anglais",
+    "date": "2026-11-09",
+    "category": "Association",
+    "sample": true,
+    "image": "/assets/img/children-joy-960.jpg",
+    "imageAlt": "Un groupe d'enfants souriants, serrés les uns contre les autres.",
+    "summary": "Un site plus clair, plus sûr et bilingue, pour mieux vous informer, vous mobiliser et faire connaître la mission de Kimia Na Motema.",
+    "body": "Depuis 2014, La Paix du Cœur / Kimia Na Motema sert les orphelins, les veuves et les démunis. Ce nouveau site est là pour mieux raconter ce chemin.\n\n## Quoi de neuf ?\n\n- **Notre histoire**, de 2014 à aujourd'hui, sous forme de frise interactive.\n- **Nos quatre domaines d'aide**, expliqués simplement, avec des façons concrètes d'aider.\n- **Le bénévolat**, avec un formulaire qui tient compte de vos talents.\n- **Le don en ligne sécurisé** (bientôt) et le virement Interac.\n\n## Une promesse\n\nNous ne montrons jamais le visage d'un enfant sans consentement, ni de lieu précis. C'est pourquoi vous verrez beaucoup d'illustrations faites main : elles protègent les plus vulnérables."
+  },
+  "en": {
+    "slug": "new-bilingual-website",
+    "title": "Welcome to our new website, in French and English",
+    "date": "2026-11-09",
+    "category": "Association",
+    "sample": true,
+    "image": "/assets/img/children-joy-960.jpg",
+    "imageAlt": "A group of smiling children huddled close together.",
+    "summary": "A clearer, safer, bilingual website to keep you informed, bring people together and share the mission of Kimia Na Motema.",
+    "body": "Since 2014, La Paix du Cœur / Kimia Na Motema has served orphans, widows and people in need. This new website is here to tell that journey better.\n\n## What's new?\n\n- **Our story**, from 2014 to today, as an interactive timeline.\n- **Our four areas of aid**, explained simply, with concrete ways to help.\n- **Volunteering**, with a form that takes your gifts into account.\n- **Secure online giving** (coming soon) and Interac e-Transfer.\n\n## A promise\n\nWe never show a child's face without consent, nor any exact location. That is why you will see many hand-made illustrations: they protect the most vulnerable."
+  }
+}

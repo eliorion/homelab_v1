@@ -1,0 +1,204 @@
+{
+  "fr": {
+    "metaTitle": "Notre histoire, de 2014 à aujourd'hui | La Paix du Cœur",
+    "description": "Frise interactive : de la fondation à Montréal en 2014 aux maraudes, ateliers et partenariats d'aujourd'hui. Le chemin de Kimia Na Motema, point par point.",
+    "title": "Notre histoire",
+    "intro": "De 2014 à aujourd'hui, le chemin de Kimia Na Motema, point par point. Choisissez une année ou filtrez par type d'action.",
+    "note": "Seule la fondation en 2014 à Montréal est confirmée. Les autres jalons sont des exemples à valider avec l'association.",
+    "categories": {
+      "fondation": "Fondation",
+      "collecte": "Collectes",
+      "maraude": "Maraudes",
+      "atelier": "Ateliers",
+      "partenariat": "Partenariats",
+      "international": "International",
+      "communaute": "Communauté",
+      "aujourdhui": "Aujourd'hui"
+    },
+    "milestones": [
+      {
+        "year": "2014",
+        "category": "fondation",
+        "sample": false,
+        "title": "Une vision voit le jour à Montréal",
+        "text": "Un groupe de chrétiens, touchés par le sort des orphelins, fonde La Paix du Cœur / Kimia Na Motema.",
+        "detail": "Tout commence par la prière et par une conviction : le cœur du Seigneur est tourné vers les plus faibles. L'association naît à Montréal pour apporter soutien et espérance aux orphelins."
+      },
+      {
+        "year": "2015",
+        "category": "collecte",
+        "sample": true,
+        "title": "Première collecte alimentaire",
+        "text": "Devant un supermarché, les premiers sacs de denrées sont recueillis pour des familles.",
+        "detail": "Les collectes en supermarché deviennent un rendez-vous régulier. [Date et chiffres à confirmer]"
+      },
+      {
+        "year": "2016",
+        "category": "maraude",
+        "sample": true,
+        "title": "Les premières maraudes",
+        "text": "Les soirs d'hiver, une petite équipe part à la rencontre des sans-abri avec soupe et café.",
+        "detail": "Ce qui commence avec quelques thermos devient une habitude de cœur : aller vers ceux que la ville oublie. [Date à confirmer]"
+      },
+      {
+        "year": "2018",
+        "category": "atelier",
+        "sample": true,
+        "title": "Lancement des ateliers de formation",
+        "text": "Ateliers, séminaires et conférences pour aider chacun à devenir autonome.",
+        "detail": "Budget, emploi, accompagnement scolaire : transmettre des savoirs pour que l'aide d'aujourd'hui ouvre l'autonomie de demain. [Date à confirmer]"
+      },
+      {
+        "year": "2019",
+        "category": "partenariat",
+        "sample": true,
+        "title": "Main dans la main avec d'autres associations",
+        "text": "Nous commençons à soutenir les projets d'autres œuvres socio-humanitaires.",
+        "detail": "Seul on va vite, ensemble on va loin : nous partageons dons et bénévoles avec des associations partenaires. [Partenaires à confirmer]"
+      },
+      {
+        "year": "2020",
+        "category": "collecte",
+        "sample": true,
+        "title": "Tenir bon pendant la pandémie",
+        "text": "Paniers livrés aux portes, appels aux personnes isolées, prière à distance.",
+        "detail": "Quand tout s'est arrêté, la solidarité a continué, autrement. [Détails à confirmer]"
+      },
+      {
+        "year": "2022",
+        "category": "maraude",
+        "sample": true,
+        "title": "Des maraudes dans plusieurs villes",
+        "text": "Les sorties de rue s'étendent à plusieurs villes du Canada, auprès des sans-abri, des orphelinats et des étudiants.",
+        "detail": "Des équipes locales se forment ailleurs au Canada. [Villes et année à confirmer]"
+      },
+      {
+        "year": "2024",
+        "category": "international",
+        "sample": true,
+        "title": "Un regard au-delà des frontières",
+        "text": "Soutien à des orphelins et à des veuves à l'international, avec des partenaires de confiance.",
+        "detail": "[Pays, partenaires et année à confirmer avec l'association]"
+      },
+      {
+        "year": "2026",
+        "category": "communaute",
+        "sample": true,
+        "title": "Un nouveau site, deux langues",
+        "text": "La mission se raconte désormais en français et en anglais, avec plus de transparence.",
+        "detail": "Notre nouveau site bilingue permet de s'inscrire comme bénévole, de suivre les événements et, bientôt, de donner en ligne en toute sécurité."
+      },
+      {
+        "year": "Aujourd'hui",
+        "category": "aujourdhui",
+        "sample": false,
+        "title": "Et aujourd'hui… la suite s'écrit avec vous",
+        "text": "Chaque bénévole, chaque don, chaque prière ajoute un point à la broderie.",
+        "detail": "Rejoignez l'équipe, soutenez une action, ou simplement priez pour nous."
+      }
+    ],
+    "ctaTitle": "Ajoutez votre point à la broderie",
+    "ctaText": "Notre histoire continue avec des bénévoles, des donateurs et des intercesseurs."
+  },
+  "en": {
+    "metaTitle": "Our story, from 2014 to today | La Paix du Cœur",
+    "description": "Interactive timeline: from our founding in Montréal in 2014 to today's street outreach, workshops and partnerships. The journey of Kimia Na Motema, stitch by stitch.",
+    "title": "Our story",
+    "intro": "From 2014 to today, the journey of Kimia Na Motema, stitch by stitch. Pick a year or filter by kind of action.",
+    "note": "Only the 2014 founding in Montréal is confirmed. The other milestones are samples to be checked with the association.",
+    "categories": {
+      "fondation": "Founding",
+      "collecte": "Food drives",
+      "maraude": "Street outreach",
+      "atelier": "Workshops",
+      "partenariat": "Partnerships",
+      "international": "International",
+      "communaute": "Community",
+      "aujourdhui": "Today"
+    },
+    "milestones": [
+      {
+        "year": "2014",
+        "category": "fondation",
+        "sample": false,
+        "title": "A vision is born in Montréal",
+        "text": "A group of Christians, moved by the plight of orphans, founds La Paix du Cœur / Kimia Na Motema.",
+        "detail": "It all begins with prayer and a conviction: the Lord's heart turns toward the weakest. The association is born in Montréal to bring support and hope to orphans."
+      },
+      {
+        "year": "2015",
+        "category": "collecte",
+        "sample": true,
+        "title": "First food drive",
+        "text": "Outside a grocery store, the first bags of food are collected for families.",
+        "detail": "Grocery-store food drives become a regular event. [Date and figures to confirm]"
+      },
+      {
+        "year": "2016",
+        "category": "maraude",
+        "sample": true,
+        "title": "Our first street outreach",
+        "text": "On winter evenings, a small team goes out to meet homeless people with soup and coffee.",
+        "detail": "What starts with a few thermoses becomes a habit of the heart: going toward those the city forgets. [Date to confirm]"
+      },
+      {
+        "year": "2018",
+        "category": "atelier",
+        "sample": true,
+        "title": "Training workshops begin",
+        "text": "Workshops, seminars and talks to help people become self-reliant.",
+        "detail": "Budgeting, jobs, homework support: passing on skills so that today's help opens the door to tomorrow's independence. [Date to confirm]"
+      },
+      {
+        "year": "2019",
+        "category": "partenariat",
+        "sample": true,
+        "title": "Hand in hand with other charities",
+        "text": "We begin supporting the projects of other social and humanitarian groups.",
+        "detail": "Alone we go fast, together we go far: we share donations and volunteers with partner associations. [Partners to confirm]"
+      },
+      {
+        "year": "2020",
+        "category": "collecte",
+        "sample": true,
+        "title": "Holding on through the pandemic",
+        "text": "Hampers delivered to doorsteps, calls to isolated people, prayer at a distance.",
+        "detail": "When everything stopped, solidarity carried on, differently. [Details to confirm]"
+      },
+      {
+        "year": "2022",
+        "category": "maraude",
+        "sample": true,
+        "title": "Outreach in several cities",
+        "text": "Street outreach grows to several Canadian cities, serving homeless people, orphanages and students.",
+        "detail": "Local teams form elsewhere in Canada. [Cities and year to confirm]"
+      },
+      {
+        "year": "2024",
+        "category": "international",
+        "sample": true,
+        "title": "Looking beyond our borders",
+        "text": "Support for orphans and widows abroad, through trusted partners.",
+        "detail": "[Countries, partners and year to confirm with the association]"
+      },
+      {
+        "year": "2026",
+        "category": "communaute",
+        "sample": true,
+        "title": "A new website, two languages",
+        "text": "The mission is now told in French and English, with more transparency.",
+        "detail": "Our new bilingual website lets you sign up to volunteer, follow events and, soon, give securely online."
+      },
+      {
+        "year": "Today",
+        "category": "aujourdhui",
+        "sample": false,
+        "title": "And today… the next chapter is written with you",
+        "text": "Every volunteer, every gift, every prayer adds a stitch to the embroidery.",
+        "detail": "Join the team, support an initiative, or simply pray for us."
+      }
+    ],
+    "ctaTitle": "Add your stitch to the embroidery",
+    "ctaText": "Our story continues with volunteers, donors and people who pray."
+  }
+}

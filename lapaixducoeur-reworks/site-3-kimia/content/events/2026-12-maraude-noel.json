@@ -1,0 +1,28 @@
+{
+  "fr": {
+    "slug": "maraude-veille-de-noel",
+    "title": "Maraude de la veille de Noël",
+    "venue": "Centre-ville de Montréal — point de rencontre communiqué aux bénévoles inscrits",
+    "summary": "Un soir de fête pour ceux qui n'en ont pas : soupe chaude, café, cadeaux et chants dans les rues de Montréal.",
+    "body": "Chaque 24 décembre, nous partons à la rencontre des personnes sans abri avec des sacs-cadeaux (tuque, mitaines, bas, chocolat, une carte écrite à la main).\n\nInscription obligatoire : le point de rencontre exact est envoyé aux bénévoles confirmés uniquement, pour la sécurité de tous.",
+    "start": "2026-12-24T18:00",
+    "end": "2026-12-24T22:00",
+    "category": "maraude",
+    "image": "/assets/illustrations/maraude-nuit.svg",
+    "sample": true,
+    "ticketUrl": ""
+  },
+  "en": {
+    "slug": "christmas-eve-street-outreach",
+    "title": "Christmas Eve street outreach",
+    "venue": "Downtown Montréal — meeting point shared with registered volunteers",
+    "summary": "A festive evening for those who have none: hot soup, coffee, gifts and carols on the streets of Montréal.",
+    "body": "Every December 24 we go out to meet people experiencing homelessness with gift bags (toque, mittens, socks, chocolate and a handwritten card).\n\nRegistration required: the exact meeting point is sent only to confirmed volunteers, for everyone's safety.",
+    "start": "2026-12-24T18:00",
+    "end": "2026-12-24T22:00",
+    "category": "maraude",
+    "image": "/assets/illustrations/maraude-nuit.svg",
+    "sample": true,
+    "ticketUrl": ""
+  }
+}

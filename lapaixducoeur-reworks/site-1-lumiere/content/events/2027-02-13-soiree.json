@@ -1,0 +1,30 @@
+{
+  "fr": {
+    "slug": "soiree-louange-et-partage",
+    "title": "Soirée louange et partage",
+    "summary": "Une soirée bénéfice de louange, de témoignages et de repas partagé au profit des orphelins.",
+    "location_name": "Église partenaire, Montréal [à confirmer]",
+    "image_alt": "Trois femmes rient ensemble autour d’une tasse de thé.",
+    "body": "Une soirée pour rendre grâce, entendre des nouvelles du terrain et partager un repas. Les profits soutiennent le volet orphelins de l’association.\n\nBillets sur Zeffy (contribution suggérée) [à confirmer].",
+    "start": "2027-02-13T18:30:00-05:00",
+    "end": "2027-02-13T21:30:00-05:00",
+    "locality": "Montréal",
+    "ticket_url": "https://www.zeffy.com/fr-CA/ticketing/a-configurer",
+    "image": "/img/elders.jpg",
+    "sample": true
+  },
+  "en": {
+    "slug": "worship-and-sharing-evening",
+    "title": "Worship and sharing evening",
+    "summary": "A benefit evening of worship, testimonies and a shared meal in support of orphans.",
+    "location_name": "Partner church, Montréal [to confirm]",
+    "image_alt": "Three women laugh together over a cup of tea.",
+    "body": "An evening to give thanks, hear news from the field and share a meal. Proceeds support the association’s work with orphans.\n\nTickets on Zeffy (suggested contribution) [to confirm].",
+    "start": "2027-02-13T18:30:00-05:00",
+    "end": "2027-02-13T21:30:00-05:00",
+    "locality": "Montréal",
+    "ticket_url": "https://www.zeffy.com/fr-CA/ticketing/a-configurer",
+    "image": "/img/elders.jpg",
+    "sample": true
+  }
+}

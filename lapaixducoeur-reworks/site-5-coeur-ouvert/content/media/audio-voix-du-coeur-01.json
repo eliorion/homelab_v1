@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "type": "audio",
+    "order": 1,
+    "sample": true,
+    "title": "Les voix du cœur — épisode 1 : « Tu comptes »",
+    "description": "Un bénévole raconte sa première maraude. Extrait d’exemple de quelques secondes.",
+    "audio_url": "/assets/audio/voix-du-coeur-episode-01-extrait.mp3",
+    "duration": "0:08",
+    "transcript": "[Musique douce]\n\nANIMATRICE — Bienvenue dans Les voix du cœur, le balado de La Paix du Cœur. Aujourd’hui, Samuel nous raconte sa toute première maraude.\n\nSAMUEL — J’avais peur de ne pas savoir quoi dire. Puis un homme m’a demandé mon prénom, et on a parlé une heure. En partant, il m’a dit : « Merci de m’avoir regardé. » Je n’ai jamais oublié.\n\n[Musique douce]\n\n(Transcription d’exemple — à confirmer)"
+  },
+  "en": {
+    "type": "audio",
+    "order": 1,
+    "sample": true,
+    "title": "Voices of the heart — episode 1: “You matter”",
+    "description": "A volunteer remembers his first outreach night. A sample clip a few seconds long.",
+    "audio_url": "/assets/audio/voix-du-coeur-episode-01-extrait.mp3",
+    "duration": "0:08",
+    "transcript": "[Soft music]\n\nHOST — Welcome to Voices of the heart, the La Paix du Cœur podcast. Today, Samuel tells us about his very first outreach night.\n\nSAMUEL — I was afraid I wouldn’t know what to say. Then a man asked my name, and we talked for an hour. As I left, he said: “Thank you for looking at me.” I’ve never forgotten.\n\n[Soft music]\n\n(Sample transcript — to confirm)"
+  }
+}

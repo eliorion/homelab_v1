@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Le vestiaire d’hiver",
+    "description": "Photo d’illustration [à remplacer par une photo de l’association].",
+    "image_alt": "Une tringle de manteaux et de vêtements chauds",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/clothing-768.jpg",
+    "date": "2026-09-12",
+    "sample": true
+  },
+  "en": {
+    "title": "The winter clothing room",
+    "description": "Illustrative photo [to be replaced with the charity’s own].",
+    "image_alt": "A rail of coats and warm clothing",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/clothing-768.jpg",
+    "date": "2026-09-12",
+    "sample": true
+  }
+}

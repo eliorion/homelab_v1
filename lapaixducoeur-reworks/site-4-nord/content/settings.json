@@ -1,0 +1,50 @@
+{
+  "fr": {
+    "site_name": "La Paix du Cœur",
+    "site_subname": "Kimia Na Motema",
+    "tagline": "Association chrétienne à Montréal depuis 2014 : maraudes, collectes alimentaires et entraide pour les orphelins, les veuves, les démunis et les sans-abri.",
+    "site_url": "https://lapaixducoeur.ca",
+    "email": "lapaixducoeur.ca@gmail.com",
+    "interac_email": "lapaixducoeur.ca@gmail.com",
+    "zeffy_donate_url": "",
+    "zeffy_tickets_url": "",
+    "calendar_google_public_url": "",
+    "calendar_ics_source": "",
+    "charity_number": "",
+    "founding_year": 2014,
+    "social": [
+      { "network": "Facebook", "url": "" },
+      { "network": "Instagram", "url": "" },
+      { "network": "YouTube", "url": "" }
+    ],
+    "verse_of_week": {
+      "text": "Celui qui a pitié du pauvre prête à YHWH, qui lui rendra son bienfait.",
+      "reference": "Proverbes 19:17"
+    },
+    "announcement": "Hiver 2026 : inscrivez-vous aux maraudes du jeudi soir — on fournit les tuques."
+  },
+  "en": {
+    "site_name": "La Paix du Cœur",
+    "site_subname": "Kimia Na Motema",
+    "tagline": "A Christian charity in Montréal since 2014: street outreach, food drives and mutual aid for orphans, widows, people in need and the homeless.",
+    "site_url": "https://lapaixducoeur.ca",
+    "email": "lapaixducoeur.ca@gmail.com",
+    "interac_email": "lapaixducoeur.ca@gmail.com",
+    "zeffy_donate_url": "",
+    "zeffy_tickets_url": "",
+    "calendar_google_public_url": "",
+    "calendar_ics_source": "",
+    "charity_number": "",
+    "founding_year": 2014,
+    "social": [
+      { "network": "Facebook", "url": "" },
+      { "network": "Instagram", "url": "" },
+      { "network": "YouTube", "url": "" }
+    ],
+    "verse_of_week": {
+      "text": "Whoever is kind to the poor lends to YHWH, and he will repay them for their deed.",
+      "reference": "Proverbs 19:17"
+    },
+    "announcement": "Winter 2026: sign up for our Thursday-night outreach walks. Toques provided."
+  }
+}

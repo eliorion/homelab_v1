@@ -1,0 +1,316 @@
+{
+  "fr": {
+    "title": "Transparence — gouvernance, rapport annuel et engagements",
+    "description": "Numéro d’organisme, conseil d’administration, rapport annuel, politique de protection et réponses sur les reçus fiscaux de La Paix du Cœur.",
+    "heading": "Transparence : chaque dollar, en pleine lumière",
+    "intro": "Vous nous confiez votre générosité. Voici comment nous sommes organisés, ce que nous faisons de chaque don et les engagements que nous prenons envers les personnes que nous servons.",
+    "identity_title": "Identité de l’organisme",
+    "identity": [
+      {
+        "label": "Nom légal",
+        "value": "L’association chrétienne La Paix du Cœur / Kimia Na Motema"
+      },
+      {
+        "label": "Fondation",
+        "value": "2014, Montréal (Québec)"
+      },
+      {
+        "label": "Statut",
+        "value": "Organisme chrétien à but non lucratif"
+      },
+      {
+        "label": "Numéro d’organisme de bienfaisance (ARC)",
+        "value": "[à confirmer]"
+      },
+      {
+        "label": "Numéro d’entreprise du Québec (NEQ)",
+        "value": "[à confirmer]"
+      },
+      {
+        "label": "Courriel",
+        "value": "lapaixducoeur.ca@gmail.com"
+      }
+    ],
+    "board_title": "Conseil d’administration",
+    "board_intro": "Les membres du conseil sont bénévoles et ne reçoivent aucune rémunération. Composition à confirmer par l’association.",
+    "board": [
+      {
+        "name": "Frère Ronny",
+        "role": "Fonction [à confirmer]"
+      },
+      {
+        "name": "[à confirmer]",
+        "role": "Présidence"
+      },
+      {
+        "name": "[à confirmer]",
+        "role": "Trésorerie"
+      },
+      {
+        "name": "[à confirmer]",
+        "role": "Secrétariat"
+      }
+    ],
+    "report_title": "Rapport annuel",
+    "report_intro": "Version web du rapport annuel. Les chiffres ci-dessous sont des exemples illustrant la présentation; ils seront remplacés par les états financiers de l’association.",
+    "highlights": [
+      {
+        "value": "48 600 $",
+        "label": "dons reçus"
+      },
+      {
+        "value": "86 %",
+        "label": "consacrés directement aux programmes"
+      },
+      {
+        "value": "0 $",
+        "label": "en salaires : 100 % bénévole"
+      },
+      {
+        "value": "42",
+        "label": "bénévoles actifs"
+      }
+    ],
+    "revenue_title": "D’où viennent les fonds",
+    "revenue": [
+      {
+        "label": "Dons de particuliers",
+        "pct": 64
+      },
+      {
+        "label": "Églises partenaires",
+        "pct": 22
+      },
+      {
+        "label": "Collectes et événements",
+        "pct": 10
+      },
+      {
+        "label": "Autres",
+        "pct": 4
+      }
+    ],
+    "expenses_title": "Comment ils sont utilisés",
+    "expenses": [
+      {
+        "label": "Programmes d’aide (4 domaines)",
+        "pct": 86
+      },
+      {
+        "label": "Ateliers et sensibilisation",
+        "pct": 6
+      },
+      {
+        "label": "Administration",
+        "pct": 5
+      },
+      {
+        "label": "Collecte de fonds",
+        "pct": 3
+      }
+    ],
+    "safeguarding_title": "Protection et récit éthique",
+    "safeguarding_intro": "Nous servons des enfants, des veuves et des personnes vulnérables. Leur sécurité et leur dignité passent avant toute communication.",
+    "commitments": [
+      {
+        "title": "Consentement d’abord",
+        "text": "Aucune photo ni histoire sans le consentement éclairé de la personne, ou de son tuteur pour un mineur. Il peut être retiré en tout temps."
+      },
+      {
+        "title": "Prénoms seulement",
+        "text": "Jamais de nom de famille, d’école, d’adresse ni de lieu précis."
+      },
+      {
+        "title": "L’espérance plutôt que la pitié",
+        "text": "Nous montrons la dignité, la joie et la résilience, jamais la détresse mise en scène."
+      },
+      {
+        "title": "Des bénévoles vérifiés",
+        "text": "Vérification des antécédents pour toute personne en contact avec des mineurs [à confirmer], et jamais un adulte seul avec un enfant."
+      },
+      {
+        "title": "Signaler une préoccupation",
+        "text": "Toute inquiétude peut être signalée en toute confidentialité à notre responsable de la protection [à confirmer]."
+      }
+    ],
+    "fraud_title": "Protégez-vous contre la fraude",
+    "fraud_text": "La Paix du Cœur ne vous demandera jamais de payer par carte-cadeau ou cryptomonnaie, et ne publie jamais ses coordonnées bancaires. En cas de doute, écrivez-nous à notre adresse officielle avant de donner.",
+    "faq_title": "Reçus fiscaux : vos questions",
+    "faq": [
+      {
+        "q": "Vais-je recevoir un reçu fiscal ?",
+        "a": "Les reçus officiels pour fins d’impôt seront émis si l’association est enregistrée auprès de l’Agence du revenu du Canada [si enregistré — à confirmer]. Avec Zeffy, le reçu est envoyé automatiquement par courriel."
+      },
+      {
+        "q": "Quand vais-je le recevoir ?",
+        "a": "Immédiatement pour un don en ligne via Zeffy. Pour les dons mensuels et les virements Interac, un reçu annuel est envoyé en février."
+      },
+      {
+        "q": "Les dons en nature donnent-ils droit à un reçu ?",
+        "a": "Selon les règles de l’ARC, certains dons en nature peuvent donner droit à un reçu s’ils sont évalués à leur juste valeur marchande. Écrivez-nous avant le don [à confirmer]."
+      },
+      {
+        "q": "Et si je donne par virement Interac ?",
+        "a": "Indiquez votre nom complet et votre adresse courriel dans le message du virement pour que nous puissions émettre votre reçu."
+      }
+    ],
+    "report_year": "2025"
+  },
+  "en": {
+    "title": "Transparency — governance, annual report and commitments",
+    "description": "Charity number, board of directors, annual report, safeguarding policy and answers about tax receipts at La Paix du Cœur.",
+    "heading": "Transparency: every dollar, in full light",
+    "intro": "You trust us with your generosity. Here is how we are organized, what we do with every gift, and the commitments we make to the people we serve.",
+    "identity_title": "Who we are, legally",
+    "identity": [
+      {
+        "label": "Legal name",
+        "value": "L’association chrétienne La Paix du Cœur / Kimia Na Motema"
+      },
+      {
+        "label": "Founded",
+        "value": "2014, Montréal, Québec"
+      },
+      {
+        "label": "Status",
+        "value": "Christian non-profit organization"
+      },
+      {
+        "label": "Registered charity number (CRA)",
+        "value": "[to confirm]"
+      },
+      {
+        "label": "Québec enterprise number (NEQ)",
+        "value": "[to confirm]"
+      },
+      {
+        "label": "Email",
+        "value": "lapaixducoeur.ca@gmail.com"
+      }
+    ],
+    "board_title": "Board of directors",
+    "board_intro": "Board members are volunteers and receive no pay. Membership to be confirmed by the association.",
+    "board": [
+      {
+        "name": "Brother Ronny",
+        "role": "Office [to confirm]"
+      },
+      {
+        "name": "[to confirm]",
+        "role": "Chair"
+      },
+      {
+        "name": "[to confirm]",
+        "role": "Treasurer"
+      },
+      {
+        "name": "[to confirm]",
+        "role": "Secretary"
+      }
+    ],
+    "report_title": "Annual report",
+    "report_intro": "The web edition of our annual report. The figures below are samples that show the layout; they will be replaced by the association’s financial statements.",
+    "highlights": [
+      {
+        "value": "$48,600",
+        "label": "in gifts received"
+      },
+      {
+        "value": "86%",
+        "label": "spent directly on programmes"
+      },
+      {
+        "value": "$0",
+        "label": "in salaries: 100% volunteer"
+      },
+      {
+        "value": "42",
+        "label": "active volunteers"
+      }
+    ],
+    "revenue_title": "Where the money comes from",
+    "revenue": [
+      {
+        "label": "Individual donors",
+        "pct": 64
+      },
+      {
+        "label": "Partner churches",
+        "pct": 22
+      },
+      {
+        "label": "Drives and events",
+        "pct": 10
+      },
+      {
+        "label": "Other",
+        "pct": 4
+      }
+    ],
+    "expenses_title": "How it is used",
+    "expenses": [
+      {
+        "label": "Aid programmes (4 areas)",
+        "pct": 86
+      },
+      {
+        "label": "Workshops and awareness",
+        "pct": 6
+      },
+      {
+        "label": "Administration",
+        "pct": 5
+      },
+      {
+        "label": "Fundraising",
+        "pct": 3
+      }
+    ],
+    "safeguarding_title": "Safeguarding and ethical storytelling",
+    "safeguarding_intro": "We serve children, widows and vulnerable people. Their safety and dignity come before any communication.",
+    "commitments": [
+      {
+        "title": "Consent first",
+        "text": "No photo or story without the informed consent of the person, or of their guardian for a minor. It can be withdrawn at any time."
+      },
+      {
+        "title": "First names only",
+        "text": "Never a surname, a school, an address or an exact location."
+      },
+      {
+        "title": "Hope, not pity",
+        "text": "We show dignity, joy and resilience — never staged distress."
+      },
+      {
+        "title": "Screened volunteers",
+        "text": "Background checks for anyone in contact with minors [to confirm], and never one adult alone with a child."
+      },
+      {
+        "title": "Raise a concern",
+        "text": "Any concern can be reported in confidence to our safeguarding lead [to confirm]."
+      }
+    ],
+    "fraud_title": "Protect yourself from fraud",
+    "fraud_text": "La Paix du Cœur will never ask you to pay with gift cards or cryptocurrency, and never publishes its bank details. If in doubt, write to our official address before giving.",
+    "faq_title": "Tax receipts: your questions",
+    "faq": [
+      {
+        "q": "Will I receive a tax receipt?",
+        "a": "Official receipts for income tax purposes will be issued if the association is registered with the Canada Revenue Agency [if registered — to confirm]. With Zeffy, the receipt is emailed automatically."
+      },
+      {
+        "q": "When will I receive it?",
+        "a": "Immediately for an online gift through Zeffy. For monthly gifts and Interac e-Transfers, a yearly receipt is sent in February."
+      },
+      {
+        "q": "Do gifts in kind qualify for a receipt?",
+        "a": "Under CRA rules, some gifts in kind can qualify if they are valued at fair market value. Please write to us before giving [to confirm]."
+      },
+      {
+        "q": "What if I give by Interac e-Transfer?",
+        "a": "Put your full name and email address in the transfer message so we can issue your receipt."
+      }
+    ],
+    "report_year": "2025"
+  }
+}

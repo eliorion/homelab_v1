@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "type": "video",
+    "category": "video",
+    "title": "Kimia Na Motema : notre mission en 2 minutes",
+    "youtubeId": "M7lc1UVf-VE",
+    "src": "/assets/illustrations/video-poster.svg",
+    "alt": "Affiche de la vidéo : un cœur brodé dans une couronne de feuilles.",
+    "caption": "Vidéo d'exemple — identifiant YouTube provisoire [à remplacer].",
+    "sample": true,
+    "order": 100
+  },
+  "en": {
+    "type": "video",
+    "category": "video",
+    "title": "Kimia Na Motema: our mission in 2 minutes",
+    "youtubeId": "M7lc1UVf-VE",
+    "src": "/assets/illustrations/video-poster.svg",
+    "alt": "Video poster: an embroidered heart inside a wreath of leaves.",
+    "caption": "Sample video — placeholder YouTube id [to replace].",
+    "sample": true,
+    "order": 100
+  }
+}

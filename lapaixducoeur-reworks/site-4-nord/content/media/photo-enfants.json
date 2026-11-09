@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Après-midi de jeux",
+    "description": "Photo d’illustration, publiée avec consentement [à remplacer].",
+    "image_alt": "Deux enfants qui rient en jouant dans l’herbe",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/children-play-1600.jpg",
+    "date": "2026-09-20",
+    "sample": true
+  },
+  "en": {
+    "title": "An afternoon of games",
+    "description": "Illustrative photo, published with consent [to be replaced].",
+    "image_alt": "Two children laughing as they play on the grass",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/children-play-1600.jpg",
+    "date": "2026-09-20",
+    "sample": true
+  }
+}

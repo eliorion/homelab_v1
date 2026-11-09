@@ -1,0 +1,30 @@
+{
+  "fr": {
+    "slug": "collecte-alimentaire-21-novembre",
+    "title": "Collecte alimentaire d’hiver",
+    "summary": "Accueillez les clients, recevez les dons et triez les denrées avec nous. Quarts de deux heures.",
+    "location_name": "Supermarché partenaire, Montréal [à confirmer]",
+    "image_alt": "Des bénévoles préparent des caisses de denrées.",
+    "body": "Nous serons présents toute la journée dans un supermarché partenaire. Inscrivez-vous pour un quart de deux heures : accueil des clients, réception des dons ou tri des denrées.\n\nAucune expérience nécessaire. Une courte formation est donnée sur place.",
+    "start": "2026-11-21T10:00:00-05:00",
+    "end": "2026-11-21T16:00:00-05:00",
+    "locality": "Montréal",
+    "ticket_url": "",
+    "image": "/img/food-bank-volunteers.jpg",
+    "sample": true
+  },
+  "en": {
+    "slug": "winter-food-drive-november-21",
+    "title": "Winter food drive",
+    "summary": "Welcome shoppers, receive donations and sort groceries with us. Two-hour shifts.",
+    "location_name": "Partner supermarket, Montréal [to confirm]",
+    "image_alt": "Volunteers pack crates of groceries.",
+    "body": "We will be at a partner supermarket all day. Sign up for a two-hour shift: welcoming shoppers, receiving donations or sorting groceries.\n\nNo experience needed. A short briefing is given on site.",
+    "start": "2026-11-21T10:00:00-05:00",
+    "end": "2026-11-21T16:00:00-05:00",
+    "locality": "Montréal",
+    "ticket_url": "",
+    "image": "/img/food-bank-volunteers.jpg",
+    "sample": true
+  }
+}

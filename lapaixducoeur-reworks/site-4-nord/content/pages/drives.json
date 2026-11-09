@@ -1,0 +1,70 @@
+{
+  "fr": {
+    "title": "Trouver une collecte alimentaire",
+    "meta_title": "Collectes alimentaires à Montréal — points de dépôt | La Paix du Cœur",
+    "meta_description": "Points de collecte alimentaire en épicerie à Montréal-Nord, Saint-Michel, Villeray et ailleurs : dates, heures et denrées les plus demandées.",
+    "eyebrow": "Collectes alimentaires",
+    "lead": "Passez à l’épicerie un jour de collecte, ajoutez un article à votre panier et déposez-le dans nos bacs en sortant.",
+    "steps": [
+      {
+        "title": "Choisissez un point",
+        "text": "Filtrez par quartier et repérez la prochaine date."
+      },
+      {
+        "title": "Faites vos courses",
+        "text": "Ajoutez un ou deux articles de la liste ci-dessous."
+      },
+      {
+        "title": "Déposez en sortant",
+        "text": "Nos bénévoles vous accueillent à la table de La Paix du Cœur."
+      }
+    ],
+    "needs": [
+      "Riz et pâtes",
+      "Légumineuses en conserve",
+      "Beurre d’arachide",
+      "Céréales",
+      "Lait UHT",
+      "Conserves de viande ou de poisson",
+      "Couches (tailles 4 à 6)",
+      "Produits d’hygiène"
+    ],
+    "avoid": "Merci d’éviter les produits maison, ouverts ou périmés, et le verre.",
+    "partner_title": "Vous gérez une épicerie ?",
+    "partner_text": "Devenez point de collecte : une table, deux bénévoles, une journée. Nous nous occupons de tout le reste."
+  },
+  "en": {
+    "title": "Find a food drive",
+    "meta_title": "Food drives in Montréal — drop-off points | La Paix du Cœur",
+    "meta_description": "Grocery-store food-drive drop-off points in Montréal-Nord, Saint-Michel, Villeray and beyond: dates, hours and most-needed items.",
+    "eyebrow": "Food drives",
+    "lead": "Shop on a food-drive day, add one item to your cart and drop it in our bins on your way out.",
+    "steps": [
+      {
+        "title": "Pick a location",
+        "text": "Filter by neighbourhood and find the next date."
+      },
+      {
+        "title": "Do your shopping",
+        "text": "Add one or two items from the list below."
+      },
+      {
+        "title": "Drop it off",
+        "text": "Our volunteers welcome you at the La Paix du Cœur table."
+      }
+    ],
+    "needs": [
+      "Rice and pasta",
+      "Canned legumes",
+      "Peanut butter",
+      "Cereal",
+      "Shelf-stable milk",
+      "Canned meat or fish",
+      "Diapers (sizes 4–6)",
+      "Hygiene products"
+    ],
+    "avoid": "Please avoid homemade, opened or expired products, and glass.",
+    "partner_title": "Run a grocery store?",
+    "partner_text": "Become a drop-off point: one table, two volunteers, one day. We take care of everything else."
+  }
+}

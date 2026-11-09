@@ -1,0 +1,118 @@
+{
+  "fr": {
+    "title": "Soutenir la mission",
+    "meta_title": "Faire un don — Zeffy ou Interac | La Paix du Cœur",
+    "meta_description": "Soutenez La Paix du Cœur par un don en ligne sécurisé (Zeffy) ou par virement Interac. Reçus fiscaux [si enregistré]. Dons en nature et bénévolat.",
+    "eyebrow": "Soutenir",
+    "lead": "«Votre soutien par les prières, e-mails et encouragement est une bénédiction. Vous pouvez de même soutenir notre association financièrement, matériellement ou humainement.»",
+    "amounts": [
+      {
+        "amount": 25,
+        "label": "une trousse « grand froid » : bas de laine, tuque, mitaines"
+      },
+      {
+        "amount": 50,
+        "label": "les repas chauds d’une équipe de maraude"
+      },
+      {
+        "amount": 100,
+        "label": "un panier d’épicerie pour une famille"
+      },
+      {
+        "amount": 250,
+        "label": "les fournitures scolaires de cinq orphelins"
+      }
+    ],
+    "amounts_note": "Équivalences données à titre d’exemple [à confirmer].",
+    "interac_steps": [
+      "Ouvrez votre service bancaire en ligne et choisissez « Virement Interac ».",
+      "Ajoutez le destinataire avec l’adresse ci-dessous.",
+      "Dans le message, indiquez votre nom et votre adresse postale si vous souhaitez un reçu [si enregistré]."
+    ],
+    "bank_note": "Coordonnées bancaires sur demande, par courriel. Nous ne les publions jamais en ligne pour vous protéger contre la fraude.",
+    "receipt_note": "Reçus fiscaux officiels de l’ARC émis automatiquement [si enregistré]. Numéro d’organisme : [à confirmer].",
+    "in_kind": [
+      "Manteaux, bottes et mitaines (adultes et enfants)",
+      "Bas de laine et tuques neufs",
+      "Denrées non périssables",
+      "Fournitures scolaires",
+      "Produits d’hygiène et couches"
+    ],
+    "faq": [
+      {
+        "q": "Mon don est-il sécurisé ?",
+        "a": "Oui. Les dons en ligne passent par Zeffy, une plateforme canadienne qui ne nous transmet jamais vos données de carte."
+      },
+      {
+        "q": "Pourquoi Zeffy ?",
+        "a": "Zeffy est gratuit pour les organismes : aucuns frais ne sont retenus sur votre don. La plateforme propose une contribution volontaire, que vous pouvez mettre à 0 $."
+      },
+      {
+        "q": "Puis-je donner chaque mois ?",
+        "a": "Oui, le formulaire Zeffy permet un don mensuel, modifiable ou annulable en tout temps."
+      },
+      {
+        "q": "Est-ce que je recevrai un reçu fiscal ?",
+        "a": "Si l’association est enregistrée auprès de l’ARC, oui : le reçu est envoyé par courriel [à confirmer]."
+      }
+    ]
+  },
+  "en": {
+    "title": "Support the mission",
+    "meta_title": "Give — Zeffy or Interac | La Paix du Cœur",
+    "meta_description": "Support La Paix du Cœur with a secure online gift (Zeffy) or an Interac e-Transfer. Tax receipts [if registered]. In-kind gifts and volunteering.",
+    "eyebrow": "Give",
+    "lead": "“Your support through prayer, emails and encouragement is a blessing. You can also support our association financially, materially or by giving your time.”",
+    "amounts": [
+      {
+        "amount": 25,
+        "label": "one “deep cold” kit: wool socks, a toque, mittens"
+      },
+      {
+        "amount": 50,
+        "label": "hot meals for one outreach team"
+      },
+      {
+        "amount": 100,
+        "label": "a grocery basket for one family"
+      },
+      {
+        "amount": 250,
+        "label": "school supplies for five orphans"
+      }
+    ],
+    "amounts_note": "Examples of what a gift can cover [to confirm].",
+    "interac_steps": [
+      "Open your online banking and choose “Interac e-Transfer”.",
+      "Add a recipient using the address below.",
+      "In the message, include your name and mailing address if you would like a receipt [if registered]."
+    ],
+    "bank_note": "Bank details on request, by email. We never publish them online, to protect you from fraud.",
+    "receipt_note": "Official CRA tax receipts issued automatically [if registered]. Registration number: [to confirm].",
+    "in_kind": [
+      "Coats, boots and mittens (adults and children)",
+      "New wool socks and toques",
+      "Non-perishable food",
+      "School supplies",
+      "Hygiene products and diapers"
+    ],
+    "faq": [
+      {
+        "q": "Is my gift secure?",
+        "a": "Yes. Online gifts go through Zeffy, a Canadian platform that never shares your card details with us."
+      },
+      {
+        "q": "Why Zeffy?",
+        "a": "Zeffy is free for charities: no fees are taken from your gift. The platform suggests an optional tip, which you can set to $0."
+      },
+      {
+        "q": "Can I give monthly?",
+        "a": "Yes, the Zeffy form offers monthly giving, which you can change or cancel at any time."
+      },
+      {
+        "q": "Will I get a tax receipt?",
+        "a": "If the association is registered with the CRA, yes: the receipt is emailed to you [to confirm]."
+      }
+    ]
+  }
+}

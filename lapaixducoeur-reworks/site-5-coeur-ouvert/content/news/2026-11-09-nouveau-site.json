@@ -1,0 +1,26 @@
+{
+  "fr": {
+    "slug": "un-nouveau-site-bilingue",
+    "title": "Un nouveau site, en français et en anglais",
+    "date": "2026-11-09",
+    "category": "Association",
+    "author": "L’équipe de La Paix du Cœur",
+    "sample": true,
+    "excerpt": "Dons en ligne sécurisés, calendrier, vidéos sous-titrées, cartes à partager : voici ce qui change.",
+    "image": "/assets/img/children-play.jpg",
+    "image_alt": "Deux enfants rient en jouant dans l’herbe",
+    "body": "Notre site fait peau neuve. Il est désormais bilingue, plus rapide et plus sûr.\n\n## Ce qui change\n\n- **Dons en ligne** sécurisés par Zeffy, sans frais pour l’association\n- **Calendrier** des maraudes et des collectes, à ajouter à votre agenda\n- **Vidéos** sous-titrées et **balado** avec transcription\n- **Cartes à partager** pour faire connaître la mission\n\n> Nous ne publions plus nos coordonnées bancaires en ligne : elles sont disponibles sur demande."
+  },
+  "en": {
+    "slug": "a-new-bilingual-website",
+    "title": "A new website, in French and English",
+    "date": "2026-11-09",
+    "category": "Association",
+    "author": "The La Paix du Cœur team",
+    "sample": true,
+    "excerpt": "Secure online giving, a calendar, captioned videos, shareable cards: here’s what’s new.",
+    "image": "/assets/img/children-play.jpg",
+    "image_alt": "Two children laughing as they play in the grass",
+    "body": "Our website has a new look. It is now bilingual, faster and safer.\n\n## What’s new\n\n- **Online giving** secured by Zeffy, at no cost to the association\n- A **calendar** of outreach nights and food drives you can add to your own\n- Captioned **videos** and a **podcast** with transcript\n- **Shareable cards** to spread the word about the mission\n\n> We no longer publish our bank details online: they are available on request."
+  }
+}

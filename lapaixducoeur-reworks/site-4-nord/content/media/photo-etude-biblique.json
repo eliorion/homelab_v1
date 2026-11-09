@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Étude biblique du mardi",
+    "description": "Photo d’illustration [à remplacer par une photo de l’association].",
+    "image_alt": "Un groupe assis en cercle autour d’une Bible ouverte",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/bible-study-740.jpg",
+    "date": "2026-08-30",
+    "sample": true
+  },
+  "en": {
+    "title": "Tuesday Bible study",
+    "description": "Illustrative photo [to be replaced with the charity’s own].",
+    "image_alt": "A group sitting in a circle around an open Bible",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/bible-study-740.jpg",
+    "date": "2026-08-30",
+    "sample": true
+  }
+}

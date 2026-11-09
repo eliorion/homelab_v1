@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "communaute",
+    "src": "/assets/img/elders-960.jpg",
+    "title": "Entre amies",
+    "alt": "Trois femmes âgées rient ensemble autour d'un thé.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 9
+  },
+  "en": {
+    "type": "photo",
+    "category": "communaute",
+    "src": "/assets/img/elders-960.jpg",
+    "title": "Among friends",
+    "alt": "Three older women laughing together over tea.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 9
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "fr": {
+    "title": "Une œuvre de foi, enracinée à Montréal",
+    "meta_title": "À propos — La Paix du Cœur / Kimia Na Motema",
+    "meta_description": "Association chrétienne fondée à Montréal en 2014 : notre histoire, notre mission, nos valeurs et notre engagement de récit éthique.",
+    "eyebrow": "À propos",
+    "lead": "« Kimia na motema » veut dire « la paix du cœur » en lingala. C’est ce que nous voulons apporter, une rencontre à la fois.",
+    "about": "L’association chrétienne La Paix du Cœur / Kimia Na Motema est une œuvre inspirée par le Seigneur Yéhoshoua, portée par un groupe de chrétiens animés par l’amour d’Elohim et la compassion envers les personnes démunies. Nous œuvrons humblement et de manière désintéressée pour la seule gloire d’Elohim. Fondée en 2014 à Montréal (Canada), cette vision a vu le jour afin d’apporter soutien et espérance aux orphelins.",
+    "mission": "Par la grâce du Seigneur, le Pourvoyeur et le Rémunérateur de ceux qui le cherchent, l’association chrétienne La Paix du Cœur a pour mission de révéler aux nations le Cœur du Seigneur, tourné vers les plus faibles, les veuves, les veufs, les orphelins, les démunis et les sans-abri, sans distinction de langue, de couleur ou de race. Œuvrant dans un esprit d’amour et de service, cette association chrétienne à but non lucratif offre tout gratuitement, pour la seule gloire d’Elohim.",
+    "values": [
+      {
+        "title": "Dignité",
+        "text": "Nous montrons l’espoir plutôt que le manque. Prénoms seulement, jamais de lieu précis, toujours avec consentement."
+      },
+      {
+        "title": "Proximité",
+        "text": "Nous agissons dans nos rues et nos quartiers, avec des équipes à taille humaine."
+      },
+      {
+        "title": "Gratuité",
+        "text": "Tout ce que nous offrons est gratuit, sans condition et sans distinction de langue, de couleur ou de race."
+      },
+      {
+        "title": "Prière",
+        "text": "Chaque action commence et se termine dans la prière. Nous servons pour la seule gloire d’Elohim."
+      }
+    ],
+    "timeline": [
+      {
+        "year": "2014",
+        "text": "Fondation de l’association à Montréal."
+      },
+      {
+        "year": "[à confirmer]",
+        "text": "Premières maraudes dans les rues du centre-ville."
+      },
+      {
+        "year": "[à confirmer]",
+        "text": "Premières collectes alimentaires en épicerie."
+      },
+      {
+        "year": "2026",
+        "text": "Lancement du calendrier en ligne et des trousses d’organisation."
+      }
+    ],
+    "team_note": "Frère Ronny [rôle à confirmer] et une équipe de bénévoles. La composition du conseil d’administration sera publiée ici [à confirmer].",
+    "legal_note": "Organisme à but non lucratif. Numéro d’organisme de bienfaisance (ARC) : [à confirmer]."
+  },
+  "en": {
+    "title": "A work of faith, rooted in Montréal",
+    "meta_title": "About us — La Paix du Cœur / Kimia Na Motema",
+    "meta_description": "A Christian charity founded in Montréal in 2014: our story, our mission, our values and our ethical storytelling commitment.",
+    "eyebrow": "About us",
+    "lead": "“Kimia na motema” means “peace of the heart” in Lingala. That is what we hope to bring, one encounter at a time.",
+    "about": "The Christian association La Paix du Cœur / Kimia Na Motema is a work inspired by the Lord Yehoshua (Jesus), carried by a group of Christians moved by the love of Elohim and by compassion for people in need. We serve humbly and selflessly, for the glory of Elohim alone. Founded in 2014 in Montréal, Canada, this vision was born to bring support and hope to orphans.",
+    "mission": "By the grace of the Lord, the Provider and Rewarder of those who seek him, the Christian association La Paix du Cœur’s mission is to reveal to the nations the Heart of the Lord, turned toward the weakest: widows, widowers, orphans, the poor and the homeless, regardless of language, colour or race. Working in a spirit of love and service, this non-profit Christian association offers everything free of charge, for the glory of Elohim alone.",
+    "values": [
+      {
+        "title": "Dignity",
+        "text": "We show hope rather than need. First names only, never an exact location, always with consent."
+      },
+      {
+        "title": "Proximity",
+        "text": "We act in our own streets and neighbourhoods, in small, personal teams."
+      },
+      {
+        "title": "Free of charge",
+        "text": "Everything we offer is free, unconditional and regardless of language, colour or race."
+      },
+      {
+        "title": "Prayer",
+        "text": "Every activity begins and ends in prayer. We serve for the glory of Elohim alone."
+      }
+    ],
+    "timeline": [
+      {
+        "year": "2014",
+        "text": "The association is founded in Montréal."
+      },
+      {
+        "year": "[to confirm]",
+        "text": "First outreach walks in downtown streets."
+      },
+      {
+        "year": "[to confirm]",
+        "text": "First grocery-store food drives."
+      },
+      {
+        "year": "2026",
+        "text": "Launch of the online calendar and organizer toolkits."
+      }
+    ],
+    "team_note": "Brother Ronny [role to confirm] and a team of volunteers. The board of directors will be listed here [to confirm].",
+    "legal_note": "Non-profit organization. CRA charitable registration number: [to confirm]."
+  }
+}

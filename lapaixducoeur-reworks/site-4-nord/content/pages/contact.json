@@ -1,0 +1,34 @@
+{
+  "fr": {
+    "title": "Nous écrire",
+    "meta_title": "Contact — La Paix du Cœur",
+    "meta_description": "Écrivez à La Paix du Cœur pour le bénévolat, une collecte, un partenariat avec votre église, école ou entreprise, ou une intention de prière.",
+    "eyebrow": "Contact",
+    "lead": "Une question, une idée de collecte, une intention de prière ? Nous lisons chaque message et répondons généralement sous quelques jours [délai à confirmer].",
+    "subjects": [
+      "Bénévolat",
+      "Organiser une collecte",
+      "Partenariat (église, école, entreprise)",
+      "Intention de prière",
+      "Don ou reçu fiscal",
+      "Médias",
+      "Autre"
+    ]
+  },
+  "en": {
+    "title": "Write to us",
+    "meta_title": "Contact — La Paix du Cœur",
+    "meta_description": "Write to La Paix du Cœur about volunteering, a food drive, a partnership with your church, school or business, or a prayer request.",
+    "eyebrow": "Contact",
+    "lead": "A question, a food-drive idea, a prayer request? We read every message and usually reply within a few days [timing to confirm].",
+    "subjects": [
+      "Volunteering",
+      "Organizing a food drive",
+      "Partnership (church, school, business)",
+      "Prayer request",
+      "Donation or tax receipt",
+      "Media",
+      "Other"
+    ]
+  }
+}

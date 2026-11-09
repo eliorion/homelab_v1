@@ -1,0 +1,26 @@
+{
+  "fr": {
+    "slug": "abonnez-vous-au-calendrier",
+    "title": "Nouveau : abonnez-vous à notre calendrier",
+    "summary": "Maraudes, collectes et soirées de prière s’affichent maintenant directement dans votre agenda.",
+    "image_alt": "Trois femmes âgées rient ensemble autour d’une tasse de thé",
+    "author": "Équipe La Paix du Cœur",
+    "body": "Plus besoin de revenir sur le site pour vérifier les dates : notre calendrier est maintenant offert en **abonnement**.\n\nAjoutez-le une fois à Google Agenda, Apple Calendrier ou Outlook, et chaque nouvelle activité apparaîtra d’elle-même.\n\nVous préférez ne rien manquer d’un seul événement ? Chaque page d’événement a aussi son bouton « Ajouter à l’agenda ».",
+    "date": "2026-11-08",
+    "category": "vie-asso",
+    "image": "/assets/img/elders-1024.jpg",
+    "sample": true
+  },
+  "en": {
+    "slug": "subscribe-to-our-calendar",
+    "title": "New: subscribe to our calendar",
+    "summary": "Outreach walks, food drives and prayer evenings now appear right in your own calendar.",
+    "image_alt": "Three older women laughing together over a cup of tea",
+    "author": "The La Paix du Cœur team",
+    "body": "No need to come back to the site to check dates: our calendar is now available as a **subscription**.\n\nAdd it once to Google Calendar, Apple Calendar or Outlook, and every new activity will show up on its own.\n\nOnly interested in one event? Every event page also has its own “Add to calendar” button.",
+    "date": "2026-11-08",
+    "category": "vie-asso",
+    "image": "/assets/img/elders-1024.jpg",
+    "sample": true
+  }
+}

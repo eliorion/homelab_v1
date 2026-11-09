@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "illustration",
+    "category": "maraude",
+    "src": "/assets/illustrations/maraude-nuit.svg",
+    "title": "Maraude du soir",
+    "alt": "Illustration : une ville la nuit, un thermos et une tasse fumante devant un sac décoré d'un cœur.",
+    "caption": "Illustration originale, faite main pour le site",
+    "order": 2
+  },
+  "en": {
+    "type": "illustration",
+    "category": "maraude",
+    "src": "/assets/illustrations/maraude-nuit.svg",
+    "title": "Evening outreach",
+    "alt": "Illustration: a city at night, a thermos and a steaming cup in front of a bag decorated with a heart.",
+    "caption": "Original hand-made illustration for the website",
+    "order": 2
+  }
+}

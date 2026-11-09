@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "title": "Une soirée de maraude (vidéo d’exemple)",
+    "caption": "Trois minutes aux côtés de nos bénévoles. Identifiant YouTube d’exemple, à remplacer.",
+    "alt": "Des bénévoles préparent des denrées avant une maraude.",
+    "transcript": "",
+    "type": "video",
+    "youtube_id": "aqz-KE-bpKQ",
+    "image": "/img/food-bank-volunteers.jpg",
+    "date": "2026-10-25",
+    "sample": true
+  },
+  "en": {
+    "title": "An evening of street outreach (sample video)",
+    "caption": "Three minutes alongside our volunteers. Sample YouTube ID, to replace.",
+    "alt": "Volunteers prepare groceries before an outreach round.",
+    "transcript": "",
+    "type": "video",
+    "youtube_id": "aqz-KE-bpKQ",
+    "image": "/img/food-bank-volunteers.jpg",
+    "date": "2026-10-25",
+    "sample": true
+  }
+}

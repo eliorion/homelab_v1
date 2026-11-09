@@ -1,0 +1,18 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 2,
+    "sample": false,
+    "title": "Visiter les veuves.",
+    "image": "/assets/img/widows.jpg",
+    "alt": "Deux femmes âgées assises devant un mur de briques"
+  },
+  "en": {
+    "type": "photo",
+    "order": 2,
+    "sample": false,
+    "title": "Visiting widows.",
+    "image": "/assets/img/widows.jpg",
+    "alt": "Two older women sitting in front of a brick wall"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "fr": {
+    "slug": "atelier-cv-et-emploi-16-janvier",
+    "title": "Atelier : CV, entrevue et premier emploi",
+    "summary": "Écrire son CV québécois et se préparer à une entrevue, accompagné d’un mentor.",
+    "address": "Salle communautaire, Montréal-Nord [adresse à confirmer]",
+    "meeting_point": "Entrée principale",
+    "image_alt": "Une allée de bibliothèque bordée de rayonnages de livres",
+    "body": "Pensé pour les jeunes, les nouveaux arrivants et les parents qui retournent sur le marché du travail.\n\nChaque participant repart avec un CV révisé et une simulation d’entrevue. Des ordinateurs portables sont prêtés sur place [à confirmer].\n\n**Vous êtes professionnel·le RH ou gestionnaire ?** Devenez mentor pour un après-midi.",
+    "bring": [
+      "Votre CV actuel, même incomplet",
+      "Une clé USB si vous en avez une"
+    ],
+    "type": "atelier",
+    "start": "2027-01-16T13:30",
+    "end": "2027-01-16T16:30",
+    "neighbourhood": "montreal-nord",
+    "image": "/assets/img/library-768.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "mentor",
+        "role_fr": "Mentor CV (1 personne pour 3 participants)",
+        "role_en": "CV mentor (1 per 3 participants)",
+        "start": "2027-01-16T13:30",
+        "end": "2027-01-16T16:30",
+        "spots": 5,
+        "taken": 2
+      }
+    ]
+  },
+  "en": {
+    "slug": "cv-and-jobs-workshop-january-16",
+    "title": "Workshop: CVs, interviews and first jobs",
+    "summary": "Write a Québec-style CV and prepare for interviews with a mentor at your side.",
+    "address": "Community hall, Montréal-Nord [address to confirm]",
+    "meeting_point": "Main entrance",
+    "image_alt": "A library aisle lined with bookshelves",
+    "body": "Designed for young people, newcomers and parents returning to work.\n\nEvery participant leaves with a revised CV and a mock interview. Laptops can be borrowed on site [to confirm].\n\n**Work in HR or management?** Become a mentor for an afternoon.",
+    "bring": [
+      "Your current CV, even if incomplete",
+      "A USB key if you have one"
+    ],
+    "type": "atelier",
+    "start": "2027-01-16T13:30",
+    "end": "2027-01-16T16:30",
+    "neighbourhood": "montreal-nord",
+    "image": "/assets/img/library-768.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "mentor",
+        "role_fr": "Mentor CV (1 personne pour 3 participants)",
+        "role_en": "CV mentor (1 per 3 participants)",
+        "start": "2027-01-16T13:30",
+        "end": "2027-01-16T16:30",
+        "spots": 5,
+        "taken": 2
+      }
+    ]
+  }
+}

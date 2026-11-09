@@ -1,0 +1,42 @@
+{
+  "fr": {
+    "slug": "soiree-de-priere-4-decembre",
+    "title": "Soirée de prière et de louange pour Montréal",
+    "summary": "Prier ensemble pour les orphelins, les veuves et les personnes de la rue avant l’hiver.",
+    "address": "Église partenaire, secteur Villeray [adresse à confirmer]",
+    "meeting_point": "Accueil à l’entrée principale",
+    "image_alt": "Un groupe assis en cercle autour d’une Bible ouverte",
+    "body": "«La religion pure et sans souillure devant notre Elohîm et Père, c’est de visiter les orphelins et les veuves dans leurs tribulations…» — Yaacov (Jacques) 1:27\n\nUne soirée simple : louange, lecture des Écritures et prière pour chacune de nos actions de l’hiver. Nous prierons nommément pour les équipes de maraude et pour les familles accompagnées (prénoms seulement, avec leur accord).\n\nOuvert à toutes et à tous, quelle que soit votre Église.",
+    "bring": [
+      "Votre Bible, si vous le souhaitez"
+    ],
+    "type": "culte",
+    "start": "2026-12-04T19:00",
+    "end": "2026-12-04T21:00",
+    "neighbourhood": "villeray",
+    "image": "/assets/img/bible-study-740.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": []
+  },
+  "en": {
+    "slug": "prayer-evening-december-4",
+    "title": "Evening of prayer and worship for Montréal",
+    "summary": "Praying together for orphans, widows and people on the street before winter sets in.",
+    "address": "Partner church, Villeray area [address to confirm]",
+    "meeting_point": "Welcome desk at the main entrance",
+    "image_alt": "A group sitting in a circle around an open Bible",
+    "body": "\"Religion that is pure and undefiled before our Elohim and Father is this: to visit orphans and widows in their affliction…\" — James 1:27\n\nA simple evening: worship, Scripture reading and prayer for each of our winter activities. We will pray by name for the outreach teams and for the families we walk alongside (first names only, with their consent).\n\nEveryone is welcome, whatever your church.",
+    "bring": [
+      "Your Bible, if you like"
+    ],
+    "type": "culte",
+    "start": "2026-12-04T19:00",
+    "end": "2026-12-04T21:00",
+    "neighbourhood": "villeray",
+    "image": "/assets/img/bible-study-740.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": []
+  }
+}

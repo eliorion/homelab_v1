@@ -1,0 +1,78 @@
+{
+  "fr": {
+    "metaTitle": "Ateliers de formation gratuits à Montréal | La Paix du Cœur",
+    "description": "Ateliers, séminaires, conférences et campagnes de sensibilisation gratuits : budget, emploi, aide aux devoirs, cuisine. Pour devenir plus autonome.",
+    "title": "Ateliers de formation",
+    "intro": "Donner un poisson, c'est bien. Apprendre à pêcher ensemble, c'est mieux. Nos ateliers gratuits aident chacun à devenir plus autonome.",
+    "formatsTitle": "Quatre formats",
+    "formats": [
+      {
+        "title": "Ateliers",
+        "text": "En petit groupe, pratiques, pour repartir avec un outil concret."
+      },
+      {
+        "title": "Séminaires",
+        "text": "Une demi-journée pour approfondir un thème avec des intervenants."
+      },
+      {
+        "title": "Conférences",
+        "text": "Des témoignages et des experts pour inspirer et informer."
+      },
+      {
+        "title": "Campagnes de sensibilisation",
+        "text": "Dans les églises, les écoles et la rue, pour faire connaître les besoins des plus faibles."
+      }
+    ],
+    "upcomingTitle": "Prochains ateliers",
+    "upcomingIntro": "Gratuits, ouverts à tous. Inscription conseillée.",
+    "themesTitle": "Thèmes que nous proposons",
+    "themes": [
+      "Budget familial",
+      "CV et entrevue",
+      "Aide aux devoirs",
+      "Cuisine économique",
+      "Démarches d'installation au Québec",
+      "Foi et espérance dans l'épreuve"
+    ],
+    "teachTitle": "Vous avez un savoir à partager ?",
+    "teachText": "Comptable, cuisinière, enseignant, conseillère en emploi… Proposez un atelier : nous vous aidons à le préparer."
+  },
+  "en": {
+    "metaTitle": "Free training workshops in Montréal | La Paix du Cœur",
+    "description": "Free workshops, seminars, talks and awareness campaigns: budgeting, jobs, homework help, cooking. To help people become more self-reliant.",
+    "title": "Training workshops",
+    "intro": "Giving a fish is good. Learning to fish together is better. Our free workshops help people become more self-reliant.",
+    "formatsTitle": "Four formats",
+    "formats": [
+      {
+        "title": "Workshops",
+        "text": "Small, hands-on groups where you leave with a practical tool."
+      },
+      {
+        "title": "Seminars",
+        "text": "Half a day to explore a topic in depth with guest speakers."
+      },
+      {
+        "title": "Talks",
+        "text": "Testimonies and experts to inspire and inform."
+      },
+      {
+        "title": "Awareness campaigns",
+        "text": "In churches, schools and on the street, to make the needs of the most vulnerable known."
+      }
+    ],
+    "upcomingTitle": "Upcoming workshops",
+    "upcomingIntro": "Free and open to all. Registration recommended.",
+    "themesTitle": "Topics we offer",
+    "themes": [
+      "Family budgeting",
+      "Résumés and interviews",
+      "Homework help",
+      "Affordable cooking",
+      "Settling in Québec: first steps",
+      "Faith and hope through hardship"
+    ],
+    "teachTitle": "Have a skill to share?",
+    "teachText": "Accountant, cook, teacher, career counsellor… Suggest a workshop and we will help you prepare it."
+  }
+}

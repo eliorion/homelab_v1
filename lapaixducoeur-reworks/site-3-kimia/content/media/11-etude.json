@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "foi",
+    "src": "/assets/img/bible-study-740.jpg",
+    "title": "Étude biblique",
+    "alt": "Un groupe assis en cercle autour d'une grande Bible ouverte.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 11
+  },
+  "en": {
+    "type": "photo",
+    "category": "foi",
+    "src": "/assets/img/bible-study-740.jpg",
+    "title": "Bible study",
+    "alt": "A group seated in a circle around a large open Bible.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 11
+  }
+}

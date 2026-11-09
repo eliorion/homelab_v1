@@ -1,0 +1,18 @@
+{
+  "fr": {
+    "meta_title": "Événements — collectes, maraudes, prière | La Paix du Cœur",
+    "meta_description": "Collectes alimentaires, maraudes, soirées de prière et ateliers gratuits à Montréal : tous les prochains rendez-vous de La Paix du Cœur, à ajouter à votre agenda.",
+    "kicker": "Agenda",
+    "title": "Venez, et voyez",
+    "intro": "Collectes, maraudes, soirées de prière, ateliers : chaque rendez-vous est ouvert à tous. Ajoutez-les à votre agenda en un clic.",
+    "empty": "Aucun événement à venir pour le moment. Revenez bientôt !"
+  },
+  "en": {
+    "meta_title": "Events — food drives, outreach, prayer | La Paix du Cœur",
+    "meta_description": "Food drives, street outreach, prayer evenings and free workshops in Montréal: every upcoming La Paix du Cœur date, ready to add to your calendar.",
+    "kicker": "Calendar",
+    "title": "Come and see",
+    "intro": "Food drives, street outreach, prayer evenings, workshops: every date is open to all. Add them to your calendar in one click.",
+    "empty": "No upcoming events right now. Check back soon!"
+  }
+}

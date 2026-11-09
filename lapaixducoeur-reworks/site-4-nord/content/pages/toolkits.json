@@ -1,0 +1,226 @@
+{
+  "fr": {
+    "title": "Trousses pour organiser votre collecte",
+    "meta_title": "Trousses pour églises, écoles et entreprises | La Paix du Cœur",
+    "meta_description": "Organisez une collecte ou une activité solidaire : idées, listes de vérification à imprimer et textes pour réseaux sociaux, pour églises, écoles et entreprises.",
+    "eyebrow": "Trousses",
+    "lead": "Tout ce qu’il faut pour mobiliser votre milieu : des idées éprouvées, une liste de vérification à imprimer et des textes prêts à publier.",
+    "audiences": [
+      {
+        "key": "eglises",
+        "slug": "eglises",
+        "name": "Églises",
+        "intro": "Votre assemblée peut devenir un point d’ancrage de la mission dans votre quartier.",
+        "ideas": [
+          {
+            "title": "Dimanche de la collecte",
+            "text": "Un bac à l’entrée pendant un mois, une annonce chaque dimanche, une remise en fin de mois."
+          },
+          {
+            "title": "Équipe de maraude",
+            "text": "Formez une équipe de quatre qui sert un jeudi par mois, avec un accompagnateur de La Paix du Cœur."
+          },
+          {
+            "title": "Soirée de prière",
+            "text": "Consacrez une rencontre à prier pour les orphelins, les veuves et les sans-abri."
+          }
+        ],
+        "checklist": [
+          "Obtenir l’accord du pasteur ou du conseil",
+          "Choisir les dates (idéalement 4 dimanches)",
+          "Nommer une personne responsable",
+          "Installer un bac identifié à l’entrée",
+          "Annoncer la collecte chaque dimanche",
+          "Publier les textes sur les réseaux sociaux",
+          "Nous écrire pour planifier la récupération",
+          "Remercier l’assemblée et partager le résultat"
+        ],
+        "captions": [
+          "Ce mois-ci, notre église recueille des denrées pour les familles accompagnées par La Paix du Cœur. Un article de plus dans votre panier, c’est un repas de plus sur leur table. #LaPaixDuCoeur #Montréal #CollecteAlimentaire",
+          "«Celui qui a pitié du pauvre prête à YHWH.» (Pr 19:17) — Apportez riz, pâtes ou conserves dimanche prochain. #LaPaixDuCoeur #Montréal #CollecteAlimentaire",
+          "Merci! Grâce à vous, nous remettons [quantité à confirmer] à La Paix du Cœur pour les familles de Montréal. #LaPaixDuCoeur #Montréal #CollecteAlimentaire"
+        ]
+      },
+      {
+        "key": "ecoles",
+        "slug": "ecoles",
+        "name": "Écoles",
+        "intro": "Une collecte en classe enseigne la générosité concrètement — et elle est souvent la plus joyeuse.",
+        "ideas": [
+          {
+            "title": "Défi entre classes",
+            "text": "Chaque classe remplit sa boîte; la plus généreuse choisit la musique du dîner."
+          },
+          {
+            "title": "Boîtes-repas solidaires",
+            "text": "Les élèves décorent des boîtes-repas qui accompagneront les paniers."
+          },
+          {
+            "title": "Visite de l’association",
+            "text": "Un bénévole vient présenter la mission en 20 minutes, adapté à l’âge des élèves."
+          }
+        ],
+        "checklist": [
+          "Valider le projet avec la direction",
+          "Prévenir les parents par courriel ou par le carnet",
+          "Préparer une boîte par classe",
+          "Afficher la liste des denrées demandées",
+          "Prévoir un mot de remerciement pour les élèves",
+          "Nous écrire pour la récupération",
+          "Partager une photo (sans visage d’élève)"
+        ],
+        "captions": [
+          "Notre école se mobilise! Jusqu’au [date à confirmer], apportez une denrée non périssable pour les familles accompagnées par La Paix du Cœur. #LaPaixDuCoeur #Montréal #CollecteAlimentaire",
+          "Petit geste, grand cœur : chaque boîte de conserve compte. Merci aux élèves et aux familles! #LaPaixDuCoeur #Montréal #CollecteAlimentaire",
+          "Défi relevé : nos classes ont recueilli [quantité à confirmer] pour La Paix du Cœur. Bravo à toutes et à tous! #LaPaixDuCoeur #Montréal #CollecteAlimentaire"
+        ]
+      },
+      {
+        "key": "entreprises",
+        "slug": "entreprises",
+        "name": "Entreprises",
+        "intro": "Une activité d’équipe qui a du sens, près de chez vous, et qui renforce les liens au bureau.",
+        "ideas": [
+          {
+            "title": "Collecte au bureau",
+            "text": "Un bac dans la cuisine commune pendant deux semaines, avec un défi entre équipes."
+          },
+          {
+            "title": "Journée de bénévolat",
+            "text": "Une équipe tient une collecte en épicerie un samedi, ou prépare les paniers de Noël."
+          },
+          {
+            "title": "Don jumelé",
+            "text": "L’entreprise double les dons des employés jusqu’à un montant fixé [reçu fiscal si enregistré]."
+          }
+        ],
+        "checklist": [
+          "Obtenir l’accord de la direction ou des RH",
+          "Choisir le format (collecte, journée, don jumelé)",
+          "Nommer deux personnes responsables",
+          "Annoncer l’activité à l’interne",
+          "Installer le bac ou réserver la date",
+          "Nous écrire pour planifier",
+          "Publier un remerciement sur les réseaux sociaux"
+        ],
+        "captions": [
+          "Cette semaine, notre équipe soutient La Paix du Cœur, une association montréalaise qui aide les familles, les veuves et les sans-abri. #LaPaixDuCoeur #Montréal #CollecteAlimentaire",
+          "Samedi, nos collègues ont tenu une collecte alimentaire en épicerie avec La Paix du Cœur. Fiers de notre équipe! #LaPaixDuCoeur #Montréal #CollecteAlimentaire",
+          "Pour chaque dollar donné par nos employés, nous en donnons un de plus. Objectif : [montant à confirmer]. #LaPaixDuCoeur #Montréal #CollecteAlimentaire"
+        ]
+      }
+    ]
+  },
+  "en": {
+    "title": "Toolkits to organize your own drive",
+    "meta_title": "Toolkits for churches, schools and businesses | La Paix du Cœur",
+    "meta_description": "Run a food drive or a community activity: ideas, printable checklists and social media captions for churches, schools and businesses.",
+    "eyebrow": "Toolkits",
+    "lead": "Everything you need to mobilize your community: proven ideas, a printable checklist and ready-to-post captions.",
+    "audiences": [
+      {
+        "key": "eglises",
+        "slug": "churches",
+        "name": "Churches",
+        "intro": "Your congregation can become an anchor for the mission in your neighbourhood.",
+        "ideas": [
+          {
+            "title": "Food-drive Sunday",
+            "text": "A bin at the entrance for a month, an announcement every Sunday, a hand-over at month’s end."
+          },
+          {
+            "title": "Outreach team",
+            "text": "Form a team of four that serves one Thursday a month, with a La Paix du Cœur guide."
+          },
+          {
+            "title": "Prayer evening",
+            "text": "Dedicate a gathering to praying for orphans, widows and the homeless."
+          }
+        ],
+        "checklist": [
+          "Get your pastor’s or board’s approval",
+          "Pick the dates (ideally 4 Sundays)",
+          "Name one person in charge",
+          "Place a labelled bin at the entrance",
+          "Announce the drive every Sunday",
+          "Post the captions on social media",
+          "Write to us to plan the pick-up",
+          "Thank the congregation and share the result"
+        ],
+        "captions": [
+          "This month our church is collecting food for the families supported by La Paix du Cœur. One more item in your cart is one more meal on their table. #LaPaixDuCoeur #Montreal #FoodDrive",
+          "“Whoever is kind to the poor lends to YHWH.” (Prov 19:17) — Bring rice, pasta or canned goods next Sunday. #LaPaixDuCoeur #Montreal #FoodDrive",
+          "Thank you! Because of you, we are handing [amount to confirm] to La Paix du Cœur for Montréal families. #LaPaixDuCoeur #Montreal #FoodDrive"
+        ]
+      },
+      {
+        "key": "ecoles",
+        "slug": "schools",
+        "name": "Schools",
+        "intro": "A classroom food drive teaches generosity hands-on — and it is often the most joyful one.",
+        "ideas": [
+          {
+            "title": "Class challenge",
+            "text": "Each class fills its own box; the most generous picks the lunchtime music."
+          },
+          {
+            "title": "Lunch boxes with love",
+            "text": "Students decorate lunch boxes that go out with the food baskets."
+          },
+          {
+            "title": "A visit from us",
+            "text": "A volunteer presents the mission in 20 minutes, adapted to the students’ age."
+          }
+        ],
+        "checklist": [
+          "Get the principal’s approval",
+          "Let parents know by email or agenda",
+          "Prepare one box per class",
+          "Post the list of requested items",
+          "Plan a thank-you note for the students",
+          "Write to us to arrange the pick-up",
+          "Share a photo (no student faces)"
+        ],
+        "captions": [
+          "Our school is getting involved! Until [date to confirm], bring a non-perishable item for the families supported by La Paix du Cœur. #LaPaixDuCoeur #Montreal #FoodDrive",
+          "Small gesture, big heart: every can counts. Thank you, students and families! #LaPaixDuCoeur #Montreal #FoodDrive",
+          "Challenge complete: our classes collected [amount to confirm] for La Paix du Cœur. Well done, everyone! #LaPaixDuCoeur #Montreal #FoodDrive"
+        ]
+      },
+      {
+        "key": "entreprises",
+        "slug": "businesses",
+        "name": "Businesses",
+        "intro": "A meaningful team activity close to home that brings colleagues together.",
+        "ideas": [
+          {
+            "title": "Office food drive",
+            "text": "A bin in the shared kitchen for two weeks, with a challenge between teams."
+          },
+          {
+            "title": "Volunteer day",
+            "text": "A team runs a grocery-store food drive on a Saturday, or assembles Christmas baskets."
+          },
+          {
+            "title": "Matching gift",
+            "text": "The company matches employee donations up to a set amount [tax receipt if registered]."
+          }
+        ],
+        "checklist": [
+          "Get management or HR approval",
+          "Choose the format (drive, volunteer day, matching gift)",
+          "Name two people in charge",
+          "Announce the activity internally",
+          "Place the bin or book the date",
+          "Write to us to plan",
+          "Post a thank-you on social media"
+        ],
+        "captions": [
+          "This week our team is supporting La Paix du Cœur, a Montréal charity helping families, widows and the homeless. #LaPaixDuCoeur #Montreal #FoodDrive",
+          "On Saturday our colleagues ran a grocery-store food drive with La Paix du Cœur. Proud of our team! #LaPaixDuCoeur #Montreal #FoodDrive",
+          "For every dollar our employees give, we give one more. Goal: [amount to confirm]. #LaPaixDuCoeur #Montreal #FoodDrive"
+        ]
+      }
+    ]
+  }
+}

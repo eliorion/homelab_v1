@@ -1,0 +1,62 @@
+{
+  "fr": {
+    "title": "À propos — une œuvre chrétienne née à Montréal en 2014",
+    "description": "Qui est La Paix du Cœur / Kimia Na Motema : une association chrétienne fondée en 2014 à Montréal, animée par l’amour d’Elohim et la compassion envers les personnes démunies.",
+    "kicker": "À propos",
+    "heading": "La paix du cœur, en lingala : Kimia Na Motema.",
+    "lede": "Une œuvre inspirée par le Seigneur Yéhoshoua, portée par un groupe de chrétiens animés par l’amour d’Elohim et la compassion envers les personnes démunies.",
+    "body": "L’association chrétienne La Paix du Cœur / Kimia Na Motema est une œuvre inspirée par le Seigneur Yéhoshoua, portée par un groupe de chrétiens animés par l’amour d’Elohim et la compassion envers les personnes démunies. Nous œuvrons humblement et de manière désintéressée, pour la seule gloire d’Elohim.\n\nFondée en 2014 à Montréal (Canada), cette vision a vu le jour afin d’apporter soutien et espérance aux orphelins. Elle s’est élargie aux veuves et aux veufs, aux démunis et aux sans-abri — sans distinction de langue, de couleur ou de race.\n\n> Nous ne demandons rien à ceux que nous aidons. Tout est offert gratuitement.",
+    "name_story": "*Kimia* signifie « paix » et *motema*, « cœur ». Le nom lingala rappelle d’où vient la vision ; le nom français dit où elle s’enracine aujourd’hui : à Montréal.",
+    "timeline": [
+      { "year": "2014", "text": "Fondation de l’association à Montréal, pour apporter soutien et espérance aux orphelins." },
+      { "year": "[à confirmer]", "text": "Premières maraudes dans les rues de Montréal." },
+      { "year": "[à confirmer]", "text": "Premières collectes alimentaires en supermarché." },
+      { "year": "2026", "text": "Nouveau site bilingue et première campagne de Noël en ligne." }
+    ],
+    "team_title": "L’équipe",
+    "team": [
+      { "name": "Frère Ronny", "role": "Rôle [à confirmer]" },
+      { "name": "[à confirmer]", "role": "Conseil d’administration" },
+      { "name": "[à confirmer]", "role": "Coordination des bénévoles" }
+    ],
+    "ethics_title": "Notre charte du récit éthique",
+    "ethics_intro": "Une campagne de sensibilisation ne doit jamais coûter sa dignité à quelqu’un. Voici nos engagements.",
+    "ethics": [
+      "L’espoir avant le besoin : nous montrons le moment où les choses changent, jamais la détresse en gros plan.",
+      "Pas de visage d’enfant identifiable sans le consentement écrit d’un parent ou tuteur — et jamais d’enfant seul en couverture.",
+      "Des prénoms seulement, jamais de lieu précis.",
+      "Chaque personne relit et peut retirer son histoire, à tout moment.",
+      "Les chiffres sont vérifiés ; ceux qui ne le sont pas encore sont marqués « à confirmer »."
+    ]
+  },
+  "en": {
+    "title": "About — a Christian work born in Montréal in 2014",
+    "description": "Who La Paix du Cœur / Kimia Na Motema is: a Christian association founded in Montréal in 2014, moved by the love of Elohim and compassion for people in need.",
+    "kicker": "About",
+    "heading": "Peace of the heart, in Lingala: Kimia Na Motema.",
+    "lede": "A work inspired by the Lord Yehoshua (Jesus), carried by a group of Christians moved by the love of Elohim and by compassion for people in need.",
+    "body": "The Christian association La Paix du Cœur / Kimia Na Motema is a work inspired by the Lord Yehoshua (Jesus), carried by a group of Christians moved by the love of Elohim and by compassion for people in need. We work humbly and selflessly, for the glory of Elohim alone.\n\nFounded in Montréal, Canada, in 2014, the vision began as a way to bring support and hope to orphans. It has grown to include widows and widowers, the poor and the homeless — regardless of language, colour or race.\n\n> We ask nothing of the people we help. Everything is free.",
+    "name_story": "*Kimia* means “peace” and *motema* means “heart”. The Lingala name remembers where the vision comes from; the French name says where it is rooted today: Montréal.",
+    "timeline": [
+      { "year": "2014", "text": "The association is founded in Montréal to bring support and hope to orphans." },
+      { "year": "[to confirm]", "text": "First street outreach nights in Montréal." },
+      { "year": "[to confirm]", "text": "First supermarket food drives." },
+      { "year": "2026", "text": "A new bilingual website and the first online Christmas campaign." }
+    ],
+    "team_title": "The team",
+    "team": [
+      { "name": "Brother Ronny", "role": "Role [to confirm]" },
+      { "name": "[to confirm]", "role": "Board of directors" },
+      { "name": "[to confirm]", "role": "Volunteer coordination" }
+    ],
+    "ethics_title": "Our ethical storytelling charter",
+    "ethics_intro": "An awareness campaign must never cost anyone their dignity. These are our commitments.",
+    "ethics": [
+      "Hope before need: we show the moment things turn around, never distress in close-up.",
+      "No identifiable child’s face without written consent from a parent or guardian — and never a child alone on a cover.",
+      "First names only, never an exact place.",
+      "Everyone reviews their own story and can withdraw it at any time.",
+      "Figures are checked; those not yet checked are marked “to confirm”."
+    ]
+  }
+}

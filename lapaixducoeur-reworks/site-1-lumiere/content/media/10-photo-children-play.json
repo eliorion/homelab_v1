@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Jeux d’été",
+    "caption": "",
+    "alt": "Deux enfants jouent dans l’herbe en riant.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/children-play.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  },
+  "en": {
+    "title": "Summer games",
+    "caption": "",
+    "alt": "Two children laugh as they play in the grass.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/children-play.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  }
+}

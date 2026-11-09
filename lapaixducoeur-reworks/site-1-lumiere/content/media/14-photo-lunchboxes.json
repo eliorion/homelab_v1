@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Boîtes-repas de maraude",
+    "caption": "",
+    "alt": "Des boîtes-repas colorées et garnies.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/lunchboxes.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  },
+  "en": {
+    "title": "Outreach lunch boxes",
+    "caption": "",
+    "alt": "Colourful, well-filled lunch boxes.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/lunchboxes.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  }
+}

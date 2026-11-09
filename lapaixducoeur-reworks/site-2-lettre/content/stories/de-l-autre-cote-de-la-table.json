@@ -1,0 +1,55 @@
+{
+  "fr": {
+    "slug": "de-l-autre-cote-de-la-table",
+    "title": "De l’autre côté de la table",
+    "dek": "Samuel a d’abord reçu des paniers. Aujourd’hui, c’est lui qui les prépare — et qui anime l’atelier budget.",
+    "date": "2026-07-18",
+    "tags": ["espoir", "education", "communaute"],
+    "image": "/assets/img/food-bank-volunteers.jpg",
+    "image_alt": "Des bénévoles préparent ensemble des barquettes de nourriture sur une longue table.",
+    "narrator": "Raconté par Samuel",
+    "reading_minutes": 4,
+    "sample": true,
+    "consent_note": "Prénom modifié. Samuel a relu et approuvé ce texte avant publication.",
+    "chapters": [
+      {
+        "heading": "L’année où tout a lâché",
+        "body": "Je suis arrivé à Montréal avec deux valises et un diplôme qu’on ne reconnaissait pas ici. La première année, j’ai enchaîné les petits contrats. La deuxième, j’ai perdu celui qui payait le loyer. Un ami m’a donné l’adresse d’une collecte alimentaire organisée par La Paix du Cœur.\n\nJe me souviens d’avoir attendu dans la voiture dix minutes avant d’entrer. Personne ne m’a regardé de haut. Une bénévole m’a demandé si j’avais des allergies, et si je voulais un café."
+      },
+      {
+        "heading": "Apprendre à tenir debout",
+        "body": "Quelques semaines plus tard, on m’a parlé des ateliers : budget familial, curriculum vitæ, préparation aux entrevues. J’y suis allé un samedi, par politesse. J’y suis retourné tous les samedis suivants.\n\nOn n’y apprenait pas seulement des outils. On y apprenait que demander de l’aide n’efface pas la dignité. Que l’autonomie se construit à plusieurs. Et qu’Elohim est le Pourvoyeur — parfois à travers des mains très ordinaires."
+      },
+      {
+        "heading": "Passer de l’autre côté",
+        "body": "J’ai retrouvé un emploi stable au printemps. Le samedi suivant, je suis revenu à la collecte. Mais cette fois, j’ai mis un tablier.\n\nAujourd’hui, je prépare des paniers et j’anime l’atelier budget une fois par mois. Quand quelqu’un hésite à la porte, je sais exactement ce qu’il ressent. Alors je lui demande s’il a des allergies, et s’il veut un café."
+      }
+    ],
+    "pullquote": { "text": "Demander de l’aide n’efface pas la dignité. L’autonomie se construit à plusieurs.", "who": "Samuel" },
+    "verse": { "text": "Celui qui a pitié du pauvre prête à YHWH, qui lui rendra son bienfait.", "reference": "Proverbes 19:17" }
+  },
+  "en": {
+    "slug": "the-other-side-of-the-table",
+    "title": "The Other Side of the Table",
+    "dek": "Samuel first received food baskets. Today he is the one packing them — and leading the budgeting workshop.",
+    "image_alt": "Volunteers prepare trays of food together at a long table.",
+    "narrator": "Told by Samuel",
+    "consent_note": "Name changed. Samuel read and approved this text before publication.",
+    "chapters": [
+      {
+        "heading": "The year everything gave way",
+        "body": "I arrived in Montréal with two suitcases and a degree that wasn’t recognized here. The first year, I went from one short contract to the next. The second year, I lost the one that paid the rent. A friend gave me the address of a food drive run by La Paix du Cœur.\n\nI remember waiting in the car for ten minutes before I went in. Nobody looked down on me. A volunteer asked whether I had any allergies, and whether I’d like a coffee."
+      },
+      {
+        "heading": "Learning to stand",
+        "body": "A few weeks later, someone told me about the workshops: family budgeting, résumés, interview preparation. I went one Saturday, to be polite. I went back every Saturday after that.\n\nWe didn’t only learn tools there. We learned that asking for help doesn’t erase your dignity. That independence is built together. And that Elohim is the Provider — sometimes through very ordinary hands."
+      },
+      {
+        "heading": "Crossing to the other side",
+        "body": "I found steady work in the spring. The next Saturday, I came back to the food drive. But this time, I put on an apron.\n\nToday I pack baskets and lead the budgeting workshop once a month. When someone hesitates at the door, I know exactly how they feel. So I ask whether they have any allergies, and whether they’d like a coffee."
+      }
+    ],
+    "pullquote": { "text": "Asking for help doesn’t erase your dignity. Independence is built together.", "who": "Samuel" },
+    "verse": { "text": "Whoever is kind to the poor lends to YHWH, and he will repay him for his deed.", "reference": "Proverbs 19:17" }
+  }
+}

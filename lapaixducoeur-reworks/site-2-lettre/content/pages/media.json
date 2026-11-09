@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "meta_title": "Médiathèque — photos, vidéos, audio | La Paix du Cœur",
+    "meta_description": "Photos, vidéos et extraits audio de La Paix du Cœur : maraudes, collectes, visites et moments de prière à Montréal.",
+    "kicker": "Médiathèque",
+    "title": "Un album de famille",
+    "intro": "Photos, vidéos et voix de l’association. Les visages d’enfants ne sont publiés qu’avec le consentement écrit d’un parent ou tuteur.",
+    "photos_title": "Photos",
+    "videos_title": "Vidéos",
+    "audio_title": "Audio"
+  },
+  "en": {
+    "meta_title": "Media — photos, videos, audio | La Paix du Cœur",
+    "meta_description": "Photos, videos and audio from La Paix du Cœur: street outreach, food drives, visits and moments of prayer in Montréal.",
+    "kicker": "Media",
+    "title": "A family album",
+    "intro": "Photos, videos and voices from the association. Children’s faces are only published with the written consent of a parent or guardian.",
+    "photos_title": "Photos",
+    "videos_title": "Videos",
+    "audio_title": "Audio"
+  }
+}

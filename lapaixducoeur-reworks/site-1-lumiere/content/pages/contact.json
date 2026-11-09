@@ -1,0 +1,54 @@
+{
+  "fr": {
+    "title": "Contact et bénévolat",
+    "description": "Écrivez à La Paix du Cœur : information, bénévolat, dons en nature, sujets de prière ou demande de coordonnées bancaires.",
+    "heading": "Parlons-nous",
+    "intro": "Une question, un sujet de prière, l’envie de donner de votre temps ? Écrivez-nous : une personne de l’équipe vous répondra, habituellement sous trois jours ouvrables.",
+    "subjects": [
+      "Information générale",
+      "Bénévolat",
+      "Don en nature",
+      "Coordonnées bancaires (don important)",
+      "Sujet de prière",
+      "Médias et partenariats"
+    ],
+    "volunteer_title": "Devenir bénévole",
+    "volunteer_text": "Dites-nous ce que vous aimez faire : nous vous proposerons une mission qui vous ressemble.",
+    "skills": [
+      "Collectes en supermarché",
+      "Maraudes",
+      "Tri et logistique",
+      "Aide aux devoirs",
+      "Animation d’ateliers",
+      "Photo et vidéo (avec consentement)",
+      "Traduction FR/EN",
+      "Prière et accueil"
+    ]
+  },
+  "en": {
+    "title": "Contact and volunteering",
+    "description": "Write to La Paix du Cœur: information, volunteering, gifts in kind, prayer requests or a request for bank details.",
+    "heading": "Let’s talk",
+    "intro": "A question, a prayer request, a wish to give your time? Write to us: someone from the team will reply, usually within three business days.",
+    "subjects": [
+      "General information",
+      "Volunteering",
+      "Gift in kind",
+      "Bank details (major gift)",
+      "Prayer request",
+      "Media and partnerships"
+    ],
+    "volunteer_title": "Become a volunteer",
+    "volunteer_text": "Tell us what you enjoy doing and we will suggest a role that fits you.",
+    "skills": [
+      "Supermarket food drives",
+      "Street outreach",
+      "Sorting and logistics",
+      "Homework help",
+      "Running workshops",
+      "Photo and video (with consent)",
+      "FR/EN translation",
+      "Prayer and welcome"
+    ]
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "fr": {
+    "metaTitle": "Faire un don | La Paix du Cœur — Kimia Na Motema",
+    "description": "Soutenez La Paix du Cœur : don en ligne sécurisé (Zeffy), virement Interac, dons matériels, bénévolat et prière. Chaque montant dit ce qu'il finance.",
+    "title": "Soutenir la mission",
+    "intro": "Votre soutien par les prières, les courriels et les encouragements est une bénédiction. Vous pouvez aussi nous soutenir financièrement, matériellement ou humainement.",
+    "amountsTitle": "Choisissez ce que votre don rend possible",
+    "amounts": [
+      {
+        "amount": 25,
+        "label": "un sac d'hiver : tuque, mitaines et bas chauds"
+      },
+      {
+        "amount": 40,
+        "label": "un panier alimentaire pour une famille"
+      },
+      {
+        "amount": 75,
+        "label": "les fournitures scolaires de deux enfants"
+      },
+      {
+        "amount": 150,
+        "label": "une soirée de maraude pour toute l'équipe"
+      }
+    ],
+    "amountsNote": "Montants et équivalences donnés à titre d'exemple [à confirmer].",
+    "monthlyTitle": "Le Cercle du Cœur",
+    "monthlyText": "Un don mensuel, même modeste, nous permet de planifier les collectes et les maraudes toute l'année.",
+    "zeffyNote": "Le paiement sécurisé serait assuré par Zeffy, plateforme montréalaise gratuite pour les organismes : 100 % de votre don nous parvient. (Formulaire de démonstration — lien Zeffy à configurer.)",
+    "interacTitle": "Virement Interac",
+    "interacSteps": [
+      "Ouvrez l'application de votre banque.",
+      "Choisissez « Virement Interac » et ajoutez le destinataire ci-dessous.",
+      "Indiquez « Don » et votre adresse dans le message si vous souhaitez un reçu."
+    ],
+    "bankTitle": "Coordonnées bancaires",
+    "bankText": "Coordonnées bancaires sur demande, par courriel. Pour votre sécurité, nous ne les publions jamais en ligne : méfiez-vous de tout message qui vous demanderait de payer ailleurs.",
+    "receiptTitle": "Reçus fiscaux",
+    "receiptText": "Reçus officiels pour fins d'impôt émis automatiquement [si enregistré auprès de l'ARC — numéro à confirmer].",
+    "otherTitle": "D'autres façons de donner",
+    "other": [
+      {
+        "title": "Dons matériels",
+        "text": "Vêtements d'hiver, fournitures scolaires, denrées non périssables, articles pour bébé. Écrivez-nous avant de vous déplacer."
+      },
+      {
+        "title": "Votre temps",
+        "text": "Rejoignez l'équipe de bénévoles, selon vos talents."
+      },
+      {
+        "title": "Vos prières",
+        "text": "Priez pour les orphelins, les veuves et les familles que nous accompagnons."
+      },
+      {
+        "title": "Votre voix",
+        "text": "Parlez de nous dans votre église, votre école ou votre entreprise."
+      }
+    ],
+    "trustTitle": "Notre engagement de transparence",
+    "trust": [
+      "Tout est offert gratuitement aux bénéficiaires.",
+      "Rapport annuel publié en ligne [à venir].",
+      "Aucune donnée de paiement ne transite par ce site."
+    ]
+  },
+  "en": {
+    "metaTitle": "Give | La Paix du Cœur — Kimia Na Motema",
+    "description": "Support La Paix du Cœur: secure online giving (Zeffy), Interac e-Transfer, gifts in kind, volunteering and prayer. Every amount says what it funds.",
+    "title": "Support the mission",
+    "intro": "Your support through prayer, emails and encouragement is a blessing. You can also support us financially, materially or by giving your time.",
+    "amountsTitle": "Choose what your gift makes possible",
+    "amounts": [
+      {
+        "amount": 25,
+        "label": "a winter bag: toque, mittens and warm socks"
+      },
+      {
+        "amount": 40,
+        "label": "a food hamper for one family"
+      },
+      {
+        "amount": 75,
+        "label": "school supplies for two children"
+      },
+      {
+        "amount": 150,
+        "label": "an evening of street outreach for the whole team"
+      }
+    ],
+    "amountsNote": "Amounts and equivalents are examples [to confirm].",
+    "monthlyTitle": "The Heart Circle",
+    "monthlyText": "A monthly gift, however small, lets us plan food drives and outreach all year round.",
+    "zeffyNote": "Secure payment would be handled by Zeffy, a free Montréal-based platform for charities: 100% of your gift reaches us. (Demo form — Zeffy link to be set up.)",
+    "interacTitle": "Interac e-Transfer",
+    "interacSteps": [
+      "Open your bank's app.",
+      "Choose “Interac e-Transfer” and add the recipient below.",
+      "Write “Donation” and your address in the message if you would like a receipt."
+    ],
+    "bankTitle": "Bank details",
+    "bankText": "Bank details on request, by email. For your safety we never publish them online: be wary of any message asking you to pay somewhere else.",
+    "receiptTitle": "Tax receipts",
+    "receiptText": "Official tax receipts issued automatically [if registered with the CRA — number to confirm].",
+    "otherTitle": "Other ways to give",
+    "other": [
+      {
+        "title": "Gifts in kind",
+        "text": "Winter clothes, school supplies, non-perishable food, baby items. Please write to us before dropping anything off."
+      },
+      {
+        "title": "Your time",
+        "text": "Join the volunteer team, according to your gifts."
+      },
+      {
+        "title": "Your prayers",
+        "text": "Pray for the orphans, widows and families we walk alongside."
+      },
+      {
+        "title": "Your voice",
+        "text": "Tell your church, school or workplace about us."
+      }
+    ],
+    "trustTitle": "Our transparency commitment",
+    "trust": [
+      "Everything is given free of charge to the people we help.",
+      "Annual report published online [coming].",
+      "No payment data passes through this website."
+    ]
+  }
+}

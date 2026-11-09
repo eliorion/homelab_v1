@@ -1,0 +1,100 @@
+{
+  "fr": {
+    "slug": "collecte-alimentaire-montreal-nord-21-novembre",
+    "title": "Collecte alimentaire — Montréal-Nord",
+    "summary": "Une journée à l’entrée d’une épicerie partenaire pour remplir les paniers de l’hiver.",
+    "address": "Épicerie partenaire, boulevard Henri-Bourassa Est, Montréal-Nord [adresse à confirmer]",
+    "meeting_point": "Rendez-vous à la table d’accueil, à l’entrée du magasin",
+    "image_alt": "Des bénévoles trient des boîtes de conserve dans des caisses",
+    "body": "Nous tenons une table à l’entrée du magasin et remettons aux clients une courte liste des denrées les plus demandées. Ceux qui le souhaitent ajoutent un article à leur panier et le déposent en sortant.\n\nTout ce qui est recueilli est trié le jour même, puis distribué aux familles, aux veuves et aux personnes seules que nous accompagnons.\n\n**Denrées les plus demandées :** riz, pâtes, légumineuses en conserve, beurre d’arachide, céréales, lait UHT, produits d’hygiène.",
+    "bring": [
+      "Une tenue confortable (vous serez debout)",
+      "Un sourire — nous fournissons le dossard"
+    ],
+    "type": "collecte",
+    "start": "2026-11-21T10:00",
+    "end": "2026-11-21T16:00",
+    "neighbourhood": "montreal-nord",
+    "image": "/assets/img/food-bank-volunteers-1600.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "matin",
+        "role_fr": "Accueil des clients — matin",
+        "role_en": "Greeting shoppers — morning",
+        "start": "2026-11-21T10:00",
+        "end": "2026-11-21T13:00",
+        "spots": 4,
+        "taken": 3
+      },
+      {
+        "id": "apm",
+        "role_fr": "Accueil des clients — après-midi",
+        "role_en": "Greeting shoppers — afternoon",
+        "start": "2026-11-21T13:00",
+        "end": "2026-11-21T16:00",
+        "spots": 4,
+        "taken": 1
+      },
+      {
+        "id": "tri",
+        "role_fr": "Tri et transport des denrées",
+        "role_en": "Sorting and transport",
+        "start": "2026-11-21T15:00",
+        "end": "2026-11-21T17:00",
+        "spots": 3,
+        "taken": 3
+      }
+    ]
+  },
+  "en": {
+    "slug": "food-drive-montreal-nord-november-21",
+    "title": "Food drive — Montréal-Nord",
+    "summary": "A day at the entrance of a partner grocery store, filling winter food baskets.",
+    "address": "Partner grocery store, Henri-Bourassa Boulevard East, Montréal-Nord [address to confirm]",
+    "meeting_point": "Meet at the welcome table by the store entrance",
+    "image_alt": "Volunteers sorting canned goods into crates",
+    "body": "We set up a table by the store entrance and hand shoppers a short list of the most-needed items. Those who wish add one item to their cart and drop it off on the way out.\n\nEverything collected is sorted the same day, then shared with the families, widows and people living alone whom we support.\n\n**Most-needed items:** rice, pasta, canned legumes, peanut butter, cereal, shelf-stable milk, hygiene products.",
+    "bring": [
+      "Comfortable clothes (you will be standing)",
+      "A smile — we provide the vest"
+    ],
+    "type": "collecte",
+    "start": "2026-11-21T10:00",
+    "end": "2026-11-21T16:00",
+    "neighbourhood": "montreal-nord",
+    "image": "/assets/img/food-bank-volunteers-1600.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "matin",
+        "role_fr": "Accueil des clients — matin",
+        "role_en": "Greeting shoppers — morning",
+        "start": "2026-11-21T10:00",
+        "end": "2026-11-21T13:00",
+        "spots": 4,
+        "taken": 3
+      },
+      {
+        "id": "apm",
+        "role_fr": "Accueil des clients — après-midi",
+        "role_en": "Greeting shoppers — afternoon",
+        "start": "2026-11-21T13:00",
+        "end": "2026-11-21T16:00",
+        "spots": 4,
+        "taken": 1
+      },
+      {
+        "id": "tri",
+        "role_fr": "Tri et transport des denrées",
+        "role_en": "Sorting and transport",
+        "start": "2026-11-21T15:00",
+        "end": "2026-11-21T17:00",
+        "spots": 3,
+        "taken": 3
+      }
+    ]
+  }
+}

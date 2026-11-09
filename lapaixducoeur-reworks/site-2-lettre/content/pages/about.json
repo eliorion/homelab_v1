@@ -1,0 +1,56 @@
+{
+  "fr": {
+    "meta_title": "À propos — Notre histoire et notre foi | La Paix du Cœur",
+    "meta_description": "Fondée en 2014 à Montréal, l’association chrétienne La Paix du Cœur / Kimia Na Motema est née pour apporter soutien et espérance aux orphelins. Notre histoire, notre mission, notre foi.",
+    "kicker": "À propos",
+    "title": "Une œuvre née d’un cœur touché",
+    "intro": "« Kimia na motema », en lingala, veut dire « la paix du cœur ». C’est ce que nous avons reçu, et ce que nous voulons partager.",
+    "story_title": "Notre histoire",
+    "story": "L’association chrétienne La Paix du Cœur / Kimia Na Motema est une œuvre inspirée par le Seigneur Yéhoshoua, portée par un groupe de chrétiens animés par l’amour d’Elohim et la compassion envers les personnes démunies. Nous œuvrons humblement et de manière désintéressée pour la seule gloire d’Elohim.\n\nFondée en 2014 à Montréal (Canada), cette vision a vu le jour afin d’apporter soutien et espérance aux orphelins.",
+    "mission_title": "Notre mission",
+    "mission": "Par la grâce du Seigneur, le Pourvoyeur et le Rémunérateur de ceux qui le cherchent, l’association chrétienne La Paix du Cœur a pour mission de révéler aux nations le Cœur du Seigneur, tourné vers les plus faibles, les veuves, les veufs, les orphelins, les démunis et les sans-abri, sans distinction de langue, de couleur ou de race. Œuvrant dans un esprit d’amour et de service, cette association chrétienne à but non lucratif offre tout gratuitement, pour la seule gloire d’Elohim.",
+    "values_title": "Ce qui nous tient",
+    "values": [
+      { "title": "Gratuité", "text": "Tout ce que nous offrons est gratuit. Nous avons reçu gratuitement ; nous donnons gratuitement." },
+      { "title": "Dignité", "text": "Chaque personne est créée à l’image d’Elohim. Nous la nommons par son prénom et racontons son histoire avec respect." },
+      { "title": "Sans distinction", "text": "Langue, couleur, origine : le cœur du Seigneur ne fait pas de tri, et nous non plus." },
+      { "title": "Autonomie", "text": "Aider aujourd’hui, et donner des outils pour demain : ateliers, formations, accompagnement." }
+    ],
+    "team_title": "L’équipe",
+    "team_text": "Une équipe de bénévoles engagés, dont **Frère Ronny** [rôle à confirmer]. La composition du conseil d’administration sera publiée ici [à confirmer].",
+    "facts_title": "En bref",
+    "facts": [
+      { "label": "Fondation", "value": "2014, Montréal (Québec)" },
+      { "label": "Statut", "value": "Organisme chrétien à but non lucratif" },
+      { "label": "N° d’organisme de bienfaisance (ARC)", "value": "[à confirmer]" },
+      { "label": "Pays desservis à l’étranger", "value": "[à confirmer]" }
+    ]
+  },
+  "en": {
+    "meta_title": "About — Our story and our faith | La Paix du Cœur",
+    "meta_description": "Founded in Montréal in 2014, the Christian association La Paix du Cœur / Kimia Na Motema was born to bring support and hope to orphans. Our story, our mission, our faith.",
+    "kicker": "About",
+    "title": "A work born of a heart that was touched",
+    "intro": "“Kimia na motema” means “peace of the heart” in Lingala. It is what we have received, and what we want to share.",
+    "story_title": "Our story",
+    "story": "The Christian association La Paix du Cœur / Kimia Na Motema is a work inspired by the Lord Yehoshua (Jesus), carried by a group of Christians moved by the love of Elohim and by compassion for people in need. We work humbly and selflessly, for the glory of Elohim alone.\n\nFounded in 2014 in Montréal, Canada, this vision came to life to bring support and hope to orphans.",
+    "mission_title": "Our mission",
+    "mission": "By the grace of the Lord, the Provider and Rewarder of those who seek Him, the Christian association La Paix du Cœur exists to reveal to the nations the Heart of the Lord, turned toward the weakest: widows and widowers, orphans, people in need and the homeless, regardless of language, colour or race. Working in a spirit of love and service, this non-profit Christian association offers everything free of charge, for the glory of Elohim alone.",
+    "values_title": "What holds us together",
+    "values": [
+      { "title": "Freely given", "text": "Everything we offer is free. Freely we have received; freely we give." },
+      { "title": "Dignity", "text": "Every person is created in the image of Elohim. We call them by name and tell their story with respect." },
+      { "title": "Without distinction", "text": "Language, colour, origin: the Lord’s heart does not sort people, and neither do we." },
+      { "title": "Independence", "text": "Help for today, and tools for tomorrow: workshops, training, walking alongside." }
+    ],
+    "team_title": "The team",
+    "team_text": "A team of committed volunteers, including **Brother Ronny** [role to confirm]. The board of directors will be listed here [to confirm].",
+    "facts_title": "At a glance",
+    "facts": [
+      { "label": "Founded", "value": "2014, Montréal (Québec)" },
+      { "label": "Status", "value": "Christian non-profit organization" },
+      { "label": "Charity number (CRA)", "value": "[to confirm]" },
+      { "label": "Countries served abroad", "value": "[to confirm]" }
+    ]
+  }
+}

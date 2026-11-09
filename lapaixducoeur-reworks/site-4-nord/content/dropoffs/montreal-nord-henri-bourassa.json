@@ -1,0 +1,54 @@
+{
+  "fr": {
+    "name": "Épicerie partenaire — Henri-Bourassa Est",
+    "address": "Boulevard Henri-Bourassa Est, près de Pie-IX [adresse à confirmer]",
+    "hours_note": "Bacs à l’entrée, bénévoles présents pendant les heures indiquées",
+    "needs": [
+      "Riz et pâtes",
+      "Légumineuses en conserve",
+      "Beurre d’arachide",
+      "Lait UHT",
+      "Produits d’hygiène"
+    ],
+    "neighbourhood": "montreal-nord",
+    "dates": [
+      {
+        "date": "2026-11-21",
+        "start": "10:00",
+        "end": "16:00"
+      },
+      {
+        "date": "2027-01-23",
+        "start": "10:00",
+        "end": "16:00"
+      }
+    ],
+    "sample": true
+  },
+  "en": {
+    "name": "Partner grocery — Henri-Bourassa East",
+    "address": "Henri-Bourassa Boulevard East, near Pie-IX [address to confirm]",
+    "hours_note": "Bins by the entrance, volunteers on site during the hours shown",
+    "needs": [
+      "Rice and pasta",
+      "Canned legumes",
+      "Peanut butter",
+      "Shelf-stable milk",
+      "Hygiene products"
+    ],
+    "neighbourhood": "montreal-nord",
+    "dates": [
+      {
+        "date": "2026-11-21",
+        "start": "10:00",
+        "end": "16:00"
+      },
+      {
+        "date": "2027-01-23",
+        "start": "10:00",
+        "end": "16:00"
+      }
+    ],
+    "sample": true
+  }
+}

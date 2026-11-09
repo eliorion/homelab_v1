@@ -1,0 +1,44 @@
+{
+  "fr": {
+    "title": "Presse — dossier de presse, logo et faits clés",
+    "description": "Dossier de presse de La Paix du Cœur / Kimia Na Motema : présentation en français et en anglais, logo à télécharger, faits clés et contact médias.",
+    "kicker": "Presse",
+    "heading": "Dossier de presse.",
+    "lede": "Tout ce qu’un ou une journaliste doit savoir, en une page. Libre de reproduction, avec mention de la source.",
+    "boilerplate_short_fr": "La Paix du Cœur / Kimia Na Motema est une association chrétienne à but non lucratif fondée à Montréal en 2014. Elle offre gratuitement une aide alimentaire, vestimentaire, scolaire et matérielle aux orphelins, aux veuves, aux démunis et aux sans-abri, sans distinction de langue, de couleur ou de race.",
+    "boilerplate_short_en": "La Paix du Cœur / Kimia Na Motema is a Christian non-profit association founded in Montréal in 2014. It gives food, clothing, school and material help free of charge to orphans, widows, the poor and the homeless, regardless of language, colour or race.",
+    "boilerplate_long_fr": "Fondée en 2014 à Montréal, l’association chrétienne La Paix du Cœur / Kimia Na Motema (« la paix du cœur » en lingala) est portée par un groupe de chrétiens animés par l’amour d’Elohim et la compassion envers les personnes démunies. Elle mène des collectes alimentaires en supermarché, des maraudes auprès des sans-abri, des orphelinats et des étudiants dans plusieurs villes du Canada, des ateliers de formation vers l’autonomie, et soutient d’autres associations socio-humanitaires. Tout y est offert gratuitement.",
+    "boilerplate_long_en": "Founded in Montréal in 2014, the Christian association La Paix du Cœur / Kimia Na Motema (Lingala for “peace of the heart”) is carried by a group of Christians moved by the love of Elohim and by compassion for people in need. It runs supermarket food drives, street outreach to the homeless, orphanages and students in several Canadian cities, training workshops toward self-reliance, and supports other social and humanitarian associations. Everything it offers is free.",
+    "facts": [
+      { "label": "Fondation", "value": "2014, Montréal (Québec)" },
+      { "label": "Statut", "value": "Association chrétienne à but non lucratif" },
+      { "label": "N° d’organisme de bienfaisance", "value": "[à confirmer]" },
+      { "label": "Domaines d’aide", "value": "Alimentaire, vestimentaire, académique, matérielle ou financière" },
+      { "label": "Programmes", "value": "Soutien aux nécessiteux · Ateliers de formation · Aide à d’autres associations" },
+      { "label": "Territoire", "value": "Montréal et plusieurs villes du Canada ; étranger [à confirmer]" },
+      { "label": "Porte-parole", "value": "[à confirmer]" }
+    ],
+    "photo_note": "Les photos fournies sont libres d’usage pour illustrer un article sur l’association. Crédit : La Paix du Cœur [à confirmer]. Merci de ne pas les recadrer sur un visage d’enfant."
+  },
+  "en": {
+    "title": "Press — press kit, logo and key facts",
+    "description": "Press kit for La Paix du Cœur / Kimia Na Motema: boilerplate in French and English, logo download, key facts and media contact.",
+    "kicker": "Press",
+    "heading": "Press kit.",
+    "lede": "Everything a journalist needs, on one page. Free to reproduce with credit.",
+    "boilerplate_short_fr": "La Paix du Cœur / Kimia Na Motema est une association chrétienne à but non lucratif fondée à Montréal en 2014. Elle offre gratuitement une aide alimentaire, vestimentaire, scolaire et matérielle aux orphelins, aux veuves, aux démunis et aux sans-abri, sans distinction de langue, de couleur ou de race.",
+    "boilerplate_short_en": "La Paix du Cœur / Kimia Na Motema is a Christian non-profit association founded in Montréal in 2014. It gives food, clothing, school and material help free of charge to orphans, widows, the poor and the homeless, regardless of language, colour or race.",
+    "boilerplate_long_fr": "Fondée en 2014 à Montréal, l’association chrétienne La Paix du Cœur / Kimia Na Motema (« la paix du cœur » en lingala) est portée par un groupe de chrétiens animés par l’amour d’Elohim et la compassion envers les personnes démunies. Elle mène des collectes alimentaires en supermarché, des maraudes auprès des sans-abri, des orphelinats et des étudiants dans plusieurs villes du Canada, des ateliers de formation vers l’autonomie, et soutient d’autres associations socio-humanitaires. Tout y est offert gratuitement.",
+    "boilerplate_long_en": "Founded in Montréal in 2014, the Christian association La Paix du Cœur / Kimia Na Motema (Lingala for “peace of the heart”) is carried by a group of Christians moved by the love of Elohim and by compassion for people in need. It runs supermarket food drives, street outreach to the homeless, orphanages and students in several Canadian cities, training workshops toward self-reliance, and supports other social and humanitarian associations. Everything it offers is free.",
+    "facts": [
+      { "label": "Founded", "value": "2014, Montréal (Quebec)" },
+      { "label": "Status", "value": "Christian non-profit association" },
+      { "label": "Charity registration number", "value": "[to confirm]" },
+      { "label": "Areas of aid", "value": "Food, clothing, schooling, material or financial" },
+      { "label": "Programmes", "value": "Support for people in need · Training workshops · Help for other associations" },
+      { "label": "Reach", "value": "Montréal and several Canadian cities; abroad [to confirm]" },
+      { "label": "Spokesperson", "value": "[to confirm]" }
+    ],
+    "photo_note": "The photos provided may be used to illustrate an article about the association. Credit: La Paix du Cœur [to confirm]. Please don’t crop them onto a child’s face."
+  }
+}

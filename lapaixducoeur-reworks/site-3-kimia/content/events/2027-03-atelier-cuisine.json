@@ -1,0 +1,28 @@
+{
+  "fr": {
+    "slug": "atelier-cuisine-economique",
+    "title": "Atelier : cuisine économique et nutritive",
+    "venue": "Montréal [cuisine communautaire à confirmer]",
+    "summary": "Cuisiner ensemble trois repas complets à petit prix, avec des produits de saison et les denrées des banques alimentaires.",
+    "body": "On cuisine, on goûte, on repart avec les recettes (et les restes !).\n\nSignalez vos allergies lors de l'inscription.",
+    "start": "2027-03-27T13:00",
+    "end": "2027-03-27T16:00",
+    "category": "atelier",
+    "image": "/assets/illustrations/collecte.svg",
+    "sample": true,
+    "ticketUrl": ""
+  },
+  "en": {
+    "slug": "workshop-budget-cooking",
+    "title": "Workshop: affordable, nutritious cooking",
+    "venue": "Montréal [community kitchen to confirm]",
+    "summary": "Cook three complete, low-cost meals together using seasonal produce and food-bank staples.",
+    "body": "We cook, we taste, and you leave with the recipes (and leftovers!).\n\nPlease mention any allergies when you sign up.",
+    "start": "2027-03-27T13:00",
+    "end": "2027-03-27T16:00",
+    "category": "atelier",
+    "image": "/assets/illustrations/collecte.svg",
+    "sample": true,
+    "ticketUrl": ""
+  }
+}

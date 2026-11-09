@@ -1,0 +1,45 @@
+{
+  "fr": {
+    "base_url": "https://lapaixducoeur.ca",
+    "email": "lapaixducoeur.ca@gmail.com",
+    "interac_email": "lapaixducoeur.ca@gmail.com",
+    "donate_url": "",
+    "calendar_google_public_url": "",
+    "calendar_ics_source": "",
+    "founded": "2014",
+    "cra_number": "",
+    "social": [
+      { "name": "Facebook", "url": "" },
+      { "name": "YouTube", "url": "" },
+      { "name": "Instagram", "url": "" }
+    ],
+    "site_name": "La Paix du Cœur",
+    "site_subname": "Kimia Na Motema",
+    "tagline": "Association chrétienne au service des orphelins, des veuves, des démunis et des sans-abri — Montréal, depuis 2014.",
+    "default_description": "Association chrétienne fondée à Montréal en 2014 : aide alimentaire, vestimentaire, scolaire et matérielle, maraudes, ateliers et prière pour les orphelins, les veuves et les sans-abri. Tout est offert gratuitement.",
+    "verse_of_week": {
+      "text": "La religion pure et sans souillure devant notre Elohîm et Père, c’est de visiter les orphelins et les veuves dans leurs tribulations…",
+      "reference": "Yaacov (Jacques) 1:27",
+      "reflection": "Visiter, c’est d’abord se déplacer. Cette semaine, à qui pourriez-vous rendre visite — en personne, par une lettre ou par la prière ?",
+      "week_label": "Semaine du 9 novembre 2026"
+    },
+    "newsletter_title": "La lettre du cœur",
+    "newsletter_text": "Une lettre par mois, pas plus : une histoire, un verset, les prochaines maraudes. Désabonnement en un clic.",
+    "signature": "Avec toute notre affection, l’équipe de La Paix du Cœur"
+  },
+  "en": {
+    "site_name": "La Paix du Cœur",
+    "site_subname": "Kimia Na Motema",
+    "tagline": "A Christian association serving orphans, widows, people in need and the homeless — Montréal, since 2014.",
+    "default_description": "A Christian association founded in Montréal in 2014: food, clothing, school and material support, street outreach, workshops and prayer for orphans, widows and the homeless. Everything is offered free of charge.",
+    "verse_of_week": {
+      "text": "Religion that is pure and undefiled before our Elohim and Father is this: to visit orphans and widows in their affliction…",
+      "reference": "James 1:27",
+      "reflection": "To visit is first to go. This week, who could you visit — in person, with a letter, or in prayer?",
+      "week_label": "Week of November 9, 2026"
+    },
+    "newsletter_title": "The Heart Letter",
+    "newsletter_text": "One letter a month, no more: a story, a verse, the next outreach nights. Unsubscribe in one click.",
+    "signature": "With all our affection, the La Paix du Cœur team"
+  }
+}

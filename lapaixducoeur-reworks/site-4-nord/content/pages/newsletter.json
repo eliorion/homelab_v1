@@ -1,0 +1,64 @@
+{
+  "fr": {
+    "title": "Recevoir nos nouvelles",
+    "meta_title": "Infolettre — choisissez vos sujets | La Paix du Cœur",
+    "meta_description": "Abonnez-vous à l’infolettre de La Paix du Cœur et choisissez vos sujets : nouvelles, événements, prière, bénévolat. Désabonnement en un clic.",
+    "eyebrow": "Infolettre",
+    "lead": "Choisissez ce qui vous intéresse — rien de plus. Une à deux lettres par mois, et les sujets de prière du lundi si vous le souhaitez.",
+    "topics": [
+      {
+        "key": "nouvelles",
+        "label": "Nouvelles",
+        "desc": "Retours de terrain et vie de l’association, une fois par mois."
+      },
+      {
+        "key": "evenements",
+        "label": "Événements",
+        "desc": "Les maraudes, collectes et ateliers du mois à venir."
+      },
+      {
+        "key": "priere",
+        "label": "Prière",
+        "desc": "Trois sujets de prière chaque lundi."
+      },
+      {
+        "key": "benevolat",
+        "label": "Bénévolat",
+        "desc": "Les quarts où il manque du monde, en priorité."
+      }
+    ],
+    "consent": "Oui, j’accepte de recevoir par courriel les communications de l’association La Paix du Cœur / Kimia Na Motema (Montréal, lapaixducoeur.ca@gmail.com) sur les sujets choisis. Je peux retirer mon consentement en tout temps grâce au lien de désabonnement présent dans chaque envoi.",
+    "double_optin": "Vous recevrez un courriel de confirmation : votre abonnement ne sera actif qu’après avoir cliqué sur le lien qu’il contient (double confirmation)."
+  },
+  "en": {
+    "title": "Get our news",
+    "meta_title": "Newsletter — choose your topics | La Paix du Cœur",
+    "meta_description": "Subscribe to the La Paix du Cœur newsletter and choose your topics: news, events, prayer, volunteering. Unsubscribe in one click.",
+    "eyebrow": "Newsletter",
+    "lead": "Choose what interests you — nothing more. One or two letters a month, plus Monday prayer requests if you like.",
+    "topics": [
+      {
+        "key": "nouvelles",
+        "label": "News",
+        "desc": "Field reports and life of the charity, once a month."
+      },
+      {
+        "key": "evenements",
+        "label": "Events",
+        "desc": "Next month’s outreach walks, food drives and workshops."
+      },
+      {
+        "key": "priere",
+        "label": "Prayer",
+        "desc": "Three prayer requests every Monday."
+      },
+      {
+        "key": "benevolat",
+        "label": "Volunteering",
+        "desc": "Shifts that most need people, first."
+      }
+    ],
+    "consent": "Yes, I agree to receive emails from the association La Paix du Cœur / Kimia Na Motema (Montréal, lapaixducoeur.ca@gmail.com) about the topics I chose. I can withdraw my consent at any time using the unsubscribe link included in every email.",
+    "double_optin": "You will receive a confirmation email: your subscription only becomes active once you click the link inside it (double opt-in)."
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "fr": {
+    "name": "Marché partenaire — Saint-Léonard",
+    "address": "Rue Jean-Talon Est, secteur Lacordaire [adresse à confirmer]",
+    "hours_note": "Bacs à l’entrée, bénévoles présents pendant les heures indiquées",
+    "needs": [
+      "Riz et pâtes",
+      "Légumineuses en conserve",
+      "Beurre d’arachide",
+      "Lait UHT",
+      "Produits d’hygiène"
+    ],
+    "neighbourhood": "saint-leonard",
+    "dates": [
+      {
+        "date": "2026-12-13",
+        "start": "11:00",
+        "end": "16:00"
+      }
+    ],
+    "sample": true
+  },
+  "en": {
+    "name": "Partner market — Saint-Léonard",
+    "address": "Jean-Talon Street East, Lacordaire area [address to confirm]",
+    "hours_note": "Bins by the entrance, volunteers on site during the hours shown",
+    "needs": [
+      "Rice and pasta",
+      "Canned legumes",
+      "Peanut butter",
+      "Shelf-stable milk",
+      "Hygiene products"
+    ],
+    "neighbourhood": "saint-leonard",
+    "dates": [
+      {
+        "date": "2026-12-13",
+        "start": "11:00",
+        "end": "16:00"
+      }
+    ],
+    "sample": true
+  }
+}

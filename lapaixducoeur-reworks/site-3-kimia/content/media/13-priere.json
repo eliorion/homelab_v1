@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "illustration",
+    "category": "foi",
+    "src": "/assets/illustrations/priere.svg",
+    "title": "Veillée de prière",
+    "alt": "Illustration : trois bougies allumées derrière une Bible ouverte.",
+    "caption": "Illustration originale, faite main pour le site",
+    "order": 13
+  },
+  "en": {
+    "type": "illustration",
+    "category": "foi",
+    "src": "/assets/illustrations/priere.svg",
+    "title": "Prayer vigil",
+    "alt": "Illustration: three lit candles behind an open Bible.",
+    "caption": "Original hand-made illustration for the website",
+    "order": 13
+  }
+}

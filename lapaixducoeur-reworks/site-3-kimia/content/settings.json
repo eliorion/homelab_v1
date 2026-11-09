@@ -1,0 +1,50 @@
+{
+  "fr": {
+    "siteName": "La Paix du Cœur",
+    "altName": "Kimia Na Motema",
+    "tagline": "Association chrétienne au service des orphelins, des veuves et des démunis, depuis 2014 à Montréal.",
+    "siteUrl": "https://lapaixducoeur.ca",
+    "email": "lapaixducoeur.ca@gmail.com",
+    "interacEmail": "lapaixducoeur.ca@gmail.com",
+    "donateUrl": "https://www.zeffy.com/fr-CA/donation-form/[a-confirmer]",
+    "charityNumber": "[à confirmer]",
+    "foundingYear": 2014,
+    "privacyOfficer": "[à confirmer]",
+    "social": [
+      { "name": "Facebook", "url": "" },
+      { "name": "YouTube", "url": "" },
+      { "name": "Instagram", "url": "" }
+    ],
+    "verseOfWeek": {
+      "text": "Celui qui a pitié du pauvre prête à YHWH, qui lui rendra son bienfait.",
+      "ref": "Proverbes 19:17"
+    },
+    "newsletterIntro": "Une lettre par mois : nouvelles du terrain, sujets de prière et prochains rendez-vous.",
+    "calendar_google_public_url": "",
+    "calendar_ics_source": ""
+  },
+  "en": {
+    "siteName": "La Paix du Cœur",
+    "altName": "Kimia Na Motema",
+    "tagline": "A Christian association serving orphans, widows and people in need, in Montréal since 2014.",
+    "siteUrl": "https://lapaixducoeur.ca",
+    "email": "lapaixducoeur.ca@gmail.com",
+    "interacEmail": "lapaixducoeur.ca@gmail.com",
+    "donateUrl": "https://www.zeffy.com/en-CA/donation-form/[to-confirm]",
+    "charityNumber": "[to confirm]",
+    "foundingYear": 2014,
+    "privacyOfficer": "[to confirm]",
+    "social": [
+      { "name": "Facebook", "url": "" },
+      { "name": "YouTube", "url": "" },
+      { "name": "Instagram", "url": "" }
+    ],
+    "verseOfWeek": {
+      "text": "Whoever is kind to the poor lends to YHWH, and he will repay them for their deed.",
+      "ref": "Proverbs 19:17"
+    },
+    "newsletterIntro": "One letter a month: news from the field, prayer requests and upcoming gatherings.",
+    "calendar_google_public_url": "",
+    "calendar_ics_source": ""
+  }
+}

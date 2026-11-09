@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "illustration",
+    "category": "alimentaire",
+    "src": "/assets/illustrations/collecte.svg",
+    "title": "Panier de la collecte",
+    "alt": "Illustration : un panier rempli de pain, de conserves et de fruits.",
+    "caption": "Illustration originale, faite main pour le site",
+    "order": 10
+  },
+  "en": {
+    "type": "illustration",
+    "category": "alimentaire",
+    "src": "/assets/illustrations/collecte.svg",
+    "title": "Food-drive basket",
+    "alt": "Illustration: a basket filled with bread, cans and fruit.",
+    "caption": "Original hand-made illustration for the website",
+    "order": 10
+  }
+}

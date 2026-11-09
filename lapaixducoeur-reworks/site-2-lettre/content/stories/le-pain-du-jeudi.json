@@ -1,0 +1,55 @@
+{
+  "fr": {
+    "slug": "le-pain-du-jeudi",
+    "title": "Le pain du jeudi",
+    "dek": "Une nuit de maraude, un thermos de soupe, et un homme qui nous attendait sans le dire.",
+    "date": "2026-10-23",
+    "tags": ["maraudes", "espoir"],
+    "image": "/assets/img/bread-sharing.jpg",
+    "image_alt": "Des mains gantées tendent une corbeille de petits pains frais.",
+    "narrator": "Raconté par un bénévole de maraude",
+    "reading_minutes": 5,
+    "sample": true,
+    "consent_note": "Prénom modifié. Récit partagé avec l’accord de la personne. Lieu volontairement non précisé.",
+    "chapters": [
+      {
+        "heading": "Le coin de rue",
+        "body": "Il était un peu plus de vingt et une heures quand nous avons tourné au coin de la rue. Le froid de novembre avait ce tranchant particulier qui annonce l’hiver. Dans le coffre, nous avions des thermos de soupe, des sandwichs emballés à la main l’après-midi même, des chaussettes chaudes et une corbeille de pain encore tiède, offerte par une boulangerie du quartier.\n\nDaniel était assis là où il s’assoit souvent. Il ne nous a pas fait signe. Il a seulement relevé la tête, et j’ai compris qu’il savait quel jour on était."
+      },
+      {
+        "heading": "Ce qu’on ne met pas dans un sac",
+        "body": "On croit souvent qu’une maraude, c’est distribuer. C’est d’abord s’asseoir. Daniel a pris la soupe, puis il a posé la main sur le pain, sans le prendre tout de suite. « Vous savez ce qui me manque le plus ? » Nous avons attendu. « Qu’on m’appelle par mon prénom. »\n\nNous sommes restés une demi-heure. Il a parlé de sa mère, d’un métier qu’il aimait, d’un psaume qu’il récitait enfant sans le comprendre. Avant de repartir, il nous a demandé de prier pour sa sœur. Pas pour lui : pour sa sœur."
+      },
+      {
+        "heading": "Le jeudi suivant",
+        "body": "Le jeudi suivant, Daniel nous attendait debout. Il avait gardé un morceau du pain de la semaine précédente, enveloppé dans une serviette, « pour le partager avec celui qui arrive après moi ».\n\nNous ne savons pas encore comment son histoire continuera. Mais nous savons que le Seigneur ne l’a pas oublié, et que nous reviendrons. Le jeudi, toujours. Avec du pain, et avec son prénom."
+      }
+    ],
+    "pullquote": { "text": "Vous savez ce qui me manque le plus ? Qu’on m’appelle par mon prénom.", "who": "Daniel" },
+    "verse": { "text": "Celui qui a pitié du pauvre prête à YHWH, qui lui rendra son bienfait.", "reference": "Proverbes 19:17" }
+  },
+  "en": {
+    "slug": "thursday-bread",
+    "title": "Thursday Bread",
+    "dek": "One night of street outreach, a thermos of soup, and a man who was waiting for us without saying so.",
+    "image_alt": "Gloved hands hold out a basket of fresh bread rolls.",
+    "narrator": "Told by a street-outreach volunteer",
+    "consent_note": "Name changed. Story shared with the person’s consent. Location deliberately withheld.",
+    "chapters": [
+      {
+        "heading": "The street corner",
+        "body": "It was a little after nine when we turned the corner. The November cold had that particular edge that tells you winter is coming. In the trunk we had thermoses of soup, sandwiches wrapped by hand that same afternoon, warm socks, and a basket of bread still warm from a neighbourhood bakery.\n\nDaniel was sitting where he often sits. He didn’t wave. He just lifted his head, and I understood that he knew what day it was."
+      },
+      {
+        "heading": "What doesn’t fit in a bag",
+        "body": "People often think street outreach means handing things out. First, it means sitting down. Daniel took the soup, then rested his hand on the bread without taking it right away. “You know what I miss most?” We waited. “Being called by my name.”\n\nWe stayed half an hour. He talked about his mother, about a trade he loved, about a psalm he recited as a child without understanding it. Before we left, he asked us to pray for his sister. Not for himself — for his sister."
+      },
+      {
+        "heading": "The next Thursday",
+        "body": "The following Thursday, Daniel was standing, waiting for us. He had kept a piece of the previous week’s bread, wrapped in a napkin, “to share with whoever comes after me.”\n\nWe don’t yet know how his story will continue. But we know the Lord has not forgotten him, and that we will be back. Thursdays, always. With bread, and with his name."
+      }
+    ],
+    "pullquote": { "text": "You know what I miss most? Being called by my name.", "who": "Daniel" },
+    "verse": { "text": "Whoever is kind to the poor lends to YHWH, and he will repay him for his deed.", "reference": "Proverbs 19:17" }
+  }
+}

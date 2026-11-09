@@ -1,0 +1,222 @@
+{
+  "fr": {
+    "metaTitle": "Nos missions : aide alimentaire, vestimentaire, scolaire et matérielle | La Paix du Cœur",
+    "description": "Nos quatre domaines d'aide, nos programmes (soutien aux nécessiteux, ateliers, partenariats) et nos actions : collectes alimentaires et maraudes.",
+    "title": "Nos missions",
+    "intro": "Quatre domaines d'aide, trois programmes, deux actions phares, et un seul cœur.",
+    "aidTitle": "Nos quatre domaines d'aide",
+    "aidIntro": "Retournez chaque carte pour découvrir comment ça marche et comment vous pouvez aider.",
+    "aidAreas": [
+      {
+        "key": "alimentaire",
+        "title": "Aide alimentaire",
+        "short": "Des repas et des denrées pour que personne ne se couche le ventre vide.",
+        "how": [
+          "Collectes en supermarché, plusieurs fois par an.",
+          "Tri des denrées par des bénévoles.",
+          "Remise gratuite de paniers aux familles, aux veuves et aux étudiants.",
+          "Soupe et collations lors des maraudes."
+        ],
+        "help": [
+          "Donner des denrées non périssables lors d'une collecte.",
+          "Tenir un quart de 2 heures à une collecte.",
+          "Cuisiner pour une maraude.",
+          "Financer un panier : 40 $ = un panier pour une famille [montant à confirmer]."
+        ]
+      },
+      {
+        "key": "vestimentaire",
+        "title": "Aide vestimentaire",
+        "short": "Des vêtements chauds et dignes, surtout quand l'hiver québécois arrive.",
+        "how": [
+          "Collecte de vêtements propres et en bon état.",
+          "Tri par taille et par saison.",
+          "Remise gratuite aux familles et aux personnes sans abri.",
+          "Sacs d'hiver (tuque, mitaines, bas) pendant les maraudes."
+        ],
+        "help": [
+          "Donner des manteaux, bottes, tuques et mitaines.",
+          "Aider au tri un samedi par mois.",
+          "Tricoter des tuques et des foulards !",
+          "Financer un sac d'hiver : 25 $ [montant à confirmer]."
+        ]
+      },
+      {
+        "key": "academique",
+        "title": "Aide académique",
+        "short": "Des cahiers, de l'aide aux devoirs et des ateliers pour avancer.",
+        "how": [
+          "Fournitures scolaires à la rentrée.",
+          "Aide aux devoirs par des bénévoles.",
+          "Ateliers pour les parents (devoirs, budget, emploi).",
+          "Soutien aux étudiants en difficulté."
+        ],
+        "help": [
+          "Devenir tuteur ou tutrice bénévole.",
+          "Donner des fournitures scolaires neuves.",
+          "Animer un atelier selon votre métier.",
+          "Financer une trousse scolaire : 30 $ [montant à confirmer]."
+        ]
+      },
+      {
+        "key": "materielle",
+        "title": "Aide matérielle ou financière",
+        "short": "Un coup de main concret quand une famille traverse une épreuve.",
+        "how": [
+          "Écoute et évaluation discrète du besoin.",
+          "Aide ponctuelle : meubles, articles pour bébé, électroménagers.",
+          "Soutien financier exceptionnel, versé directement au fournisseur.",
+          "Accompagnement spirituel, si la personne le souhaite."
+        ],
+        "help": [
+          "Offrir un meuble ou un article en bon état (sur demande).",
+          "Conduire pour une livraison.",
+          "Faire un don mensuel au Cercle du Cœur.",
+          "Prier pour les familles accompagnées."
+        ]
+      }
+    ],
+    "programmesTitle": "Nos programmes",
+    "programmes": [
+      {
+        "title": "Soutien aux nécessiteux",
+        "text": "Aide alimentaire, vestimentaire, financière et spirituelle aux personnes vivant des situations difficiles."
+      },
+      {
+        "title": "Ateliers de formation",
+        "text": "Ateliers, séminaires, conférences et campagnes de sensibilisation. Le but : rendre les personnes autonomes."
+      },
+      {
+        "title": "Aider d'autres associations",
+        "text": "Soutenir les projets d'autres associations porteuses de projets socio-humanitaires."
+      }
+    ],
+    "actionsTitle": "Nos actions sur le terrain",
+    "actions": [
+      {
+        "title": "Collectes alimentaires",
+        "text": "Plusieurs fois par an, nous recueillons des denrées dans des supermarchés partenaires.",
+        "icon": "collecte"
+      },
+      {
+        "title": "Maraudes",
+        "text": "Dans les rues de plusieurs villes du Canada, à destination des sans-abri, des orphelinats et des étudiants.",
+        "icon": "maraude"
+      }
+    ],
+    "verse": {
+      "text": "La religion pure et sans souillure devant notre Elohîm et Père, c'est de visiter les orphelins et les veuves dans leurs tribulations…",
+      "ref": "Yaacov (Jacques) 1:27"
+    }
+  },
+  "en": {
+    "metaTitle": "Our missions: food, clothing, school and material aid | La Paix du Cœur",
+    "description": "Our four areas of aid, our programmes (support for people in need, workshops, partnerships) and our field work: food drives and street outreach.",
+    "title": "Our missions",
+    "intro": "Four areas of aid, three programmes, two flagship actions, and one heart.",
+    "aidTitle": "Our four areas of aid",
+    "aidIntro": "Flip each card to see how it works and how you can help.",
+    "aidAreas": [
+      {
+        "key": "alimentaire",
+        "title": "Food aid",
+        "short": "Meals and groceries so no one goes to bed hungry.",
+        "how": [
+          "Grocery-store food drives several times a year.",
+          "Volunteers sort the donations.",
+          "Free food hampers for families, widows and students.",
+          "Soup and snacks during street outreach."
+        ],
+        "help": [
+          "Give non-perishable food at a drive.",
+          "Take a two-hour shift at a food drive.",
+          "Cook for an outreach night.",
+          "Fund a hamper: $40 = one hamper for a family [amount to confirm]."
+        ]
+      },
+      {
+        "key": "vestimentaire",
+        "title": "Clothing aid",
+        "short": "Warm, dignified clothing, especially when the Québec winter arrives.",
+        "how": [
+          "We collect clean clothes in good condition.",
+          "Sorted by size and season.",
+          "Given free of charge to families and homeless people.",
+          "Winter bags (toque, mittens, socks) during street outreach."
+        ],
+        "help": [
+          "Donate coats, boots, toques and mittens.",
+          "Help sort one Saturday a month.",
+          "Knit toques and scarves!",
+          "Fund a winter bag: $25 [amount to confirm]."
+        ]
+      },
+      {
+        "key": "academique",
+        "title": "Academic support",
+        "short": "Notebooks, homework help and workshops to move forward.",
+        "how": [
+          "School supplies for back-to-school.",
+          "Homework help from volunteers.",
+          "Workshops for parents (homework, budgeting, jobs).",
+          "Support for students going through hard times."
+        ],
+        "help": [
+          "Become a volunteer tutor.",
+          "Donate new school supplies.",
+          "Lead a workshop on your trade.",
+          "Fund a school kit: $30 [amount to confirm]."
+        ]
+      },
+      {
+        "key": "materielle",
+        "title": "Material or financial help",
+        "short": "Practical help when a family goes through a trial.",
+        "how": [
+          "Listening and a discreet assessment of the need.",
+          "One-time help: furniture, baby items, appliances.",
+          "Exceptional financial support, paid directly to the supplier.",
+          "Spiritual care, if the person wishes."
+        ],
+        "help": [
+          "Offer furniture or an item in good condition (on request).",
+          "Drive for a delivery.",
+          "Give monthly to the Heart Circle.",
+          "Pray for the families we walk with."
+        ]
+      }
+    ],
+    "programmesTitle": "Our programmes",
+    "programmes": [
+      {
+        "title": "Support for people in need",
+        "text": "Food, clothing, financial and spiritual help for people going through hard times."
+      },
+      {
+        "title": "Training workshops",
+        "text": "Workshops, seminars, talks and awareness campaigns. The goal: helping people become self-reliant."
+      },
+      {
+        "title": "Helping other charities",
+        "text": "Supporting other associations that carry social and humanitarian projects."
+      }
+    ],
+    "actionsTitle": "Our work in the field",
+    "actions": [
+      {
+        "title": "Food drives",
+        "text": "Several times a year we collect food at partner grocery stores.",
+        "icon": "collecte"
+      },
+      {
+        "title": "Street outreach",
+        "text": "On the streets of several Canadian cities, for homeless people, orphanages and students.",
+        "icon": "maraude"
+      }
+    ],
+    "verse": {
+      "text": "Religion that is pure and undefiled before our Elohim and Father is this: to visit orphans and widows in their affliction…",
+      "ref": "Yaakov (James) 1:27"
+    }
+  }
+}

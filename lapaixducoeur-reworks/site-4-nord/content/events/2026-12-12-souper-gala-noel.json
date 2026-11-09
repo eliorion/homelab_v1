@@ -1,0 +1,44 @@
+{
+  "fr": {
+    "slug": "souper-gala-de-noel-12-decembre",
+    "title": "Souper-gala de Noël du Cœur",
+    "summary": "Un souper festif au profit des orphelins et des familles accompagnées — billets via Zeffy.",
+    "address": "Salle de réception, Saint-Léonard [adresse à confirmer]",
+    "meeting_point": "Accueil et vestiaire dès 17 h 30",
+    "image_alt": "Une table généreuse de fruits frais et colorés",
+    "price": "Billet : 75 $ [à confirmer] — reçu fiscal pour la partie don [si enregistré]",
+    "body": "Une soirée chaleureuse pour célébrer l’année, rendre grâce et soutenir les projets de l’hiver : souper trois services, témoignages, chorale et encan silencieux [à confirmer].\n\nLes profits financeront les paniers de Noël, les trousses « grand froid » et le soutien scolaire des orphelins accompagnés.\n\nLa billetterie passe par **Zeffy**, une plateforme montréalaise gratuite pour les organismes : 100 % de votre achat va à la mission.",
+    "bring": [
+      "Tenue de soirée ou habit du dimanche"
+    ],
+    "type": "gala",
+    "start": "2026-12-12T18:00",
+    "end": "2026-12-12T22:30",
+    "neighbourhood": "saint-leonard",
+    "image": "/assets/img/fruit-1600.jpg",
+    "rsvp": "zeffy",
+    "sample": true,
+    "shifts": []
+  },
+  "en": {
+    "slug": "christmas-benefit-dinner-december-12",
+    "title": "Christmas Benefit Dinner",
+    "summary": "A festive dinner supporting orphans and the families we walk with — tickets via Zeffy.",
+    "address": "Reception hall, Saint-Léonard [address to confirm]",
+    "meeting_point": "Welcome and coat check from 5:30 p.m.",
+    "image_alt": "A generous table of fresh, colourful fruit",
+    "price": "Ticket: $75 [to confirm] — tax receipt for the donation portion [if registered]",
+    "body": "A warm evening to celebrate the year, give thanks and support our winter projects: a three-course dinner, testimonies, a choir and a silent auction [to confirm].\n\nProceeds fund Christmas food baskets, “deep cold” kits and school support for the orphans we accompany.\n\nTickets are sold through **Zeffy**, a free Montréal-based platform for charities: 100% of your purchase goes to the mission.",
+    "bring": [
+      "Evening wear or your Sunday best"
+    ],
+    "type": "gala",
+    "start": "2026-12-12T18:00",
+    "end": "2026-12-12T22:30",
+    "neighbourhood": "saint-leonard",
+    "image": "/assets/img/fruit-1600.jpg",
+    "rsvp": "zeffy",
+    "sample": true,
+    "shifts": []
+  }
+}

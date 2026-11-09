@@ -1,0 +1,94 @@
+{
+  "fr": {
+    "metaTitle": "Où nous servons : Montréal, le Canada et au-delà | La Paix du Cœur",
+    "description": "Nous servons à Montréal, dans plusieurs villes du Canada et à l'international avec des partenaires. Pourquoi nous ne publions jamais de lieu précis.",
+    "title": "Où nous servons",
+    "intro": "Notre carte est une broderie, pas un plan : elle montre où nous servons, à l'échelle de la ville et de la région, sans jamais révéler un lieu précis.",
+    "zones": [
+      {
+        "key": "mtl",
+        "title": "Montréal",
+        "status": "Confirmé",
+        "text": "Notre point d'ancrage depuis 2014 : collectes alimentaires, maraudes au centre-ville, ateliers de formation et accompagnement des familles.",
+        "items": [
+          "Collectes alimentaires",
+          "Maraudes",
+          "Ateliers de formation",
+          "Aide aux familles"
+        ]
+      },
+      {
+        "key": "canada",
+        "title": "Plusieurs villes du Canada",
+        "status": "Villes à confirmer",
+        "text": "Des maraudes dans les rues de plusieurs villes canadiennes, à destination des sans-abri, des orphelinats et des étudiants.",
+        "items": [
+          "Maraudes",
+          "Soutien aux étudiants",
+          "[Villes à confirmer]"
+        ]
+      },
+      {
+        "key": "intl",
+        "title": "International",
+        "status": "À confirmer",
+        "text": "Soutien à des orphelins et à des veuves à l'étranger, par l'intermédiaire d'associations partenaires de confiance.",
+        "items": [
+          "Soutien à d'autres associations",
+          "[Pays à confirmer]"
+        ]
+      }
+    ],
+    "whyTitle": "Pourquoi aucun lieu précis ?",
+    "whyText": "Pour protéger les enfants, les familles et les personnes sans abri que nous rencontrons, nous ne publions jamais d'adresse, de nom d'orphelinat, d'école ou de lieu de maraude. Les points sur la carte sont symboliques et ne correspondent à aucun emplacement réel. Les bénévoles inscrits reçoivent les points de rencontre en privé.",
+    "legendNote": "Positions symboliques — aucune ne correspond à un lieu réel.",
+    "partnerTitle": "Vous êtes une association ou une église ?",
+    "partnerText": "Nous aimons collaborer. Écrivez-nous pour partager un projet ou organiser une collecte dans votre ville."
+  },
+  "en": {
+    "metaTitle": "Where we serve: Montréal, Canada and beyond | La Paix du Cœur",
+    "description": "We serve in Montréal, in several Canadian cities and abroad through partners. Why we never publish an exact location.",
+    "title": "Where we serve",
+    "intro": "Our map is an embroidery, not a street plan: it shows where we serve at city and region level, without ever revealing an exact place.",
+    "zones": [
+      {
+        "key": "mtl",
+        "title": "Montréal",
+        "status": "Confirmed",
+        "text": "Our home base since 2014: food drives, downtown street outreach, training workshops and support for families.",
+        "items": [
+          "Food drives",
+          "Street outreach",
+          "Training workshops",
+          "Family support"
+        ]
+      },
+      {
+        "key": "canada",
+        "title": "Several Canadian cities",
+        "status": "Cities to confirm",
+        "text": "Street outreach in several Canadian cities, serving homeless people, orphanages and students.",
+        "items": [
+          "Street outreach",
+          "Student support",
+          "[Cities to confirm]"
+        ]
+      },
+      {
+        "key": "intl",
+        "title": "International",
+        "status": "To confirm",
+        "text": "Support for orphans and widows abroad, through trusted partner associations.",
+        "items": [
+          "Support for other charities",
+          "[Countries to confirm]"
+        ]
+      }
+    ],
+    "whyTitle": "Why no exact locations?",
+    "whyText": "To protect the children, families and homeless people we meet, we never publish an address or the name of an orphanage, a school or an outreach spot. The dots on the map are symbolic and match no real place. Registered volunteers receive meeting points privately.",
+    "legendNote": "Symbolic positions — none matches a real place.",
+    "partnerTitle": "Are you a charity or a church?",
+    "partnerText": "We love working together. Write to us to share a project or organize a food drive in your city."
+  }
+}

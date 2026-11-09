@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "alimentaire",
+    "src": "/assets/img/food-bank-volunteers-960.jpg",
+    "title": "Tri des denrées",
+    "alt": "Des bénévoles trient des denrées dans des caisses bleues.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 6
+  },
+  "en": {
+    "type": "photo",
+    "category": "alimentaire",
+    "src": "/assets/img/food-bank-volunteers-960.jpg",
+    "title": "Sorting food",
+    "alt": "Volunteers sorting food into blue crates.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 6
+  }
+}

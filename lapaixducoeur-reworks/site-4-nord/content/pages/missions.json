@@ -1,0 +1,126 @@
+{
+  "fr": {
+    "title": "Nos missions",
+    "meta_title": "Missions — soutien, ateliers et entraide | La Paix du Cœur",
+    "meta_description": "Soutien aux nécessiteux, ateliers de formation et appui aux autres associations : les trois programmes de La Paix du Cœur, et nos actions sur le terrain.",
+    "eyebrow": "Ce que nous faisons",
+    "lead": "Trois programmes, deux actions de terrain et quatre domaines d’aide — tous offerts gratuitement.",
+    "programmes": [
+      {
+        "title": "Soutien aux nécessiteux",
+        "text": "Aide alimentaire, vestimentaire, financière et spirituelle aux personnes vivant des situations difficiles.",
+        "image": "bread-sharing",
+        "image_alt": "Des mains gantées tendent des paniers de petits pains"
+      },
+      {
+        "title": "Ateliers de formation",
+        "text": "Ateliers, séminaires, conférences et campagnes de sensibilisation, pour aider chacun à devenir autonome.",
+        "image": "library",
+        "image_alt": "Une allée de bibliothèque bordée de rayonnages de livres"
+      },
+      {
+        "title": "Aider d’autres associations",
+        "text": "Soutenir les projets d’autres associations porteuses de projets socio-humanitaires.",
+        "image": "children-joy",
+        "image_alt": "Un groupe d’enfants souriants pose pour une photo dans une rue"
+      }
+    ],
+    "actions": [
+      {
+        "title": "Collectes alimentaires",
+        "text": "À l’entrée d’épiceries partenaires, nous invitons les clients à ajouter un article à leur panier pour les familles que nous accompagnons.",
+        "link": "drives"
+      },
+      {
+        "title": "Maraudes",
+        "text": "Dans les rues de plusieurs villes du Canada, à destination des sans-abri, des orphelinats et des étudiants.",
+        "link": "events"
+      }
+    ],
+    "aid": [
+      {
+        "key": "alimentaire",
+        "title": "Alimentaire",
+        "text": "Paniers, repas chauds en maraude et collectes en épicerie."
+      },
+      {
+        "key": "vestimentaire",
+        "title": "Vestimentaire",
+        "text": "Manteaux, bottes, bas de laine et tuques pour passer l’hiver."
+      },
+      {
+        "key": "academique",
+        "title": "Académique",
+        "text": "Fournitures, boîtes-repas et soutien scolaire pour les orphelins."
+      },
+      {
+        "key": "materielle",
+        "title": "Matérielle ou financière",
+        "text": "Un coup de main ponctuel quand tout le reste manque."
+      }
+    ],
+    "abroad": "Nous soutenons aussi des orphelins et des veuves à l’étranger. Pays et partenaires : [à confirmer]."
+  },
+  "en": {
+    "title": "Our missions",
+    "meta_title": "Missions — relief, workshops and partnership | La Paix du Cœur",
+    "meta_description": "Relief for people in need, training workshops and support for other charities: the three programmes of La Paix du Cœur, and our work on the ground.",
+    "eyebrow": "What we do",
+    "lead": "Three programmes, two field activities and four areas of help — all offered free of charge.",
+    "programmes": [
+      {
+        "title": "Relief for people in need",
+        "text": "Food, clothing, financial and spiritual help for people going through hard times.",
+        "image": "bread-sharing",
+        "image_alt": "Gloved hands holding out baskets of bread rolls"
+      },
+      {
+        "title": "Training workshops",
+        "text": "Workshops, seminars, talks and awareness campaigns that help people become self-reliant.",
+        "image": "library",
+        "image_alt": "A library aisle lined with bookshelves"
+      },
+      {
+        "title": "Supporting other charities",
+        "text": "Backing the projects of other organizations working on social and humanitarian causes.",
+        "image": "children-joy",
+        "image_alt": "A group of smiling children posing for a photo on a street"
+      }
+    ],
+    "actions": [
+      {
+        "title": "Food drives",
+        "text": "At the entrance of partner grocery stores, we invite shoppers to add one item to their cart for the families we support.",
+        "link": "drives"
+      },
+      {
+        "title": "Street outreach",
+        "text": "In the streets of several Canadian cities, reaching out to the homeless, orphanages and students.",
+        "link": "events"
+      }
+    ],
+    "aid": [
+      {
+        "key": "alimentaire",
+        "title": "Food",
+        "text": "Food baskets, hot meals on outreach walks and grocery-store food drives."
+      },
+      {
+        "key": "vestimentaire",
+        "title": "Clothing",
+        "text": "Coats, boots, wool socks and toques to get through winter."
+      },
+      {
+        "key": "academique",
+        "title": "School",
+        "text": "Supplies, lunch boxes and tutoring for orphans."
+      },
+      {
+        "key": "materielle",
+        "title": "Material or financial",
+        "text": "Practical help when everything else falls short."
+      }
+    ],
+    "abroad": "We also support orphans and widows abroad. Countries and partners: [to confirm]."
+  }
+}

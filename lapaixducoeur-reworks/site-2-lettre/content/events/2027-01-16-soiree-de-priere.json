@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "slug": "soiree-de-priere-pour-les-orphelins",
+    "title": "Soirée de prière pour les orphelins",
+    "start": "2027-01-16T19:00",
+    "end": "2027-01-16T21:00",
+    "location": "Église partenaire, Montréal [lieu à confirmer]",
+    "locality": "Montréal",
+    "image": "/assets/img/bible-study.jpg",
+    "image_alt": "Un groupe réuni autour d’une Bible ouverte.",
+    "sample": true,
+    "registration_url": "",
+    "summary": "Louange, lecture des Tehilim et intercession pour les orphelins, les veuves et les familles accompagnées.",
+    "body": "Une soirée simple pour commencer l’année à genoux : louange, lecture des Tehilim, temps de prière en petits groupes. Les demandes déposées sur le mur de prière seront portées ce soir-là.\n\nEntrée libre. Thé et biscuits offerts."
+  },
+  "en": {
+    "slug": "prayer-evening-for-orphans",
+    "title": "Prayer evening for orphans",
+    "location": "Partner church, Montréal [location to confirm]",
+    "image_alt": "A group gathered around an open Bible.",
+    "summary": "Worship, reading of the Psalms and intercession for orphans, widows and the families we walk with.",
+    "body": "A simple evening to begin the year on our knees: worship, reading of the Psalms, prayer in small groups. Requests posted on the prayer wall will be carried in prayer that night.\n\nFree entry. Tea and biscuits provided."
+  }
+}

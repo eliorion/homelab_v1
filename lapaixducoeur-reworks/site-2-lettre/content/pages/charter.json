@@ -1,0 +1,70 @@
+{
+  "fr": {
+    "meta_title": "Charte du récit éthique | La Paix du Cœur",
+    "meta_description": "Nos engagements pour raconter avec dignité : prénoms seulement, consentement écrit et révocable, aucune image qui humilie, protection des enfants.",
+    "kicker": "Charte",
+    "title": "Raconter avec dignité",
+    "intro": "Une histoire est un don qu’on nous confie. Voici les engagements que nous prenons, nous et nos bénévoles, chaque fois que nous racontons la vie de quelqu’un.",
+    "commitments": [
+      {
+        "title": "L’espérance avant le besoin",
+        "text": "Nous racontons le moment où les choses tournent, pas la misère. Aucune image ou formule qui humilie, apitoie ou réduit une personne à sa situation."
+      },
+      {
+        "title": "Des prénoms, jamais de lieu précis",
+        "text": "Prénom seulement — souvent modifié. Jamais de nom de famille, d’adresse, d’école ou de lieu permettant d’identifier quelqu’un."
+      },
+      {
+        "title": "Un consentement écrit, révocable",
+        "text": "Chaque personne (ou son parent ou tuteur) donne son accord par écrit, peut relire son récit avant publication et peut nous demander de le retirer à tout moment."
+      },
+      {
+        "title": "Les enfants d’abord protégés",
+        "text": "Pas de portrait d’enfant en gros plan ni en détresse. Les enfants apparaissent en groupe, de dos, par leurs mains, ou en illustration. Aucune correspondance directe avec un enfant."
+      },
+      {
+        "title": "La voix de la personne",
+        "text": "Autant que possible, la personne raconte elle-même son histoire, avec ses mots. Nous indiquons toujours qui raconte."
+      },
+      {
+        "title": "La vérité, sans retouche",
+        "text": "Nous n’inventons ni chiffres ni témoignages. Une photo d’illustration est signalée comme telle. Un exemple est marqué comme exemple."
+      }
+    ],
+    "contact": "Vous pensez que nous avons manqué à cette charte ? Écrivez-nous : nous corrigerons rapidement."
+  },
+  "en": {
+    "meta_title": "Ethical storytelling charter | La Paix du Cœur",
+    "meta_description": "Our commitments for telling stories with dignity: first names only, written and revocable consent, no humiliating images, child protection.",
+    "kicker": "Charter",
+    "title": "Telling stories with dignity",
+    "intro": "A story is a gift entrusted to us. These are the commitments we and our volunteers make every time we tell someone’s life.",
+    "commitments": [
+      {
+        "title": "Hope before need",
+        "text": "We tell the moment things turn around, not the misery. No image or phrase that humiliates, invites pity, or reduces a person to their situation."
+      },
+      {
+        "title": "First names, never precise places",
+        "text": "First name only — often changed. Never a last name, address, school or place that could identify someone."
+      },
+      {
+        "title": "Written, revocable consent",
+        "text": "Each person (or their parent or guardian) consents in writing, can read their story before it is published, and can ask us to remove it at any time."
+      },
+      {
+        "title": "Children protected first",
+        "text": "No close-up portraits of children, and none in distress. Children appear in groups, from behind, through their hands, or as illustrations. No direct correspondence with a child."
+      },
+      {
+        "title": "The person’s own voice",
+        "text": "As much as possible, people tell their own story in their own words. We always say who is telling it."
+      },
+      {
+        "title": "The truth, untouched",
+        "text": "We invent no figures and no testimonies. An illustrative photo is labelled as such. A sample is marked as a sample."
+      }
+    ],
+    "contact": "Think we have fallen short of this charter? Write to us: we will correct it quickly."
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "fr": {
+    "name": "Épicerie partenaire — Jarry Est",
+    "address": "Rue Jarry Est, près de Saint-Hubert [adresse à confirmer]",
+    "hours_note": "Bacs à l’entrée, bénévoles présents pendant les heures indiquées",
+    "needs": [
+      "Riz et pâtes",
+      "Légumineuses en conserve",
+      "Beurre d’arachide",
+      "Lait UHT",
+      "Produits d’hygiène"
+    ],
+    "neighbourhood": "villeray",
+    "dates": [
+      {
+        "date": "2027-02-06",
+        "start": "10:00",
+        "end": "15:00"
+      }
+    ],
+    "sample": true
+  },
+  "en": {
+    "name": "Partner grocery — Jarry East",
+    "address": "Jarry Street East, near Saint-Hubert [address to confirm]",
+    "hours_note": "Bins by the entrance, volunteers on site during the hours shown",
+    "needs": [
+      "Rice and pasta",
+      "Canned legumes",
+      "Peanut butter",
+      "Shelf-stable milk",
+      "Hygiene products"
+    ],
+    "neighbourhood": "villeray",
+    "dates": [
+      {
+        "date": "2027-02-06",
+        "start": "10:00",
+        "end": "15:00"
+      }
+    ],
+    "sample": true
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "fr": {
+    "title": "La Paix du Cœur — Kimia Na Motema | Association chrétienne à Montréal",
+    "description": "Depuis 2014, La Paix du Cœur soutient les orphelins, les veuves, les démunis et les sans-abri à Montréal. Donnez une fois ou chaque mois, en toute transparence.",
+    "hero_eyebrow": "Association chrétienne · Montréal · depuis 2014",
+    "hero_title": "Allumer l’espérance, un cœur à la fois.",
+    "hero_highlight": "l’espérance",
+    "hero_intro": "Kimia na motema, c’est « la paix du cœur » en lingala. Nous accompagnons les orphelins, les veuves, les familles démunies et les sans-abri — gratuitement, pour la seule gloire d’Elohim.",
+    "hero_cta_primary": "Donner chaque mois",
+    "hero_cta_secondary": "Découvrir nos missions",
+    "hero_image_alt": "Un groupe d’enfants souriants, serrés les uns contre les autres.",
+    "hero_chip": "25 $ = un panier alimentaire",
+    "counters_title": "L’espérance, en chiffres",
+    "counters": [
+      {
+        "value": 12,
+        "suffix": "",
+        "label": "années de service depuis 2014",
+        "sample": false
+      },
+      {
+        "value": 1240,
+        "suffix": "",
+        "label": "paniers alimentaires remis",
+        "sample": true
+      },
+      {
+        "value": 85,
+        "suffix": "",
+        "label": "maraudes dans les rues",
+        "sample": true
+      },
+      {
+        "value": 310,
+        "suffix": "",
+        "label": "enfants soutenus à l’école",
+        "sample": true
+      }
+    ],
+    "areas_eyebrow": "Quatre façons d’aider",
+    "areas_title": "Là où le besoin se fait sentir",
+    "areas_intro": "Nos quatre domaines d’aide répondent aux besoins concrets de chaque jour, sans distinction de langue, de couleur ou d’origine.",
+    "gift_eyebrow": "Où va votre don",
+    "gift_title": "Voyez votre don prendre forme",
+    "gift_intro": "Déplacez le curseur : chaque dollar est réparti entre nos quatre domaines d’aide. Rien ne se perd, tout se partage.",
+    "circle_eyebrow": "Le Cercle du Cœur",
+    "circle_title": "Un don mensuel, une lumière qui ne s’éteint pas",
+    "circle_intro": "Les membres du Cercle donnent chaque mois le montant de leur choix. Ce soutien régulier nous permet de planifier les maraudes, les paniers et la rentrée scolaire avec confiance.",
+    "trust_eyebrow": "Transparence",
+    "trust_title": "Chaque dollar, en pleine lumière",
+    "trust_points": [
+      {
+        "title": "Des comptes ouverts",
+        "text": "Notre rapport annuel est publié en ligne, sous forme de page web lisible par tous."
+      },
+      {
+        "title": "Un don sécurisé",
+        "text": "Les dons en ligne passent par Zeffy. Nous ne publions jamais nos coordonnées bancaires."
+      },
+      {
+        "title": "La dignité d’abord",
+        "text": "Prénoms seulement, aucun lieu précis, et le consentement avant chaque photo."
+      }
+    ],
+    "closing_title": "Rejoignez celles et ceux qui gardent la lumière allumée",
+    "closing_text": "Par la prière, par un don ou par votre temps : chaque geste compte et chaque cœur est le bienvenu.",
+    "hero_image": "/img/children-joy.jpg",
+    "hero_verse_text": "Défendez le faible et l’orphelin, rendez justice à l’affligé et au pauvre.",
+    "hero_verse_ref": "Tehilim (Psaumes) 82:3"
+  },
+  "en": {
+    "title": "La Paix du Cœur — Kimia Na Motema | Christian charity in Montréal",
+    "description": "Since 2014, La Paix du Cœur has supported orphans, widows, people in need and the homeless in Montréal. Give once or monthly, with full transparency.",
+    "hero_eyebrow": "Christian charity · Montréal · since 2014",
+    "hero_title": "Kindling hope, one heart at a time.",
+    "hero_highlight": "hope",
+    "hero_intro": "Kimia na motema means “peace of the heart” in Lingala. We stand beside orphans, widows, families in need and people without a home — free of charge, for the glory of Elohim alone.",
+    "hero_cta_primary": "Give monthly",
+    "hero_cta_secondary": "Explore our missions",
+    "hero_image_alt": "A group of smiling children huddled close together.",
+    "hero_chip": "$25 = a food basket",
+    "counters_title": "Hope, by the numbers",
+    "counters": [
+      {
+        "value": 12,
+        "suffix": "",
+        "label": "years of service since 2014",
+        "sample": false
+      },
+      {
+        "value": 1240,
+        "suffix": "",
+        "label": "food baskets handed out",
+        "sample": true
+      },
+      {
+        "value": 85,
+        "suffix": "",
+        "label": "street outreach rounds",
+        "sample": true
+      },
+      {
+        "value": 310,
+        "suffix": "",
+        "label": "children supported at school",
+        "sample": true
+      }
+    ],
+    "areas_eyebrow": "Four ways we help",
+    "areas_title": "Where the need is felt",
+    "areas_intro": "Our four areas of aid meet everyday, practical needs — regardless of language, colour or origin.",
+    "gift_eyebrow": "Where your gift goes",
+    "gift_title": "Watch your gift take shape",
+    "gift_intro": "Move the slider: every dollar is shared across our four areas of aid. Nothing is wasted; everything is shared.",
+    "circle_eyebrow": "The Heart Circle",
+    "circle_title": "A monthly gift, a light that stays on",
+    "circle_intro": "Circle members give the amount of their choice every month. That steady support lets us plan outreach rounds, food baskets and back-to-school help with confidence.",
+    "trust_eyebrow": "Transparency",
+    "trust_title": "Every dollar, in full light",
+    "trust_points": [
+      {
+        "title": "Open books",
+        "text": "Our annual report is published online as a web page anyone can read."
+      },
+      {
+        "title": "Safe giving",
+        "text": "Online gifts go through Zeffy. We never publish our bank details."
+      },
+      {
+        "title": "Dignity first",
+        "text": "First names only, no exact locations, and consent before every photo."
+      }
+    ],
+    "closing_title": "Join the people who keep the light on",
+    "closing_text": "Through prayer, a gift or your time: every act counts and every heart is welcome.",
+    "hero_image": "/img/children-joy.jpg",
+    "hero_verse_text": "Defend the weak and the fatherless; uphold the cause of the poor and the oppressed.",
+    "hero_verse_ref": "Tehillim (Psalms) 82:3"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "illustration",
+    "category": "vestimentaire",
+    "src": "/assets/illustrations/vetements.svg",
+    "title": "Vêtements d'hiver",
+    "alt": "Illustration : un chandail, une tuque et des mitaines sur une corde à linge, au-dessus d'une pile de vêtements pliés.",
+    "caption": "Illustration originale, faite main pour le site",
+    "order": 7
+  },
+  "en": {
+    "type": "illustration",
+    "category": "vestimentaire",
+    "src": "/assets/illustrations/vetements.svg",
+    "title": "Winter clothes",
+    "alt": "Illustration: a sweater, a toque and mittens on a clothesline above a pile of folded clothes.",
+    "caption": "Original hand-made illustration for the website",
+    "order": 7
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "type": "audio",
+    "category": "audio",
+    "title": "Les voix du cœur — épisode 1 : « Pourquoi Kimia ? »",
+    "audioUrl": "/assets/audio/voix-du-coeur-exemple.mp3",
+    "duration": "0:09",
+    "caption": "Extrait d'exemple : un court accord musical en attendant le premier épisode [à enregistrer].",
+    "sample": true,
+    "order": 101,
+    "transcript": "[Musique douce]\n\nVoix 1 : Bienvenue dans « Les voix du cœur », le balado de La Paix du Cœur.\n\nVoix 2 : Kimia na motema, en lingala, veut dire « la paix du cœur ». C'est ce que nous souhaitons apporter à chaque orphelin, chaque veuve et chaque personne seule que nous rencontrons.\n\nVoix 1 : Dans ce premier épisode, nous racontons comment tout a commencé à Montréal, en 2014.\n\n[Transcription d'exemple — à remplacer par celle de l'épisode réel]"
+  },
+  "en": {
+    "type": "audio",
+    "category": "audio",
+    "title": "Voices of the Heart — episode 1: \"Why Kimia?\"",
+    "audioUrl": "/assets/audio/voix-du-coeur-exemple.mp3",
+    "duration": "0:09",
+    "caption": "Sample clip: a short musical chord until the first episode is recorded [to record].",
+    "sample": true,
+    "order": 101,
+    "transcript": "[Soft music]\n\nVoice 1: Welcome to \"Voices of the Heart\", the La Paix du Cœur podcast.\n\nVoice 2: Kimia na motema, in Lingala, means \"peace of the heart\". That is what we hope to bring to every orphan, every widow and every lonely person we meet.\n\nVoice 1: In this first episode, we tell how it all began in Montréal in 2014.\n\n[Sample transcript — to be replaced with the real episode's]"
+  }
+}

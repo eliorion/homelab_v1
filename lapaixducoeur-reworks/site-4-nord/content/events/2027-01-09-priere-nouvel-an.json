@@ -1,0 +1,42 @@
+{
+  "fr": {
+    "slug": "matinee-de-priere-nouvel-an-9-janvier",
+    "title": "Matinée de prière du Nouvel An",
+    "summary": "Confier l’année 2027 au Seigneur, avec un temps de partage autour d’un café.",
+    "address": "Église partenaire, secteur Ahuntsic [adresse à confirmer]",
+    "meeting_point": "Salle paroissiale, au sous-sol",
+    "image_alt": "Trois femmes âgées rient ensemble autour d’une tasse de thé",
+    "body": "Nous commençons l’année comme nous voulons la vivre : dans la prière et la reconnaissance.\n\nLecture des Tehilim, prière pour les veuves et les aînés isolés, puis café et galettes. Les intentions de prière peuvent être déposées à l’avance par le formulaire de contact.",
+    "bring": [
+      "Une intention de prière, si vous le souhaitez"
+    ],
+    "type": "culte",
+    "start": "2027-01-09T10:00",
+    "end": "2027-01-09T12:00",
+    "neighbourhood": "ahuntsic",
+    "image": "/assets/img/elders-1024.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": []
+  },
+  "en": {
+    "slug": "new-year-prayer-morning-january-9",
+    "title": "New Year prayer morning",
+    "summary": "Committing 2027 to the Lord, followed by fellowship over coffee.",
+    "address": "Partner church, Ahuntsic area [address to confirm]",
+    "meeting_point": "Parish hall, lower level",
+    "image_alt": "Three older women laughing together over a cup of tea",
+    "body": "We begin the year the way we want to live it: in prayer and gratitude.\n\nReading from the Tehilim (Psalms), prayer for widows and isolated seniors, then coffee and biscuits. Prayer requests can be sent ahead through the contact form.",
+    "bring": [
+      "A prayer request, if you wish"
+    ],
+    "type": "culte",
+    "start": "2027-01-09T10:00",
+    "end": "2027-01-09T12:00",
+    "neighbourhood": "ahuntsic",
+    "image": "/assets/img/elders-1024.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": []
+  }
+}

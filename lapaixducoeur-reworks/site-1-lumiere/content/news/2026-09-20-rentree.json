@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "slug": "rentree-scolaire-trousses",
+    "tag": "Académique",
+    "title": "Rentrée scolaire : 95 trousses pour bien commencer l’année",
+    "summary": "Sacs, cahiers, crayons et calculatrices : grâce à vous, des enfants ont fait leur rentrée la tête haute.",
+    "image_alt": "Une allée de bibliothèque bordée de livres.",
+    "body": "Pour un enfant, arriver le premier jour sans fournitures, c’est commencer l’année avec un poids sur le cœur.\n\nCet été, nous avons préparé **95 trousses scolaires** [chiffre d’exemple] : un sac, des cahiers, des crayons, une calculatrice et un petit mot d’encouragement.\n\n## Et après la rentrée ?\n\nNotre programme académique continue toute l’année avec de l’aide aux devoirs bénévole [à confirmer]. Vous aimez transmettre ? [Rejoignez l’équipe](/fr/contact/).",
+    "date": "2026-09-20",
+    "image": "/img/library.jpg",
+    "sample": true
+  },
+  "en": {
+    "slug": "back-to-school-kits",
+    "tag": "Education",
+    "title": "Back to school: 95 kits for a good start",
+    "summary": "Backpacks, notebooks, pencils and calculators: thanks to you, children started school with their heads held high.",
+    "image_alt": "A library aisle lined with books.",
+    "body": "For a child, arriving on the first day without supplies means starting the year with a weight on the heart.\n\nThis summer we prepared **95 school kits** [sample figure]: a backpack, notebooks, pencils, a calculator and a short note of encouragement.\n\n## And after the first day?\n\nOur education programme continues all year with volunteer homework help [to confirm]. Love passing on what you know? [Join the team](/en/contact/).",
+    "date": "2026-09-20",
+    "image": "/img/library.jpg",
+    "sample": true
+  }
+}

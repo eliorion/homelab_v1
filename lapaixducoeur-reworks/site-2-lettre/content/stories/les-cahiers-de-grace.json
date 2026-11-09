@@ -1,0 +1,55 @@
+{
+  "fr": {
+    "slug": "les-cahiers-de-grace",
+    "title": "Les cahiers de Grâce",
+    "dek": "Une rentrée scolaire, une maman qui n’osait pas demander, et une fillette qui a recommencé à lever la main.",
+    "date": "2026-09-12",
+    "tags": ["education", "famille"],
+    "image": "/assets/img/library.jpg",
+    "image_alt": "Une allée de bibliothèque bordée de rayonnages remplis de livres colorés.",
+    "narrator": "Raconté par Esther, la maman de Grâce",
+    "reading_minutes": 4,
+    "sample": true,
+    "consent_note": "Prénoms modifiés. Récit partagé avec l’accord écrit du parent. Aucune photo de l’enfant n’est publiée.",
+    "chapters": [
+      {
+        "heading": "La liste",
+        "body": "Chaque mois d’août, l’école envoie la liste. Cahiers lignés, duo-tangs, crayons, une calculatrice, une boîte à lunch. Cette année-là, je l’ai pliée en quatre et je l’ai rangée dans mon sac sans la lire jusqu’au bout. Je savais que je ne pourrais pas tout acheter.\n\nGrâce avait neuf ans. Elle ne disait rien, mais je voyais bien qu’elle regardait les sacs neufs des autres enfants."
+      },
+      {
+        "heading": "Oser demander",
+        "body": "C’est une amie de l’église qui m’a parlé de La Paix du Cœur. J’avais honte d’écrire. J’ai envoyé un courriel très court, presque une excuse. On m’a répondu le lendemain, avec une seule question : « Quelle est la couleur préférée de Grâce ? »\n\nUne semaine plus tard, nous avions un sac à dos violet, tout ce qui était sur la liste, et une petite carte avec un verset écrit à la main. Personne ne m’a demandé de me justifier."
+      },
+      {
+        "heading": "Lever la main",
+        "body": "En octobre, l’enseignante m’a dit que Grâce participait davantage en classe. Elle lève la main. Elle prête ses crayons de couleur. Elle a recommencé à écrire des histoires dans le cahier « de réserve », celui qu’elle garde pour les idées importantes.\n\nCe n’était que des fournitures. Mais pour ma fille, c’était le droit d’arriver à l’école comme tout le monde. Et pour moi, c’était la preuve que nous n’étions pas seules."
+      }
+    ],
+    "pullquote": { "text": "On ne m’a posé qu’une question : « Quelle est la couleur préférée de Grâce ? »", "who": "Esther" },
+    "verse": { "text": "Défendez le faible et l’orphelin, rendez justice à l’affligé et au pauvre.", "reference": "Tehilim (Psaumes) 82:3" }
+  },
+  "en": {
+    "slug": "graces-notebooks",
+    "title": "Grace’s Notebooks",
+    "dek": "A new school year, a mother who didn’t dare ask, and a little girl who started raising her hand again.",
+    "image_alt": "A library aisle lined with shelves full of colourful books.",
+    "narrator": "Told by Esther, Grace’s mother",
+    "consent_note": "Names changed. Story shared with the parent’s written consent. No photo of the child is published.",
+    "chapters": [
+      {
+        "heading": "The list",
+        "body": "Every August, the school sends the list. Lined notebooks, folders, pencils, a calculator, a lunch box. That year I folded it in four and put it in my bag without reading to the end. I knew I couldn’t buy everything.\n\nGrace was nine. She didn’t say anything, but I could see her looking at the other children’s new backpacks."
+      },
+      {
+        "heading": "Daring to ask",
+        "body": "A friend from church told me about La Paix du Cœur. I was ashamed to write. I sent a very short email, almost an apology. They answered the next day with a single question: “What is Grace’s favourite colour?”\n\nA week later we had a purple backpack, everything on the list, and a small card with a verse written by hand. Nobody asked me to justify myself."
+      },
+      {
+        "heading": "Raising her hand",
+        "body": "In October, her teacher told me Grace was taking part more in class. She raises her hand. She lends her coloured pencils. She has started writing stories again in her “spare” notebook, the one she keeps for important ideas.\n\nIt was only school supplies. But for my daughter, it meant arriving at school like everyone else. And for me, it was proof that we were not alone."
+      }
+    ],
+    "pullquote": { "text": "They asked me only one question: “What is Grace’s favourite colour?”", "who": "Esther" },
+    "verse": { "text": "Defend the weak and the fatherless; uphold the cause of the poor and the oppressed.", "reference": "Tehilim (Psalms) 82:3" }
+  }
+}

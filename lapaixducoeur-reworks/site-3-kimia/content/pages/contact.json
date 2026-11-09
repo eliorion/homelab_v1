@@ -1,0 +1,42 @@
+{
+  "fr": {
+    "metaTitle": "Nous joindre | La Paix du Cœur — Kimia Na Motema",
+    "description": "Écrivez à La Paix du Cœur : demande d'aide, bénévolat, dons matériels, partenariats, prière. Réponse sous quelques jours.",
+    "title": "Nous joindre",
+    "intro": "Une demande d'aide, une question, un sujet de prière, une idée de partenariat ? Écrivez-nous : chaque message est lu avec attention.",
+    "subjects": [
+      "Demande d'aide",
+      "Bénévolat",
+      "Dons matériels",
+      "Partenariat",
+      "Sujet de prière",
+      "Médias",
+      "Autre"
+    ],
+    "response": "Nous répondons habituellement en quelques jours [délai à confirmer].",
+    "helpTitle": "Vous avez besoin d'aide ?",
+    "helpText": "Écrivez-nous en toute confiance. Votre demande reste confidentielle. En cas d'urgence, composez le 911 ; pour trouver des ressources près de chez vous, composez le 211.",
+    "socialTitle": "Réseaux sociaux",
+    "socialNote": "Liens à confirmer."
+  },
+  "en": {
+    "metaTitle": "Contact us | La Paix du Cœur — Kimia Na Motema",
+    "description": "Write to La Paix du Cœur: requests for help, volunteering, gifts in kind, partnerships, prayer. We reply within a few days.",
+    "title": "Contact us",
+    "intro": "A request for help, a question, a prayer request, a partnership idea? Write to us: every message is read with care.",
+    "subjects": [
+      "Request for help",
+      "Volunteering",
+      "Gifts in kind",
+      "Partnership",
+      "Prayer request",
+      "Media",
+      "Other"
+    ],
+    "response": "We usually reply within a few days [timeframe to confirm].",
+    "helpTitle": "Do you need help?",
+    "helpText": "Write to us in confidence. Your request stays confidential. In an emergency, call 911; to find resources near you, call 211.",
+    "socialTitle": "Social media",
+    "socialNote": "Links to confirm."
+  }
+}

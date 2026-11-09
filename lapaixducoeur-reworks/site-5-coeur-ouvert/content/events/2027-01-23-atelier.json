@@ -1,0 +1,34 @@
+{
+  "fr": {
+    "slug": "atelier-budget-janvier-2027",
+    "title": "Atelier : bâtir son budget",
+    "start": "2027-01-23T09:30:00-05:00",
+    "end": "2027-01-23T12:00:00-05:00",
+    "location": "Salle communautaire, Montréal",
+    "address": "Adresse exacte [à confirmer]",
+    "category": "Atelier",
+    "price": "Gratuit, sur inscription",
+    "ticket_url": "",
+    "sample": true,
+    "image": "/assets/img/library.jpg",
+    "image_alt": "Allée d’une bibliothèque bordée de livres",
+    "summary": "Trois heures pour construire un budget familial simple et repérer les aides disponibles.",
+    "body": "Un atelier pratique, en petit groupe, pour gagner en autonomie. Collation offerte. Garde d’enfants possible sur demande [à confirmer]."
+  },
+  "en": {
+    "slug": "budget-workshop-january-2027",
+    "title": "Workshop: building a budget",
+    "start": "2027-01-23T09:30:00-05:00",
+    "end": "2027-01-23T12:00:00-05:00",
+    "location": "Community hall, Montréal",
+    "address": "Exact address [to confirm]",
+    "category": "Workshop",
+    "price": "Free, registration required",
+    "ticket_url": "",
+    "sample": true,
+    "image": "/assets/img/library.jpg",
+    "image_alt": "A library aisle lined with books",
+    "summary": "Three hours to build a simple family budget and find the help available.",
+    "body": "A hands-on workshop in a small group, to grow in independence. Snacks provided. Childcare possible on request [to confirm]."
+  }
+}

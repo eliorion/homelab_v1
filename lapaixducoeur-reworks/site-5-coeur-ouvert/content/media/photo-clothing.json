@@ -1,0 +1,18 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 6,
+    "sample": false,
+    "title": "Trié avec soin.",
+    "image": "/assets/img/clothing.jpg",
+    "alt": "Vêtements suspendus sur un portant"
+  },
+  "en": {
+    "type": "photo",
+    "order": 6,
+    "sample": false,
+    "title": "Sorted with care.",
+    "image": "/assets/img/clothing.jpg",
+    "alt": "Clothes hanging on a rack"
+  }
+}

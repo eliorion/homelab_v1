@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Visite aux aînées du quartier",
+    "description": "Photo d’illustration [à remplacer par une photo de l’association].",
+    "image_alt": "Trois femmes âgées rient ensemble autour d’une tasse de thé",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/elders-1024.jpg",
+    "date": "2026-10-10",
+    "sample": true
+  },
+  "en": {
+    "title": "Visiting neighbourhood seniors",
+    "description": "Illustrative photo [to be replaced with the charity’s own].",
+    "image_alt": "Three older women laughing together over a cup of tea",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/elders-1024.jpg",
+    "date": "2026-10-10",
+    "sample": true
+  }
+}

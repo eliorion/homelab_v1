@@ -1,0 +1,30 @@
+{
+  "fr": {
+    "slug": "maraude-de-noel",
+    "title": "Maraude de Noël",
+    "summary": "Repas chauds, vêtements chauds et cadeaux pour les personnes sans-abri du centre-ville.",
+    "location_name": "Centre-ville de Montréal — point de rencontre [à confirmer]",
+    "image_alt": "Des boîtes-repas garnies de fruits et de légumes.",
+    "body": "À l’approche de Noël, nous partons à la rencontre des personnes qui vivent dans la rue, avec un repas chaud, des vêtements et une parole d’espérance.\n\nLe point de rencontre est communiqué aux bénévoles inscrits. Habillez-vous chaudement !",
+    "start": "2026-12-19T18:00:00-05:00",
+    "end": "2026-12-19T21:30:00-05:00",
+    "locality": "Montréal",
+    "ticket_url": "",
+    "image": "/img/lunchboxes.jpg",
+    "sample": true
+  },
+  "en": {
+    "slug": "christmas-street-outreach",
+    "title": "Christmas street outreach",
+    "summary": "Hot meals, warm clothes and gifts for people experiencing homelessness downtown.",
+    "location_name": "Downtown Montréal — meeting point [to confirm]",
+    "image_alt": "Lunch boxes filled with fruit and vegetables.",
+    "body": "As Christmas approaches, we go out to meet people living on the street, with a hot meal, warm clothes and a word of hope.\n\nThe meeting point is shared with registered volunteers. Dress warmly!",
+    "start": "2026-12-19T18:00:00-05:00",
+    "end": "2026-12-19T21:30:00-05:00",
+    "locality": "Montréal",
+    "ticket_url": "",
+    "image": "/img/lunchboxes.jpg",
+    "sample": true
+  }
+}

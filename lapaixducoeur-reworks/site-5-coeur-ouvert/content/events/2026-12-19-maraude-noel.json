@@ -1,0 +1,34 @@
+{
+  "fr": {
+    "slug": "maraude-de-noel",
+    "title": "Grande maraude de Noël",
+    "start": "2026-12-19T18:00:00-05:00",
+    "end": "2026-12-19T23:00:00-05:00",
+    "location": "Centre-ville de Montréal",
+    "address": "Point de rendez-vous communiqué aux bénévoles inscrits",
+    "category": "Maraude",
+    "price": "Bénévoles sur inscription",
+    "ticket_url": "",
+    "sample": true,
+    "image": "/assets/img/bread-sharing.jpg",
+    "image_alt": "Des mains tendent des paniers de pain frais",
+    "summary": "Repas chauds, manteaux et cadeaux remis aux personnes sans abri du centre-ville.",
+    "body": "La maraude la plus importante de l’année. Les repas et les manteaux offerts par la campagne de Noël seront remis ce soir-là.\n\nLes bénévoles reçoivent une courte formation avant le départ. Inscription obligatoire."
+  },
+  "en": {
+    "slug": "christmas-street-outreach",
+    "title": "Christmas street outreach",
+    "start": "2026-12-19T18:00:00-05:00",
+    "end": "2026-12-19T23:00:00-05:00",
+    "location": "Downtown Montréal",
+    "address": "Meeting point shared with registered volunteers",
+    "category": "Street outreach",
+    "price": "Volunteers by registration",
+    "ticket_url": "",
+    "sample": true,
+    "image": "/assets/img/bread-sharing.jpg",
+    "image_alt": "Hands holding out baskets of fresh bread",
+    "summary": "Hot meals, coats and gifts handed to people sleeping rough downtown.",
+    "body": "The biggest outreach night of the year. The meals and coats given through the Christmas campaign are handed over that night.\n\nVolunteers get a short briefing before heading out. Registration required."
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Boîtes-repas de la rentrée",
+    "description": "Photo d’illustration [à remplacer par une photo de l’association].",
+    "image_alt": "Des boîtes-repas garnies de fruits, de légumes et de sandwichs",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/lunchboxes-1600.jpg",
+    "date": "2026-09-05",
+    "sample": true
+  },
+  "en": {
+    "title": "Back-to-school lunch boxes",
+    "description": "Illustrative photo [to be replaced with the charity’s own].",
+    "image_alt": "Lunch boxes filled with fruit, vegetables and sandwiches",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/lunchboxes-1600.jpg",
+    "date": "2026-09-05",
+    "sample": true
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "fr": {
+    "slug": "grande-collecte-de-noel-19-decembre",
+    "title": "Grande collecte de Noël — Saint-Michel",
+    "summary": "Notre plus grande collecte de l’année : de quoi composer les paniers de Noël des familles.",
+    "address": "Épicerie partenaire, boulevard Saint-Michel [adresse à confirmer]",
+    "meeting_point": "Table d’accueil à l’entrée du magasin",
+    "image_alt": "Des boîtes-repas garnies de fruits, de légumes et de sandwichs",
+    "body": "Chaque Noël, nous composons des paniers pour les familles, les veuves et les personnes seules que nous accompagnons tout au long de l’année.\n\nLe samedi, nous recueillons les denrées; le dimanche après-midi, nous montons les paniers ensemble — une belle activité à faire en famille ou avec votre groupe d’église.\n\n**Pour Noël, on cherche surtout :** conserves de viande ou de poisson, sauce tomate, farine, sucre, huile, collations pour enfants et petites gâteries.",
+    "bring": [
+      "Vêtements chauds pour les pauses à l’extérieur"
+    ],
+    "type": "collecte",
+    "start": "2026-12-19T09:30",
+    "end": "2026-12-19T17:00",
+    "neighbourhood": "saint-michel",
+    "image": "/assets/img/lunchboxes-1600.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "matin",
+        "role_fr": "Accueil des clients — matin",
+        "role_en": "Greeting shoppers — morning",
+        "start": "2026-12-19T09:30",
+        "end": "2026-12-19T13:00",
+        "spots": 6,
+        "taken": 2
+      },
+      {
+        "id": "apm",
+        "role_fr": "Accueil des clients — après-midi",
+        "role_en": "Greeting shoppers — afternoon",
+        "start": "2026-12-19T13:00",
+        "end": "2026-12-19T17:00",
+        "spots": 6,
+        "taken": 1
+      },
+      {
+        "id": "paniers",
+        "role_fr": "Montage des paniers de Noël",
+        "role_en": "Assembling Christmas baskets",
+        "start": "2026-12-20T13:00",
+        "end": "2026-12-20T16:00",
+        "spots": 10,
+        "taken": 3
+      }
+    ]
+  },
+  "en": {
+    "slug": "christmas-food-drive-december-19",
+    "title": "Great Christmas food drive — Saint-Michel",
+    "summary": "Our biggest drive of the year: everything we need to build families’ Christmas baskets.",
+    "address": "Partner grocery store, Saint-Michel Boulevard [address to confirm]",
+    "meeting_point": "Welcome table by the store entrance",
+    "image_alt": "Lunch boxes filled with fruit, vegetables and sandwiches",
+    "body": "Every Christmas we put together baskets for the families, widows and people living alone whom we support throughout the year.\n\nOn Saturday we collect food; on Sunday afternoon we assemble the baskets together — a great activity for families or church groups.\n\n**For Christmas we especially need:** canned meat or fish, tomato sauce, flour, sugar, oil, children’s snacks and small treats.",
+    "bring": [
+      "Warm clothes for breaks outside"
+    ],
+    "type": "collecte",
+    "start": "2026-12-19T09:30",
+    "end": "2026-12-19T17:00",
+    "neighbourhood": "saint-michel",
+    "image": "/assets/img/lunchboxes-1600.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "matin",
+        "role_fr": "Accueil des clients — matin",
+        "role_en": "Greeting shoppers — morning",
+        "start": "2026-12-19T09:30",
+        "end": "2026-12-19T13:00",
+        "spots": 6,
+        "taken": 2
+      },
+      {
+        "id": "apm",
+        "role_fr": "Accueil des clients — après-midi",
+        "role_en": "Greeting shoppers — afternoon",
+        "start": "2026-12-19T13:00",
+        "end": "2026-12-19T17:00",
+        "spots": 6,
+        "taken": 1
+      },
+      {
+        "id": "paniers",
+        "role_fr": "Montage des paniers de Noël",
+        "role_en": "Assembling Christmas baskets",
+        "start": "2026-12-20T13:00",
+        "end": "2026-12-20T16:00",
+        "spots": 10,
+        "taken": 3
+      }
+    ]
+  }
+}

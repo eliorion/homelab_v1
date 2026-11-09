@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "communaute",
+    "src": "/assets/img/widows-800.jpg",
+    "title": "Femmes de courage",
+    "alt": "Deux femmes âgées en tenue colorée, assises devant un mur de briques.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 4
+  },
+  "en": {
+    "type": "photo",
+    "category": "communaute",
+    "src": "/assets/img/widows-800.jpg",
+    "title": "Women of courage",
+    "alt": "Two older women in colourful clothing sitting in front of a brick wall.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 4
+  }
+}

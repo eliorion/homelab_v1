@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Visite aux veuves",
+    "caption": "",
+    "alt": "Deux femmes souriantes devant un mur de briques.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/widows.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  },
+  "en": {
+    "title": "Visiting widows",
+    "caption": "",
+    "alt": "Two smiling women in front of a brick wall.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/widows.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  }
+}

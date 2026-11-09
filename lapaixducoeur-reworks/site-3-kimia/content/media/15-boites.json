@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "alimentaire",
+    "src": "/assets/img/lunchboxes-960.jpg",
+    "title": "Boîtes à lunch",
+    "alt": "Des boîtes à lunch remplies de fruits et de légumes, sur fond orangé.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 15
+  },
+  "en": {
+    "type": "photo",
+    "category": "alimentaire",
+    "src": "/assets/img/lunchboxes-960.jpg",
+    "title": "Lunch boxes",
+    "alt": "Lunch boxes filled with fruit and vegetables on an orange background.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 15
+  }
+}

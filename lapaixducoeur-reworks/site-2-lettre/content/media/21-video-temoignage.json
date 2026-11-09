@@ -1,0 +1,17 @@
+{
+  "fr": {
+    "type": "video",
+    "order": 21,
+    "youtube_id": "M7lc1UVf-VE",
+    "image": "/assets/img/elders.jpg",
+    "title": "Témoignage : la table de Mama Rose",
+    "alt": "Aperçu de la vidéo : trois femmes rient ensemble.",
+    "caption": "Vidéo d’exemple — identifiant YouTube à remplacer.",
+    "sample": true
+  },
+  "en": {
+    "title": "Testimony: Mama Rose’s table",
+    "alt": "Video preview: three women laughing together.",
+    "caption": "Sample video — YouTube ID to replace."
+  }
+}

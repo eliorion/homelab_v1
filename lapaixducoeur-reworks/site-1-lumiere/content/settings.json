@@ -1,0 +1,58 @@
+{
+  "site_name": "La Paix du Cœur",
+  "alternate_name": "Kimia Na Motema",
+  "site_url": "https://lapaixducoeur.ca",
+  "email": "lapaixducoeur.ca@gmail.com",
+  "interac_email": "lapaixducoeur.ca@gmail.com",
+  "donate_url": "https://www.zeffy.com/fr-CA/donation-form/a-configurer",
+  "charity_number": "",
+  "founding_year": 2014,
+  "calendar_google_public_url": "",
+  "calendar_ics_source": "",
+  "social": [
+    {
+      "name": "Facebook",
+      "url": ""
+    },
+    {
+      "name": "YouTube",
+      "url": ""
+    },
+    {
+      "name": "Instagram",
+      "url": ""
+    }
+  ],
+  "circle_members": 63,
+  "circle_goal": 100,
+  "circle_sample": true,
+  "allocation": [
+    {
+      "key": "food",
+      "pct": 40,
+      "unit_cost": 25
+    },
+    {
+      "key": "clothing",
+      "pct": 20,
+      "unit_cost": 60
+    },
+    {
+      "key": "school",
+      "pct": 25,
+      "unit_cost": 35
+    },
+    {
+      "key": "material",
+      "pct": 15,
+      "unit_cost": 75
+    }
+  ],
+  "allocation_sample": true,
+  "verse_of_week": {
+    "fr_text": "Celui qui a pitié du pauvre prête à YHWH, qui lui rendra son bienfait.",
+    "fr_ref": "Proverbes 19:17",
+    "en_text": "Whoever is kind to the poor lends to YHWH, and he will repay him for his deed.",
+    "en_ref": "Proverbs 19:17"
+  }
+}

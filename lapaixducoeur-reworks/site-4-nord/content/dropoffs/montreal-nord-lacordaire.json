@@ -1,0 +1,54 @@
+{
+  "fr": {
+    "name": "Marché partenaire — Lacordaire",
+    "address": "Boulevard Lacordaire, secteur Léger [adresse à confirmer]",
+    "hours_note": "Bacs à l’entrée, bénévoles présents pendant les heures indiquées",
+    "needs": [
+      "Riz et pâtes",
+      "Légumineuses en conserve",
+      "Beurre d’arachide",
+      "Lait UHT",
+      "Produits d’hygiène"
+    ],
+    "neighbourhood": "montreal-nord",
+    "dates": [
+      {
+        "date": "2026-12-05",
+        "start": "10:00",
+        "end": "15:00"
+      },
+      {
+        "date": "2027-02-20",
+        "start": "10:00",
+        "end": "15:00"
+      }
+    ],
+    "sample": true
+  },
+  "en": {
+    "name": "Partner market — Lacordaire",
+    "address": "Lacordaire Boulevard, Léger area [address to confirm]",
+    "hours_note": "Bins by the entrance, volunteers on site during the hours shown",
+    "needs": [
+      "Rice and pasta",
+      "Canned legumes",
+      "Peanut butter",
+      "Shelf-stable milk",
+      "Hygiene products"
+    ],
+    "neighbourhood": "montreal-nord",
+    "dates": [
+      {
+        "date": "2026-12-05",
+        "start": "10:00",
+        "end": "15:00"
+      },
+      {
+        "date": "2027-02-20",
+        "start": "10:00",
+        "end": "15:00"
+      }
+    ],
+    "sample": true
+  }
+}

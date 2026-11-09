@@ -1,0 +1,55 @@
+{
+  "fr": {
+    "slug": "la-table-de-mama-rose",
+    "title": "La table de Mama Rose",
+    "dek": "Veuve depuis trois hivers, elle pensait n’avoir plus rien à offrir. Elle avait une table, et du thé.",
+    "date": "2026-08-30",
+    "tags": ["famille", "foi"],
+    "image": "/assets/img/elders.jpg",
+    "image_alt": "Trois femmes âgées rient ensemble autour d’une tasse de thé.",
+    "narrator": "Raconté par une bénévole des visites à domicile",
+    "reading_minutes": 5,
+    "sample": true,
+    "consent_note": "Prénom d’usage, partagé avec son accord. Photo d’illustration : les personnes représentées ne sont pas celles du récit.",
+    "chapters": [
+      {
+        "heading": "Trois hivers",
+        "body": "Rose — tout le monde l’appelle Mama Rose — a perdu son mari il y a trois hivers. Leurs enfants vivent loin. Quand nous sommes venues la première fois avec un panier de denrées, elle nous a fait asseoir et nous a servi du thé avant même que nous ayons posé les sacs.\n\n« Chez moi, on ne reste pas debout », a-t-elle dit. Nous avons compris qu’elle ne cherchait pas d’abord de l’aide. Elle cherchait des visages."
+      },
+      {
+        "heading": "Ce que la veuve donne",
+        "body": "Il y a dans l’Écriture une veuve qui donne deux petites pièces, et c’est elle que le Seigneur remarque. Mama Rose nous l’a rappelé un mardi, en sortant une boîte de biscuits qu’elle gardait « pour les visites ».\n\nDepuis, nous ne venons plus seulement apporter. Nous venons recevoir. Elle nous raconte le pays de son enfance, les cantiques de son enfance, les prénoms de ses petits-enfants. Elle prie pour chacune de nous, par son nom."
+      },
+      {
+        "heading": "Une table qui s’agrandit",
+        "body": "Au printemps, Mama Rose nous a demandé si elle pouvait inviter deux voisines, veuves elles aussi. Puis une troisième. Le mardi est devenu un rendez-vous : un panier, un psaume, beaucoup de thé, et des rires qui débordent dans le couloir.\n\n« Le Seigneur m’a pris mon mari, dit-elle, mais il ne m’a pas laissée seule. Il m’a envoyé des filles. »"
+      }
+    ],
+    "pullquote": { "text": "Chez moi, on ne reste pas debout.", "who": "Mama Rose" },
+    "verse": { "text": "La religion pure et sans souillure devant notre Elohîm et Père, c’est de visiter les orphelins et les veuves dans leurs tribulations…", "reference": "Yaacov (Jacques) 1:27" }
+  },
+  "en": {
+    "slug": "mama-roses-table",
+    "title": "Mama Rose’s Table",
+    "dek": "Widowed three winters ago, she thought she had nothing left to give. She had a table, and tea.",
+    "image_alt": "Three older women laughing together over a cup of tea.",
+    "narrator": "Told by a home-visit volunteer",
+    "consent_note": "Name she goes by, shared with her consent. Illustrative photo: the people pictured are not those in the story.",
+    "chapters": [
+      {
+        "heading": "Three winters",
+        "body": "Rose — everyone calls her Mama Rose — lost her husband three winters ago. Their children live far away. When we first came with a basket of groceries, she sat us down and poured tea before we had even put the bags down.\n\n“In my home, nobody stays standing,” she said. We understood that what she was looking for first wasn’t help. It was faces."
+      },
+      {
+        "heading": "What the widow gives",
+        "body": "In Scripture there is a widow who gives two small coins, and she is the one the Lord notices. Mama Rose reminded us of her one Tuesday, bringing out a tin of biscuits she kept “for visitors.”\n\nSince then, we don’t only come to bring things. We come to receive. She tells us about the country of her childhood, the hymns of her childhood, her grandchildren’s names. She prays for each of us, by name."
+      },
+      {
+        "heading": "A table that grows",
+        "body": "In the spring, Mama Rose asked whether she could invite two neighbours, widows like her. Then a third. Tuesday became a standing date: a basket, a psalm, a great deal of tea, and laughter spilling into the hallway.\n\n“The Lord took my husband,” she says, “but He did not leave me alone. He sent me daughters.”"
+      }
+    ],
+    "pullquote": { "text": "In my home, nobody stays standing.", "who": "Mama Rose" },
+    "verse": { "text": "Religion that is pure and undefiled before our Elohim and Father is this: to visit orphans and widows in their affliction…", "reference": "James 1:27" }
+  }
+}

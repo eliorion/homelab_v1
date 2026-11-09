@@ -1,0 +1,30 @@
+{
+  "fr": {
+    "news_title": "Nouvelles — du terrain et de l’association",
+    "news_description": "Les nouvelles de La Paix du Cœur : collectes, maraudes, rentrée scolaire et vie de l’association.",
+    "news_heading": "Nouvelles",
+    "news_intro": "Des nouvelles du terrain, racontées avec respect et espérance.",
+    "events_title": "Événements — collectes, maraudes et ateliers",
+    "events_description": "Le calendrier de La Paix du Cœur : collectes alimentaires, maraudes, ateliers et soirées. Ajoutez-les à votre agenda.",
+    "events_heading": "Événements",
+    "events_intro": "Venez prêter main-forte, apprendre ou prier avec nous. Chaque événement s’ajoute à votre agenda en un clic.",
+    "media_title": "Médiathèque — vidéos, balado et photos",
+    "media_description": "Vidéos, épisodes audio « Les voix du cœur » et galerie photo de La Paix du Cœur.",
+    "media_heading": "Médiathèque",
+    "media_intro": "Des images et des voix qui racontent l’espérance, toujours avec le consentement des personnes."
+  },
+  "en": {
+    "news_title": "News — from the field and the association",
+    "news_description": "News from La Paix du Cœur: food drives, street outreach, back-to-school and life in the association.",
+    "news_heading": "News",
+    "news_intro": "News from the field, told with respect and hope.",
+    "events_title": "Events — food drives, outreach and workshops",
+    "events_description": "The La Paix du Cœur calendar: food drives, street outreach, workshops and evenings. Add them to your calendar.",
+    "events_heading": "Events",
+    "events_intro": "Come and lend a hand, learn or pray with us. Every event adds to your calendar in one click.",
+    "media_title": "Media — videos, podcast and photos",
+    "media_description": "Videos, “Voices of the Heart” audio episodes and the La Paix du Cœur photo gallery.",
+    "media_heading": "Media",
+    "media_intro": "Images and voices that tell of hope, always shared with consent."
+  }
+}

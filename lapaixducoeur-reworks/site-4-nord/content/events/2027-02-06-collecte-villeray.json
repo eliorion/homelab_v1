@@ -1,0 +1,80 @@
+{
+  "fr": {
+    "slug": "collecte-alimentaire-villeray-6-fevrier",
+    "title": "Collecte alimentaire — Villeray",
+    "summary": "Remplir les tablettes après les Fêtes, quand les dons se font rares.",
+    "address": "Épicerie partenaire, rue Jarry Est [adresse à confirmer]",
+    "meeting_point": "Table d’accueil à l’entrée du magasin",
+    "image_alt": "Des bénévoles trient des boîtes de conserve dans des caisses",
+    "body": "Février est le mois le plus difficile : les réserves de Noël sont épuisées et les besoins restent les mêmes.\n\nUne collecte simple, à l’entrée d’une épicerie du quartier, pour recommencer à remplir les tablettes.",
+    "bring": [
+      "Une tenue confortable"
+    ],
+    "type": "collecte",
+    "start": "2027-02-06T10:00",
+    "end": "2027-02-06T15:00",
+    "neighbourhood": "villeray",
+    "image": "/assets/img/food-bank-volunteers-1600.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "matin",
+        "role_fr": "Accueil des clients — matin",
+        "role_en": "Greeting shoppers — morning",
+        "start": "2027-02-06T10:00",
+        "end": "2027-02-06T12:30",
+        "spots": 4,
+        "taken": 0
+      },
+      {
+        "id": "apm",
+        "role_fr": "Accueil des clients — après-midi",
+        "role_en": "Greeting shoppers — afternoon",
+        "start": "2027-02-06T12:30",
+        "end": "2027-02-06T15:00",
+        "spots": 4,
+        "taken": 0
+      }
+    ]
+  },
+  "en": {
+    "slug": "food-drive-villeray-february-6",
+    "title": "Food drive — Villeray",
+    "summary": "Restocking the shelves after the holidays, when donations run low.",
+    "address": "Partner grocery store, Jarry Street East [address to confirm]",
+    "meeting_point": "Welcome table by the store entrance",
+    "image_alt": "Volunteers sorting canned goods into crates",
+    "body": "February is the hardest month: Christmas stocks have run out and needs stay the same.\n\nA simple drive at the entrance of a neighbourhood grocery store, to start filling the shelves again.",
+    "bring": [
+      "Comfortable clothes"
+    ],
+    "type": "collecte",
+    "start": "2027-02-06T10:00",
+    "end": "2027-02-06T15:00",
+    "neighbourhood": "villeray",
+    "image": "/assets/img/food-bank-volunteers-1600.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "matin",
+        "role_fr": "Accueil des clients — matin",
+        "role_en": "Greeting shoppers — morning",
+        "start": "2027-02-06T10:00",
+        "end": "2027-02-06T12:30",
+        "spots": 4,
+        "taken": 0
+      },
+      {
+        "id": "apm",
+        "role_fr": "Accueil des clients — après-midi",
+        "role_en": "Greeting shoppers — afternoon",
+        "start": "2027-02-06T12:30",
+        "end": "2027-02-06T15:00",
+        "spots": 4,
+        "taken": 0
+      }
+    ]
+  }
+}

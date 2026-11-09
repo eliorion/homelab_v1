@@ -1,0 +1,21 @@
+{
+  "fr": {
+    "number": 2,
+    "slug": "une-nuit-de-maraude",
+    "title": "Une nuit de maraude",
+    "date": "2026-10-19",
+    "duration": "0:22",
+    "audio": "/assets/audio/ep2-sample.mp3",
+    "sample": true,
+    "guests": "deux bénévoles de maraude [prénoms à confirmer]",
+    "summary": "Thermos, chaussettes chaudes et longues conversations : deux bénévoles racontent ce qu’on apprend en marchant la nuit aux côtés des sans-abri.",
+    "transcript": "**Animatrice :** Ce soir, on part en maraude. Qu’est-ce qu’on met dans le coffre ?\n\n**Bénévole 1 :** De la soupe, du pain, des chaussettes. Beaucoup de chaussettes. En hiver, c’est ce qu’on nous demande le plus.\n\n**Bénévole 2 :** Mais le plus important, ce n’est pas dans le coffre. C’est le temps. On s’assoit, on écoute. On apprend les prénoms.\n\n**Animatrice :** Qu’est-ce qui vous a le plus marqués ?\n\n**Bénévole 1 :** Un homme qui nous a demandé de prier… pour sa sœur. Pas pour lui. On repart souvent plus riches qu’on est arrivés.\n\n*[Extrait d’exemple — transcription à confirmer.]*"
+  },
+  "en": {
+    "slug": "a-night-of-street-outreach",
+    "title": "A night of street outreach",
+    "guests": "two street-outreach volunteers [names to confirm]",
+    "summary": "Thermoses, warm socks and long conversations: two volunteers share what you learn walking at night alongside people who are homeless.",
+    "transcript": "**Host:** Tonight, we’re going out on street outreach. What goes in the trunk?\n\n**Volunteer 1:** Soup, bread, socks. Lots of socks. In winter, that’s what people ask for most.\n\n**Volunteer 2:** But the most important thing isn’t in the trunk. It’s time. We sit down, we listen. We learn names.\n\n**Host:** What stayed with you the most?\n\n**Volunteer 1:** A man who asked us to pray… for his sister. Not for himself. We often leave richer than we came.\n\n*[Sample excerpt — transcript to confirm.]*"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "fr": {
+    "slug": "atelier-gerer-son-budget",
+    "title": "Atelier : gérer son budget familial",
+    "venue": "Montréal [salle à confirmer]",
+    "summary": "Un après-midi pratique pour faire le point sur ses revenus, préparer une épicerie nutritive et connaître les ressources gratuites. Gratuit, garderie sur place.",
+    "body": "Animé par des bénévoles formés, cet atelier est ouvert à tous, gratuitement.\n\n- Carnet de budget offert\n- Collation et garderie sur place *[à confirmer]*\n- En français, avec aide à la traduction en anglais et en lingala",
+    "start": "2027-01-23T13:30",
+    "end": "2027-01-23T16:00",
+    "category": "atelier",
+    "image": "/assets/illustrations/atelier.svg",
+    "sample": true,
+    "ticketUrl": ""
+  },
+  "en": {
+    "slug": "workshop-family-budgeting",
+    "title": "Workshop: managing your family budget",
+    "venue": "Montréal [room to confirm]",
+    "summary": "A practical afternoon to take stock of income, plan nutritious groceries and learn about free resources. Free, with childcare on site.",
+    "body": "Led by trained volunteers, this workshop is open to everyone, free of charge.\n\n- Budget notebook provided\n- Snack and childcare on site *[to confirm]*\n- In French, with interpreting help in English and Lingala",
+    "start": "2027-01-23T13:30",
+    "end": "2027-01-23T16:00",
+    "category": "atelier",
+    "image": "/assets/illustrations/atelier.svg",
+    "sample": true,
+    "ticketUrl": ""
+  }
+}

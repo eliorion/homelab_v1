@@ -1,0 +1,16 @@
+{
+  "fr": {
+    "title": "Médiathèque",
+    "meta_title": "Médiathèque — vidéos, balado et photos | La Paix du Cœur",
+    "meta_description": "Vidéos, épisodes du balado « Les voix du cœur » avec transcription, et photos des activités de La Paix du Cœur.",
+    "eyebrow": "Médiathèque",
+    "lead": "Vidéos, balado et photos. Les vidéos ne se chargent que si vous cliquez, pour respecter votre vie privée."
+  },
+  "en": {
+    "title": "Media library",
+    "meta_title": "Media — videos, podcast and photos | La Paix du Cœur",
+    "meta_description": "Videos, “Voices of the Heart” podcast episodes with transcripts, and photos of La Paix du Cœur activities.",
+    "eyebrow": "Media",
+    "lead": "Videos, podcast and photos. Videos only load when you click, to protect your privacy."
+  }
+}

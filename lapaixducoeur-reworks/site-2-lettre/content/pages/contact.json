@@ -1,0 +1,26 @@
+{
+  "fr": {
+    "meta_title": "Contact — écrivez-nous | La Paix du Cœur",
+    "meta_description": "Écrivez à La Paix du Cœur pour demander de l’aide, devenir bénévole, proposer un partenariat ou poser une question. Nous répondons à chaque message.",
+    "kicker": "Contact",
+    "title": "Écrivez-nous, nous lisons tout",
+    "intro": "Une demande d’aide, une envie de servir, une question, un partenariat ? Chaque message est lu, et reçoit une réponse personnelle.",
+    "email_label": "Courriel",
+    "address_label": "Adresse",
+    "address": "Montréal (Québec) — adresse postale [à confirmer]",
+    "phone_label": "Téléphone",
+    "phone": "[à confirmer]"
+  },
+  "en": {
+    "meta_title": "Contact — write to us | La Paix du Cœur",
+    "meta_description": "Write to La Paix du Cœur to ask for help, volunteer, propose a partnership or ask a question. We answer every message.",
+    "kicker": "Contact",
+    "title": "Write to us — we read everything",
+    "intro": "A request for help, a wish to serve, a question, a partnership? Every message is read and gets a personal answer.",
+    "email_label": "Email",
+    "address_label": "Address",
+    "address": "Montréal, Québec — mailing address [to confirm]",
+    "phone_label": "Phone",
+    "phone": "[to confirm]"
+  }
+}

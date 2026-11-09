@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 9,
+    "image": "/assets/img/fruit.jpg",
+    "title": "Collecte de fruits",
+    "alt": "Des fruits frais colorés sur une table.",
+    "sample": true
+  },
+  "en": {
+    "title": "Fruit collection",
+    "alt": "Colourful fresh fruit on a table."
+  }
+}

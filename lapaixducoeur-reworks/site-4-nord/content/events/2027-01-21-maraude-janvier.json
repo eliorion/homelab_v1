@@ -1,0 +1,84 @@
+{
+  "fr": {
+    "slug": "maraude-hochelaga-21-janvier",
+    "title": "Maraude du jeudi soir — Hochelaga",
+    "summary": "Repas chauds et vêtements chauds le long de la rue Sainte-Catherine Est.",
+    "address": "Adresse exacte communiquée aux inscrits [à confirmer]",
+    "meeting_point": "Point de rencontre : sortie du métro Joliette [à confirmer]",
+    "image_alt": "Des mains gantées tendent des paniers de petits pains",
+    "body": "Chaque sortie commence par un court temps de prière et un briefing de sécurité. Nous formons ensuite des équipes de trois ou quatre personnes, toujours accompagnées d’un bénévole d’expérience.\n\nNous apportons des repas chauds, des boissons, des bas, des tuques et surtout du temps : un sourire, une conversation, une écoute sans jugement.\n\nCe parcours dans Hochelaga-Maisonneuve se fait en lien avec les ressources du quartier, vers lesquelles nous orientons les personnes rencontrées [partenaires à confirmer].\n\n**Première fois ?** Aucune expérience requise. Arrivez 15 minutes à l’avance; nous vous jumelons à une personne qui connaît le parcours.",
+    "bring": [
+      "Vêtements chauds en couches, bottes et gants",
+      "Une gourde (thermos fourni)",
+      "Votre bonne humeur — et une pièce d’identité"
+    ],
+    "type": "maraude",
+    "start": "2027-01-21T18:30",
+    "end": "2027-01-21T21:30",
+    "neighbourhood": "hochelaga",
+    "image": "/assets/img/bread-sharing-1600.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "prep",
+        "role_fr": "Préparation des repas et des sacs",
+        "role_en": "Meal and bag preparation",
+        "start": "2027-01-21T17:00",
+        "end": "2027-01-21T18:30",
+        "spots": 6,
+        "taken": 1
+      },
+      {
+        "id": "rue",
+        "role_fr": "Équipe de rue",
+        "role_en": "Street team",
+        "start": "2027-01-21T18:30",
+        "end": "2027-01-21T21:30",
+        "spots": 12,
+        "taken": 3
+      }
+    ]
+  },
+  "en": {
+    "slug": "hochelaga-outreach-january-21",
+    "title": "Thursday-night outreach — Hochelaga",
+    "summary": "Hot meals and warm clothing along Sainte-Catherine Street East.",
+    "address": "Exact address sent to registered volunteers [to confirm]",
+    "meeting_point": "Meeting point: Joliette metro exit [to confirm]",
+    "image_alt": "Gloved hands holding out baskets of bread rolls",
+    "body": "Every outing starts with a short time of prayer and a safety briefing. We then form teams of three or four, always with an experienced volunteer.\n\nWe bring hot meals, drinks, socks, toques and, above all, time: a smile, a conversation, listening without judgment.\n\nThis route through Hochelaga-Maisonneuve works hand in hand with neighbourhood resources, to which we refer the people we meet [partners to confirm].\n\n**First time?** No experience needed. Arrive 15 minutes early and we will pair you with someone who knows the route.",
+    "bring": [
+      "Warm layers, boots and gloves",
+      "A water bottle (thermoses provided)",
+      "A good mood — and a piece of ID"
+    ],
+    "type": "maraude",
+    "start": "2027-01-21T18:30",
+    "end": "2027-01-21T21:30",
+    "neighbourhood": "hochelaga",
+    "image": "/assets/img/bread-sharing-1600.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": [
+      {
+        "id": "prep",
+        "role_fr": "Préparation des repas et des sacs",
+        "role_en": "Meal and bag preparation",
+        "start": "2027-01-21T17:00",
+        "end": "2027-01-21T18:30",
+        "spots": 6,
+        "taken": 1
+      },
+      {
+        "id": "rue",
+        "role_fr": "Équipe de rue",
+        "role_en": "Street team",
+        "start": "2027-01-21T18:30",
+        "end": "2027-01-21T21:30",
+        "spots": 12,
+        "taken": 3
+      }
+    ]
+  }
+}

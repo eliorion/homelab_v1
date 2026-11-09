@@ -1,0 +1,154 @@
+{
+  "fr": {
+    "title": "À propos — notre histoire et notre foi",
+    "description": "Fondée en 2014 à Montréal, La Paix du Cœur / Kimia Na Motema est une œuvre chrétienne portée par l’amour d’Elohim et la compassion envers les plus démunis.",
+    "heading": "Une œuvre de cœur, née à Montréal en 2014",
+    "intro": "Kimia na motema signifie « la paix du cœur » en lingala. C’est ce que nous souhaitons offrir à chaque personne que nous rencontrons.",
+    "story": "L’association chrétienne **La Paix du Cœur / Kimia Na Motema** est une œuvre inspirée par le Seigneur Yéhoshoua, portée par un groupe de chrétiens animés par l’amour d’Elohim et la compassion envers les personnes démunies.\n\nNous œuvrons humblement et de manière désintéressée pour la seule gloire d’Elohim. Fondée en 2014 à Montréal (Canada), cette vision a vu le jour afin d’apporter soutien et espérance aux orphelins.",
+    "image_alt": "Un groupe de personnes de tous âges réunies autour d’une Bible ouverte.",
+    "mission_title": "Notre mission",
+    "mission": "Par la grâce du Seigneur, le Pourvoyeur et le Rémunérateur de ceux qui le cherchent, l’association chrétienne La Paix du Cœur a pour mission de révéler aux nations le Cœur du Seigneur, tourné vers les plus faibles, les veuves, les veufs, les orphelins, les démunis et les sans-abri sans distinction de langue, de couleur ou de race. Œuvrant dans un esprit d’amour et de service, cette association chrétienne à but non lucratif offre tout gratuitement, pour la seule gloire d’Elohim.",
+    "values_title": "Ce qui nous guide",
+    "values": [
+      {
+        "title": "L’amour",
+        "text": "Servir comme le Seigneur Yéhoshoua a servi : avec douceur, patience et sans jugement."
+      },
+      {
+        "title": "La gratuité",
+        "text": "Tout ce que nous offrons est gratuit. Nous avons reçu gratuitement, nous donnons gratuitement."
+      },
+      {
+        "title": "La dignité",
+        "text": "Chaque personne est accueillie comme une image d’Elohim, jamais comme un « cas »."
+      },
+      {
+        "title": "L’autonomie",
+        "text": "Au-delà de l’urgence, nous formons et accompagnons vers une vie autonome."
+      }
+    ],
+    "verse_text": "La religion pure et sans souillure devant notre Elohîm et Père, c’est de visiter les orphelins et les veuves dans leurs tribulations…",
+    "verse_ref": "Yaacov (Jacques) 1:27",
+    "timeline_title": "Notre parcours",
+    "timeline": [
+      {
+        "year": "2014",
+        "text": "Fondation de l’association à Montréal, avec un cœur tourné vers les orphelins.",
+        "sample": false
+      },
+      {
+        "year": "2016",
+        "text": "Premières maraudes auprès des personnes sans-abri. [à confirmer]",
+        "sample": true
+      },
+      {
+        "year": "2019",
+        "text": "Lancement des collectes alimentaires en supermarché. [à confirmer]",
+        "sample": true
+      },
+      {
+        "year": "2026",
+        "text": "Nouveau site bilingue et lancement du Cercle du Cœur.",
+        "sample": true
+      }
+    ],
+    "team_title": "L’équipe",
+    "team_intro": "Une équipe de bénévoles engagés. Les noms et les rôles seront confirmés par l’association.",
+    "team": [
+      {
+        "name": "Frère Ronny",
+        "role": "Rôle [à confirmer]",
+        "sample": false
+      },
+      {
+        "name": "[à confirmer]",
+        "role": "Coordination des maraudes",
+        "sample": true
+      },
+      {
+        "name": "[à confirmer]",
+        "role": "Ateliers de formation",
+        "sample": true
+      }
+    ],
+    "image2_alt": "Trois femmes âgées rient ensemble autour d’une tasse de thé.",
+    "image": "/img/bible-study.jpg",
+    "image2": "/img/elders.jpg"
+  },
+  "en": {
+    "title": "About — our story and our faith",
+    "description": "Founded in 2014 in Montréal, La Paix du Cœur / Kimia Na Motema is a Christian work carried by the love of Elohim and compassion for people in need.",
+    "heading": "A work of the heart, born in Montréal in 2014",
+    "intro": "Kimia na motema means “peace of the heart” in Lingala. That is what we hope to offer every person we meet.",
+    "story": "The Christian association **La Paix du Cœur / Kimia Na Motema** is a work inspired by the Lord Yehoshua (Jesus), carried by a group of Christians moved by the love of Elohim and by compassion for people in need.\n\nWe serve humbly and selflessly, for the glory of Elohim alone. Founded in 2014 in Montréal, Canada, this vision came to life to bring support and hope to orphans.",
+    "image_alt": "A group of people of all ages gathered around an open Bible.",
+    "mission_title": "Our mission",
+    "mission": "By the grace of the Lord — the Provider, who rewards those who seek him — the Christian association La Paix du Cœur exists to reveal to the nations the Heart of the Lord, turned toward the weakest: widows and widowers, orphans, people in need and people without a home, regardless of language, colour or race. Serving in a spirit of love, this Christian non-profit gives everything free of charge, for the glory of Elohim alone.",
+    "values_title": "What guides us",
+    "values": [
+      {
+        "title": "Love",
+        "text": "Serving as the Lord Yehoshua served: gently, patiently and without judgement."
+      },
+      {
+        "title": "Freely given",
+        "text": "Everything we offer is free. Freely we have received; freely we give."
+      },
+      {
+        "title": "Dignity",
+        "text": "Every person is welcomed as the image of Elohim, never as a “case”."
+      },
+      {
+        "title": "Self-reliance",
+        "text": "Beyond emergencies, we train and walk alongside people toward an independent life."
+      }
+    ],
+    "verse_text": "Religion that is pure and undefiled before our Elohim and Father is this: to visit orphans and widows in their affliction…",
+    "verse_ref": "Yaakov (James) 1:27",
+    "timeline_title": "Our journey",
+    "timeline": [
+      {
+        "year": "2014",
+        "text": "The association is founded in Montréal, with a heart turned toward orphans.",
+        "sample": false
+      },
+      {
+        "year": "2016",
+        "text": "First street outreach rounds with people experiencing homelessness. [to confirm]",
+        "sample": true
+      },
+      {
+        "year": "2019",
+        "text": "Supermarket food drives begin. [to confirm]",
+        "sample": true
+      },
+      {
+        "year": "2026",
+        "text": "A new bilingual website and the launch of the Heart Circle.",
+        "sample": true
+      }
+    ],
+    "team_title": "The team",
+    "team_intro": "A team of committed volunteers. Names and roles will be confirmed by the association.",
+    "team": [
+      {
+        "name": "Brother Ronny",
+        "role": "Role [to confirm]",
+        "sample": false
+      },
+      {
+        "name": "[to confirm]",
+        "role": "Outreach coordination",
+        "sample": true
+      },
+      {
+        "name": "[to confirm]",
+        "role": "Training workshops",
+        "sample": true
+      }
+    ],
+    "image2_alt": "Three older women laugh together over a cup of tea.",
+    "image": "/img/bible-study.jpg",
+    "image2": "/img/elders.jpg"
+  }
+}

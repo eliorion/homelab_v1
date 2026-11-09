@@ -1,0 +1,18 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 3,
+    "sample": false,
+    "title": "Une collecte, un samedi.",
+    "image": "/assets/img/food-bank-volunteers.jpg",
+    "alt": "Bénévoles préparant des caisses de denrées"
+  },
+  "en": {
+    "type": "photo",
+    "order": 3,
+    "sample": false,
+    "title": "A food drive, one Saturday.",
+    "image": "/assets/img/food-bank-volunteers.jpg",
+    "alt": "Volunteers packing crates of food"
+  }
+}

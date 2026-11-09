@@ -1,0 +1,56 @@
+{
+  "fr": {
+    "meta_title": "Nos missions — aide, maraudes, ateliers | La Paix du Cœur",
+    "meta_description": "Soutien aux nécessiteux, ateliers de formation, appui à d’autres associations, collectes alimentaires et maraudes : découvrez les missions de La Paix du Cœur à Montréal.",
+    "kicker": "Missions",
+    "title": "Aimer en actes, et en vérité",
+    "intro": "Trois programmes, deux actions de terrain et quatre formes d’aide, pour répondre aux besoins d’aujourd’hui et rendre chacun plus autonome demain.",
+    "programs_title": "Trois programmes",
+    "programs": [
+      { "title": "Soutien aux nécessiteux", "text": "Aide alimentaire, vestimentaire, financière et spirituelle aux personnes vivant des situations difficiles.", "image": "/assets/img/clothing.jpg", "image_alt": "Des vêtements chauds suspendus sur un portant." },
+      { "title": "Ateliers de formation", "text": "Ateliers, séminaires, conférences et campagnes de sensibilisation, pour que chacun devienne autonome : budget, emploi, vie familiale, foi.", "image": "/assets/img/bible-study.jpg", "image_alt": "Un groupe réuni autour d’une Bible ouverte." },
+      { "title": "Aider d’autres associations", "text": "Soutenir les projets d’autres associations porteuses de projets socio-humanitaires, ici et ailleurs [pays à confirmer].", "image": "/assets/img/food-bank-volunteers.jpg", "image_alt": "Des bénévoles préparent ensemble des barquettes de nourriture." }
+    ],
+    "actions_title": "Sur le terrain",
+    "actions": [
+      { "title": "Collectes alimentaires", "text": "À l’entrée de supermarchés, nous invitons les clients à partager quelques denrées, redistribuées ensuite aux familles accompagnées." },
+      { "title": "Maraudes", "text": "Dans les rues de plusieurs villes du Canada, à destination des sans-abri, des orphelinats et des étudiants : un repas chaud, des vêtements, et du temps pour écouter." }
+    ],
+    "areas_title": "Quatre domaines d’aide",
+    "areas": [
+      { "icon": "bread", "title": "Alimentaire", "text": "Paniers, repas chauds en maraude, collectes en supermarché." },
+      { "icon": "coat", "title": "Vestimentaire", "text": "Manteaux, bottes et chaussettes chaudes pour l’hiver québécois." },
+      { "icon": "book", "title": "Académique", "text": "Fournitures scolaires, aide aux devoirs, soutien aux étudiants." },
+      { "icon": "hands", "title": "Matérielle ou financière", "text": "Un coup de main ponctuel quand la vie bascule, avec discrétion." }
+    ],
+    "need_title": "Besoin d’aide ?",
+    "need_text": "Si vous ou un proche traversez une période difficile, écrivez-nous en toute confidentialité. Nous répondons à chaque message."
+  },
+  "en": {
+    "meta_title": "Our missions — relief, outreach, workshops | La Paix du Cœur",
+    "meta_description": "Support for people in need, training workshops, help for other associations, food drives and street outreach: discover the work of La Paix du Cœur in Montréal.",
+    "kicker": "Missions",
+    "title": "Loving in deed, and in truth",
+    "intro": "Three programmes, two kinds of fieldwork and four forms of help, to meet today’s needs and help everyone stand on their own tomorrow.",
+    "programs_title": "Three programmes",
+    "programs": [
+      { "title": "Support for people in need", "text": "Food, clothing, financial and spiritual support for people going through hard times.", "image_alt": "Warm clothes hanging on a rack." },
+      { "title": "Training workshops", "text": "Workshops, seminars, talks and awareness campaigns, so everyone can become self-reliant: budgeting, employment, family life, faith.", "image_alt": "A group gathered around an open Bible." },
+      { "title": "Helping other associations", "text": "Supporting other associations that carry social and humanitarian projects, here and abroad [countries to confirm].", "image_alt": "Volunteers prepare trays of food together." }
+    ],
+    "actions_title": "In the field",
+    "actions": [
+      { "title": "Food drives", "text": "At supermarket entrances, we invite shoppers to share a few groceries, which are then passed on to the families we support." },
+      { "title": "Street outreach", "text": "In the streets of several Canadian cities, for people who are homeless, orphanages and students: a hot meal, clothing, and time to listen." }
+    ],
+    "areas_title": "Four areas of help",
+    "areas": [
+      { "title": "Food", "text": "Grocery baskets, hot meals on outreach, supermarket food drives." },
+      { "title": "Clothing", "text": "Coats, boots and warm socks for the Québec winter." },
+      { "title": "Education", "text": "School supplies, homework help, support for students." },
+      { "title": "Material or financial", "text": "A discreet helping hand when life suddenly tips over." }
+    ],
+    "need_title": "Need help?",
+    "need_text": "If you or someone close to you is going through a hard time, write to us in confidence. We answer every message."
+  }
+}

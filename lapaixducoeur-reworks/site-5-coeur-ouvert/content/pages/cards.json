@@ -1,0 +1,28 @@
+{
+  "fr": {
+    "title": "Cartes à partager — versets et messages d’espoir",
+    "description": "Créez une carte aux couleurs de La Paix du Cœur avec un verset ou votre message, téléchargez-la en PNG ou partagez-la directement.",
+    "kicker": "Cartes à partager",
+    "heading": "Un verset peut voyager plus loin que nous.",
+    "lede": "Choisissez un verset ou écrivez votre message. La carte se compose sous vos yeux ; téléchargez-la ou partagez-la sur vos réseaux.",
+    "verses": [
+      { "text": "Défendez le faible et l’orphelin, rendez justice à l’affligé et au pauvre.", "ref": "Tehilim (Psaumes) 82:3" },
+      { "text": "La religion pure et sans souillure devant notre Elohîm et Père, c’est de visiter les orphelins et les veuves dans leurs tribulations.", "ref": "Yaacov (Jacques) 1:27" },
+      { "text": "Celui qui a pitié du pauvre prête à YHWH, qui lui rendra son bienfait.", "ref": "Proverbes 19:17" },
+      { "text": "Cette année, un Noël pour chaque cœur.", "ref": "Campagne de Noël 2026" }
+    ]
+  },
+  "en": {
+    "title": "Shareable cards — verses and messages of hope",
+    "description": "Make a card in La Paix du Cœur’s style with a verse or your own message, download it as a PNG or share it straight away.",
+    "kicker": "Shareable cards",
+    "heading": "A verse can travel further than we can.",
+    "lede": "Pick a verse or write your own message. The card builds itself as you go; download it or share it on your networks.",
+    "verses": [
+      { "text": "Defend the weak and the fatherless; uphold the cause of the poor and the oppressed.", "ref": "Psalm 82:3" },
+      { "text": "Religion that is pure and undefiled before our Elohim and Father is this: to visit orphans and widows in their affliction.", "ref": "James 1:27" },
+      { "text": "Whoever is kind to the poor lends to YHWH, and he will repay them for their deed.", "ref": "Proverbs 19:17" },
+      { "text": "This year, a Christmas for every heart.", "ref": "Christmas Campaign 2026" }
+    ]
+  }
+}

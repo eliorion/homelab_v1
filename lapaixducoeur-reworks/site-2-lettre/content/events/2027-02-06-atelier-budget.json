@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "slug": "atelier-budget-familial",
+    "title": "Atelier : budget familial",
+    "start": "2027-02-06T10:00",
+    "end": "2027-02-06T12:00",
+    "location": "Salle communautaire, Montréal [lieu à confirmer]",
+    "locality": "Montréal",
+    "image": "/assets/img/lunchboxes.jpg",
+    "image_alt": "Des boîtes à lunch remplies de repas colorés.",
+    "sample": true,
+    "registration_url": "",
+    "summary": "Deux heures pratiques pour bâtir un budget, réduire le coût de l’épicerie et préparer les imprévus. Gratuit.",
+    "body": "Un atelier animé par des bénévoles, dont certains ont eux-mêmes été accompagnés par l’association. On y repart avec un modèle de budget, des astuces pour l’épicerie et des contacts utiles.\n\nGarderie sur place [à confirmer]. Gratuit, places limitées."
+  },
+  "en": {
+    "slug": "family-budgeting-workshop",
+    "title": "Workshop: family budgeting",
+    "location": "Community hall, Montréal [location to confirm]",
+    "image_alt": "Lunch boxes filled with colourful meals.",
+    "summary": "Two practical hours to build a budget, lower grocery costs and plan for the unexpected. Free.",
+    "body": "A workshop led by volunteers, some of whom were once supported by the association themselves. You leave with a budget template, grocery tips and useful contacts.\n\nChildcare on site [to confirm]. Free, limited places."
+  }
+}

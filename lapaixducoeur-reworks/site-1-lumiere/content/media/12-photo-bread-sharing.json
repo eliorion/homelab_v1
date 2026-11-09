@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Le pain partagé",
+    "caption": "",
+    "alt": "Des mains tendent un panier de pains frais.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/bread-sharing.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  },
+  "en": {
+    "title": "Bread, shared",
+    "caption": "",
+    "alt": "Hands hold out a basket of fresh bread.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/bread-sharing.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  }
+}

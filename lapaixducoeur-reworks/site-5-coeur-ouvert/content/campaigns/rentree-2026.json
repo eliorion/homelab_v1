@@ -1,0 +1,46 @@
+{
+  "fr": {
+    "slug": "rentree-2026",
+    "name": "Rentrée scolaire 2026",
+    "headline": "Un sac d’école, une rentrée digne.",
+    "lede": "En août, nous avons préparé des sacs de fournitures pour des enfants et des étudiants accompagnés par l’association.",
+    "description": "Bilan de la campagne Rentrée scolaire 2026 de La Paix du Cœur : des sacs de fournitures pour une rentrée digne.",
+    "status": "closed",
+    "sample": true,
+    "start": "2026-07-15",
+    "end": "2026-08-31T00:00:00-04:00",
+    "goal": 6000,
+    "raised": 6420,
+    "donors": 87,
+    "image": "/assets/img/library.jpg",
+    "image_alt": "Allée d’une bibliothèque bordée de livres",
+    "og_image": "",
+    "matching": { "enabled": false, "title": "", "text": "" },
+    "gifts": [
+      { "id": "sac", "icon": "pencil", "name": "Sac de fournitures", "price": 40, "text": "Cahiers, crayons, règle, calculatrice." }
+    ],
+    "story": "## Bilan\n\nLa campagne est terminée. Merci ! Le compte rendu détaillé sera publié ici [à confirmer]."
+  },
+  "en": {
+    "slug": "back-to-school-2026",
+    "name": "Back to School 2026",
+    "headline": "A school bag, a dignified start.",
+    "lede": "In August we packed bags of supplies for children and students the association walks with.",
+    "description": "Report on La Paix du Cœur’s Back to School 2026 campaign: bags of supplies for a dignified start to the year.",
+    "status": "closed",
+    "sample": true,
+    "start": "2026-07-15",
+    "end": "2026-08-31T00:00:00-04:00",
+    "goal": 6000,
+    "raised": 6420,
+    "donors": 87,
+    "image": "/assets/img/library.jpg",
+    "image_alt": "A library aisle lined with books",
+    "og_image": "",
+    "matching": { "enabled": false, "title": "", "text": "" },
+    "gifts": [
+      { "id": "sac", "icon": "pencil", "name": "Bag of supplies", "price": 40, "text": "Notebooks, pencils, ruler, calculator." }
+    ],
+    "story": "## Report\n\nThe campaign has ended. Thank you! The detailed report will be published here [to confirm]."
+  }
+}

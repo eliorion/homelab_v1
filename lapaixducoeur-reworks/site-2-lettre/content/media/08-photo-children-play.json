@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 8,
+    "image": "/assets/img/children-play.jpg",
+    "title": "Le droit de jouer",
+    "alt": "Deux enfants jouent dans l’herbe.",
+    "sample": true
+  },
+  "en": {
+    "title": "The right to play",
+    "alt": "Two children play on the grass."
+  }
+}

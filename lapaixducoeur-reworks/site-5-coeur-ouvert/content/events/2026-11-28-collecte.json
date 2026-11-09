@@ -1,0 +1,34 @@
+{
+  "fr": {
+    "slug": "collecte-alimentaire-supermarche-novembre",
+    "title": "Collecte alimentaire en supermarché",
+    "start": "2026-11-28T10:00:00-05:00",
+    "end": "2026-11-28T16:00:00-05:00",
+    "location": "Supermarché partenaire, Montréal",
+    "address": "Adresse exacte [à confirmer]",
+    "category": "Collecte",
+    "price": "Gratuit — bénévoles bienvenus",
+    "ticket_url": "",
+    "sample": true,
+    "image": "/assets/img/fruit.jpg",
+    "image_alt": "Fruits frais disposés sur une table en bois",
+    "summary": "Accueillez les clients à l’entrée et invitez-les à ajouter un article pour une famille. Quarts de deux heures.",
+    "body": "Nous cherchons douze bénévoles, par quarts de deux heures. Aucun prérequis : un sourire et des chaussures confortables suffisent. Les denrées récoltées rempliront les paniers de Noël.\n\nInscrivez-vous par le formulaire de contact en choisissant « Bénévolat »."
+  },
+  "en": {
+    "slug": "supermarket-food-drive-november",
+    "title": "Supermarket food drive",
+    "start": "2026-11-28T10:00:00-05:00",
+    "end": "2026-11-28T16:00:00-05:00",
+    "location": "Partner supermarket, Montréal",
+    "address": "Exact address [to confirm]",
+    "category": "Food drive",
+    "price": "Free — volunteers welcome",
+    "ticket_url": "",
+    "sample": true,
+    "image": "/assets/img/fruit.jpg",
+    "image_alt": "Fresh fruit laid out on a wooden table",
+    "summary": "Welcome shoppers at the door and invite them to add one item for a family. Two-hour shifts.",
+    "body": "We are looking for twelve volunteers in two-hour shifts. No experience needed: a smile and comfortable shoes are enough. The food collected will fill the Christmas baskets.\n\nSign up through the contact form by choosing “Volunteering”."
+  }
+}

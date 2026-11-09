@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "illustration",
+    "category": "academique",
+    "src": "/assets/illustrations/atelier.svg",
+    "title": "Atelier de formation",
+    "alt": "Illustration : un tableau vert orné d'un cœur, une table avec un cahier, une tasse et un crayon.",
+    "caption": "Illustration originale, faite main pour le site",
+    "order": 5
+  },
+  "en": {
+    "type": "illustration",
+    "category": "academique",
+    "src": "/assets/illustrations/atelier.svg",
+    "title": "Training workshop",
+    "alt": "Illustration: a green chalkboard with a heart, a table with a notebook, a mug and a pencil.",
+    "caption": "Original hand-made illustration for the website",
+    "order": 5
+  }
+}

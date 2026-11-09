@@ -1,0 +1,44 @@
+{
+  "fr": {
+    "name": "Dépanneur solidaire — rue D’Iberville",
+    "address": "Rue D’Iberville, secteur François-Perrault [adresse à confirmer]",
+    "hours_note": "Bacs à l’entrée, bénévoles présents pendant les heures indiquées",
+    "needs": [
+      "Riz et pâtes",
+      "Légumineuses en conserve",
+      "Beurre d’arachide",
+      "Lait UHT",
+      "Produits d’hygiène"
+    ],
+    "neighbourhood": "saint-michel",
+    "dates": [
+      {
+        "date": "2026-11-28",
+        "start": "10:00",
+        "end": "14:00"
+      }
+    ],
+    "sample": true
+  },
+  "en": {
+    "name": "Community corner store — D’Iberville Street",
+    "address": "D’Iberville Street, François-Perrault area [address to confirm]",
+    "hours_note": "Bins by the entrance, volunteers on site during the hours shown",
+    "needs": [
+      "Rice and pasta",
+      "Canned legumes",
+      "Peanut butter",
+      "Shelf-stable milk",
+      "Hygiene products"
+    ],
+    "neighbourhood": "saint-michel",
+    "dates": [
+      {
+        "date": "2026-11-28",
+        "start": "10:00",
+        "end": "14:00"
+      }
+    ],
+    "sample": true
+  }
+}

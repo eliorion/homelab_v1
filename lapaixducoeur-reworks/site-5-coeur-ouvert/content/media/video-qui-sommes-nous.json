@@ -1,0 +1,64 @@
+{
+  "fr": {
+    "type": "video",
+    "order": 1,
+    "featured": true,
+    "sample": true,
+    "title": "Qui sommes-nous ?",
+    "description": "Deux minutes pour découvrir La Paix du Cœur : la vision de 2014, les maraudes, les collectes et ce qui nous fait avancer.",
+    "youtube_id": "M7lc1UVf-VE",
+    "duration": "2:14",
+    "poster": "/assets/img/children-joy.jpg",
+    "poster_alt": "Un groupe d’enfants souriants dans une rue",
+    "captions": "Sous-titres français et anglais",
+    "chapters": [
+      {
+        "time": "0:00",
+        "label": "Une vision née à Montréal"
+      },
+      {
+        "time": "0:38",
+        "label": "Les maraudes"
+      },
+      {
+        "time": "1:05",
+        "label": "Les collectes alimentaires"
+      },
+      {
+        "time": "1:42",
+        "label": "Comment nous aider"
+      }
+    ]
+  },
+  "en": {
+    "type": "video",
+    "order": 1,
+    "featured": true,
+    "sample": true,
+    "title": "Who we are",
+    "description": "Two minutes to discover La Paix du Cœur: the 2014 vision, street outreach, food drives and what keeps us going.",
+    "youtube_id": "M7lc1UVf-VE",
+    "duration": "2:14",
+    "poster": "/assets/img/children-joy.jpg",
+    "poster_alt": "A group of smiling children in a street",
+    "captions": "French and English captions",
+    "chapters": [
+      {
+        "time": "0:00",
+        "label": "A vision born in Montréal"
+      },
+      {
+        "time": "0:38",
+        "label": "Street outreach"
+      },
+      {
+        "time": "1:05",
+        "label": "Food drives"
+      },
+      {
+        "time": "1:42",
+        "label": "How to help"
+      }
+    ]
+  }
+}

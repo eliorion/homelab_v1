@@ -1,0 +1,28 @@
+{
+  "fr": {
+    "slug": "atelier-accompagner-devoirs",
+    "title": "Atelier : accompagner son enfant dans ses devoirs",
+    "venue": "Montréal [salle à confirmer]",
+    "summary": "Des outils simples pour soutenir la réussite scolaire à la maison, même quand on ne maîtrise pas encore bien le français.",
+    "body": "Routines, lecture partagée, communication avec l'école : un atelier concret pour les parents et tuteurs.\n\nLes enfants sont accueillis dans un coin lecture animé par des bénévoles.",
+    "start": "2027-03-06T10:00",
+    "end": "2027-03-06T12:00",
+    "category": "atelier",
+    "image": "/assets/illustrations/atelier.svg",
+    "sample": true,
+    "ticketUrl": ""
+  },
+  "en": {
+    "slug": "workshop-homework-support",
+    "title": "Workshop: helping your child with homework",
+    "venue": "Montréal [room to confirm]",
+    "summary": "Simple tools to support school success at home, even if your French is still a work in progress.",
+    "body": "Routines, shared reading, talking with the school: a practical workshop for parents and guardians.\n\nChildren are welcomed in a reading corner run by volunteers.",
+    "start": "2027-03-06T10:00",
+    "end": "2027-03-06T12:00",
+    "category": "atelier",
+    "image": "/assets/illustrations/atelier.svg",
+    "sample": true,
+    "ticketUrl": ""
+  }
+}

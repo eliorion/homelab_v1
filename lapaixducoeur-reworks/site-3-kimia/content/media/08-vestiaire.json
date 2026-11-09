@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "vestimentaire",
+    "src": "/assets/img/clothing-768.jpg",
+    "title": "Le vestiaire",
+    "alt": "Un portant de vêtements suspendus.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 8
+  },
+  "en": {
+    "type": "photo",
+    "category": "vestimentaire",
+    "src": "/assets/img/clothing-768.jpg",
+    "title": "The clothing room",
+    "alt": "A rack of hanging clothes.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 8
+  }
+}

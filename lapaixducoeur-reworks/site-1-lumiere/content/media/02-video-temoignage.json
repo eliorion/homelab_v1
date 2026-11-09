@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "title": "Pourquoi « la paix du cœur » ? (vidéo d’exemple)",
+    "caption": "L’histoire de l’association, racontée par l’équipe. Identifiant YouTube d’exemple.",
+    "alt": "Un groupe réuni autour d’une Bible ouverte.",
+    "transcript": "",
+    "type": "video",
+    "youtube_id": "ScMzIvxBSi4",
+    "image": "/img/bible-study.jpg",
+    "date": "2026-09-12",
+    "sample": true
+  },
+  "en": {
+    "title": "Why “peace of the heart”? (sample video)",
+    "caption": "The story of the association, told by the team. Sample YouTube ID.",
+    "alt": "A group gathered around an open Bible.",
+    "transcript": "",
+    "type": "video",
+    "youtube_id": "ScMzIvxBSi4",
+    "image": "/img/bible-study.jpg",
+    "date": "2026-09-12",
+    "sample": true
+  }
+}

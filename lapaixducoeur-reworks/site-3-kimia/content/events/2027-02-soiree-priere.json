@@ -1,0 +1,28 @@
+{
+  "fr": {
+    "slug": "soiree-priere-louange",
+    "title": "Soirée de prière et de louange",
+    "venue": "Montréal [lieu à confirmer]",
+    "summary": "Une soirée pour remettre à Elohim les orphelins, les veuves et les familles que nous servons, et pour rendre grâce ensemble.",
+    "body": "Louange, lecture des Tehilim et temps de prière pour les sujets confiés par les familles (sans noms, avec leur accord).\n\nOuvert à tous.",
+    "start": "2027-02-13T19:00",
+    "end": "2027-02-13T21:00",
+    "category": "priere",
+    "image": "/assets/illustrations/priere.svg",
+    "sample": true,
+    "ticketUrl": ""
+  },
+  "en": {
+    "slug": "prayer-and-worship-evening",
+    "title": "Prayer and worship evening",
+    "venue": "Montréal [location to confirm]",
+    "summary": "An evening to entrust to Elohim the orphans, widows and families we serve, and to give thanks together.",
+    "body": "Worship, readings from the Psalms (Tehilim) and a time of prayer for the requests families have shared with us (no names, with their consent).\n\nOpen to all.",
+    "start": "2027-02-13T19:00",
+    "end": "2027-02-13T21:00",
+    "category": "priere",
+    "image": "/assets/illustrations/priere.svg",
+    "sample": true,
+    "ticketUrl": ""
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 4,
+    "image": "/assets/img/elders.jpg",
+    "title": "Le thé du mardi",
+    "alt": "Trois femmes âgées rient ensemble.",
+    "sample": true
+  },
+  "en": {
+    "title": "Tuesday tea",
+    "alt": "Three older women laugh together."
+  }
+}

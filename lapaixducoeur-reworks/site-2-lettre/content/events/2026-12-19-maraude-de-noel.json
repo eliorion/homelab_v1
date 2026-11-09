@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "slug": "maraude-de-noel",
+    "title": "Maraude de Noël",
+    "start": "2026-12-19T19:00",
+    "end": "2026-12-19T23:00",
+    "location": "Point de rencontre communiqué aux bénévoles inscrits, Montréal",
+    "locality": "Montréal",
+    "image": "/assets/img/bread-sharing.jpg",
+    "image_alt": "Des mains tendent une corbeille de petits pains.",
+    "sample": true,
+    "registration_url": "",
+    "summary": "Soupe chaude, chaussettes, cartes de Noël écrites à la main et beaucoup d’écoute, dans les rues de Montréal.",
+    "body": "La maraude de Noël est notre soirée la plus attendue. Nous préparons ensemble des sacs (soupe, pain, chaussettes, gants), puis nous partons en petites équipes à la rencontre des personnes qui dorment dehors.\n\nLes lettres d’encouragement reçues sur le site sont glissées dans les sacs, après relecture par l’équipe. **Inscription obligatoire** pour des raisons de sécurité ; les mineurs participent accompagnés d’un parent."
+  },
+  "en": {
+    "slug": "christmas-street-outreach",
+    "title": "Christmas street outreach",
+    "location": "Meeting point shared with registered volunteers, Montréal",
+    "image_alt": "Hands hold out a basket of bread rolls.",
+    "summary": "Hot soup, socks, handwritten Christmas cards and a lot of listening, in the streets of Montréal.",
+    "body": "Christmas outreach is our most awaited night. Together we pack bags (soup, bread, socks, gloves), then head out in small teams to meet people sleeping outside.\n\nThe letters of encouragement received through the website are slipped into the bags after the team has read them. **Registration required** for safety reasons; minors take part with a parent."
+  }
+}

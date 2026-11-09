@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Collecte d’automne",
+    "caption": "",
+    "alt": "Des fruits frais disposés sur une table.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/fruit.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  },
+  "en": {
+    "title": "Fall food drive",
+    "caption": "",
+    "alt": "Fresh fruit laid out on a table.",
+    "transcript": "",
+    "type": "photo",
+    "image": "/img/fruit.jpg",
+    "date": "2026-10-01",
+    "sample": true
+  }
+}

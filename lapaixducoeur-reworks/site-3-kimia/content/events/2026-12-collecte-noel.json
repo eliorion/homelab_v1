@@ -1,0 +1,28 @@
+{
+  "fr": {
+    "slug": "collecte-alimentaire-noel",
+    "title": "Collecte alimentaire de Noël",
+    "venue": "Supermarché partenaire, Montréal [lieu à confirmer]",
+    "summary": "Aidez-nous à remplir des paniers de Noël pour des familles, des veuves et des étudiants. Quarts de 2 heures, accueil et formation sur place.",
+    "body": "Nous serons devant un supermarché partenaire pour inviter les clients à donner des denrées non périssables.\n\n- Quarts de 2 heures (10 h – 12 h, 12 h – 14 h, 14 h – 16 h)\n- Aucune expérience requise, une courte formation est donnée sur place\n- Les mineurs sont les bienvenus avec un adulte\n\nLes paniers seront distribués la semaine suivante.",
+    "start": "2026-12-12T10:00",
+    "end": "2026-12-12T16:00",
+    "category": "collecte",
+    "image": "/assets/illustrations/collecte.svg",
+    "sample": true,
+    "ticketUrl": ""
+  },
+  "en": {
+    "slug": "christmas-food-drive",
+    "title": "Christmas food drive",
+    "venue": "Partner grocery store, Montréal [location to confirm]",
+    "summary": "Help us fill Christmas baskets for families, widows and students. Two-hour shifts, welcome and training on site.",
+    "body": "We will be outside a partner grocery store, inviting shoppers to give non-perishable food.\n\n- Two-hour shifts (10 am–12 pm, 12–2 pm, 2–4 pm)\n- No experience needed; a short briefing is given on site\n- Minors are welcome with an adult\n\nThe baskets will be handed out the following week.",
+    "start": "2026-12-12T10:00",
+    "end": "2026-12-12T16:00",
+    "category": "collecte",
+    "image": "/assets/illustrations/collecte.svg",
+    "sample": true,
+    "ticketUrl": ""
+  }
+}

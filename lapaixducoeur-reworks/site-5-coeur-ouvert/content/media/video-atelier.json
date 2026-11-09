@@ -1,0 +1,46 @@
+{
+  "fr": {
+    "type": "video",
+    "order": 3,
+    "sample": true,
+    "title": "Atelier : vers l’autonomie",
+    "description": "Ce qui se passe dans nos ateliers de formation, raconté par les participants.",
+    "youtube_id": "M7lc1UVf-VE",
+    "duration": "3:05",
+    "poster": "/assets/img/bible-study.jpg",
+    "poster_alt": "Un groupe réuni autour d’un livre",
+    "captions": "Sous-titres français et anglais",
+    "chapters": [
+      {
+        "time": "0:00",
+        "label": "Pourquoi des ateliers"
+      },
+      {
+        "time": "1:10",
+        "label": "Témoignages"
+      }
+    ]
+  },
+  "en": {
+    "type": "video",
+    "order": 3,
+    "sample": true,
+    "title": "Workshop: toward independence",
+    "description": "What happens in our training workshops, told by the participants.",
+    "youtube_id": "M7lc1UVf-VE",
+    "duration": "3:05",
+    "poster": "/assets/img/bible-study.jpg",
+    "poster_alt": "A group gathered around a book",
+    "captions": "French and English captions",
+    "chapters": [
+      {
+        "time": "0:00",
+        "label": "Why workshops"
+      },
+      {
+        "time": "1:10",
+        "label": "Testimonies"
+      }
+    ]
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "fr": {
+    "title": "Le Cercle du Cœur — le don mensuel",
+    "description": "Rejoignez Le Cercle du Cœur : un don mensuel du montant de votre choix, une lettre trimestrielle et des nouvelles de l’impact de votre soutien.",
+    "heading": "Le Cercle du Cœur",
+    "intro": "Un cercle de donateurs mensuels qui gardent la lumière allumée, mois après mois. Vous choisissez le montant; nous vous montrons ce qu’il change.",
+    "image_alt": "Deux enfants rient en jouant dans l’herbe, un jour d’été.",
+    "benefits_title": "Ce que vous recevez",
+    "benefits": [
+      {
+        "icon": "letter",
+        "title": "Une lettre chaque trimestre",
+        "text": "Des nouvelles du terrain, écrites par l’équipe, avec des prénoms et des visages partagés avec consentement."
+      },
+      {
+        "icon": "chart",
+        "title": "Votre impact, chiffré",
+        "text": "Un bilan clair : paniers remis, maraudes réalisées, enfants soutenus grâce au Cercle."
+      },
+      {
+        "icon": "pray",
+        "title": "La chaîne de prière",
+        "text": "Recevez les sujets de prière de l’association et portez-les avec nous."
+      },
+      {
+        "icon": "heart",
+        "title": "Une rencontre annuelle",
+        "text": "Une soirée de louange et de partage pour rencontrer celles et ceux que vous soutenez [à confirmer]."
+      }
+    ],
+    "steps_title": "Comment ça marche",
+    "steps": [
+      {
+        "title": "Choisissez votre montant",
+        "text": "Dès 10 $ par mois. Vous pouvez le modifier ou l’arrêter en tout temps."
+      },
+      {
+        "title": "Donnez en toute sécurité",
+        "text": "Le don mensuel est géré par Zeffy, sans frais pour l’association."
+      },
+      {
+        "title": "Voyez la lumière grandir",
+        "text": "Recevez la lettre trimestrielle et votre reçu fiscal annuel [si enregistré]."
+      }
+    ],
+    "goal_title": "Objectif : 100 membres d’ici Noël",
+    "goal_text": "Avec 100 membres, nous pouvons garantir une maraude par mois et un panier pour chaque famille accompagnée.",
+    "quote": "Donner chaque mois, c’est ma façon de prier avec mes mains.",
+    "quote_author": "Membre du Cercle [témoignage à confirmer]",
+    "faq_title": "Questions fréquentes",
+    "faq": [
+      {
+        "q": "Puis-je modifier ou annuler mon don mensuel ?",
+        "a": "Oui, en tout temps et sans justification, directement depuis votre compte Zeffy ou en nous écrivant."
+      },
+      {
+        "q": "Quel montant minimum ?",
+        "a": "Il n’y a pas de petit don. Nous suggérons 10 $ par mois, mais chaque montant est le bienvenu."
+      },
+      {
+        "q": "Vais-je recevoir un reçu fiscal ?",
+        "a": "Un reçu annuel regroupant vos dons sera émis [si enregistré auprès de l’ARC — à confirmer]."
+      }
+    ],
+    "image": "/img/children-play.jpg"
+  },
+  "en": {
+    "title": "The Heart Circle — monthly giving",
+    "description": "Join the Heart Circle: a monthly gift of any amount, a quarterly letter and regular updates on the impact of your support.",
+    "heading": "The Heart Circle",
+    "intro": "A circle of monthly donors who keep the light on, month after month. You choose the amount; we show you what it changes.",
+    "image_alt": "Two children laugh as they play in the grass on a summer day.",
+    "benefits_title": "What you receive",
+    "benefits": [
+      {
+        "icon": "letter",
+        "title": "A letter every quarter",
+        "text": "News from the field, written by the team, with names and faces shared only with consent."
+      },
+      {
+        "icon": "chart",
+        "title": "Your impact, in numbers",
+        "text": "A clear summary: baskets handed out, outreach rounds, children supported thanks to the Circle."
+      },
+      {
+        "icon": "pray",
+        "title": "The prayer chain",
+        "text": "Receive the association’s prayer requests and carry them with us."
+      },
+      {
+        "icon": "heart",
+        "title": "A yearly gathering",
+        "text": "An evening of worship and sharing to meet the people you support [to confirm]."
+      }
+    ],
+    "steps_title": "How it works",
+    "steps": [
+      {
+        "title": "Choose your amount",
+        "text": "From $10 a month. You can change or stop it at any time."
+      },
+      {
+        "title": "Give securely",
+        "text": "Monthly giving is handled by Zeffy, at no cost to the association."
+      },
+      {
+        "title": "Watch the light grow",
+        "text": "Receive the quarterly letter and your annual tax receipt [if registered]."
+      }
+    ],
+    "goal_title": "Goal: 100 members by Christmas",
+    "goal_text": "With 100 members we can guarantee one outreach round every month and a basket for every family we walk with.",
+    "quote": "Giving every month is my way of praying with my hands.",
+    "quote_author": "Circle member [testimonial to confirm]",
+    "faq_title": "Frequently asked questions",
+    "faq": [
+      {
+        "q": "Can I change or cancel my monthly gift?",
+        "a": "Yes, at any time and with no questions asked, from your Zeffy account or by writing to us."
+      },
+      {
+        "q": "Is there a minimum amount?",
+        "a": "No gift is too small. We suggest $10 a month, but every amount is welcome."
+      },
+      {
+        "q": "Will I get a tax receipt?",
+        "a": "A yearly receipt covering all your gifts will be issued [if registered with the CRA — to confirm]."
+      }
+    ],
+    "image": "/img/children-play.jpg"
+  }
+}

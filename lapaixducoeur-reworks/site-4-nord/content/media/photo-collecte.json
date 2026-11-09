@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "title": "Tri des dons après une collecte",
+    "description": "Photo d’illustration [à remplacer par une photo de l’association].",
+    "image_alt": "Des bénévoles trient des boîtes de conserve dans des caisses",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/food-bank-volunteers-1600.jpg",
+    "date": "2026-10-18",
+    "sample": true
+  },
+  "en": {
+    "title": "Sorting donations after a food drive",
+    "description": "Illustrative photo [to be replaced with the charity’s own].",
+    "image_alt": "Volunteers sorting canned goods into crates",
+    "transcript": "",
+    "kind": "photo",
+    "image": "/assets/img/food-bank-volunteers-1600.jpg",
+    "date": "2026-10-18",
+    "sample": true
+  }
+}

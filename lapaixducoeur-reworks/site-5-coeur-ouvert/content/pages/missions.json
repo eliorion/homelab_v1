@@ -1,0 +1,50 @@
+{
+  "fr": {
+    "title": "Nos missions — aide alimentaire, vêtements, études, maraudes",
+    "description": "Les quatre domaines d’aide et les trois programmes de La Paix du Cœur : soutien aux nécessiteux, ateliers de formation, appui à d’autres associations, collectes et maraudes.",
+    "kicker": "Missions",
+    "heading": "Aimer en actes, pas seulement en paroles.",
+    "lede": "Nous aidons des personnes qui vivent des situations difficiles, puis nous les accompagnons vers l’autonomie. Tout est gratuit.",
+    "areas": [
+      { "name": "Alimentaire", "text": "Paniers, repas chauds pendant les maraudes et collectes en supermarché pour remplir les garde-manger.", "image": "/assets/img/fruit.jpg", "alt": "Fruits frais disposés sur une table en bois" },
+      { "name": "Vestimentaire", "text": "Manteaux, bottes et vêtements propres, triés par taille et par saison, remis avec dignité.", "image": "/assets/img/clothing.jpg", "alt": "Vêtements suspendus sur un portant" },
+      { "name": "Académique", "text": "Fournitures scolaires, livres et soutien aux études pour les enfants, les orphelinats et les étudiants.", "image": "/assets/img/library.jpg", "alt": "Allée d’une bibliothèque bordée de livres" },
+      { "name": "Matérielle ou financière", "text": "Un coup de pouce ponctuel quand une famille traverse une épreuve : un loyer, un appareil, un trousseau.", "image": "/assets/img/lunchboxes.jpg", "alt": "Boîtes-repas préparées vues du dessus sur fond orangé" }
+    ],
+    "programmes": [
+      { "name": "Soutien aux nécessiteux", "text": "Aide alimentaire, vestimentaire, financière et spirituelle aux personnes qui vivent des situations difficiles." },
+      { "name": "Ateliers de formation", "text": "Ateliers, séminaires, conférences et campagnes de sensibilisation, pour que chacun devienne autonome." },
+      { "name": "Aider d’autres associations", "text": "Soutenir les projets d’autres associations porteuses de projets socio-humanitaires." }
+    ],
+    "actions_title": "Sur le terrain",
+    "actions": [
+      { "name": "Collectes alimentaires", "text": "À l’entrée des supermarchés, nous invitons les clients à ajouter un article pour une famille. Chaque collecte remplit des paniers distribués dans la semaine.", "image": "/assets/img/food-bank-volunteers.jpg", "alt": "Bénévoles préparant des caisses de denrées" },
+      { "name": "Maraudes", "text": "Dans les rues de plusieurs villes du Canada, à la rencontre des sans-abri, des orphelinats et des étudiants : un repas chaud, un vêtement, une prière, une conversation.", "image": "/assets/img/bread-sharing.jpg", "alt": "Des mains tendent des paniers de pain" }
+    ],
+    "where": "Montréal et plusieurs villes du Canada. Pays soutenus à l’étranger : [à confirmer]."
+  },
+  "en": {
+    "title": "Our missions — food, clothing, schooling, street outreach",
+    "description": "The four areas of aid and three programmes of La Paix du Cœur: support for people in need, training workshops, help for other associations, food drives and street outreach.",
+    "kicker": "Missions",
+    "heading": "Love in deeds, not only in words.",
+    "lede": "We help people going through hard times, then walk with them toward self-reliance. Everything is free.",
+    "areas": [
+      { "name": "Food", "text": "Food baskets, hot meals during street outreach, and supermarket food drives that fill pantries.", "image": "/assets/img/fruit.jpg", "alt": "Fresh fruit laid out on a wooden table" },
+      { "name": "Clothing", "text": "Coats, boots and clean clothes, sorted by size and season, handed over with dignity.", "image": "/assets/img/clothing.jpg", "alt": "Clothes hanging on a rack" },
+      { "name": "Schooling", "text": "School supplies, books and study support for children, orphanages and students.", "image": "/assets/img/library.jpg", "alt": "A library aisle lined with books" },
+      { "name": "Material or financial", "text": "A one-off helping hand when a family goes through a trial: rent, an appliance, a starter kit.", "image": "/assets/img/lunchboxes.jpg", "alt": "Packed lunch boxes seen from above on an orange background" }
+    ],
+    "programmes": [
+      { "name": "Support for people in need", "text": "Food, clothing, financial and spiritual help for people going through difficult situations." },
+      { "name": "Training workshops", "text": "Workshops, seminars, talks and awareness campaigns, so that everyone can become self-reliant." },
+      { "name": "Helping other associations", "text": "Supporting the projects of other associations that carry social and humanitarian work." }
+    ],
+    "actions_title": "In the field",
+    "actions": [
+      { "name": "Food drives", "text": "At supermarket entrances we invite shoppers to add one item for a family. Every drive fills baskets that go out the same week.", "image": "/assets/img/food-bank-volunteers.jpg", "alt": "Volunteers packing crates of food" },
+      { "name": "Street outreach", "text": "On the streets of several Canadian cities, meeting the homeless, orphanages and students: a hot meal, a piece of clothing, a prayer, a conversation.", "image": "/assets/img/bread-sharing.jpg", "alt": "Hands holding out baskets of bread" }
+    ],
+    "where": "Montréal and several cities across Canada. Countries supported abroad: [to confirm]."
+  }
+}

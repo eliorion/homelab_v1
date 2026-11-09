@@ -1,0 +1,18 @@
+{
+  "fr": {
+    "type": "photo",
+    "order": 4,
+    "sample": false,
+    "title": "Personne ne reste seul.",
+    "image": "/assets/img/elders.jpg",
+    "alt": "Trois femmes âgées rient ensemble"
+  },
+  "en": {
+    "type": "photo",
+    "order": 4,
+    "sample": false,
+    "title": "No one is left alone.",
+    "image": "/assets/img/elders.jpg",
+    "alt": "Three older women laughing together"
+  }
+}

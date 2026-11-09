@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "communaute",
+    "src": "/assets/img/children-play-960.jpg",
+    "title": "Le temps de jouer",
+    "alt": "Deux enfants jouent et rient dans l'herbe d'un parc.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 14
+  },
+  "en": {
+    "type": "photo",
+    "category": "communaute",
+    "src": "/assets/img/children-play-960.jpg",
+    "title": "Time to play",
+    "alt": "Two children playing and laughing on the grass in a park.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 14
+  }
+}

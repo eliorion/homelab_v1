@@ -1,0 +1,80 @@
+{
+  "fr": {
+    "title": "Quarts de bénévolat",
+    "meta_title": "Bénévolat — maraudes et collectes à Montréal | La Paix du Cœur",
+    "meta_description": "Inscrivez-vous à un quart de bénévolat : maraudes du jeudi soir, collectes alimentaires, ateliers. Places restantes en temps réel, aucune expérience requise.",
+    "eyebrow": "Bénévolat",
+    "lead": "Choisissez un quart, inscrivez-vous en une minute. Aucune expérience requise : on vous jumelle toujours avec une personne d’expérience.",
+    "expect": [
+      {
+        "title": "Avant",
+        "text": "Un courriel de confirmation avec le point de rencontre exact, 48 h avant."
+      },
+      {
+        "title": "Sur place",
+        "text": "Arrivée 15 minutes avant, prière, briefing de sécurité, puis départ en équipe."
+      },
+      {
+        "title": "Après",
+        "text": "Un court retour ensemble. Personne ne repart seul·e."
+      }
+    ],
+    "faq": [
+      {
+        "q": "Faut-il être chrétien pour être bénévole ?",
+        "a": "Non. Nous sommes une association chrétienne et nous prions ensemble, mais toute personne bienveillante est la bienvenue."
+      },
+      {
+        "q": "À partir de quel âge ?",
+        "a": "16 ans pour les collectes, accompagné d’un adulte; 18 ans pour les maraudes [à confirmer]."
+      },
+      {
+        "q": "Faut-il une vérification d’antécédents ?",
+        "a": "Pour les activités auprès d’enfants, oui. Nous vous guidons dans la démarche [à confirmer]."
+      },
+      {
+        "q": "Et si je dois annuler ?",
+        "a": "Écrivez-nous dès que possible pour libérer la place : une autre personne attend peut-être."
+      }
+    ]
+  },
+  "en": {
+    "title": "Volunteer shifts",
+    "meta_title": "Volunteer — street outreach and food drives in Montréal | La Paix du Cœur",
+    "meta_description": "Sign up for a volunteer shift: Thursday-night outreach, food drives, workshops. See spots left, no experience needed.",
+    "eyebrow": "Volunteer",
+    "lead": "Pick a shift, sign up in a minute. No experience needed: we always pair you with an experienced volunteer.",
+    "expect": [
+      {
+        "title": "Before",
+        "text": "A confirmation email with the exact meeting point, 48 hours ahead."
+      },
+      {
+        "title": "On the day",
+        "text": "Arrive 15 minutes early for prayer and a safety briefing, then head out as a team."
+      },
+      {
+        "title": "After",
+        "text": "A short debrief together. Nobody leaves alone."
+      }
+    ],
+    "faq": [
+      {
+        "q": "Do I have to be a Christian to volunteer?",
+        "a": "No. We are a Christian charity and we pray together, but every kind-hearted person is welcome."
+      },
+      {
+        "q": "How old do I need to be?",
+        "a": "16 for food drives, with an adult; 18 for street outreach [to confirm]."
+      },
+      {
+        "q": "Is a background check required?",
+        "a": "For activities with children, yes. We will walk you through it [to confirm]."
+      },
+      {
+        "q": "What if I need to cancel?",
+        "a": "Write to us as soon as you can to free the spot: someone else may be waiting for it."
+      }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "fr": {
+    "site_name": "La Paix du Cœur",
+    "alt_name": "Kimia Na Motema",
+    "tagline": "Association chrétienne · Montréal · depuis 2014",
+    "site_url": "https://lapaixducoeur.ca",
+    "email": "lapaixducoeur.ca@gmail.com",
+    "interac_email": "lapaixducoeur.ca@gmail.com",
+    "zeffy_url": "",
+    "charity_number": "[à confirmer]",
+    "privacy_officer": "[à confirmer]",
+    "social": [
+      { "name": "Facebook", "url": "" },
+      { "name": "Instagram", "url": "" },
+      { "name": "YouTube", "url": "" }
+    ],
+    "verse_of_week": {
+      "text": "Celui qui a pitié du pauvre prête à YHWH, qui lui rendra son bienfait.",
+      "ref": "Proverbes 19:17"
+    },
+    "banner": {
+      "enabled": true,
+      "text": "Campagne de Noël 2026 — chaque don doublé",
+      "campaign": "noel-2026"
+    },
+    "newsletter_blurb": "Une lettre par mois : les campagnes, les maraudes, les nouvelles. Jamais plus.",
+    "calendar_google_public_url": "",
+    "calendar_ics_source": ""
+  },
+  "en": {
+    "site_name": "La Paix du Cœur",
+    "alt_name": "Kimia Na Motema",
+    "tagline": "Christian association · Montréal · since 2014",
+    "site_url": "https://lapaixducoeur.ca",
+    "email": "lapaixducoeur.ca@gmail.com",
+    "interac_email": "lapaixducoeur.ca@gmail.com",
+    "zeffy_url": "",
+    "charity_number": "[to confirm]",
+    "privacy_officer": "[to confirm]",
+    "social": [
+      { "name": "Facebook", "url": "" },
+      { "name": "Instagram", "url": "" },
+      { "name": "YouTube", "url": "" }
+    ],
+    "verse_of_week": {
+      "text": "Whoever is kind to the poor lends to YHWH, and he will repay them for their deed.",
+      "ref": "Proverbs 19:17"
+    },
+    "banner": {
+      "enabled": true,
+      "text": "Christmas Campaign 2026 — every gift doubled",
+      "campaign": "noel-2026"
+    },
+    "newsletter_blurb": "One letter a month: campaigns, street outreach, news. Never more.",
+    "calendar_google_public_url": "",
+    "calendar_ics_source": ""
+  }
+}

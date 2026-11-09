@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "type": "audio",
+    "order": 30,
+    "audio": "/assets/audio/ep1-sample.mp3",
+    "title": "Les voix du cœur — épisode 1",
+    "caption": "Extrait d’exemple. Transcription complète sur la page du balado.",
+    "sample": true
+  },
+  "en": {
+    "title": "Voices of the Heart — episode 1",
+    "caption": "Sample excerpt. Full transcript on the podcast page."
+  }
+}

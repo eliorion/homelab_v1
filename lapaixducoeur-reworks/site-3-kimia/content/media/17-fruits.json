@@ -1,0 +1,20 @@
+{
+  "fr": {
+    "type": "photo",
+    "category": "alimentaire",
+    "src": "/assets/img/fruit-960.jpg",
+    "title": "Fruits de saison",
+    "alt": "Une table couverte de fruits colorés.",
+    "caption": "Photo d'illustration provenant du site actuel [à remplacer par une photo de l'association, avec consentement]",
+    "order": 17
+  },
+  "en": {
+    "type": "photo",
+    "category": "alimentaire",
+    "src": "/assets/img/fruit-960.jpg",
+    "title": "Seasonal fruit",
+    "alt": "A table covered with colourful fruit.",
+    "caption": "Illustrative photo from the current website [to be replaced with an association photo, with consent]",
+    "order": 17
+  }
+}

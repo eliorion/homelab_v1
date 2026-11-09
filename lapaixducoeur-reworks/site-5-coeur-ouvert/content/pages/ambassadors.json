@@ -1,0 +1,56 @@
+{
+  "fr": {
+    "title": "Ambassadeurs — créez votre page de collecte",
+    "description": "Anniversaire, course, groupe d’église ou d’école : créez votre page de collecte pour La Paix du Cœur en trois étapes et mobilisez vos proches.",
+    "kicker": "Ambassadeurs",
+    "heading": "Votre cercle peut changer un hiver.",
+    "lede": "Transformez un anniversaire, une course ou une soirée de chorale en élan de générosité. Vous créez la page, vos proches donnent, nous apportons l’aide.",
+    "steps": [
+      { "title": "Choisissez votre occasion", "text": "Un anniversaire, un défi sportif, un groupe d’église, une classe, un mariage… ou simplement l’envie d’aider." },
+      { "title": "Créez votre page", "text": "Remplissez le formulaire : nous préparons votre page de collecte Zeffy avec votre photo, votre objectif et votre message." },
+      { "title": "Partagez et suivez", "text": "Envoyez le lien, publiez nos cartes à partager et suivez votre progression. Nous vous racontons ce que votre collecte a rendu possible." }
+    ],
+    "teams": [
+      { "name": "Les 40 ans de Marie-Claire", "type": "Anniversaire", "raised": 1840, "goal": 2000 },
+      { "name": "Chorale de l’Espérance", "type": "Groupe d’église", "raised": 1325, "goal": 3000 },
+      { "name": "Course du Mont-Royal — équipe Jonathan", "type": "Défi sportif", "raised": 960, "goal": 1500 },
+      { "name": "Classe de 5e année, école [à confirmer]", "type": "École", "raised": 410, "goal": 500 },
+      { "name": "Famille Mbuyi", "type": "Famille", "raised": 275, "goal": 1000 }
+    ],
+    "form_title": "Créez votre page",
+    "form_intro": "Nous vous répondons sous 48 heures avec votre lien de collecte et notre trousse d’ambassadeur.",
+    "toolkit": [
+      "Des cartes de versets à partager, aux couleurs du site",
+      "Un texte de présentation prêt à copier",
+      "Des idées d’activités pour les églises et les écoles",
+      "Le récit de ce que votre collecte a financé"
+    ]
+  },
+  "en": {
+    "title": "Ambassadors — start your fundraising page",
+    "description": "Birthday, run, church or school group: start a fundraising page for La Paix du Cœur in three steps and rally the people around you.",
+    "kicker": "Ambassadors",
+    "heading": "Your circle can change someone’s winter.",
+    "lede": "Turn a birthday, a run or a choir night into a wave of generosity. You start the page, your people give, we deliver the help.",
+    "steps": [
+      { "title": "Pick your occasion", "text": "A birthday, a sports challenge, a church group, a classroom, a wedding… or simply the wish to help." },
+      { "title": "Create your page", "text": "Fill in the form: we set up your Zeffy fundraising page with your photo, your goal and your message." },
+      { "title": "Share and follow", "text": "Send the link, post our shareable cards and watch your progress. We’ll tell you what your fundraiser made possible." }
+    ],
+    "teams": [
+      { "name": "Marie-Claire turns 40", "type": "Birthday", "raised": 1840, "goal": 2000 },
+      { "name": "Chorale de l’Espérance", "type": "Church group", "raised": 1325, "goal": 3000 },
+      { "name": "Mount Royal Run — Team Jonathan", "type": "Sports challenge", "raised": 960, "goal": 1500 },
+      { "name": "Grade 5 class, school [to confirm]", "type": "School", "raised": 410, "goal": 500 },
+      { "name": "The Mbuyi family", "type": "Family", "raised": 275, "goal": 1000 }
+    ],
+    "form_title": "Start your page",
+    "form_intro": "We’ll reply within 48 hours with your fundraising link and our ambassador kit.",
+    "toolkit": [
+      "Verse cards to share, in the site’s colours",
+      "A ready-to-copy introduction text",
+      "Activity ideas for churches and schools",
+      "The story of what your fundraiser paid for"
+    ]
+  }
+}

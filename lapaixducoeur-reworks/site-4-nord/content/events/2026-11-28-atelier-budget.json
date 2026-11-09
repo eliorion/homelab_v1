@@ -1,0 +1,42 @@
+{
+  "fr": {
+    "slug": "atelier-budget-familial-28-novembre",
+    "title": "Atelier : budget familial et autonomie",
+    "summary": "Un après-midi concret pour reprendre la main sur son budget, avec garde d’enfants sur place.",
+    "address": "Salle communautaire, quartier Saint-Michel [adresse à confirmer]",
+    "meeting_point": "Entrée principale, salle au rez-de-chaussée",
+    "image_alt": "Une allée de bibliothèque bordée de rayonnages de livres",
+    "body": "Nos ateliers visent l’autonomie : repartir avec des outils simples qu’on peut utiliser dès le lendemain.\n\nAu programme : bâtir un budget mensuel réaliste, repérer les aides et crédits d’impôt souvent oubliés, faire l’épicerie à petit prix.\n\nL’atelier est gratuit, en français, avec possibilité d’accompagnement en anglais et en lingala [à confirmer]. Une halte-garderie bénévole accueille les enfants dans la salle voisine.",
+    "bring": [
+      "Un crayon — les cahiers sont fournis"
+    ],
+    "type": "atelier",
+    "start": "2026-11-28T13:30",
+    "end": "2026-11-28T16:00",
+    "neighbourhood": "saint-michel",
+    "image": "/assets/img/library-768.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": []
+  },
+  "en": {
+    "slug": "family-budget-workshop-november-28",
+    "title": "Workshop: family budgeting and self-reliance",
+    "summary": "A practical afternoon to take charge of your budget, with on-site childcare.",
+    "address": "Community hall, Saint-Michel neighbourhood [address to confirm]",
+    "meeting_point": "Main entrance, ground-floor hall",
+    "image_alt": "A library aisle lined with bookshelves",
+    "body": "Our workshops aim at self-reliance: leaving with simple tools you can use the very next day.\n\nOn the agenda: building a realistic monthly budget, finding often-missed benefits and tax credits, grocery shopping on a small budget.\n\nThe workshop is free and in French, with help available in English and Lingala [to confirm]. Volunteer childcare welcomes children in the room next door.",
+    "bring": [
+      "A pen — workbooks provided"
+    ],
+    "type": "atelier",
+    "start": "2026-11-28T13:30",
+    "end": "2026-11-28T16:00",
+    "neighbourhood": "saint-michel",
+    "image": "/assets/img/library-768.jpg",
+    "rsvp": "form",
+    "sample": true,
+    "shifts": []
+  }
+}

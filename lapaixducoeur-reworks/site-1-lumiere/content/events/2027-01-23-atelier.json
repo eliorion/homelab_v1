@@ -1,0 +1,30 @@
+{
+  "fr": {
+    "slug": "atelier-budget-autonomie",
+    "title": "Atelier : budget et autonomie",
+    "summary": "Un après-midi pour apprendre à bâtir un budget, gérer ses dépenses et préparer l’avenir.",
+    "location_name": "Salle communautaire, Montréal [à confirmer]",
+    "image_alt": "Un groupe réuni autour d’une table pour un atelier.",
+    "body": "Cet atelier gratuit s’adresse aux familles, aux étudiants et à toute personne qui souhaite reprendre la main sur ses finances.\n\nAu programme : bâtir un budget simple, éviter les pièges du crédit, connaître les ressources disponibles à Montréal. Collation offerte.",
+    "start": "2027-01-23T13:30:00-05:00",
+    "end": "2027-01-23T16:00:00-05:00",
+    "locality": "Montréal",
+    "ticket_url": "",
+    "image": "/img/bible-study.jpg",
+    "sample": true
+  },
+  "en": {
+    "slug": "budgeting-and-self-reliance-workshop",
+    "title": "Workshop: budgeting and self-reliance",
+    "summary": "An afternoon to learn how to build a budget, manage spending and plan ahead.",
+    "location_name": "Community hall, Montréal [to confirm]",
+    "image_alt": "A group gathered around a table for a workshop.",
+    "body": "This free workshop is for families, students and anyone who wants to take back control of their finances.\n\nOn the agenda: building a simple budget, avoiding credit traps and knowing the resources available in Montréal. Snacks provided.",
+    "start": "2027-01-23T13:30:00-05:00",
+    "end": "2027-01-23T16:00:00-05:00",
+    "locality": "Montréal",
+    "ticket_url": "",
+    "image": "/img/bible-study.jpg",
+    "sample": true
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "fr": {
+    "name": "Supermarché partenaire — Maurice-Duplessis",
+    "address": "Boulevard Maurice-Duplessis [adresse à confirmer]",
+    "hours_note": "Bacs à l’entrée, bénévoles présents pendant les heures indiquées",
+    "needs": [
+      "Riz et pâtes",
+      "Légumineuses en conserve",
+      "Beurre d’arachide",
+      "Lait UHT",
+      "Produits d’hygiène"
+    ],
+    "neighbourhood": "riviere-des-prairies",
+    "dates": [
+      {
+        "date": "2026-12-12",
+        "start": "10:00",
+        "end": "16:00"
+      },
+      {
+        "date": "2027-01-30",
+        "start": "10:00",
+        "end": "16:00"
+      }
+    ],
+    "sample": true
+  },
+  "en": {
+    "name": "Partner supermarket — Maurice-Duplessis",
+    "address": "Maurice-Duplessis Boulevard [address to confirm]",
+    "hours_note": "Bins by the entrance, volunteers on site during the hours shown",
+    "needs": [
+      "Rice and pasta",
+      "Canned legumes",
+      "Peanut butter",
+      "Shelf-stable milk",
+      "Hygiene products"
+    ],
+    "neighbourhood": "riviere-des-prairies",
+    "dates": [
+      {
+        "date": "2026-12-12",
+        "start": "10:00",
+        "end": "16:00"
+      },
+      {
+        "date": "2027-01-30",
+        "start": "10:00",
+        "end": "16:00"
+      }
+    ],
+    "sample": true
+  }
+}

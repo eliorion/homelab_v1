@@ -1,0 +1,64 @@
+{
+  "fr": {
+    "slug": "noel-2026",
+    "name": "Campagne de Noël 2026",
+    "headline": "Un Noël pour chaque cœur.",
+    "lede": "Cette année, offrez à une famille montréalaise un panier de fête, à un enfant un manteau chaud, à un étudiant ses fournitures de janvier. Chaque cadeau est remis en mains propres avant le 25 décembre.",
+    "description": "Campagne de Noël 2026 de La Paix du Cœur : offrez un panier de Noël, un manteau d’hiver ou des fournitures scolaires. Objectif, compte à rebours et catalogue de cadeaux.",
+    "status": "active",
+    "sample": true,
+    "start": "2026-11-01",
+    "end": "2026-12-25T00:00:00-05:00",
+    "goal": 25000,
+    "raised": 11640,
+    "donors": 148,
+    "image": "/assets/img/bread-sharing.jpg",
+    "image_alt": "Des mains tendent des paniers de pain frais",
+    "og_image": "/assets/img/og-noel-2026.jpg",
+    "matching": {
+      "enabled": true,
+      "title": "Chaque don doublé",
+      "text": "Un donateur s’engage à doubler chaque don jusqu’à 5 000 $, jusqu’au 15 décembre."
+    },
+    "gifts": [
+      { "id": "panier", "icon": "basket", "name": "Panier de Noël", "price": 75, "text": "Un repas de fête et des denrées pour une famille pendant les vacances." },
+      { "id": "manteau", "icon": "coat", "name": "Manteau d’hiver", "price": 90, "text": "Un manteau neuf, chaud, à la bonne taille, pour un enfant ou un adulte." },
+      { "id": "fournitures", "icon": "pencil", "name": "Fournitures scolaires", "price": 40, "text": "Cahiers, crayons, calculatrice : de quoi recommencer janvier du bon pied." },
+      { "id": "bottes", "icon": "boot", "name": "Bottes et mitaines", "price": 55, "text": "Pour marcher jusqu’à l’école sans avoir froid aux pieds." },
+      { "id": "repas", "icon": "bowl", "name": "Repas chaud de maraude", "price": 15, "text": "Trois repas chauds servis dans la rue pendant la maraude de Noël." },
+      { "id": "cadeau", "icon": "gift", "name": "Cadeau pour un enfant", "price": 30, "text": "Un jouet ou un livre choisi avec soin, emballé par nos bénévoles." }
+    ],
+    "story": "## Pourquoi Noël ?\n\nPour beaucoup de familles que nous accompagnons, décembre est le mois le plus lourd : le froid, les factures de chauffage, l’école qui ferme, la solitude des fêtes. C’est aussi le moment où un geste simple compte le plus.\n\n## Où va votre don\n\nLes cadeaux du catalogue sont achetés localement, préparés par nos bénévoles et remis en mains propres lors des maraudes et des distributions de décembre. Si un article est déjà couvert, votre don va au besoin le plus pressant du même domaine.\n\n> « Celui qui a pitié du pauvre prête à YHWH. » — Proverbes 19:17"
+  },
+  "en": {
+    "slug": "christmas-2026",
+    "name": "Christmas Campaign 2026",
+    "headline": "A Christmas for every heart.",
+    "lede": "This year, give a Montréal family a holiday basket, a child a warm coat, a student their January supplies. Every gift is handed over in person before December 25.",
+    "description": "La Paix du Cœur’s Christmas Campaign 2026: give a Christmas basket, a winter coat or school supplies. Goal, countdown and gift catalogue.",
+    "status": "active",
+    "sample": true,
+    "start": "2026-11-01",
+    "end": "2026-12-25T00:00:00-05:00",
+    "goal": 25000,
+    "raised": 11640,
+    "donors": 148,
+    "image": "/assets/img/bread-sharing.jpg",
+    "image_alt": "Hands holding out baskets of fresh bread",
+    "og_image": "/assets/img/og-christmas-2026.jpg",
+    "matching": {
+      "enabled": true,
+      "title": "Every gift doubled",
+      "text": "A donor has pledged to match every gift up to $5,000, until December 15."
+    },
+    "gifts": [
+      { "id": "panier", "icon": "basket", "name": "Christmas basket", "price": 75, "text": "A festive meal and groceries for one family over the holidays." },
+      { "id": "manteau", "icon": "coat", "name": "Winter coat", "price": 90, "text": "A new, warm coat in the right size for a child or an adult." },
+      { "id": "fournitures", "icon": "pencil", "name": "School supplies", "price": 40, "text": "Notebooks, pencils, a calculator: everything to start January well." },
+      { "id": "bottes", "icon": "boot", "name": "Boots and mittens", "price": 55, "text": "So the walk to school doesn’t mean frozen feet." },
+      { "id": "repas", "icon": "bowl", "name": "Outreach hot meal", "price": 15, "text": "Three hot meals served on the street during the Christmas outreach night." },
+      { "id": "cadeau", "icon": "gift", "name": "A gift for a child", "price": 30, "text": "A toy or a book chosen with care and wrapped by our volunteers." }
+    ],
+    "story": "## Why Christmas?\n\nFor many of the families we walk with, December is the heaviest month: the cold, the heating bills, school closing, the loneliness of the holidays. It is also when a simple gesture counts the most.\n\n## Where your gift goes\n\nCatalogue gifts are bought locally, prepared by our volunteers and handed over in person during December outreach and distributions. If an item is already covered, your gift goes to the most pressing need in the same area.\n\n> “Whoever is kind to the poor lends to YHWH.” — Proverbs 19:17"
+  }
+}

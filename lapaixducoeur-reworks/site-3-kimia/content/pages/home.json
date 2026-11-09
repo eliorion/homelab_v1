@@ -1,0 +1,82 @@
+{
+  "fr": {
+    "metaTitle": "La Paix du Cœur — Kimia Na Motema | Association chrétienne à Montréal",
+    "description": "Depuis 2014, La Paix du Cœur / Kimia Na Motema aide gratuitement les orphelins, les veuves, les démunis et les sans-abri : aide alimentaire, vestimentaire, scolaire et matérielle.",
+    "heroKicker": "Kimia Na Motema · Montréal, depuis 2014",
+    "heroTitle": "Recoudre l'espérance, un point à la fois.",
+    "heroLead": "Nous sommes une association chrétienne qui sert gratuitement les orphelins, les veuves, les démunis et les sans-abri. Repas, vêtements, école, coups de main : chaque geste est un point de couture qui relie une vie à une autre.",
+    "verse": {
+      "text": "Défendez le faible et l'orphelin, rendez justice à l'affligé et au pauvre.",
+      "ref": "Tehilim (Psaumes) 82:3"
+    },
+    "nameTitle": "« Kimia na motema »",
+    "nameText": "En lingala, cela veut dire « la paix du cœur ». C'est ce que nous souhaitons déposer, avec douceur, dans chaque vie que nous croisons.",
+    "promises": [
+      {
+        "title": "Tout est gratuit",
+        "text": "Nous ne demandons rien en retour à celles et ceux que nous aidons."
+      },
+      {
+        "title": "Sans distinction",
+        "text": "De langue, de couleur ou d'origine : chacun est accueilli."
+      },
+      {
+        "title": "La dignité d'abord",
+        "text": "Aucun visage d'enfant sans consentement, aucun lieu précis publié."
+      }
+    ],
+    "aidTitle": "Quatre façons de prendre soin",
+    "aidIntro": "Nos quatre domaines d'aide, pensés pour répondre aux besoins concrets des familles.",
+    "journeyTitle": "Notre chemin depuis 2014",
+    "journeyIntro": "Une vision née à Montréal, qui a grandi point après point.",
+    "serveTitle": "Où nous servons",
+    "serveIntro": "À Montréal, dans plusieurs villes du Canada et, avec nos partenaires, au-delà. Volontairement sans adresse précise.",
+    "volunteerTitle": "Vos talents sont un trésor",
+    "volunteerIntro": "Cuisiner, conduire, enseigner, traduire, prier, photographier… Il y a une place pour vous dans l'équipe.",
+    "eventsTitle": "Prochains rendez-vous",
+    "newsTitle": "Nouvelles du terrain",
+    "galleryTitle": "En images",
+    "giveTitle": "Votre don devient un repas, un manteau, un cahier.",
+    "giveText": "Votre soutien par les prières, les courriels et les encouragements est une bénédiction. Vous pouvez aussi nous soutenir financièrement, matériellement ou humainement."
+  },
+  "en": {
+    "metaTitle": "La Paix du Cœur — Kimia Na Motema | Christian charity in Montréal",
+    "description": "Since 2014, La Paix du Cœur / Kimia Na Motema has helped orphans, widows, people in need and the homeless free of charge, with food, clothing, school and material support.",
+    "heroKicker": "Kimia Na Motema · Montréal, since 2014",
+    "heroTitle": "Stitching hope back together, one stitch at a time.",
+    "heroLead": "We are a Christian association serving orphans, widows, people in need and the homeless, free of charge. Meals, clothes, school, a helping hand: each act is a stitch that binds one life to another.",
+    "verse": {
+      "text": "Defend the weak and the fatherless; uphold the cause of the poor and the oppressed.",
+      "ref": "Tehilim (Psalms) 82:3"
+    },
+    "nameTitle": "“Kimia na motema”",
+    "nameText": "In Lingala it means “peace of the heart”. That is what we hope to gently bring into every life we meet.",
+    "promises": [
+      {
+        "title": "Everything is free",
+        "text": "We ask nothing in return from the people we help."
+      },
+      {
+        "title": "No distinctions",
+        "text": "Whatever their language, colour or origin, everyone is welcome."
+      },
+      {
+        "title": "Dignity first",
+        "text": "No child's face without consent, no exact location ever published."
+      }
+    ],
+    "aidTitle": "Four ways we care",
+    "aidIntro": "Our four areas of aid, designed around the real needs of families.",
+    "journeyTitle": "Our journey since 2014",
+    "journeyIntro": "A vision born in Montréal that has grown stitch by stitch.",
+    "serveTitle": "Where we serve",
+    "serveIntro": "In Montréal, in several Canadian cities and, with our partners, beyond. Deliberately without exact addresses.",
+    "volunteerTitle": "Your gifts are a treasure",
+    "volunteerIntro": "Cooking, driving, teaching, translating, praying, taking photos… There is a place for you on the team.",
+    "eventsTitle": "Upcoming gatherings",
+    "newsTitle": "News from the field",
+    "galleryTitle": "In pictures",
+    "giveTitle": "Your gift becomes a meal, a coat, a notebook.",
+    "giveText": "Your support through prayer, emails and encouragement is a blessing. You can also support us financially, materially or by giving your time."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "fr": {
+    "slug": "collecte-alimentaire-novembre",
+    "title": "Collecte alimentaire de novembre",
+    "start": "2026-11-21T10:00",
+    "end": "2026-11-21T16:00",
+    "location": "Supermarché partenaire, Montréal [lieu à confirmer]",
+    "locality": "Montréal",
+    "image": "/assets/img/fruit.jpg",
+    "image_alt": "Une table couverte de fruits frais colorés.",
+    "sample": true,
+    "registration_url": "",
+    "summary": "Une journée à l’entrée d’un supermarché pour recueillir des denrées non périssables. Bénévoles bienvenus, même pour une heure.",
+    "body": "Venez prêter main-forte pour une heure ou pour la journée : accueil des clients, tri des denrées, transport des caisses. Aucune expérience requise ; une courte formation est donnée sur place.\n\n**À apporter :** des vêtements chauds et votre plus beau sourire."
+  },
+  "en": {
+    "slug": "november-food-drive",
+    "title": "November food drive",
+    "location": "Partner supermarket, Montréal [location to confirm]",
+    "image_alt": "A table covered with colourful fresh fruit.",
+    "summary": "A day at a supermarket entrance collecting non-perishable food. Volunteers welcome, even for one hour.",
+    "body": "Come lend a hand for an hour or for the day: greeting shoppers, sorting food, carrying crates. No experience needed; a short briefing is given on site.\n\n**Bring:** warm clothes and your best smile."
+  }
+}
