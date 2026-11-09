@@ -1,0 +1,133 @@
+// Interface strings and translated routes. Editorial copy lives in content/.
+export const LANGS = ['fr', 'en'];
+
+export const ROUTES = {
+  home: { fr: '', en: '' },
+  about: { fr: 'a-propos', en: 'about' },
+  missions: { fr: 'missions', en: 'missions' },
+  news: { fr: 'nouvelles', en: 'news' },
+  events: { fr: 'evenements', en: 'events' },
+  media: { fr: 'mediatheque', en: 'media' },
+  give: { fr: 'soutenir', en: 'give' },
+  circle: { fr: 'cercle-du-coeur', en: 'heart-circle' },
+  transparency: { fr: 'transparence', en: 'transparency' },
+  contact: { fr: 'contact', en: 'contact' },
+  privacy: { fr: 'confidentialite', en: 'privacy' },
+};
+
+export const url = (key, lang, sub = '') => {
+  const base = ROUTES[key][lang];
+  return `/${lang}/${base ? base + '/' : ''}${sub ? sub + '/' : ''}`;
+};
+
+export const T = {
+  fr: {
+    locale: 'fr-CA', ogLocale: 'fr_CA', other: 'en', otherName: 'English', otherShort: 'EN',
+    switchLabel: 'Read this page in English',
+    skip: 'Aller au contenu',
+    menu: 'Menu', close: 'Fermer',
+    nav: { about: 'À propos', missions: 'Missions', news: 'Nouvelles', events: 'Événements', media: 'Médiathèque', transparency: 'Transparence', contact: 'Contact', circle: 'Cercle du Cœur', give: 'Soutenir', privacy: 'Confidentialité', home: 'Accueil' },
+    give: 'Donner', giveMonthly: 'Donner chaque mois', joinCircle: 'Rejoindre le Cercle',
+    sample: 'Exemple — à confirmer', tbc: 'à confirmer', sampleShort: 'Exemple',
+    readMore: 'Lire la suite', allNews: 'Toutes les nouvelles', allEvents: 'Tous les événements',
+    published: 'Publié le', backNews: 'Retour aux nouvelles', backEvents: 'Retour aux événements',
+    addCal: 'Ajouter au calendrier (.ics)', gcal: 'Google Agenda', details: 'Détails', tickets: 'Billets sur Zeffy',
+    when: 'Quand', where: 'Où', free: 'Entrée libre', share: 'Partager', copyLink: 'Copier le lien', copied: 'Copié !',
+    upcoming: 'Prochains événements', latest: 'Dernières nouvelles',
+    breadcrumbs: 'Fil d’Ariane',
+    footerTagline: 'Association chrétienne à but non lucratif, fondée en 2014 à Montréal. Tout est offert gratuitement, pour la seule gloire d’Elohim.',
+    footerExplore: 'Explorer', footerGive: 'Soutenir', footerContact: 'Nous joindre',
+    newsletter: 'Lettre d’espérance', newsletterText: 'Une lettre par trimestre : nouvelles du terrain, sujets de prière et impact de vos dons.',
+    emailLabel: 'Courriel', subscribe: 'M’abonner',
+    caslConsent: 'J’accepte de recevoir la lettre de La Paix du Cœur. Je peux me désabonner en tout temps.',
+    social: 'Réseaux sociaux',
+    rights: 'Tous droits réservés.',
+    honeypot: 'Ne pas remplir ce champ',
+    formThanks: 'Merci ! Votre message a bien été reçu.',
+    formThanksSub: 'Prototype : en production, ce formulaire est transmis de façon sécurisée (Cloudflare Pages Function).',
+    newsletterThanks: 'Merci ! Vous recevrez la prochaine lettre d’espérance.',
+    required: 'obligatoire',
+    play: 'Lire la vidéo', playAudio: 'Lecture', pauseAudio: 'Pause', transcript: 'Transcription', seek: 'Position de lecture',
+    videoNote: 'La vidéo se charge depuis YouTube (youtube-nocookie.com) seulement après votre clic.',
+    gallery: 'Galerie photo', openPhoto: 'Agrandir la photo', closePhoto: 'Fermer la photo',
+    menuNav: 'Navigation principale', footerNav: 'Navigation du pied de page',
+    mobileGive: 'Faire un don', mobileCircle: 'Cercle du Cœur',
+    verseOfWeek: 'Verset de la semaine',
+    // giving
+    once: 'Une fois', monthly: 'Chaque mois', recommended: 'Recommandé',
+    perMonth: '/mois', chooseAmount: 'Choisissez un montant', otherAmount: 'Autre montant',
+    coverFees: 'J’ajoute {fee} pour couvrir les frais de traitement',
+    dedicate: 'Dédier ce don', honour: 'En l’honneur de', memory: 'À la mémoire de',
+    dedicateName: 'Nom de la personne', dedicateNotify: 'Courriel pour l’avis de dédicace (facultatif)',
+    continueZeffy: 'Continuer vers Zeffy', summaryOnce: 'Don unique de {amt}', summaryMonthly: '{amt} par mois',
+    zeffyNote: 'Paiement sécurisé par Zeffy, plateforme montréalaise sans frais pour les organismes. Reçu fiscal officiel [si enregistré].',
+    zeffyProto: 'Prototype : en production, ce bouton ouvre le formulaire Zeffy sécurisé avec votre choix ({sum}). Aucun paiement n’est traité sur ce site.',
+    copy: 'Copier', copyEmail: 'Copier l’adresse',
+    // gift slider
+    sliderLabel: 'Montant de votre don', perArea: 'Répartition de votre don',
+    unit: { food: ['panier alimentaire', 'paniers alimentaires'], clothing: ['tenue d’hiver', 'tenues d’hiver'], school: ['trousse scolaire', 'trousses scolaires'], material: ['aide d’urgence', 'aides d’urgence'] },
+    approx: '≈',
+    circleMembers: 'membres', circleGoal: 'Objectif', circleOf: 'sur',
+    countersNote: 'Chiffres d’exemple — à confirmer par l’association.',
+    tocLabel: 'Sur cette page',
+    notFoundTitle: 'Page introuvable',
+  },
+  en: {
+    locale: 'en-CA', ogLocale: 'en_CA', other: 'fr', otherName: 'Français', otherShort: 'FR',
+    switchLabel: 'Lire cette page en français',
+    skip: 'Skip to content',
+    menu: 'Menu', close: 'Close',
+    nav: { about: 'About', missions: 'Missions', news: 'News', events: 'Events', media: 'Media', transparency: 'Transparency', contact: 'Contact', circle: 'Heart Circle', give: 'Give', privacy: 'Privacy', home: 'Home' },
+    give: 'Give', giveMonthly: 'Give monthly', joinCircle: 'Join the Circle',
+    sample: 'Sample — to confirm', tbc: 'to confirm', sampleShort: 'Sample',
+    readMore: 'Read more', allNews: 'All news', allEvents: 'All events',
+    published: 'Published', backNews: 'Back to news', backEvents: 'Back to events',
+    addCal: 'Add to calendar (.ics)', gcal: 'Google Calendar', details: 'Details', tickets: 'Tickets on Zeffy',
+    when: 'When', where: 'Where', free: 'Free entry', share: 'Share', copyLink: 'Copy link', copied: 'Copied!',
+    upcoming: 'Upcoming events', latest: 'Latest news',
+    breadcrumbs: 'Breadcrumb',
+    footerTagline: 'A Christian non-profit founded in 2014 in Montréal. Everything is given free of charge, for the glory of Elohim alone.',
+    footerExplore: 'Explore', footerGive: 'Support', footerContact: 'Get in touch',
+    newsletter: 'Letter of Hope', newsletterText: 'One letter a quarter: news from the field, prayer requests and the impact of your gifts.',
+    emailLabel: 'Email', subscribe: 'Subscribe',
+    caslConsent: 'I agree to receive the La Paix du Cœur letter. I can unsubscribe at any time.',
+    social: 'Social media',
+    rights: 'All rights reserved.',
+    honeypot: 'Leave this field empty',
+    formThanks: 'Thank you! Your message has been received.',
+    formThanksSub: 'Prototype: in production this form is sent securely to a Cloudflare Pages Function.',
+    newsletterThanks: 'Thank you! You will receive the next Letter of Hope.',
+    required: 'required',
+    play: 'Play video', playAudio: 'Play', pauseAudio: 'Pause', transcript: 'Transcript', seek: 'Playback position',
+    videoNote: 'The video loads from YouTube (youtube-nocookie.com) only after you click.',
+    gallery: 'Photo gallery', openPhoto: 'Enlarge photo', closePhoto: 'Close photo',
+    menuNav: 'Main navigation', footerNav: 'Footer navigation',
+    mobileGive: 'Give now', mobileCircle: 'Heart Circle',
+    verseOfWeek: 'Verse of the week',
+    once: 'One-time', monthly: 'Monthly', recommended: 'Recommended',
+    perMonth: '/month', chooseAmount: 'Choose an amount', otherAmount: 'Other amount',
+    coverFees: 'I’ll add {fee} to cover processing fees',
+    dedicate: 'Dedicate this gift', honour: 'In honour of', memory: 'In memory of',
+    dedicateName: 'Their name', dedicateNotify: 'Email to notify of the dedication (optional)',
+    continueZeffy: 'Continue to Zeffy', summaryOnce: 'One-time gift of {amt}', summaryMonthly: '{amt} a month',
+    zeffyNote: 'Secure payment by Zeffy, a Montréal platform that is free for charities. Official tax receipt [if registered].',
+    zeffyProto: 'Prototype: in production this button opens the secure Zeffy form with your choice ({sum}). No payment is processed on this site.',
+    copy: 'Copy', copyEmail: 'Copy address',
+    sliderLabel: 'Your gift amount', perArea: 'How your gift is shared',
+    unit: { food: ['food basket', 'food baskets'], clothing: ['winter outfit', 'winter outfits'], school: ['school kit', 'school kits'], material: ['emergency grant', 'emergency grants'] },
+    approx: '≈',
+    circleMembers: 'members', circleGoal: 'Goal', circleOf: 'of',
+    countersNote: 'Sample figures — to be confirmed by the association.',
+    tocLabel: 'On this page',
+    notFoundTitle: 'Page not found',
+  },
+};
+
+// French typography: narrow no-break spaces before high punctuation and inside guillemets.
+export const typo = (s, lang) => {
+  if (lang !== 'fr' || typeof s !== 'string') return s;
+  return s
+    .replace(/ ([:;!?»])/g, ' $1')
+    .replace(/« /g, '« ')
+    .replace(/(\d) \$/g, '$1 $');
+};

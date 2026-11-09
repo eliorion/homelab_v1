@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:collecte-alimentaire-21-novembre@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART:20261121T150000Z
+DTEND:20261121T210000Z
+SUMMARY:Collecte alimentaire d’hiver (exemple)
+DESCRIPTION:Accueillez les clients\, recevez les dons et triez les denrée
+ s avec nous. Quarts de deux heures.\nhttps://lapaixducoeur.ca/fr/evenemen
+ ts/collecte-alimentaire-21-novembre/
+LOCATION:Supermarché partenaire\, Montréal [à confirmer]
+URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-21-novembr
+ e/
+END:VEVENT
+END:VCALENDAR

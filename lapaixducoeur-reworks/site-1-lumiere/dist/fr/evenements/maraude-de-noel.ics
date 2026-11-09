@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:maraude-de-noel@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART:20261219T230000Z
+DTEND:20261220T023000Z
+SUMMARY:Maraude de Noël (exemple)
+DESCRIPTION:Repas chauds\, vêtements chauds et cadeaux pour les personnes
+  sans-abri du centre-ville.\nhttps://lapaixducoeur.ca/fr/evenements/marau
+ de-de-noel/
+LOCATION:Centre-ville de Montréal — point de rencontre [à confirmer]
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-de-noel/
+END:VEVENT
+END:VCALENDAR

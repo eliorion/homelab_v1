@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:soiree-louange-et-partage@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART:20270213T233000Z
+DTEND:20270214T023000Z
+SUMMARY:Worship and sharing evening (sample)
+DESCRIPTION:A benefit evening of worship\, testimonies and a shared meal i
+ n support of orphans.\nhttps://lapaixducoeur.ca/en/events/worship-and-sha
+ ring-evening/
+LOCATION:Partner church\, Montréal [to confirm]
+URL:https://lapaixducoeur.ca/en/events/worship-and-sharing-evening/
+END:VEVENT
+END:VCALENDAR

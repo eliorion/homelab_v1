@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:atelier-budget-autonomie@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART:20270123T183000Z
+DTEND:20270123T210000Z
+SUMMARY:Workshop: budgeting and self-reliance (sample)
+DESCRIPTION:An afternoon to learn how to build a budget\, manage spending 
+ and plan ahead.\nhttps://lapaixducoeur.ca/en/events/budgeting-and-self-re
+ liance-workshop/
+LOCATION:Community hall\, Montréal [to confirm]
+URL:https://lapaixducoeur.ca/en/events/budgeting-and-self-reliance-worksho
+ p/
+END:VEVENT
+END:VCALENDAR

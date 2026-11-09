@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:atelier-budget-autonomie@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART:20270123T183000Z
+DTEND:20270123T210000Z
+SUMMARY:Atelier : budget et autonomie (exemple)
+DESCRIPTION:Un après-midi pour apprendre à bâtir un budget\, gérer ses
+  dépenses et préparer l’avenir.\nhttps://lapaixducoeur.ca/fr/evenemen
+ ts/atelier-budget-autonomie/
+LOCATION:Salle communautaire\, Montréal [à confirmer]
+URL:https://lapaixducoeur.ca/fr/evenements/atelier-budget-autonomie/
+END:VEVENT
+END:VCALENDAR

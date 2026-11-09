@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:maraude-de-noel@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART:20261219T230000Z
+DTEND:20261220T023000Z
+SUMMARY:Christmas street outreach (sample)
+DESCRIPTION:Hot meals\, warm clothes and gifts for people experiencing hom
+ elessness downtown.\nhttps://lapaixducoeur.ca/en/events/christmas-street-
+ outreach/
+LOCATION:Downtown Montréal — meeting point [to confirm]
+URL:https://lapaixducoeur.ca/en/events/christmas-street-outreach/
+END:VEVENT
+END:VCALENDAR

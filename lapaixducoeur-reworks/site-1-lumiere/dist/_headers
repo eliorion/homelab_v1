@@ -1,0 +1,25 @@
+# Cloudflare Pages / Netlify security headers
+/*
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'self' https://cloudflareinsights.com; frame-src https://www.youtube-nocookie.com https://challenges.cloudflare.com https://www.zeffy.com; form-action 'self' https://www.zeffy.com; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+
+# Sveltia CMS needs its CDN bundle, GitHub API and blob: previews. "!" detaches the site-wide CSP first.
+/admin/*
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data: https://*.githubusercontent.com https://api.github.com; media-src 'self' blob:; connect-src 'self' blob: data: https://unpkg.com https://api.github.com https://*.githubusercontent.com https://www.githubstatus.com; frame-src 'self' blob:; base-uri 'self'; object-src 'none'; frame-ancestors 'none'
+  X-Robots-Tag: noindex
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.ics
+  Content-Type: text/calendar; charset=utf-8

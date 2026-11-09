@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:soiree-louange-et-partage@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART:20270213T233000Z
+DTEND:20270214T023000Z
+SUMMARY:Soirée louange et partage (exemple)
+DESCRIPTION:Une soirée bénéfice de louange\, de témoignages et de repa
+ s partagé au profit des orphelins.\nhttps://lapaixducoeur.ca/fr/evenemen
+ ts/soiree-louange-et-partage/
+LOCATION:Église partenaire\, Montréal [à confirmer]
+URL:https://lapaixducoeur.ca/fr/evenements/soiree-louange-et-partage/
+END:VEVENT
+END:VCALENDAR

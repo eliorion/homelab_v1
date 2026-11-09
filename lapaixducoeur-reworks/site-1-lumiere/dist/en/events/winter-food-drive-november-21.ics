@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:collecte-alimentaire-21-novembre@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART:20261121T150000Z
+DTEND:20261121T210000Z
+SUMMARY:Winter food drive (sample)
+DESCRIPTION:Welcome shoppers\, receive donations and sort groceries with u
+ s. Two-hour shifts.\nhttps://lapaixducoeur.ca/en/events/winter-food-drive
+ -november-21/
+LOCATION:Partner supermarket\, Montréal [to confirm]
+URL:https://lapaixducoeur.ca/en/events/winter-food-drive-november-21/
+END:VEVENT
+END:VCALENDAR

@@ -1,0 +1,12 @@
+{
+  "name": "La Paix du Cœur — Kimia Na Motema",
+  "short_name": "La Paix du Cœur",
+  "start_url": "/fr/",
+  "display": "standalone",
+  "background_color": "#FFFBF5",
+  "theme_color": "#FFFBF5",
+  "icons": [
+    { "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/favicon-180.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
