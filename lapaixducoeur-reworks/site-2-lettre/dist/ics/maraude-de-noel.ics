@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:maraude-de-noel@lapaixducoeur.ca
+DTSTAMP:20261109T000000Z
+DTSTART:20261220T000000Z
+DTEND:20261220T040000Z
+SUMMARY:Maraude de Noël / Christmas street outreach
+DESCRIPTION:Soupe chaude\, chaussettes\, cartes de Noël écrites à la mai
+ n et beaucoup d’écoute\, dans les rues de Montréal. Hot soup\, socks\,
+  handwritten Christmas cards and a lot of listening\, in the streets of Mo
+ ntréal. https://lapaixducoeur.ca/fr/evenements/maraude-de-noel/
+LOCATION:Point de rencontre communiqué aux bénévoles inscrits\, Montréa
+ l
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-de-noel/
+END:VEVENT
+END:VCALENDAR

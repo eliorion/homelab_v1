@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:2026-12-12-louange@lapaixducoeur.ca
+DTSTAMP:20261109T083635Z
+DTSTART:20261213T000000Z
+DTEND:20261213T023000Z
+SUMMARY:Worship and testimony night (sample)
+DESCRIPTION:Songs\, prayer and stories from the year\, in support of the 
+ Christmas campaign.\n\nhttps://lapaixducoeur.ca/en/events/christmas-wors
+ hip-and-testimony-night/
+LOCATION:Partner church\, Montréal — Exact address [to confirm]
+URL:https://lapaixducoeur.ca/en/events/christmas-worship-and-testimony-ni
+ ght/
+ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com
+END:VEVENT
+END:VCALENDAR

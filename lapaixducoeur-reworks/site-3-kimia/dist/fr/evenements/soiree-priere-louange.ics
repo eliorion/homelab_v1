@@ -1,0 +1,36 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Soirée de prière et de louange
+BEGIN:VTIMEZONE
+TZID:America/Toronto
+BEGIN:DAYLIGHT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+TZNAME:EDT
+DTSTART:19700308T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+TZNAME:EST
+DTSTART:19701101T020000
+RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:2027-02-soiree-priere-fr@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20270213T190000
+DTEND;TZID=America/Toronto:20270213T210000
+SUMMARY:Soirée de prière et de louange (exemple)
+DESCRIPTION:Une soirée pour remettre à Elohim les orphelins\, les veuve
+ s et les familles que nous servons\, et pour rendre grâce ensemble. htt
+ ps://lapaixducoeur.ca/fr/evenements/soiree-priere-louange/
+LOCATION:Montréal lieu à confirmer
+URL:https://lapaixducoeur.ca/fr/evenements/soiree-priere-louange/
+END:VEVENT
+END:VCALENDAR

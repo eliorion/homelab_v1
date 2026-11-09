@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:atelier-budget-familial@lapaixducoeur.ca
+DTSTAMP:20261109T000000Z
+DTSTART:20270206T150000Z
+DTEND:20270206T170000Z
+SUMMARY:Atelier : budget familial / Workshop: family budgeting
+DESCRIPTION:Deux heures pratiques pour bâtir un budget\, réduire le coût
+  de l’épicerie et préparer les imprévus. Gratuit. Two practical hours
+  to build a budget\, lower grocery costs and plan for the unexpected. Free
+ . https://lapaixducoeur.ca/fr/evenements/atelier-budget-familial/
+LOCATION:Salle communautaire\, Montréal [lieu à confirmer]
+URL:https://lapaixducoeur.ca/fr/evenements/atelier-budget-familial/
+END:VEVENT
+END:VCALENDAR

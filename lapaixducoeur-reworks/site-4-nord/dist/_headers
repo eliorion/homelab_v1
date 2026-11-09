@@ -1,0 +1,29 @@
+/*
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self'; frame-src https://www.youtube-nocookie.com https://www.zeffy.com https://challenges.cloudflare.com; connect-src 'self' https://cloudflareinsights.com; form-action 'self' https://www.zeffy.com; base-uri 'self'; object-src 'none'; manifest-src 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+
+/admin/*
+  ! Content-Security-Policy
+  ! X-Frame-Options
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://*.githubusercontent.com https://avatars.githubusercontent.com; media-src 'self' blob:; connect-src 'self' blob: data: https://api.github.com https://*.githubusercontent.com https://unpkg.com https://www.githubstatus.com; frame-src 'self' blob:; worker-src 'self' blob:; form-action 'self' https://github.com; base-uri 'self'; object-src 'none'; frame-ancestors 'self'
+  X-Frame-Options: SAMEORIGIN
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.ics
+  Content-Type: text/calendar; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/*.xml
+  Cache-Control: public, max-age=3600
+
+/*.txt
+  Content-Type: text/plain; charset=utf-8

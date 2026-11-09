@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:2026-11-28-collecte@lapaixducoeur.ca
+DTSTAMP:20261109T083635Z
+DTSTART:20261128T150000Z
+DTEND:20261128T210000Z
+SUMMARY:Supermarket food drive (sample)
+DESCRIPTION:Welcome shoppers at the door and invite them to add one item 
+ for a family. Two-hour shifts.\n\nhttps://lapaixducoeur.ca/en/events/sup
+ ermarket-food-drive-november/
+LOCATION:Partner supermarket\, Montréal — Exact address [to confirm]
+URL:https://lapaixducoeur.ca/en/events/supermarket-food-drive-november/
+ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com
+END:VEVENT
+END:VCALENDAR

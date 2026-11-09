@@ -1,0 +1,37 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Collecte alimentaire de Noël
+BEGIN:VTIMEZONE
+TZID:America/Toronto
+BEGIN:DAYLIGHT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+TZNAME:EDT
+DTSTART:19700308T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+TZNAME:EST
+DTSTART:19701101T020000
+RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:2026-12-collecte-noel-fr@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20261212T100000
+DTEND;TZID=America/Toronto:20261212T160000
+SUMMARY:Collecte alimentaire de Noël (exemple)
+DESCRIPTION:Aidez-nous à remplir des paniers de Noël pour des familles\
+ , des veuves et des étudiants. Quarts de 2 heures\, accueil et formatio
+ n sur place. https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire
+ -noel/
+LOCATION:Supermarché partenaire\, Montréal lieu à confirmer
+URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-noel/
+END:VEVENT
+END:VCALENDAR

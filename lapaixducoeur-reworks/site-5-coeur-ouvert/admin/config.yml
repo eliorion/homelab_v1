@@ -1,0 +1,473 @@
+# Sveltia CMS — La Paix du Cœur (concept «Cœur ouvert»). Field names must match build.mjs / src/pages.mjs.
+backend:
+  name: github
+  repo: OWNER/lapaixducoeur-site # [à confirmer] — the production repository
+  branch: main
+  # base_url: https://sveltia-cms-auth.<account>.workers.dev  # OAuth worker; staff can also sign in with a GitHub token
+
+site_url: https://lapaixducoeur.ca
+display_url: https://lapaixducoeur.ca
+logo_url: /assets/img/logo-mark-160.png
+locale: fr
+media_folder: static/assets/uploads
+public_folder: /assets/uploads
+
+i18n:
+  structure: single_file
+  locales: [fr, en]
+  default_locale: fr
+
+slug:
+  encoding: ascii
+  clean_accents: true
+
+collections:
+  - name: campaigns
+    label: Campagnes
+    label_singular: Campagne
+    description: Campagnes de sensibilisation et de collecte (ex. Noël 2026). Une seule campagne « active » apparaît dans le bandeau.
+    folder: content/campaigns
+    format: json
+    extension: json
+    create: true
+    i18n: true
+    identifier_field: name
+    slug: "{{fields.slug}}"
+    summary: "{{name}} — {{status}}"
+    fields:
+      - { name: slug, label: "Adresse (slug, par langue)", widget: string, i18n: true, pattern: ["^[a-z0-9-]+$", "Minuscules, chiffres et tirets seulement"] }
+      - { name: name, label: Nom de la campagne, widget: string, i18n: true }
+      - { name: headline, label: Grand titre, widget: string, i18n: true }
+      - { name: lede, label: Chapeau, widget: text, i18n: true }
+      - { name: description, label: Description (référencement), widget: text, i18n: true }
+      - { name: status, label: Statut, widget: select, options: [{ label: En cours, value: active }, { label: Terminée, value: closed }], i18n: duplicate }
+      - { name: sample, label: "Contenu d'exemple (badge)", widget: boolean, default: false, i18n: duplicate }
+      - { name: start, label: Début, widget: datetime, format: "YYYY-MM-DD", time_format: false, i18n: duplicate }
+      - { name: end, label: "Fin (compte à rebours)", widget: datetime, format: "YYYY-MM-DDTHH:mm:ssZ", i18n: duplicate }
+      - { name: goal, label: "Objectif ($)", widget: number, value_type: int, min: 0, i18n: duplicate }
+      - { name: raised, label: "Montant recueilli ($)", widget: number, value_type: int, min: 0, i18n: duplicate }
+      - { name: donors, label: Nombre de donateurs, widget: number, value_type: int, min: 0, i18n: duplicate }
+      - { name: image, label: Image principale, widget: image, i18n: duplicate }
+      - { name: image_alt, label: Texte alternatif de l'image, widget: string, i18n: true }
+      - { name: og_image, label: "Image de partage 1200×630 (facultatif)", widget: image, required: false, i18n: true }
+      - name: matching
+        label: Don jumelé
+        widget: object
+        i18n: true
+        fields:
+          - { name: enabled, label: Activé, widget: boolean, default: false }
+          - { name: title, label: Titre, widget: string, required: false }
+          - { name: text, label: Texte, widget: text, required: false }
+      - name: gifts
+        label: Catalogue de cadeaux
+        widget: list
+        i18n: true
+        summary: "{{name}} — {{price}} $"
+        fields:
+          - { name: id, label: Identifiant, widget: string }
+          - { name: icon, label: Icône, widget: select, options: [basket, coat, pencil, boot, bowl, gift, heart] }
+          - { name: name, label: Nom, widget: string }
+          - { name: price, label: "Prix ($)", widget: number, value_type: int, min: 1 }
+          - { name: text, label: Description, widget: text }
+      - { name: story, label: Récit, widget: markdown, i18n: true, buttons: [bold, italic, link, heading-two, quote, bulleted-list], editor_components: [] }
+
+  - name: news
+    label: Nouvelles
+    label_singular: Nouvelle
+    folder: content/news
+    format: json
+    extension: json
+    create: true
+    i18n: true
+    identifier_field: title
+    slug: "{{year}}-{{month}}-{{day}}-{{fields.slug}}"
+    sortable_fields: [date, title]
+    summary: "{{date}} — {{title}}"
+    fields:
+      - { name: slug, label: "Adresse (slug, par langue)", widget: string, i18n: true, pattern: ["^[a-z0-9-]+$", "Minuscules, chiffres et tirets seulement"] }
+      - { name: title, label: Titre, widget: string, i18n: true }
+      - { name: date, label: Date, widget: datetime, format: "YYYY-MM-DD", time_format: false, i18n: duplicate }
+      - { name: category, label: Rubrique, widget: string, i18n: true }
+      - { name: author, label: Auteur, widget: string, i18n: true }
+      - { name: sample, label: "Contenu d'exemple (badge)", widget: boolean, default: false, i18n: duplicate }
+      - { name: draft, label: Brouillon (non publié), widget: boolean, default: false, required: false, i18n: duplicate }
+      - { name: excerpt, label: Chapeau / résumé, widget: text, i18n: true }
+      - { name: image, label: Image, widget: image, i18n: duplicate }
+      - { name: image_alt, label: Texte alternatif de l'image, widget: string, i18n: true }
+      - { name: body, label: Texte, widget: markdown, i18n: true, buttons: [bold, italic, link, heading-two, heading-three, quote, bulleted-list], editor_components: [] }
+
+  - name: events
+    label: Événements
+    label_singular: Événement
+    folder: content/events
+    format: json
+    extension: json
+    create: true
+    i18n: true
+    identifier_field: title
+    slug: "{{fields.start}}-{{fields.slug}}"
+    sortable_fields: [start, title]
+    summary: "{{start}} — {{title}}"
+    fields:
+      - { name: slug, label: "Adresse (slug, par langue)", widget: string, i18n: true, pattern: ["^[a-z0-9-]+$", "Minuscules, chiffres et tirets seulement"] }
+      - { name: title, label: Titre, widget: string, i18n: true }
+      - { name: start, label: Début, widget: datetime, format: "YYYY-MM-DDTHH:mm:ssZ", i18n: duplicate }
+      - { name: end, label: Fin, widget: datetime, format: "YYYY-MM-DDTHH:mm:ssZ", i18n: duplicate }
+      - { name: category, label: Type, widget: string, i18n: true }
+      - { name: location, label: Lieu, widget: string, i18n: true }
+      - { name: address, label: Adresse, widget: string, i18n: true }
+      - { name: price, label: Entrée / tarif, widget: string, i18n: true }
+      - { name: ticket_url, label: Lien billetterie Zeffy, widget: string, required: false, i18n: duplicate }
+      - { name: sample, label: "Contenu d'exemple (badge)", widget: boolean, default: false, i18n: duplicate }
+      - { name: image, label: Image, widget: image, i18n: duplicate }
+      - { name: image_alt, label: Texte alternatif de l'image, widget: string, i18n: true }
+      - { name: summary, label: Résumé, widget: text, i18n: true }
+      - { name: body, label: Description, widget: markdown, i18n: true, buttons: [bold, italic, link, bulleted-list], editor_components: [] }
+
+  - name: media
+    label: Médiathèque
+    label_singular: Média
+    description: Vidéos (identifiant YouTube), épisodes de balado (fichier audio + transcription) et photos.
+    folder: content/media
+    format: json
+    extension: json
+    create: true
+    i18n: true
+    identifier_field: title
+    slug: "{{fields.type}}-{{slug}}"
+    summary: "{{type}} — {{title}}"
+    fields:
+      - { name: type, label: Type, widget: select, options: [{ label: Vidéo, value: video }, { label: Audio, value: audio }, { label: Photo, value: photo }], i18n: duplicate }
+      - { name: title, label: Titre / légende, widget: string, i18n: true }
+      - { name: description, label: Description, widget: text, required: false, i18n: true }
+      - { name: order, label: Ordre, widget: number, value_type: int, default: 1, i18n: duplicate }
+      - { name: sample, label: "Contenu d'exemple (badge)", widget: boolean, default: false, i18n: duplicate }
+      - { name: featured, label: "Vidéo à la une", widget: boolean, default: false, required: false, i18n: duplicate }
+      - { name: youtube_id, label: "Identifiant YouTube (vidéo)", widget: string, required: false, i18n: duplicate }
+      - { name: duration, label: "Durée (m:ss)", widget: string, required: false, i18n: duplicate }
+      - { name: poster, label: Image d'aperçu (vidéo), widget: image, required: false, i18n: duplicate }
+      - { name: poster_alt, label: Texte alternatif de l'aperçu, widget: string, required: false, i18n: true }
+      - { name: captions, label: Sous-titres disponibles, widget: string, required: false, i18n: true }
+      - name: chapters
+        label: Chapitres (vidéo)
+        widget: list
+        required: false
+        i18n: true
+        summary: "{{time}} — {{label}}"
+        fields:
+          - { name: time, label: "Temps (m:ss)", widget: string }
+          - { name: label, label: Titre du chapitre, widget: string }
+      - { name: audio_url, label: Fichier audio (balado), widget: file, required: false, i18n: duplicate }
+      - { name: transcript, label: Transcription (balado), widget: markdown, required: false, i18n: true, buttons: [bold, italic], editor_components: [] }
+      - { name: image, label: Photo, widget: image, required: false, i18n: duplicate }
+      - { name: alt, label: Texte alternatif de la photo, widget: string, required: false, i18n: true }
+
+  - name: pages
+    label: Pages
+    i18n: true
+    files:
+      - name: home
+        label: Accueil (récit en chapitres)
+        file: content/pages/home.json
+        format: json
+        i18n: true
+        fields:
+          - { name: title, label: Titre (référencement), widget: string, i18n: true }
+          - { name: description, label: Description (référencement), widget: text, i18n: true }
+          - { name: masthead, label: Ligne de une, widget: string, i18n: true }
+          - { name: verse_lines, label: Verset d'ouverture (lignes du grand titre), widget: list, i18n: true }
+          - { name: verse_rest, label: Suite du verset, widget: string, i18n: true }
+          - { name: verse_ref, label: Référence, widget: string, i18n: true }
+          - { name: intro, label: Introduction, widget: text, i18n: true }
+          - name: need
+            label: "Chapitre 1 — Le besoin"
+            widget: object
+            i18n: true
+            fields:
+              - { name: kicker, label: Surtitre, widget: string }
+              - { name: title, label: Titre, widget: string }
+              - { name: lines, label: Phrases, widget: list }
+              - { name: body, label: Texte, widget: text }
+          - name: heart
+            label: "Chapitre 2 — Le cœur du Seigneur"
+            widget: object
+            i18n: true
+            fields:
+              - { name: kicker, label: Surtitre, widget: string }
+              - { name: title, label: Titre, widget: string }
+              - { name: body, label: Texte, widget: text }
+              - { name: quote, label: Citation, widget: text }
+              - { name: quote_ref, label: Référence, widget: string }
+          - name: hope
+            label: "Mot-clé animé (ESPOIR)"
+            widget: object
+            i18n: true
+            fields:
+              - { name: lead, label: Phrase d'amorce, widget: string }
+              - { name: word, label: Mot-clé, widget: string }
+              - { name: after, label: Phrase de suite, widget: string }
+          - name: do
+            label: "Chapitre 3 — Ce que nous faisons"
+            widget: object
+            i18n: true
+            fields:
+              - { name: kicker, label: Surtitre, widget: string }
+              - { name: title, label: Titre, widget: string }
+              - { name: body, label: Texte, widget: text }
+              - name: figures
+                label: Chiffres (uniquement des faits vérifiés)
+                widget: list
+                fields:
+                  - { name: value, label: Valeur, widget: string }
+                  - { name: label, label: Libellé, widget: string }
+          - name: act
+            label: "Chapitre 4 — Ce que vous pouvez faire"
+            widget: object
+            i18n: true
+            fields:
+              - { name: kicker, label: Surtitre, widget: string }
+              - { name: title, label: Titre, widget: string }
+              - { name: body, label: Texte, widget: text }
+              - { name: quote, label: Citation, widget: text }
+              - { name: quote_ref, label: Référence, widget: string }
+
+      - name: about
+        label: À propos
+        file: content/pages/about.json
+        format: json
+        i18n: true
+        fields:
+          - { name: title, label: Titre (référencement), widget: string, i18n: true }
+          - { name: description, label: Description (référencement), widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: heading, label: Grand titre, widget: string, i18n: true }
+          - { name: lede, label: Chapeau, widget: text, i18n: true }
+          - { name: body, label: Texte, widget: markdown, i18n: true, buttons: [bold, italic, link, quote], editor_components: [] }
+          - { name: name_story, label: Le nom Kimia Na Motema, widget: text, i18n: true }
+          - name: timeline
+            label: Repères
+            widget: list
+            i18n: true
+            fields: [{ name: year, label: Année, widget: string }, { name: text, label: Texte, widget: text }]
+          - { name: team_title, label: Titre équipe, widget: string, i18n: true }
+          - name: team
+            label: Équipe
+            widget: list
+            i18n: true
+            fields: [{ name: name, label: Nom, widget: string }, { name: role, label: Rôle, widget: string }]
+          - { name: ethics_title, label: Titre de la charte, widget: string, i18n: true }
+          - { name: ethics_intro, label: Introduction de la charte, widget: text, i18n: true }
+          - { name: ethics, label: Engagements, widget: list, i18n: true }
+
+      - name: missions
+        label: Missions
+        file: content/pages/missions.json
+        format: json
+        i18n: true
+        fields:
+          - { name: title, label: Titre (référencement), widget: string, i18n: true }
+          - { name: description, label: Description (référencement), widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: heading, label: Grand titre, widget: string, i18n: true }
+          - { name: lede, label: Chapeau, widget: text, i18n: true }
+          - name: areas
+            label: Domaines d'aide
+            widget: list
+            i18n: true
+            fields: [{ name: name, label: Nom, widget: string }, { name: text, label: Texte, widget: text }, { name: image, label: Image, widget: image }, { name: alt, label: Texte alternatif, widget: string }]
+          - name: programmes
+            label: Programmes
+            widget: list
+            i18n: true
+            fields: [{ name: name, label: Nom, widget: string }, { name: text, label: Texte, widget: text }]
+          - { name: actions_title, label: Titre terrain, widget: string, i18n: true }
+          - name: actions
+            label: Actions sur le terrain
+            widget: list
+            i18n: true
+            fields: [{ name: name, label: Nom, widget: string }, { name: text, label: Texte, widget: text }, { name: image, label: Image, widget: image }, { name: alt, label: Texte alternatif, widget: string }]
+          - { name: where, label: Où nous agissons, widget: text, i18n: true }
+
+      - name: give
+        label: Soutenir / Donner
+        file: content/pages/give.json
+        format: json
+        i18n: true
+        fields:
+          - { name: title, label: Titre (référencement), widget: string, i18n: true }
+          - { name: description, label: Description (référencement), widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: heading, label: Grand titre, widget: string, i18n: true }
+          - { name: lede, label: Chapeau, widget: text, i18n: true }
+          - name: amounts
+            label: Montants et ce qu'ils financent
+            widget: list
+            i18n: true
+            fields: [{ name: value, label: "Montant ($)", widget: number, value_type: int }, { name: label, label: Ce que ça finance, widget: string }]
+          - { name: interac_title, label: Titre Interac, widget: string, i18n: true }
+          - { name: interac_text, label: Texte Interac, widget: text, i18n: true }
+          - { name: bank_text, label: Coordonnées bancaires (ne jamais publier les numéros), widget: text, i18n: true }
+          - { name: receipt_text, label: Reçus fiscaux, widget: text, i18n: true }
+          - { name: other_title, label: Titre autres façons, widget: string, i18n: true }
+          - name: other
+            label: Autres façons de donner
+            widget: list
+            i18n: true
+            fields: [{ name: name, label: Nom, widget: string }, { name: text, label: Texte, widget: text }]
+
+      - name: ambassadors
+        label: Ambassadeurs
+        file: content/pages/ambassadors.json
+        format: json
+        i18n: true
+        fields:
+          - { name: title, label: Titre (référencement), widget: string, i18n: true }
+          - { name: description, label: Description (référencement), widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: heading, label: Grand titre, widget: string, i18n: true }
+          - { name: lede, label: Chapeau, widget: text, i18n: true }
+          - name: steps
+            label: Étapes
+            widget: list
+            i18n: true
+            fields: [{ name: title, label: Titre, widget: string }, { name: text, label: Texte, widget: text }]
+          - name: teams
+            label: Tableau des ambassadeurs
+            widget: list
+            i18n: true
+            summary: "{{name}} — {{raised}} / {{goal}} $"
+            fields:
+              - { name: name, label: Nom de la page, widget: string }
+              - { name: type, label: Occasion, widget: string }
+              - { name: raised, label: "Recueilli ($)", widget: number, value_type: int }
+              - { name: goal, label: "Objectif ($)", widget: number, value_type: int }
+          - { name: form_title, label: Titre du formulaire, widget: string, i18n: true }
+          - { name: form_intro, label: Texte du formulaire, widget: text, i18n: true }
+          - { name: toolkit, label: Trousse d'ambassadeur, widget: list, i18n: true }
+
+      - name: cards
+        label: Cartes à partager
+        file: content/pages/cards.json
+        format: json
+        i18n: true
+        fields:
+          - { name: title, label: Titre (référencement), widget: string, i18n: true }
+          - { name: description, label: Description (référencement), widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: heading, label: Grand titre, widget: string, i18n: true }
+          - { name: lede, label: Chapeau, widget: text, i18n: true }
+          - name: verses
+            label: Versets et messages proposés
+            widget: list
+            i18n: true
+            fields: [{ name: text, label: Texte, widget: text }, { name: ref, label: Référence, widget: string }]
+
+      - name: press
+        label: Presse
+        file: content/pages/press.json
+        format: json
+        i18n: true
+        fields:
+          - { name: title, label: Titre (référencement), widget: string, i18n: true }
+          - { name: description, label: Description (référencement), widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: heading, label: Grand titre, widget: string, i18n: true }
+          - { name: lede, label: Chapeau, widget: text, i18n: true }
+          - { name: boilerplate_short_fr, label: Présentation courte (FR), widget: text, i18n: duplicate }
+          - { name: boilerplate_long_fr, label: Présentation longue (FR), widget: text, i18n: duplicate }
+          - { name: boilerplate_short_en, label: Présentation courte (EN), widget: text, i18n: duplicate }
+          - { name: boilerplate_long_en, label: Présentation longue (EN), widget: text, i18n: duplicate }
+          - name: facts
+            label: Faits clés
+            widget: list
+            i18n: true
+            fields: [{ name: label, label: Libellé, widget: string }, { name: value, label: Valeur, widget: string }]
+          - { name: photo_note, label: Conditions d'utilisation des photos, widget: text, i18n: true }
+
+      - name: contact
+        label: Contact
+        file: content/pages/contact.json
+        format: json
+        i18n: true
+        fields:
+          - { name: title, label: Titre (référencement), widget: string, i18n: true }
+          - { name: description, label: Description (référencement), widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: heading, label: Grand titre, widget: string, i18n: true }
+          - { name: lede, label: Chapeau, widget: text, i18n: true }
+          - { name: subjects, label: Sujets du formulaire, widget: list, i18n: true }
+          - { name: note, label: Note, widget: text, i18n: true }
+
+      - name: privacy
+        label: Confidentialité (Loi 25)
+        file: content/pages/privacy.json
+        format: json
+        i18n: true
+        fields:
+          - { name: title, label: Titre (référencement), widget: string, i18n: true }
+          - { name: description, label: Description (référencement), widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: heading, label: Grand titre, widget: string, i18n: true }
+          - { name: lede, label: Chapeau, widget: text, i18n: true }
+          - { name: body, label: Texte, widget: markdown, i18n: true, buttons: [bold, italic, link, heading-two, bulleted-list], editor_components: [] }
+
+      - name: listings
+        label: En-têtes des listes (nouvelles, événements, médias, vidéos, campagnes)
+        file: content/pages/listings.json
+        format: json
+        i18n: true
+        fields:
+          - &listing
+            name: news
+            label: Nouvelles
+            widget: object
+            i18n: true
+            fields:
+              - { name: title, label: Titre (référencement), widget: string }
+              - { name: description, label: Description (référencement), widget: text }
+              - { name: kicker, label: Surtitre, widget: string }
+              - { name: heading, label: Grand titre, widget: string }
+              - { name: lede, label: Chapeau, widget: text }
+          - { <<: *listing, name: events, label: Événements }
+          - { <<: *listing, name: media, label: Médiathèque }
+          - { <<: *listing, name: videos, label: Vidéos }
+          - { <<: *listing, name: campaigns, label: Campagnes }
+
+  - name: settings
+    label: Réglages
+    i18n: true
+    files:
+      - name: settings
+        label: Réglages du site
+        file: content/settings.json
+        format: json
+        i18n: true
+        fields:
+          - { name: site_name, label: Nom du site, widget: string, i18n: duplicate }
+          - { name: alt_name, label: Nom secondaire, widget: string, i18n: duplicate }
+          - { name: tagline, label: Signature, widget: string, i18n: true }
+          - { name: site_url, label: Adresse du site, widget: string, i18n: duplicate }
+          - { name: email, label: Courriel public, widget: string, i18n: duplicate }
+          - { name: interac_email, label: Courriel Interac, widget: string, i18n: duplicate }
+          - { name: zeffy_url, label: "Lien du formulaire Zeffy (vide = démonstration)", widget: string, required: false, i18n: duplicate }
+          - { name: charity_number, label: "N° d'organisme de bienfaisance", widget: string, i18n: true }
+          - { name: privacy_officer, label: Responsable de la protection des renseignements, widget: string, i18n: true }
+          - name: social
+            label: Réseaux sociaux
+            widget: list
+            i18n: duplicate
+            fields: [{ name: name, label: Réseau, widget: string }, { name: url, label: Lien (vide = à confirmer), widget: string, required: false }]
+          - name: verse_of_week
+            label: Verset de la semaine
+            widget: object
+            i18n: true
+            fields: [{ name: text, label: Texte, widget: text }, { name: ref, label: Référence, widget: string }]
+          - name: banner
+            label: Bandeau de campagne
+            widget: object
+            i18n: true
+            fields:
+              - { name: enabled, label: Afficher, widget: boolean }
+              - { name: text, label: Texte, widget: string }
+              - { name: campaign, label: "Campagne (nom du fichier, ex. noel-2026)", widget: string }
+          - { name: newsletter_blurb, label: Texte de l'infolettre, widget: text, i18n: true }

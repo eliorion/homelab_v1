@@ -1,0 +1,36 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Atelier : cuisine économique et nutritive
+BEGIN:VTIMEZONE
+TZID:America/Toronto
+BEGIN:DAYLIGHT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+TZNAME:EDT
+DTSTART:19700308T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+TZNAME:EST
+DTSTART:19701101T020000
+RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:2027-03-atelier-cuisine-fr@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20270327T130000
+DTEND;TZID=America/Toronto:20270327T160000
+SUMMARY:Atelier : cuisine économique et nutritive (exemple)
+DESCRIPTION:Cuisiner ensemble trois repas complets à petit prix\, avec d
+ es produits de saison et les denrées des banques alimentaires. https://
+ lapaixducoeur.ca/fr/evenements/atelier-cuisine-economique/
+LOCATION:Montréal cuisine communautaire à confirmer
+URL:https://lapaixducoeur.ca/fr/evenements/atelier-cuisine-economique/
+END:VEVENT
+END:VCALENDAR

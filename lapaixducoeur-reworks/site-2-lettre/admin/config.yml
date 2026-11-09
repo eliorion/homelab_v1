@@ -1,0 +1,454 @@
+# Sveltia CMS (Decap-compatible). Staff sign in with GitHub at /admin/.
+backend:
+  name: github
+  repo: OWNER/lapaixducoeur-site # [à confirmer]
+  branch: main
+  base_url: https://sveltia-cms-auth.example.workers.dev # [à confirmer] OAuth worker
+
+site_url: https://lapaixducoeur.ca
+display_url: https://lapaixducoeur.ca
+logo_url: /assets/img/logo-160.png
+locale: fr
+
+media_folder: static/assets/img
+public_folder: /assets/img
+
+publish_mode: editorial_workflow
+
+i18n:
+  structure: single_file
+  locales: [fr, en]
+  default_locale: fr
+
+slug:
+  encoding: ascii
+  clean_accents: true
+
+collections:
+  # ---------------- Histoires ----------------
+  - name: stories
+    label: Histoires / Stories
+    label_singular: Histoire
+    folder: content/stories
+    format: json
+    extension: json
+    create: true
+    i18n: true
+    identifier_field: title
+    slug: "{{fields.slug}}"
+    summary: "{{title}} — {{date}}"
+    sortable_fields: [date, title]
+    fields:
+      - { name: slug, label: "Adresse (slug, traduite)", widget: string, i18n: true, hint: "Ex. le-pain-du-jeudi / thursday-bread" }
+      - { name: title, label: Titre, widget: string, i18n: true }
+      - { name: dek, label: Chapeau, widget: text, i18n: true }
+      - { name: date, label: Date, widget: datetime, format: "YYYY-MM-DD", time_format: false, i18n: duplicate }
+      - name: tags
+        label: Thèmes
+        widget: select
+        multiple: true
+        i18n: duplicate
+        options:
+          - { label: "Espoir / Hope", value: espoir }
+          - { label: "Famille / Family", value: famille }
+          - { label: "Éducation / Education", value: education }
+          - { label: "Maraudes / Street outreach", value: maraudes }
+          - { label: "Foi / Faith", value: foi }
+          - { label: "Communauté / Community", value: communaute }
+      - { name: image, label: Photo, widget: image, i18n: duplicate, hint: "Jamais de portrait d’enfant en gros plan (voir la charte)." }
+      - { name: image_alt, label: "Texte alternatif de la photo", widget: string, i18n: true }
+      - { name: narrator, label: "Qui raconte", widget: string, i18n: true }
+      - { name: reading_minutes, label: "Minutes de lecture", widget: number, value_type: int, i18n: duplicate }
+      - { name: sample, label: "Exemple (afficher le badge « à confirmer »)", widget: boolean, default: false, i18n: duplicate }
+      - { name: consent_note, label: "Note de consentement", widget: text, i18n: true }
+      - name: chapters
+        label: Chapitres
+        widget: list
+        i18n: true
+        fields:
+          - { name: heading, label: "Titre du chapitre", widget: string }
+          - { name: body, label: Texte, widget: markdown, buttons: [bold, italic, link, quote] }
+      - name: pullquote
+        label: "Citation mise en exergue"
+        widget: object
+        i18n: true
+        fields:
+          - { name: text, label: Citation, widget: text }
+          - { name: who, label: "Prénom", widget: string }
+      - name: verse
+        label: Verset
+        widget: object
+        i18n: true
+        fields:
+          - { name: text, label: Texte, widget: text }
+          - { name: reference, label: Référence, widget: string }
+
+  # ---------------- Balado ----------------
+  - name: episodes
+    label: "Balado « Les voix du cœur » / Podcast"
+    label_singular: Épisode
+    folder: content/episodes
+    format: json
+    extension: json
+    create: true
+    i18n: true
+    identifier_field: title
+    slug: "{{fields.number}}-{{fields.slug}}"
+    summary: "Ép. {{number}} — {{title}}"
+    fields:
+      - { name: number, label: Numéro, widget: number, value_type: int, i18n: duplicate }
+      - { name: slug, label: "Ancre (slug)", widget: string, i18n: true }
+      - { name: title, label: Titre, widget: string, i18n: true }
+      - { name: date, label: Date, widget: datetime, format: "YYYY-MM-DD", time_format: false, i18n: duplicate }
+      - { name: duration, label: "Durée (m:ss)", widget: string, i18n: duplicate }
+      - { name: audio, label: "Fichier audio (MP3) ou URL", widget: file, i18n: duplicate, media_folder: /static/assets/audio, public_folder: /assets/audio }
+      - { name: guests, label: Invités, widget: string, i18n: true }
+      - { name: summary, label: Résumé, widget: text, i18n: true }
+      - { name: transcript, label: "Transcription (dans cette langue)", widget: markdown, i18n: true }
+      - { name: sample, label: "Exemple", widget: boolean, default: false, i18n: duplicate }
+
+  # ---------------- Mur de prière ----------------
+  - name: prayers
+    label: "Mur de prière (messages approuvés)"
+    label_singular: Message
+    folder: content/prayers
+    format: json
+    extension: json
+    create: true
+    i18n: false
+    identifier_field: text
+    slug: "{{fields.date}}-{{slug}}"
+    summary: "{{date}} · {{kind}} · {{author}}"
+    description: "Publier ici uniquement les messages relus et approuvés. Retirer tout nom de famille, adresse ou école."
+    fields:
+      - { name: id, label: "Identifiant unique", widget: string, hint: "Ex. 2026-11-08-01 (sert au compteur « J’ai prié »)" }
+      - { name: date, label: Date, widget: datetime, format: "YYYY-MM-DD", time_format: false }
+      - { name: kind, label: Type, widget: select, options: [{ label: "Demande de prière", value: priere }, { label: "Message d’espérance", value: espoir }] }
+      - { name: author, label: "Prénom (vide = Anonyme)", widget: string, required: false }
+      - { name: lang, label: "Langue du message", widget: select, options: [fr, en] }
+      - { name: text, label: Message, widget: text }
+      - { name: prayed, label: "Compteur de départ « J’ai prié »", widget: number, value_type: int, default: 0 }
+      - { name: published, label: Publié, widget: boolean, default: true }
+      - { name: sample, label: Exemple, widget: boolean, default: false }
+
+  # ---------------- Nouvelles ----------------
+  - name: news
+    label: Nouvelles / News
+    label_singular: Nouvelle
+    folder: content/news
+    format: json
+    extension: json
+    create: true
+    i18n: true
+    identifier_field: title
+    slug: "{{fields.date}}-{{fields.slug}}"
+    summary: "{{date}} — {{title}}"
+    sortable_fields: [date, title]
+    fields:
+      - { name: slug, label: "Adresse (slug, traduite)", widget: string, i18n: true }
+      - { name: title, label: Titre, widget: string, i18n: true }
+      - { name: date, label: Date, widget: datetime, format: "YYYY-MM-DD", time_format: false, i18n: duplicate }
+      - { name: image, label: Photo, widget: image, i18n: duplicate }
+      - { name: image_alt, label: "Texte alternatif", widget: string, i18n: true }
+      - { name: summary, label: Résumé, widget: text, i18n: true }
+      - { name: body, label: Texte, widget: markdown, i18n: true }
+      - { name: sample, label: Exemple, widget: boolean, default: false, i18n: duplicate }
+
+  # ---------------- Événements ----------------
+  - name: events
+    label: Événements / Events
+    label_singular: Événement
+    folder: content/events
+    format: json
+    extension: json
+    create: true
+    i18n: true
+    identifier_field: title
+    slug: "{{fields.start}}-{{fields.slug}}"
+    summary: "{{start}} — {{title}}"
+    sortable_fields: [start, title]
+    fields:
+      - { name: slug, label: "Adresse (slug, traduite)", widget: string, i18n: true }
+      - { name: title, label: Titre, widget: string, i18n: true }
+      - { name: start, label: "Début (heure de Montréal)", widget: datetime, format: "YYYY-MM-DDTHH:mm", i18n: duplicate }
+      - { name: end, label: "Fin (heure de Montréal)", widget: datetime, format: "YYYY-MM-DDTHH:mm", i18n: duplicate }
+      - { name: location, label: "Lieu (sans adresse sensible)", widget: string, i18n: true }
+      - { name: locality, label: Ville, widget: string, default: Montréal, i18n: duplicate }
+      - { name: image, label: Photo, widget: image, i18n: duplicate }
+      - { name: image_alt, label: "Texte alternatif", widget: string, i18n: true }
+      - { name: summary, label: Résumé, widget: text, i18n: true }
+      - { name: body, label: Détails, widget: markdown, i18n: true }
+      - { name: registration_url, label: "Lien d’inscription Zeffy", widget: string, required: false, i18n: duplicate }
+      - { name: sample, label: Exemple, widget: boolean, default: false, i18n: duplicate }
+
+  # ---------------- Médiathèque ----------------
+  - name: media
+    label: Médiathèque / Media
+    label_singular: Média
+    folder: content/media
+    format: json
+    extension: json
+    create: true
+    i18n: true
+    identifier_field: title
+    summary: "{{order}} · {{type}} · {{title}}"
+    sortable_fields: [order, title]
+    fields:
+      - { name: type, label: Type, widget: select, options: [photo, video, audio], i18n: duplicate }
+      - { name: order, label: Ordre, widget: number, value_type: int, i18n: duplicate }
+      - { name: title, label: Titre, widget: string, i18n: true }
+      - { name: image, label: "Photo / vignette", widget: image, required: false, i18n: duplicate, hint: "Visages d’enfants : consentement écrit du parent obligatoire." }
+      - { name: alt, label: "Texte alternatif", widget: string, required: false, i18n: true }
+      - { name: youtube_id, label: "Identifiant YouTube (vidéo)", widget: string, required: false, i18n: duplicate }
+      - { name: audio, label: "Fichier audio", widget: file, required: false, i18n: duplicate, media_folder: /static/assets/audio, public_folder: /assets/audio }
+      - { name: caption, label: Légende, widget: text, required: false, i18n: true }
+      - { name: sample, label: Exemple, widget: boolean, default: false, i18n: duplicate }
+
+  # ---------------- Pages ----------------
+  - name: pages
+    label: Pages
+    i18n: true
+    format: json
+    files:
+      - name: home
+        label: Accueil / Home
+        file: content/pages/home.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: dateline, label: "Lieu et date de la lettre", widget: string, i18n: true }
+          - { name: salutation, label: Salutation, widget: string, i18n: true }
+          - { name: title, label: "Titre principal (H1)", widget: string, i18n: true }
+          - { name: letter, label: "Texte de la lettre", widget: markdown, i18n: true }
+          - { name: cta_primary, label: "Bouton 1", widget: string, i18n: true }
+          - { name: cta_secondary, label: "Bouton 2", widget: string, i18n: true }
+          - { name: photo_note, label: "Note manuscrite sous la photo", widget: string, i18n: true }
+          - { name: stories_kicker, label: "Histoires — surtitre", widget: string, i18n: true }
+          - { name: stories_title, label: "Histoires — titre", widget: string, i18n: true }
+          - { name: stories_intro, label: "Histoires — intro", widget: text, i18n: true }
+          - { name: podcast_kicker, label: "Balado — surtitre", widget: string, i18n: true }
+          - { name: podcast_title, label: "Balado — titre", widget: string, i18n: true }
+          - { name: podcast_intro, label: "Balado — intro", widget: text, i18n: true }
+          - { name: prayer_kicker, label: "Prière — surtitre", widget: string, i18n: true }
+          - { name: prayer_title, label: "Prière — titre", widget: string, i18n: true }
+          - { name: prayer_intro, label: "Prière — intro", widget: text, i18n: true }
+          - { name: areas_kicker, label: "Aides — surtitre", widget: string, i18n: true }
+          - { name: areas_title, label: "Aides — titre", widget: string, i18n: true }
+          - { name: letter_kicker, label: "Lettre — surtitre", widget: string, i18n: true }
+          - { name: letter_title, label: "Lettre — titre", widget: string, i18n: true }
+          - { name: letter_text, label: "Lettre — texte", widget: text, i18n: true }
+          - { name: letter_cta, label: "Lettre — bouton", widget: string, i18n: true }
+          - { name: agenda_title, label: "Agenda — titre", widget: string, i18n: true }
+          - { name: news_title, label: "Nouvelles — titre", widget: string, i18n: true }
+          - { name: give_title, label: "Don — titre", widget: string, i18n: true }
+          - { name: give_text, label: "Don — texte", widget: text, i18n: true }
+      - name: about
+        label: "À propos / About"
+        file: content/pages/about.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: story_title, label: "Histoire — titre", widget: string, i18n: true }
+          - { name: story, label: "Histoire — texte", widget: markdown, i18n: true }
+          - { name: mission_title, label: "Mission — titre", widget: string, i18n: true }
+          - { name: mission, label: "Mission — texte", widget: text, i18n: true }
+          - { name: values_title, label: "Valeurs — titre", widget: string, i18n: true }
+          - { name: values, label: Valeurs, widget: list, i18n: true, fields: [{ name: title, label: Titre, widget: string }, { name: text, label: Texte, widget: text }] }
+          - { name: team_title, label: "Équipe — titre", widget: string, i18n: true }
+          - { name: team_text, label: "Équipe — texte", widget: markdown, i18n: true }
+          - { name: facts_title, label: "En bref — titre", widget: string, i18n: true }
+          - { name: facts, label: "En bref", widget: list, i18n: true, fields: [{ name: label, label: Libellé, widget: string }, { name: value, label: Valeur, widget: string }] }
+      - name: missions
+        label: Missions
+        file: content/pages/missions.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: programs_title, label: "Programmes — titre", widget: string, i18n: true }
+          - { name: programs, label: Programmes, widget: list, i18n: true, fields: [{ name: title, label: Titre, widget: string }, { name: text, label: Texte, widget: text }, { name: image, label: Photo, widget: image }, { name: image_alt, label: "Texte alternatif", widget: string }] }
+          - { name: actions_title, label: "Terrain — titre", widget: string, i18n: true }
+          - { name: actions, label: "Actions de terrain", widget: list, i18n: true, fields: [{ name: title, label: Titre, widget: string }, { name: text, label: Texte, widget: text }] }
+          - { name: areas_title, label: "Domaines — titre", widget: string, i18n: true }
+          - { name: areas, label: "Domaines d’aide", widget: list, i18n: true, fields: [{ name: icon, label: Icône, widget: select, options: [bread, coat, book, hands], required: false }, { name: title, label: Titre, widget: string }, { name: text, label: Texte, widget: text }] }
+          - { name: need_title, label: "Besoin d’aide — titre", widget: string, i18n: true }
+          - { name: need_text, label: "Besoin d’aide — texte", widget: text, i18n: true }
+      - name: stories
+        label: "Histoires — page d’accueil"
+        file: content/pages/stories.json
+        i18n: true
+        fields: &intro_fields
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: filter_label, label: "Libellé des filtres", widget: string, i18n: true, required: false }
+      - name: podcast
+        label: "Balado — page"
+        file: content/pages/podcast.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: listen_on, label: "Plateformes d’écoute", widget: string, i18n: true }
+      - name: prayer
+        label: "Mur de prière — page"
+        file: content/pages/prayer.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: moderation, label: "Avis de modération", widget: text, i18n: true }
+          - { name: verse_text, label: Verset, widget: text, i18n: true }
+          - { name: verse_ref, label: "Référence", widget: string, i18n: true }
+      - name: letters
+        label: "Lettres d’encouragement — page"
+        file: content/pages/letters.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: rules_title, label: "Règles — titre", widget: string, i18n: true }
+          - { name: rules, label: Règles, widget: list, i18n: true }
+          - { name: ideas_title, label: "Idées — titre", widget: string, i18n: true }
+          - { name: ideas, label: Idées, widget: list, i18n: true }
+      - name: charter
+        label: "Charte du récit éthique"
+        file: content/pages/charter.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: commitments, label: Engagements, widget: list, i18n: true, fields: [{ name: title, label: Titre, widget: string }, { name: text, label: Texte, widget: text }] }
+          - { name: contact, label: "Phrase de contact", widget: text, i18n: true }
+      - name: news
+        label: "Nouvelles — page"
+        file: content/pages/news.json
+        i18n: true
+        fields: *intro_fields
+      - name: events
+        label: "Événements — page"
+        file: content/pages/events.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: empty, label: "Message si aucun événement", widget: string, i18n: true }
+      - name: media
+        label: "Médiathèque — page"
+        file: content/pages/media.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: photos_title, label: "Photos — titre", widget: string, i18n: true }
+          - { name: videos_title, label: "Vidéos — titre", widget: string, i18n: true }
+          - { name: audio_title, label: "Audio — titre", widget: string, i18n: true }
+      - name: give
+        label: "Soutenir / Give"
+        file: content/pages/give.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: amounts, label: "Montants suggérés", widget: list, i18n: true, fields: [{ name: amount, label: "Montant ($)", widget: number, value_type: int }, { name: text, label: "Ce que ça permet", widget: string }] }
+          - { name: amounts_note, label: "Note sur les montants", widget: string, i18n: true }
+          - { name: zeffy_note, label: "Note Zeffy", widget: string, i18n: true }
+          - { name: receipt_note, label: "Note reçus fiscaux", widget: string, i18n: true }
+          - { name: interac_title, label: "Interac — titre", widget: string, i18n: true }
+          - { name: interac_text, label: "Interac — texte", widget: text, i18n: true }
+          - { name: bank_title, label: "Banque — titre", widget: string, i18n: true }
+          - { name: bank_text, label: "Banque — texte (ne jamais publier de numéro de compte)", widget: text, i18n: true }
+          - { name: other_title, label: "Autres façons — titre", widget: string, i18n: true }
+          - { name: other, label: "Autres façons", widget: list, i18n: true, fields: [{ name: title, label: Titre, widget: string }, { name: text, label: Texte, widget: text }, { name: link, label: "Lien vers", widget: select, options: [prayer, letters, contact, events, give] }] }
+      - name: contact
+        label: Contact
+        file: content/pages/contact.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: email_label, label: "Libellé courriel", widget: string, i18n: true }
+          - { name: address_label, label: "Libellé adresse", widget: string, i18n: true }
+          - { name: address, label: Adresse, widget: string, i18n: true }
+          - { name: phone_label, label: "Libellé téléphone", widget: string, i18n: true }
+          - { name: phone, label: Téléphone, widget: string, i18n: true }
+      - name: privacy
+        label: "Confidentialité (Loi 25)"
+        file: content/pages/privacy.json
+        i18n: true
+        fields:
+          - { name: meta_title, label: "Titre SEO", widget: string, i18n: true }
+          - { name: meta_description, label: "Description SEO", widget: text, i18n: true }
+          - { name: kicker, label: Surtitre, widget: string, i18n: true }
+          - { name: title, label: "Titre (H1)", widget: string, i18n: true }
+          - { name: intro, label: Intro, widget: text, i18n: true }
+          - { name: body, label: Texte, widget: markdown, i18n: true }
+
+  # ---------------- Réglages ----------------
+  - name: settings
+    label: "Réglages / Settings"
+    i18n: true
+    format: json
+    files:
+      - name: site
+        label: "Réglages du site"
+        file: content/settings.json
+        i18n: true
+        fields:
+          - { name: base_url, label: "Adresse du site", widget: string, i18n: false }
+          - { name: email, label: "Courriel de contact", widget: string, i18n: false }
+          - { name: interac_email, label: "Courriel Interac", widget: string, i18n: false }
+          - { name: donate_url, label: "Lien du formulaire Zeffy", widget: string, required: false, i18n: false }
+          - { name: founded, label: "Année de fondation", widget: string, i18n: false }
+          - { name: cra_number, label: "N° d’organisme de bienfaisance (ARC)", widget: string, required: false, i18n: false }
+          - { name: social, label: "Réseaux sociaux", widget: list, i18n: false, fields: [{ name: name, label: Nom, widget: string }, { name: url, label: URL, widget: string, required: false }] }
+          - { name: site_name, label: "Nom du site", widget: string, i18n: true }
+          - { name: site_subname, label: "Sous-titre", widget: string, i18n: true }
+          - { name: tagline, label: Signature, widget: string, i18n: true }
+          - { name: default_description, label: "Description par défaut", widget: text, i18n: true }
+          - name: verse_of_week
+            label: "Verset de la semaine"
+            widget: object
+            i18n: true
+            fields:
+              - { name: week_label, label: "Semaine", widget: string }
+              - { name: text, label: Verset, widget: text }
+              - { name: reference, label: Référence, widget: string }
+              - { name: reflection, label: "Petite réflexion", widget: text }
+          - { name: newsletter_title, label: "Infolettre — titre", widget: string, i18n: true }
+          - { name: newsletter_text, label: "Infolettre — texte", widget: text, i18n: true }
+          - { name: signature, label: "Signature des lettres", widget: string, i18n: true }
