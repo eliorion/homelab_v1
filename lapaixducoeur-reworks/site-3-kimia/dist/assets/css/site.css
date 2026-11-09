@@ -673,3 +673,5 @@ legend{padding:0}
 .subscribe--compact h3{font-size:1.1rem;margin:0 0 .5rem;color:var(--plum)}
 .subscribe--compact .subscribe__help{font-size:.9rem;margin-bottom:0}
 @media (min-width:700px){.subscribe{padding:2.25rem 2.5rem}}
+.subscribe--compact .copy-row code{flex-basis:100%}
+@media (max-width:519.98px){.subscribe .copy-row code{flex-basis:100%}}

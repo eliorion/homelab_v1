@@ -113,6 +113,15 @@ All copy is native French with English at parity. Placeholders such as `[à conf
 - **Regenerating the config:** the page and settings fields in `admin/config.yml` are generated from the content shapes by `node scripts/cms-config.mjs`. This matters because the CMS drops undeclared keys on save, so re-run the script after adding a key.
 - **Before go-live:** set `backend.repo` and deploy the Sveltia CMS authenticator Worker (`base_url`).
 
+## Calendar sync
+
+Staff keep recurring events (maraudes, collectes, prayer evenings) in the association's public **Google Calendar**; the CMS **Événements** form is for special events with a photo and long text. The writing conventions (title `FR | EN`, an `EN` line before the English text, optional `Catégorie:`, `Inscription:`, `Image:` lines, *Private* = never published) are in `../shared/EDITOR-GUIDE.md`.
+
+- **Sync:** `node ../shared/tools/calendar-sync.mjs --site . --ics "<iCal address>"`, then `node build.mjs`. It writes `content/events/gcal-*.json` (and deletes stale ones); hand-made event files are never touched. The iCal address is the staff-only setting `calendar_ics_source` (Réglages); in CI it is the `CALENDAR_ICS_URL` variable (`../shared/deploy/publish.yml`).
+- **Feeds** (built by `build.mjs` with the same code as the per-event `.ics`): `/calendar.ics` (French), `/fr/calendrier.ics`, `/en/calendar.ics`, plus the older `/fr/evenements/calendrier.ics` and `/en/events/calendar.ics` aliases. All upcoming events, `VTIMEZONE` America/Toronto, UIDs `<file id>-<lang>@lapaixducoeur.ca`, CRLF, folded at 75 octets.
+- **Subscribe block** (`subscribeBlock` in `src/templates/pages.mjs`): full on the events list (`#abonnement` / `#subscribe`, linked from the home events section), compact in each event's info box. It offers `webcal://`, Google Calendar (`render?cid=`), Outlook.com (`addfromweb`) and a copy-link button (the shared `data-copy` code in `site.js`). If `calendar_google_public_url` is set, a «Voir dans Google Agenda» link appears too.
+- **Synced events** carry `"source": "google-calendar"` (a hidden CMS field keeps it on save). They use the category illustration, so the image is decorative (`alt=""`). An empty `ticketUrl` hides the «Inscription et billets» button. All-day events (`T00:00` → `T23:59`) show «Toute la journée / All day» and are written as `DTSTART;VALUE=DATE` in the `.ics` and as a plain date in the Event JSON-LD.
+
 ## Files
 
 ```

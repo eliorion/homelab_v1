@@ -25,58 +25,6 @@ RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
 END:STANDARD
 END:VTIMEZONE
 BEGIN:VEVENT
-UID:gcal-2026-11-26-a3cae38092-fr@lapaixducoeur.ca
-DTSTAMP:20261109T120000Z
-DTSTART;TZID=America/Toronto:20261126T183000
-DTEND;TZID=America/Toronto:20261126T213000
-SUMMARY:Maraude du jeudi soir (exemple)
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des perso
- nnes sans-abri du centre-ville. (jeudi 26 novembre 2026) https://lapaixd
- ucoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-11-26/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-11-
- 26/
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-03-3626496d3d-fr@lapaixducoeur.ca
-DTSTAMP:20261109T120000Z
-DTSTART;TZID=America/Toronto:20261203T183000
-DTEND;TZID=America/Toronto:20261203T213000
-SUMMARY:Maraude du jeudi soir (exemple)
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des perso
- nnes sans-abri du centre-ville. (jeudi 3 décembre 2026) https://lapaixd
- ucoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-03/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-
- 03/
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-05-c0efdbceba-fr@lapaixducoeur.ca
-DTSTAMP:20261109T120000Z
-DTSTART;TZID=America/Toronto:20261205T100000
-DTEND;TZID=America/Toronto:20261205T160000
-SUMMARY:Collecte alimentaire — Saint-Michel (exemple)
-DESCRIPTION:Ajoutez un article à votre panier pour une famille. https://
- lapaixducoeur.ca/fr/evenements/collecte-alimentaire-saint-michel-2026-12
- -05/
-LOCATION:Épicerie partenaire\, Saint-Michel\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-saint-mic
- hel-2026-12-05/
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-11-4267d7ef1a-fr@lapaixducoeur.ca
-DTSTAMP:20261109T120000Z
-DTSTART;TZID=America/Toronto:20261211T190000
-DTEND;TZID=America/Toronto:20261211T220000
-SUMMARY:Maraude spéciale de Noël (exemple)
-DESCRIPTION:Édition spéciale avec cadeaux. (vendredi 11 décembre 2026)
-  https://lapaixducoeur.ca/fr/evenements/maraude-speciale-de-noel-2026-12
- -11/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-speciale-de-noel-2026-
- 12-11/
-END:VEVENT
-BEGIN:VEVENT
 UID:2026-12-collecte-noel-fr@lapaixducoeur.ca
 DTSTAMP:20261109T120000Z
 DTSTART;TZID=America/Toronto:20261212T100000
@@ -90,19 +38,6 @@ LOCATION:Supermarché partenaire\, Montréal lieu à confirmer
 URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-noel/
 END:VEVENT
 BEGIN:VEVENT
-UID:gcal-2026-12-17-336e6170d6-fr@lapaixducoeur.ca
-DTSTAMP:20261109T120000Z
-DTSTART;TZID=America/Toronto:20261217T183000
-DTEND;TZID=America/Toronto:20261217T213000
-SUMMARY:Maraude du jeudi soir (exemple)
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des perso
- nnes sans-abri du centre-ville. (jeudi 17 décembre 2026) https://lapaix
- ducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-17/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-
- 17/
-END:VEVENT
-BEGIN:VEVENT
 UID:2026-12-maraude-noel-fr@lapaixducoeur.ca
 DTSTAMP:20261109T120000Z
 DTSTART;TZID=America/Toronto:20261224T180000
@@ -114,58 +49,6 @@ DESCRIPTION:Un soir de fête pour ceux qui n'en ont pas : soupe chaude\,
 LOCATION:Centre-ville de Montréal — point de rencontre communiqué aux
   bénévoles inscrits
 URL:https://lapaixducoeur.ca/fr/evenements/maraude-veille-de-noel/
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2026-12-31-1588dc5db5-fr@lapaixducoeur.ca
-DTSTAMP:20261109T120000Z
-DTSTART;TZID=America/Toronto:20261231T183000
-DTEND;TZID=America/Toronto:20261231T213000
-SUMMARY:Maraude du jeudi soir (exemple)
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des perso
- nnes sans-abri du centre-ville. (jeudi 31 décembre 2026) https://lapaix
- ducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-31/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-
- 31/
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2027-01-07-c713618948-fr@lapaixducoeur.ca
-DTSTAMP:20261109T120000Z
-DTSTART;TZID=America/Toronto:20270107T183000
-DTEND;TZID=America/Toronto:20270107T213000
-SUMMARY:Maraude du jeudi soir (exemple)
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des perso
- nnes sans-abri du centre-ville. (jeudi 7 janvier 2027) https://lapaixduc
- oeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-07/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-
- 07/
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2027-01-14-44366e5514-fr@lapaixducoeur.ca
-DTSTAMP:20261109T120000Z
-DTSTART;TZID=America/Toronto:20270114T183000
-DTEND;TZID=America/Toronto:20270114T213000
-SUMMARY:Maraude du jeudi soir (exemple)
-DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des perso
- nnes sans-abri du centre-ville. (jeudi 14 janvier 2027) https://lapaixdu
- coeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-14/
-LOCATION:Sortie du métro Atwater\, Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-
- 14/
-END:VEVENT
-BEGIN:VEVENT
-UID:gcal-2027-01-16-c2c115da40-fr@lapaixducoeur.ca
-DTSTAMP:20261109T120000Z
-DTSTART;VALUE=DATE:20270116
-DTEND;VALUE=DATE:20270117
-SUMMARY:Journée de prière et de jeûne (exemple)
-DESCRIPTION:Une journée pour porter les orphelins et les veuves dans la 
- prière. https://lapaixducoeur.ca/fr/evenements/journee-de-priere-et-de-
- jeune-2027-01-16/
-LOCATION:Montréal
-URL:https://lapaixducoeur.ca/fr/evenements/journee-de-priere-et-de-jeune-
- 2027-01-16/
 END:VEVENT
 BEGIN:VEVENT
 UID:2027-01-atelier-budget-fr@lapaixducoeur.ca
