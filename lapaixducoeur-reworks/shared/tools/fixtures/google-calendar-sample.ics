@@ -1,0 +1,65 @@
+BEGIN:VCALENDAR
+PRODID:-//Google Inc//Google Calendar 70.9054//EN
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:La Paix du Cœur — Événements
+X-WR-TIMEZONE:America/Toronto
+BEGIN:VEVENT
+DTSTART;TZID=America/Toronto:20261126T183000
+DTEND;TZID=America/Toronto:20261126T213000
+RRULE:FREQ=WEEKLY;BYDAY=TH;COUNT=8
+EXDATE;TZID=America/Toronto:20261224T183000
+UID:maraude-jeudi@google.com
+SUMMARY:Maraude du jeudi soir | Thursday-night street outreach
+LOCATION:Sortie du métro Atwater\, Montréal
+DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personnes 
+ sans-abri du centre-ville.<br><br>Aucune expérience requise.<br>Quartier: c
+ entre-ville<br>Rendez-vous: sortie du métro Atwater<br>#exemple<br>EN<br>Ho
+ t meals\, warm clothes and a listening ear downtown.<br><br>No experience n
+ eeded.
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=America/Toronto:20261211T190000
+DTEND;TZID=America/Toronto:20261211T220000
+RECURRENCE-ID;TZID=America/Toronto:20261210T183000
+UID:maraude-jeudi@google.com
+SUMMARY:Maraude spéciale de Noël | Christmas street outreach
+LOCATION:Sortie du métro Atwater\, Montréal
+DESCRIPTION:Édition spéciale avec cadeaux.<br>#exemple<br>EN<br>Special edit
+ ion with gifts.
+END:VEVENT
+BEGIN:VEVENT
+DTSTART:20261205T150000Z
+DTEND:20261205T210000Z
+UID:collecte-dec@google.com
+SUMMARY:Collecte alimentaire — Saint-Michel | Food drive — Saint-Michel
+LOCATION:Épicerie partenaire\, Saint-Michel\, Montréal
+DESCRIPTION:Ajoutez un article à votre panier pour une famille.\nInscription
+ : https://www.zeffy.com/fr-CA/exemple\nCatégorie: collecte\n#exemple\nEN\nA
+ dd one item to your basket for a family.
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20270116
+DTEND;VALUE=DATE:20270117
+UID:journee-priere@google.com
+SUMMARY:Journée de prière et de jeûne | Day of prayer and fasting
+LOCATION:Montréal
+DESCRIPTION:Une journée pour porter les orphelins et les veuves dans la priè
+ re.\n#exemple
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=America/Toronto:20261202T090000
+DTEND;TZID=America/Toronto:20261202T100000
+UID:reunion-ca@google.com
+SUMMARY:Réunion du conseil (interne)
+CLASS:PRIVATE
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=America/Toronto:20250301T100000
+DTEND;TZID=America/Toronto:20250301T120000
+UID:passe@google.com
+SUMMARY:Ancien événement
+END:VEVENT
+END:VCALENDAR

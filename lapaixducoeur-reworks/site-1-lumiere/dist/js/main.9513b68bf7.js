@@ -50,7 +50,7 @@
     if (reduce || !end) return;
     const t0 = performance.now(), dur = 1600;
     const step = (t) => {
-      const p = Math.min(1, (t - t0) / dur);
+      const p = Math.max(0, Math.min(1, (t - t0) / dur));
       el.textContent = fmt.format(Math.round(end * (1 - Math.pow(1 - p, 3))));
       if (p < 1) requestAnimationFrame(step);
     };
@@ -64,7 +64,7 @@
     requestAnimationFrame(() => {
       const t0 = performance.now(), end = Number(w), dur = 1200;
       const step = (t) => {
-        const p = Math.min(1, (t - t0) / dur);
+        const p = Math.max(0, Math.min(1, (t - t0) / dur));
         el.setAttribute('width', String(end * (1 - Math.pow(1 - p, 3))));
         if (p < 1) requestAnimationFrame(step);
       };
