@@ -170,10 +170,11 @@
     $$('[data-copy]').forEach(function (b) {
       b.addEventListener('click', function () {
         var src = b.parentNode.querySelector('[data-copy-src]');
-        var text = src ? src.textContent.trim() : '';
+        var text = b.getAttribute('data-copy-text') || (src ? src.textContent.trim() : '');
         var label = b.querySelector('span');
         var done = function () { label.textContent = b.getAttribute('data-copied'); };
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () {});
+        else if (!src) window.prompt(label.textContent, text);
         else {
           var r = document.createRange(); r.selectNodeContents(src);
           var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);

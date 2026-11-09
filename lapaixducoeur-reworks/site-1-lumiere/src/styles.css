@@ -382,6 +382,23 @@ a.float-chip:hover { box-shadow: var(--shadow-l); color: var(--ink); }
 @media (min-width: 900px) { .event-list .event-card { padding: 28px 32px; gap: 32px; } .event-list .date-block { width: 96px; height: 108px; } .event-list .db-day { font-size: 2.5rem; } }
 @media (max-width: 520px) { .event-card { grid-template-columns: 1fr; } .date-block { flex-direction: row; gap: 8px; width: auto; height: auto; padding: 10px 14px; justify-self: start; border-radius: 14px; } .db-day { font-size: 1.4rem; } .db-mon, .db-year { margin: 0; } }
 .event-detail { display: grid; gap: 32px; align-items: start; }
+/* calendar subscription */
+.cal-sub { overflow: hidden; isolation: isolate; background: var(--sunrise-soft); border-color: #f6dcc3; }
+.cal-sub-sun { position: absolute; z-index: -1; width: 280px; aspect-ratio: 1; border-radius: 50%; right: -90px; top: -150px; background: var(--sunrise); opacity: .45; filter: blur(28px); }
+.cal-sub .card-head .h3 { margin: 0; }
+.cal-sub-intro { max-width: 60ch; margin: 0 0 20px; }
+.cal-sub-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.cal-sub-actions .btn-ghost { background: rgba(255, 255, 255, .6); }
+.cal-sub-help { display: flex; align-items: center; gap: 8px; margin: 18px 0 0; }
+.cal-sub-help .icon { width: 18px; height: 18px; color: var(--leaf); flex: none; }
+.cal-sub.is-compact { margin-top: 24px; padding: 18px 20px; border: 1px solid #f6dcc3; border-radius: var(--radius); }
+.cal-sub-title { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-weight: 600; }
+.cal-sub-title .icon { width: 20px; height: 20px; color: #a8521c; flex: none; }
+.cal-sub-links { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.cal-sub-links a { display: inline-block; padding: 6px 0; font-weight: 500; }
+.cal-sub.is-compact .fine { margin: 10px 0 0; }
+.split-links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+@media (max-width: 520px) { .cal-sub-actions .btn { flex: 1 1 100%; justify-content: center; } }
 @media (min-width: 900px) { .event-detail { grid-template-columns: 1.6fr 1fr; gap: 48px; } .event-side { position: sticky; top: calc(var(--header-h) + 24px); } }
 
 /* cards & misc */

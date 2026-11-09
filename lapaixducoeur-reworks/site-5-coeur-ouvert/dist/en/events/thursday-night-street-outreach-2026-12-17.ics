@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:gcal-2026-12-17-336e6170d6@lapaixducoeur.ca
+DTSTAMP:20261109T170000Z
+DTSTART:20261217T233000Z
+DTEND:20261218T023000Z
+SUMMARY:Thursday-night street outreach (sample)
+DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thursda
+ y\, December 17\, 2026)\n\nhttps://lapaixducoeur.ca/en/events/thursday-nig
+ ht-street-outreach-2026-12-17/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-2026-
+ 12-17/
+ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com
+END:VEVENT
+END:VCALENDAR

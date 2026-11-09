@@ -5,15 +5,14 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
 UID:2026-12-19-maraude-noel@lapaixducoeur.ca
-DTSTAMP:20261109T233135Z
+DTSTAMP:20261109T170000Z
 DTSTART:20261219T230000Z
 DTEND:20261220T040000Z
 SUMMARY:Christmas street outreach (sample)
-DESCRIPTION:Hot meals\, coats and gifts handed to people sleeping rough d
- owntown.\n\nhttps://lapaixducoeur.ca/en/events/christmas-street-outreach
- /
-LOCATION:Downtown Montréal — Meeting point shared with registered volu
- nteers
+DESCRIPTION:Hot meals\, coats and gifts handed to people sleeping rough dow
+ ntown.\n\nhttps://lapaixducoeur.ca/en/events/christmas-street-outreach/
+LOCATION:Downtown Montréal — Meeting point shared with registered volunt
+ eers
 URL:https://lapaixducoeur.ca/en/events/christmas-street-outreach/
 ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com
 END:VEVENT

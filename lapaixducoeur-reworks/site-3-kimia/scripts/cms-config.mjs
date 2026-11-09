@@ -29,6 +29,11 @@ function infer(name, v, i18n = true) {
 const pageNames = { home: 'Accueil / Home', about: 'À propos / About', story: 'Notre histoire / Our story (frise)', missions: 'Missions', serve: 'Où nous servons / Where we serve', workshops: 'Ateliers / Workshops', volunteer: 'Bénévolat / Volunteer', events: 'Événements (intro)', news: 'Nouvelles (intro)', media: 'Médiathèque (intro)', give: 'Soutenir / Give', contact: 'Contact', privacy: 'Confidentialité / Privacy' };
 const pages = readdirSync(`${ROOT}content/pages`).filter((f) => f.endsWith('.json')).map((f) => f.replace('.json', ''));
 const settings = json('content/settings.json').fr;
+const SETTING_HINTS = {
+  calendar_google_public_url: { label: 'Google Agenda — lien public (affichage web)', hint: 'Facultatif. Lien « URL publique de cet agenda » dans Google Agenda (Paramètres de l’agenda > Intégrer l’agenda). S’il est rempli, le site affiche « Voir dans Google Agenda ».' },
+  calendar_ics_source: { label: 'Google Agenda — adresse iCal (synchronisation)', hint: 'Réservé à l’équipe : « Adresse publique au format iCal » de l’agenda. La tâche de synchronisation la lit ; elle n’est jamais affichée sur le site.' },
+};
+const settingField = (k, v) => (SETTING_HINTS[k] ? { ...infer(k, v), ...SETTING_HINTS[k], required: false, i18n: 'duplicate' } : infer(k, v));
 
 const dup = 'duplicate';
 const config = {
@@ -58,6 +63,7 @@ const config = {
     },
     {
       name: 'events', label: 'Événements / Events', label_singular: 'Événement', folder: 'content/events', format: 'json', extension: 'json', create: true, i18n: true,
+      description: 'Astuce : les événements réguliers (maraudes, collectes) se gèrent plus simplement dans Google Agenda ; ils apparaissent ici automatiquement après la synchronisation. Utilisez ce formulaire pour les événements spéciaux avec photo et texte long.',
       identifier_field: 'title', slug: '{{fields.start}}-{{slug}}', summary: '{{start}} — {{title}}', sortable_fields: ['start', 'title'],
       fields: [
         { name: 'title', label: 'Titre / Title', widget: 'string', i18n: true },
@@ -71,6 +77,7 @@ const config = {
         { name: 'image', label: 'Illustration', widget: 'image', required: false, i18n: dup },
         { name: 'ticketUrl', label: 'Lien Zeffy (billets / inscription)', widget: 'string', required: false, i18n: dup },
         { name: 'sample', label: 'Contenu d’exemple', widget: 'boolean', default: false, i18n: dup },
+        { name: 'source', label: 'Source', widget: 'hidden', required: false, i18n: dup },
       ],
     },
     {
@@ -93,7 +100,7 @@ const config = {
     },
     {
       name: 'settings', label: 'Réglages / Settings', i18n: true, editor: { preview: false },
-      files: [{ name: 'settings', label: 'Réglages du site', file: 'content/settings.json', format: 'json', i18n: true, fields: Object.entries(settings).map(([k, v]) => infer(k, v)) }],
+      files: [{ name: 'settings', label: 'Réglages du site', file: 'content/settings.json', format: 'json', i18n: true, fields: Object.entries(settings).map(([k, v]) => settingField(k, v)) }],
     },
     {
       name: 'pages', label: 'Pages', i18n: true, editor: { preview: false },

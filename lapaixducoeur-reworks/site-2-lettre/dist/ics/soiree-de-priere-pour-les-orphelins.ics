@@ -4,15 +4,16 @@ PRODID:-//La Paix du Coeur//Site//FR
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
-UID:soiree-de-priere-pour-les-orphelins@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
+UID:2027-01-16-soiree-de-priere@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
 DTSTART:20270117T000000Z
 DTEND:20270117T020000Z
 SUMMARY:Soirée de prière pour les orphelins / Prayer evening for orphans
 DESCRIPTION:Louange\, lecture des Tehilim et intercession pour les orphelin
- s\, les veuves et les familles accompagnées. Worship\, reading of the Psa
- lms and intercession for orphans\, widows and the families we walk with. h
- ttps://lapaixducoeur.ca/fr/evenements/soiree-de-priere-pour-les-orphelins/
+ s\, les veuves et les familles accompagnées.\n\nWorship\, reading of the 
+ Psalms and intercession for orphans\, widows and the families we walk with
+ .\n\nhttps://lapaixducoeur.ca/fr/evenements/soiree-de-priere-pour-les-orph
+ elins/
 LOCATION:Église partenaire\, Montréal [lieu à confirmer]
 URL:https://lapaixducoeur.ca/fr/evenements/soiree-de-priere-pour-les-orphel
  ins/

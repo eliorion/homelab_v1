@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:gcal-2026-12-11-4267d7ef1a@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20261212T000000Z
+DTEND:20261212T030000Z
+SUMMARY:Maraude spéciale de Noël / Christmas street outreach
+DESCRIPTION:Édition spéciale avec cadeaux. (vendredi 11 décembre 2026)\n
+ \nSpecial edition with gifts. (Friday\, December 11\, 2026)\n\nhttps://lap
+ aixducoeur.ca/fr/evenements/maraude-speciale-de-noel-2026-12-11/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-speciale-de-noel-2026-12
+ -11/
+END:VEVENT
+END:VCALENDAR

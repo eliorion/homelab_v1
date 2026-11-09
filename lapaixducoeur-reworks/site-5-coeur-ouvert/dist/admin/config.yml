@@ -99,6 +99,7 @@ collections:
   - name: events
     label: Événements
     label_singular: Événement
+    description: "Astuce : les événements réguliers (maraudes, collectes) se gèrent plus simplement dans Google Agenda ; ils apparaissent ici automatiquement après la synchronisation. Utilisez ce formulaire pour les événements spéciaux avec photo et texte long."
     folder: content/events
     format: json
     extension: json
@@ -123,6 +124,7 @@ collections:
       - { name: image_alt, label: Texte alternatif de l'image, widget: string, i18n: true }
       - { name: summary, label: Résumé, widget: text, i18n: true }
       - { name: body, label: Description, widget: markdown, i18n: true, buttons: [bold, italic, link, bulleted-list], editor_components: [] }
+      - { name: source, label: Source, widget: hidden, required: false, i18n: duplicate }
 
   - name: media
     label: Médiathèque
@@ -471,3 +473,5 @@ collections:
               - { name: text, label: Texte, widget: string }
               - { name: campaign, label: "Campagne (nom du fichier, ex. noel-2026)", widget: string }
           - { name: newsletter_blurb, label: Texte de l'infolettre, widget: text, i18n: true }
+          - { name: calendar_google_public_url, label: "Google Agenda — lien public (affichage web)", widget: string, required: false, i18n: duplicate, hint: "Facultatif. Dans Google Agenda : Paramètres de l'agenda → Intégrer l'agenda → « URL publique de cet agenda ». Ajoute un lien « Voir dans Google Agenda » sur la page Événements." }
+          - { name: calendar_ics_source, label: "Google Agenda — adresse iCal (synchronisation)", widget: string, required: false, i18n: duplicate, hint: "Réservé à l'équipe, jamais affiché sur le site. « Adresse publique au format iCal » de l'agenda ; c'est elle que lit la tâche de synchronisation." }

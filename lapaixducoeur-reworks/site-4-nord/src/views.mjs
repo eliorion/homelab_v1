@@ -1,4 +1,4 @@
-import { esc, inline, md, plain, fmtDate, fmtTime, fmtRange, capFirst, isoWithOffset, googleCalUrl, outlookCalUrl } from './lib.mjs';
+import { esc, inline, md, plain, fmtDate, fmtTime, fmtRange, fmtWhen, capFirst, isoWithOffset, googleCalUrl, outlookCalUrl } from './lib.mjs';
 import { ROUTES, FEEDS, T, EVENT_TYPES, NEWS_CATS, HOODS } from './strings.mjs';
 import { icon, sampleBadge, knitBand, pageHead, orgNode } from './layout.mjs';
 
@@ -7,6 +7,25 @@ const typeTag = (type, lang) => `<span class="tag tag-${type}"><span class="dot"
 
 export const dateTile = (local, lang, cls = '') => `<span class="datetile ${cls}" aria-hidden="true">
   <span class="dt-wd">${fmtDate(local, lang, { weekday: 'short' })}</span><span class="dt-d">${Number(local.slice(8, 10))}</span><span class="dt-m">${fmtDate(local, lang, { month: 'short' })}</span></span>`;
+
+const evBadge = (ev, lang) => (ev.sample ? sampleBadge(lang, true) : '');
+const when = (ev, lang) => fmtWhen(ev.start, ev.end, lang);
+
+export function subscribeBlock(ctx, lang, { compact = false } = {}) {
+  const t = T[lang]; const s = ctx.sub[lang]; const nt = `<span class="visually-hidden"> (${lang === 'fr' ? 'nouvel onglet' : 'new tab'})</span>`;
+  const links = `<li><a href="${esc(s.webcal)}">${t.subscribeWebcal}</a></li>
+    <li><a href="${esc(s.google)}" target="_blank" rel="noopener">${t.subscribeGoogle}${icon('ext')}${nt}</a></li>
+    <li><a href="${esc(s.outlook)}" target="_blank" rel="noopener">${t.subscribeOutlookWeb}${icon('ext')}${nt}</a></li>
+    <li><button type="button" class="linkish" data-copy-text="${esc(s.https)}" data-copied="${t.copied}">${icon('copy')}${t.copyFeed}</button></li>
+    ${s.view ? `<li><a href="${esc(s.view)}" target="_blank" rel="noopener">${t.viewGoogle}${icon('ext')}${nt}</a></li>` : ''}`;
+  if (compact) {
+    return `<details class="addcal addcal-block subscribe-mini"><summary>${icon('cal')}<span>${t.subscribe}</span></summary><ul>${links}</ul><p class="muted small">${t.subscribeHelp}</p></details>`;
+  }
+  return `<div class="subscribe-card"><p class="label">${icon('cal')}${t.subscribe}</p><p>${t.subscribeLead}</p>
+    <ul class="link-list">${links}
+    <li><a href="${FEEDS.combined}" download>${t.downloadIcsBoth}</a></li></ul>
+    <p class="muted small subscribe-help">${t.subscribeHelp}</p></div>`;
+}
 
 function addToCal(ev, lang, ctx, cls = '') {
   const t = T[lang]; const d = ev[lang];
@@ -23,9 +42,9 @@ function eventCard(ev, lang, ctx, { headingLevel = 3 } = {}) {
   return `<article class="ev-card">
     ${dateTile(ev.start, lang)}
     <div class="ev-card-body">
-      <p class="ev-meta-top">${typeTag(ev.type, lang)} ${sampleBadge(lang, true)}</p>
+      <p class="ev-meta-top">${typeTag(ev.type, lang)} ${evBadge(ev, lang)}</p>
       <${h} class="ev-title"><a href="${ev.url[lang]}" class="stretched">${esc(d.title)}</a></${h}>
-      <p class="ev-meta"><span>${icon('clock')}<span class="visually-hidden">${t.when} : </span>${capFirst(fmtDate(ev.start, lang, { weekday: 'long', day: 'numeric', month: 'long' }))}, ${fmtRange(ev.start, ev.end, lang)}</span>
+      <p class="ev-meta"><span>${icon('clock')}<span class="visually-hidden">${t.when} : </span>${capFirst(fmtDate(ev.start, lang, { weekday: 'long', day: 'numeric', month: 'long' }))}, ${when(ev, lang)}</span>
       <span>${icon('pin')}${t.hoods[ev.hood]}</span></p>
     </div></article>`;
 }
@@ -103,7 +122,7 @@ ${knitBand()}
 <section class="section"><div class="wrap">
   ${sectionHead(t.upcoming, lang === 'fr' ? 'Ce qui s’en vient' : 'What’s next', { link: ROUTES.events[lang], linkText: t.fullCalendar, lead: t.upcomingLead })}
   <div class="ev-cards">${upcoming.map((e) => eventCard(e, lang, ctx)).join('')}</div>
-  <p class="subscribe-inline">${icon('cal')}<a href="${ctx.webcal}">${t.subscribe}</a> <span class="muted">— ${t.subscribeLead}</span></p>
+  <p class="subscribe-inline">${icon('cal')}<a href="${esc(ctx.sub[lang].webcal)}">${t.subscribe}</a> <span class="muted">— ${t.subscribeHelp}</span> <a href="${ROUTES.events[lang]}#${lang === 'fr' ? 'abonnement' : 'subscribe'}">${lang === 'fr' ? 'Google, Outlook.com et autres options' : 'Google, Outlook.com and more'}</a></p>
 </div></section>
 
 <section class="section section-rule"><div class="wrap">
@@ -155,19 +174,17 @@ export function eventsPage(ctx, lang) {
   const row = (e) => `<li class="ev-row" data-type="${e.type}" data-month="${e.start.slice(0, 7)}">
     ${dateTile(e.start, lang)}
     <div class="ev-row-body">
-      <p class="ev-meta-top">${typeTag(e.type, lang)} ${sampleBadge(lang, true)}</p>
+      <p class="ev-meta-top">${typeTag(e.type, lang)} ${evBadge(e, lang)}</p>
       <h3 class="ev-title"><a href="${e.url[lang]}">${esc(e[lang].title)}</a></h3>
-      <p class="ev-meta"><span>${icon('clock')}<span class="visually-hidden">${t.when} : </span>${capFirst(fmtDate(e.start, lang, { weekday: 'long', day: 'numeric', month: 'long' }))}, ${fmtRange(e.start, e.end, lang)}</span><span>${icon('pin')}${t.hoods[e.hood]}</span></p>
+      <p class="ev-meta"><span>${icon('clock')}<span class="visually-hidden">${t.when} : </span>${capFirst(fmtDate(e.start, lang, { weekday: 'long', day: 'numeric', month: 'long' }))}, ${when(e, lang)}</span><span>${icon('pin')}${t.hoods[e.hood]}</span></p>
       <p class="ev-summary">${esc(e[lang].summary)}</p>
     </div>
     <div class="ev-row-actions">${addToCal(e, lang, ctx)}</div></li>`;
   const list = months.map((m) => `<section class="month-group" data-month="${m}" aria-labelledby="m-${m}">
       <h2 class="month-title" id="m-${m}">${capFirst(fmtDate(m + '-01', lang, { month: 'long', year: 'numeric' }))}</h2>
       <ol class="ev-list">${upcoming.filter((e) => e.start.startsWith(m)).map(row).join('')}</ol></section>`).join('');
-  const calData = upcoming.map((e) => ({ id: e.id, url: e.url[lang], title: e[lang].title, type: e.type, date: e.start.slice(0, 10), time: fmtTime(e.start, lang), hood: t.hoods[e.hood] }));
-  const aside = `<div class="subscribe-card"><p class="label">${icon('cal')}${t.subscribe}</p><p>${t.subscribeLead}</p>
-    <ul class="link-list"><li><a href="${esc(ctx.googleSub)}" target="_blank" rel="noopener">${t.subscribeGoogle}${icon('ext')}</a></li><li><a href="${ctx.webcal}">${t.subscribeWebcal}</a></li><li><a href="${FEEDS.combined}" download>${t.downloadIcs}</a></li>
-    <li><button type="button" class="linkish" data-copy-text="${ctx.site}${FEEDS.combined}" data-copied="${t.copied}">${icon('copy')}${t.copyFeed}</button></li></ul></div>`;
+  const calData = upcoming.map((e) => ({ id: e.id, url: e.url[lang], title: e[lang].title, type: e.type, date: e.start.slice(0, 10), time: e.allDay ? t.allDay : fmtTime(e.start, lang), hood: t.hoods[e.hood] }));
+  const aside = `<div id="${lang === 'fr' ? 'abonnement' : 'subscribe'}">${subscribeBlock(ctx, lang)}</div>`;
   const body = `${pageHead(lang, { eyebrow: p.eyebrow, title: p.title, lead: p.lead, crumbs, aside })}
 <section class="section section-tight"><div class="wrap">
   <div class="cal-toolbar" data-cal-toolbar hidden>
@@ -179,7 +196,7 @@ export function eventsPage(ctx, lang) {
     </div>
     <div class="month-nav" data-month-nav><button type="button" class="icon-btn" data-month-step="-1" aria-label="${t.prevMonth}">${icon('arrow', 'i flip')}</button><h2 class="month-nav-title" data-month-title aria-live="polite">&nbsp;</h2><button type="button" class="icon-btn" data-month-step="1" aria-label="${t.nextMonth}">${icon('arrow')}</button></div>
   </div>
-  <p class="sample-line">${sampleBadge(lang)} <span class="muted small">${lang === 'fr' ? 'Les activités affichées sont des exemples : dates, lieux et places restent à confirmer.' : 'The activities shown are samples: dates, places and spots are still to be confirmed.'}</span></p>
+  ${ctx.events.some((e) => e.sample) ? `<p class="sample-line">${sampleBadge(lang)} <span class="muted small">${lang === 'fr' ? 'Les activités affichées sont des exemples : dates, lieux et places restent à confirmer.' : 'The activities shown are samples: dates, places and spots are still to be confirmed.'}</span></p>` : ''}
   <p class="visually-hidden" role="status" data-cal-status></p>
   <div class="cal-grid-wrap" data-cal-grid hidden></div>
   <div class="cal-list" data-cal-list>${list}<p class="empty" data-cal-empty hidden>${t.noEvents}</p></div>
@@ -194,10 +211,12 @@ export function eventPage(ctx, lang, ev) {
   const crumbs = [[t.home, ROUTES.home[lang]], [ctx.pages.events[lang].title, ROUTES.events[lang]], [d.title, ev.url[lang]]];
   const openShifts = ev.shifts.filter((s) => s.spots - s.taken > 0);
   const others = ctx.events.filter((e) => !e.past && e.id !== ev.id).slice(0, 3);
+  const ticketUrl = d.ticket_url || ctx.settings[lang].zeffy_tickets_url;
+  const priceNum = (String(d.price || '').match(/(\d+(?:[.,]\d{2})?)\s*\$|\$\s*(\d+(?:\.\d{2})?)/) || []).slice(1).find(Boolean)?.replace(',', '.');
   const rsvp = ev.rsvp === 'zeffy'
     ? `<section class="card card-birch" aria-labelledby="tix"><h2 id="tix">${t.ticketsTitle}</h2>${d.price ? `<p>${inline(d.price)}</p>` : ''}
-        <a class="btn btn-maple" href="${ctx.settings[lang].zeffy_tickets_url || '#zeffy-placeholder'}" data-zeffy>${icon('heart')}${t.ticketsBtn}</a>
-        <p class="placeholder-note" id="zeffy-placeholder">${t.ticketsNote}</p></section>`
+        <a class="btn btn-maple" href="${esc(ticketUrl || '#zeffy-placeholder')}" data-zeffy>${icon('heart')}${t.ticketsBtn}</a>
+        ${ticketUrl ? '' : `<p class="placeholder-note" id="zeffy-placeholder">${t.ticketsNote}</p>`}</section>`
     : `<section class="card" aria-labelledby="rsvp"><h2 id="rsvp">${t.rsvpTitle}</h2><p>${t.rsvpLead}</p>
         ${formShell(lang, { kind: 'rsvp', idp: 'rsvp-form', action: '/api/rsvp', submit: t.rsvpSend, thanks: t.thanksRsvp,
           inner: `<input type="hidden" name="event" value="${ev.id}"><div class="field-row">${field('rsvp-name', t.name + req(lang), '<input id="rsvp-name" name="name" type="text" autocomplete="name" required>')}
@@ -209,7 +228,7 @@ export function eventPage(ctx, lang, ev) {
   const body = `${pageHead(lang, { eyebrow: t.types[ev.type], title: d.title, lead: d.summary, crumbs, cls: 'page-head-event' })}
 <div class="wrap event-layout">
   <div class="event-main">
-    <p class="sample-line">${sampleBadge(lang)}</p>
+    ${ev.sample ? `<p class="sample-line">${sampleBadge(lang)}</p>` : ''}
     <div class="event-photo">${pic(ev.image, d.image_alt, { sizes: '(min-width: 1000px) 720px, 100vw', eager: true })}</div>
     <div class="prose">${md(d.body)}</div>
     ${d.bring?.length ? `<h2 class="h-small">${t.bring}</h2><ul class="check-list">${d.bring.map((b) => `<li>${icon('check')}${esc(b)}</li>`).join('')}</ul>` : ''}
@@ -220,12 +239,13 @@ export function eventPage(ctx, lang, ev) {
     <div class="facts-card">
       ${dateTile(ev.start, lang, 'datetile-lg')}
       <dl>
-        <div><dt>${icon('clock')}${t.when}</dt><dd>${capFirst(fmtDate(ev.start, lang))}<br>${fmtRange(ev.start, ev.end, lang)}</dd></div>
+        <div><dt>${icon('clock')}${t.when}</dt><dd>${capFirst(fmtDate(ev.start, lang))}<br>${when(ev, lang)}</dd></div>
         <div><dt>${icon('pin')}${t.where}</dt><dd>${inline(d.address)}<br><span class="muted">${t.hoods[ev.hood]}, Montréal</span></dd></div>
-        <div><dt>${icon('arrow')}${t.meeting}</dt><dd>${inline(d.meeting_point)}</dd></div>
+        ${d.meeting_point ? `<div><dt>${icon('arrow')}${t.meeting}</dt><dd>${inline(capFirst(d.meeting_point))}</dd></div>` : ''}
         <div><dt>${icon('cal')}${t.type}</dt><dd>${typeTag(ev.type, lang)}</dd></div>
       </dl>
       ${addToCal(ev, lang, ctx, 'addcal-block')}
+      ${subscribeBlock(ctx, lang, { compact: true })}
       <button type="button" class="btn btn-ghost btn-block" data-share data-copied="${t.copied}" data-title="${esc(d.title)}">${icon('share')}<span>${t.share}</span></button>
     </div>
   </aside>
@@ -237,14 +257,14 @@ export function eventPage(ctx, lang, ev) {
   const site = ctx.site;
   const ld = {
     '@type': 'Event', '@id': `${site}${ev.url[lang]}#event`, name: d.title, description: d.summary, url: `${site}${ev.url[lang]}`, inLanguage: t.locale,
-    startDate: isoWithOffset(ev.start), endDate: isoWithOffset(ev.end),
+    startDate: ev.allDay ? ev.start.slice(0, 10) : isoWithOffset(ev.start), endDate: ev.allDay ? ev.end.slice(0, 10) : isoWithOffset(ev.end),
     eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: { '@type': 'Place', name: plain(d.address), address: { '@type': 'PostalAddress', streetAddress: plain(d.address), addressLocality: 'Montréal', addressRegion: 'QC', addressCountry: 'CA' } },
     image: [`${site}${ctx.imageUrl(ev.image)}`], organizer: { '@id': `${site}/#org` },
     isAccessibleForFree: ev.rsvp !== 'zeffy',
-    offers: { '@type': 'Offer', url: `${site}${ev.url[lang]}`, price: ev.rsvp === 'zeffy' ? '75' : '0', priceCurrency: 'CAD', availability: 'https://schema.org/InStock', validFrom: '2026-11-01T00:00:00-04:00' },
+    ...(ev.rsvp !== 'zeffy' || priceNum ? { offers: { '@type': 'Offer', url: ev.rsvp === 'zeffy' && ticketUrl ? ticketUrl : `${site}${ev.url[lang]}`, price: ev.rsvp === 'zeffy' ? priceNum : '0', priceCurrency: 'CAD', availability: 'https://schema.org/InStock' } } : {}),
   };
-  return { title: `${d.title} — ${capFirst(fmtDate(ev.start, lang, { day: 'numeric', month: 'long', year: 'numeric' }))} | La Paix du Cœur`, description: `${d.summary} ${capFirst(fmtDate(ev.start, lang))}, ${fmtRange(ev.start, ev.end, lang)}.`, body, crumbs, jsonld: [ld], ogImage: ctx.imageUrl(ev.image), ogType: 'article' };
+  return { title: `${d.title} — ${capFirst(fmtDate(ev.start, lang, { day: 'numeric', month: 'long', year: 'numeric' }))} | La Paix du Cœur`, description: `${d.summary} ${capFirst(fmtDate(ev.start, lang))}, ${when(ev, lang)}.`, body, crumbs, jsonld: [ld], ogImage: ctx.imageUrl(ev.image), ogType: 'article' };
 }
 
 /* ===================================================================== FOOD DRIVES */
@@ -298,7 +318,7 @@ export function volunteerPage(ctx, lang) {
   const evs = ctx.events.filter((e) => !e.past && e.shifts.length);
   const options = evs.map((e) => `<optgroup label="${esc(fmtDate(e.start, lang, { day: 'numeric', month: 'short' }) + ' — ' + e[lang].title)}">${e.shifts.map((s) => `<option value="${e.id}__${s.id}"${s.spots - s.taken <= 0 ? ' disabled' : ''}>${esc(s['role_' + lang])} (${fmtRange(s.start, s.end, lang)})${s.spots - s.taken <= 0 ? ' — ' + t.spotsLeft(0) : ''}</option>`).join('')}</optgroup>`).join('');
   const groups = evs.map((e) => `<li class="shift-group" id="q-${e.id}">
-      <div class="shift-event">${dateTile(e.start, lang)}<div><p class="ev-meta-top">${typeTag(e.type, lang)} ${sampleBadge(lang, true)}</p><h3><a href="${e.url[lang]}">${esc(e[lang].title)}</a></h3><p class="muted">${icon('pin')}${t.hoods[e.hood]}</p></div></div>
+      <div class="shift-event">${dateTile(e.start, lang)}<div><p class="ev-meta-top">${typeTag(e.type, lang)} ${evBadge(e, lang)}</p><h3><a href="${e.url[lang]}">${esc(e[lang].title)}</a></h3><p class="muted">${icon('pin')}${t.hoods[e.hood]}</p></div></div>
       <ul class="shift-rows">${e.shifts.map((s) => { const left = s.spots - s.taken; return `<li class="shift-row${left <= 0 ? ' is-full' : ''}">
         <div class="shift-role"><strong>${esc(s['role_' + lang])}</strong><span class="muted">${s.start.slice(0, 10) !== e.start.slice(0, 10) ? capFirst(fmtDate(s.start, lang, { weekday: 'short', day: 'numeric', month: 'short' })) + ', ' : ''}${fmtRange(s.start, s.end, lang)}</span></div>
         <div class="spots">${dots(s.taken, s.spots)}<span><strong>${t.spotsLeft(left)}</strong><span class="muted"> · ${t.spotsOf(s.taken, s.spots)}</span></span></div>

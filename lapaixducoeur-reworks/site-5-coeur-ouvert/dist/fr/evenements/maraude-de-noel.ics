@@ -5,15 +5,15 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
 UID:2026-12-19-maraude-noel@lapaixducoeur.ca
-DTSTAMP:20261109T233135Z
+DTSTAMP:20261109T170000Z
 DTSTART:20261219T230000Z
 DTEND:20261220T040000Z
 SUMMARY:Grande maraude de Noël (exemple)
-DESCRIPTION:Repas chauds\, manteaux et cadeaux remis aux personnes sans a
- bri du centre-ville.\n\nhttps://lapaixducoeur.ca/fr/evenements/maraude-d
- e-noel/
-LOCATION:Centre-ville de Montréal — Point de rendez-vous communiqué a
- ux bénévoles inscrits
+DESCRIPTION:Repas chauds\, manteaux et cadeaux remis aux personnes sans abr
+ i du centre-ville.\n\nhttps://lapaixducoeur.ca/fr/evenements/maraude-de-no
+ el/
+LOCATION:Centre-ville de Montréal — Point de rendez-vous communiqué aux
+  bénévoles inscrits
 URL:https://lapaixducoeur.ca/fr/evenements/maraude-de-noel/
 ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com
 END:VEVENT

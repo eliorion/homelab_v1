@@ -80,6 +80,9 @@ export const fmtTime = (d, lang) => {
   if (lang === 'fr') return `${x.getUTCHours()} h ${String(x.getUTCMinutes()).padStart(2, '0')}`.replace(' h 00', ' h');
   return new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(x).replace(':00', '').replace(/\s?([ap])\.?m\.?/i, ' $1m');
 };
+// Synced all-day events arrive as T00:00 → T23:59.
+export const isAllDay = (ev) => ev.start.endsWith('T00:00') && ev.end.endsWith('T23:59');
+export const timeRange = (ev, lang) => (isAllDay(ev) ? (lang === 'fr' ? 'Toute la journée' : 'All day') : `${fmtTime(ev.start, lang)} – ${fmtTime(ev.end, lang)}`);
 export const stampParts = (d, lang) => {
   const x = asDate(d);
   return {

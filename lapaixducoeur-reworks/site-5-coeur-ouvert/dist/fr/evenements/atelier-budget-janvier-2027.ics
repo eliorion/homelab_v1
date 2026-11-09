@@ -5,15 +5,14 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
 UID:2027-01-23-atelier@lapaixducoeur.ca
-DTSTAMP:20261109T233135Z
+DTSTAMP:20261109T170000Z
 DTSTART:20270123T143000Z
 DTEND:20270123T170000Z
 SUMMARY:Atelier : bâtir son budget (exemple)
-DESCRIPTION:Trois heures pour construire un budget familial simple et rep
- érer les aides disponibles.\n\nhttps://lapaixducoeur.ca/fr/evenements/a
- telier-budget-janvier-2027/
-LOCATION:Salle communautaire\, Montréal — Adresse exacte [à confirmer
- ]
+DESCRIPTION:Trois heures pour construire un budget familial simple et repé
+ rer les aides disponibles.\n\nhttps://lapaixducoeur.ca/fr/evenements/ateli
+ er-budget-janvier-2027/
+LOCATION:Salle communautaire\, Montréal — Adresse exacte [à confirmer]
 URL:https://lapaixducoeur.ca/fr/evenements/atelier-budget-janvier-2027/
 ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com
 END:VEVENT

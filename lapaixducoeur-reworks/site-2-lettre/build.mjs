@@ -50,7 +50,15 @@ const data = {
   media: collection('media').map((m) => ({ l: { fr: m.fr, en: m.en } })).sort((a, b) => a.l.fr.order - b.l.fr.order),
   prayers: fs.readdirSync(path.join(ROOT, 'content/prayers')).filter((f) => f.endsWith('.json')).map((f) => rd(`content/prayers/${f}`)).filter((p) => p.published !== false).sort((a, b) => (a.date < b.date ? 1 : -1)),
 };
-for (const e of data.events) e.ics = `/ics/${e.l.fr.slug}.ics`;
+for (const e of data.events) {
+  e.ics = `/ics/${e.l.fr.slug}.ics`;
+  e.id = e.file.replace(/\.json$/, '');
+}
+for (const lang of LANGS) {
+  const seen = {};
+  for (const e of data.events) seen[e.l[lang].title] = (seen[e.l[lang].title] || 0) + 1;
+  for (const e of data.events) (e.dupTitle ||= {})[lang] = seen[e.l[lang].title] > 1;
+}
 
 // ---------- images ----------
 function jpegSize(file) {
@@ -113,39 +121,64 @@ const fmtTime = (s, lang) => {
 const fmtDay = (s) => String(+s.slice(8, 10));
 const fmtMonth = (s, lang) => new Intl.DateTimeFormat(LOCALE[lang], { month: 'short', timeZone: 'UTC' }).format(wallDate(s)).replace('.', '');
 
+const isAllDay = (d) => d.start.endsWith('T00:00') && d.end.endsWith('T23:59');
+const nextDay = (s) => new Date(Date.parse(`${s.slice(0, 10)}T12:00:00Z`) + 864e5).toISOString().slice(0, 10);
+const icsDate = (s) => s.slice(0, 10).replace(/-/g, '');
+
 function gcal(lang, e) {
   const d = e.l[lang];
-  const q = new URLSearchParams({ action: 'TEMPLATE', text: d.title, dates: `${icsStamp(toUTC(d.start))}/${icsStamp(toUTC(d.end))}`, details: `${plain(d.summary)}\n${L.abs(e.url[lang])}`, location: d.location });
+  const dates = isAllDay(d) ? `${icsDate(d.start)}/${icsDate(nextDay(d.end))}` : `${icsStamp(toUTC(d.start))}/${icsStamp(toUTC(d.end))}`;
+  const q = new URLSearchParams({ action: 'TEMPLATE', text: d.title, dates, details: `${plain(d.summary)}\n${L.abs(e.url[lang])}`, location: d.location });
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 
-function ics(e) {
-  const fold = (line) => {
-    const out = [];
-    let cur = '';
-    for (const ch of line) {
-      if (Buffer.byteLength(cur + ch) > (out.length ? 74 : 75)) { out.push(cur); cur = ''; }
-      cur += ch;
-    }
-    out.push(cur);
-    return out.join('\r\n ');
-  };
-  const escI = (s) => plain(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+const fold = (line) => {
+  const out = [];
+  let cur = '';
+  for (const ch of line) {
+    if (Buffer.byteLength(cur + ch) > (out.length ? 74 : 75)) { out.push(cur); cur = ''; }
+    cur += ch;
+  }
+  out.push(cur);
+  return out.join('\r\n ');
+};
+const escI = (s) => String(s).split('\n').map((x) => plain(x).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,')).join('\\n');
+const DTSTAMP = icsStamp(new Date(Math.floor(Date.now() / 1000) * 1000));
+
+// mode: 'both' (bilingual, FR page URL) | 'fr' | 'en'
+function vevent(e, mode) {
   const fr = e.l.fr, en = e.l.en;
+  const d = mode === 'en' ? en : fr;
+  const url = L.abs(e.url[mode === 'en' ? 'en' : 'fr']);
+  const title = mode === 'both' ? (fr.title === en.title ? fr.title : `${fr.title} / ${en.title}`) : d.title;
+  const desc = mode === 'both' ? `${fr.summary}\n\n${en.summary}\n\n${url}` : `${d.summary}\n\n${url}`;
+  const when = isAllDay(fr)
+    ? [`DTSTART;VALUE=DATE:${icsDate(fr.start)}`, `DTEND;VALUE=DATE:${icsDate(nextDay(fr.end))}`]
+    : [`DTSTART:${icsStamp(toUTC(fr.start))}`, `DTEND:${icsStamp(toUTC(fr.end))}`];
   return [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//La Paix du Coeur//Site//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:${fr.slug}@lapaixducoeur.ca`,
-    `DTSTAMP:${icsStamp(new Date(Date.UTC(2026, 10, 9)))}`,
-    `DTSTART:${icsStamp(toUTC(fr.start))}`,
-    `DTEND:${icsStamp(toUTC(fr.end))}`,
-    `SUMMARY:${escI(`${fr.title} / ${en.title}`)}`,
-    `DESCRIPTION:${escI(`${fr.summary}\n\n${en.summary}\n\n${L.abs(e.url.fr)}`)}`,
-    `LOCATION:${escI(fr.location)}`,
-    `URL:${L.abs(e.url.fr)}`,
-    'END:VEVENT', 'END:VCALENDAR', '',
+    `UID:${e.id}@lapaixducoeur.ca`,
+    `DTSTAMP:${DTSTAMP}`,
+    ...when,
+    `SUMMARY:${escI(title)}`,
+    `DESCRIPTION:${escI(desc)}`,
+    `LOCATION:${escI(d.location)}`,
+    `URL:${url}`,
+    ...(isAllDay(fr) ? ['TRANSP:TRANSPARENT'] : []),
+    'END:VEVENT',
+  ];
+}
+
+function calendar(events, mode, name) {
+  const lang = mode === 'en' ? 'EN' : 'FR';
+  return [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', `PRODID:-//La Paix du Coeur//Site//${lang}`, 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    ...(name ? [`X-WR-CALNAME:${escI(name)}`, 'X-WR-TIMEZONE:America/Toronto', 'REFRESH-INTERVAL;VALUE=DURATION:PT6H', 'X-PUBLISHED-TTL:PT6H'] : []),
+    ...events.flatMap((e) => vevent(e, mode)),
+    'END:VCALENDAR', '',
   ].map((l) => (l ? fold(l) : l)).join('\r\n');
 }
+const ics = (e) => calendar([e], 'both');
 
 // ---------- assets ----------
 function rmrf(p) { fs.rmSync(p, { recursive: true, force: true }); }
@@ -172,7 +205,9 @@ const version = crypto.createHash('sha1')
   .digest('hex').slice(0, 8);
 
 const L = ctx(site, version);
-const C = { L, pageHead: (lang, o) => L.pageHead(lang, o), pic, og, fmtDate, fmtTime, fmtDay, fmtMonth, isoLocal, gcal, abs: L.abs, ORG_ID: L.ORG_ID, site, data };
+const FEEDS = { both: '/calendar.ics', fr: '/fr/calendrier.ics', en: '/en/calendar.ics' };
+const CALNAME = { both: 'La Paix du Cœur — Agenda / Events', fr: 'La Paix du Cœur — Agenda', en: 'La Paix du Cœur — Events' };
+const C = { L, pageHead: (lang, o) => L.pageHead(lang, o), pic, og, fmtDate, fmtTime, fmtDay, fmtMonth, isoLocal, isAllDay, gcal, FEEDS, abs: L.abs, ORG_ID: L.ORG_ID, site, data };
 const V = views(C);
 
 const sitemap = [];
@@ -197,6 +232,9 @@ for (const e of data.events) {
   emit(e.url, (l) => V.eventPage(l, e));
   write(e.ics, ics(e));
 }
+const nowWall = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Toronto', dateStyle: 'short', timeStyle: 'short' }).format(new Date()).replace(' ', 'T');
+const upcoming = data.events.filter((e) => e.l.fr.end >= nowWall);
+for (const mode of Object.keys(FEEDS)) write(FEEDS[mode], calendar(upcoming, mode, CALNAME[mode]));
 emit(ROUTES.media, V.mediaPage);
 emit(ROUTES.give, V.givePage);
 emit(ROUTES.contact, V.contactPage);
@@ -283,4 +321,4 @@ ${items}
 }
 
 const count = sitemap.length * 2;
-console.log(`Built ${count} pages + ${data.events.length} .ics + sitemap + 2 RSS feeds into dist/ (assets v${version}).`);
+console.log(`Built ${count} pages + ${data.events.length} .ics + 3 calendar feeds (${upcoming.length} upcoming) + sitemap + 2 RSS feeds into dist/ (assets v${version}).`);

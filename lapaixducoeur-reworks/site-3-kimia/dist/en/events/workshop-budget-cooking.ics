@@ -3,7 +3,10 @@ VERSION:2.0
 PRODID:-//La Paix du Coeur//Site//FR
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
-X-WR-CALNAME:Workshop: affordable, nutritious cooking
+X-WR-CALNAME:Workshop: affordable\, nutritious cooking
+X-WR-TIMEZONE:America/Toronto
+X-PUBLISHED-TTL:PT6H
+REFRESH-INTERVAL;VALUE=DURATION:PT6H
 BEGIN:VTIMEZONE
 TZID:America/Toronto
 BEGIN:DAYLIGHT

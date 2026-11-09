@@ -7,7 +7,7 @@ import { ROUTES, UI } from './src/templates/i18n.mjs';
 import { page } from './src/templates/layout.mjs';
 import * as P from './src/templates/pages.mjs';
 import { illustrations, videoPoster, hoop, stitchedHeart, C } from './src/templates/svg.mjs';
-import { isoWithTz, plain, imageUrl, esc, fmtDate } from './src/templates/lib.mjs';
+import { isoWithTz, plain, imageUrl, esc, fmtDate, isAllDay } from './src/templates/lib.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const DIST = join(ROOT, 'dist');
@@ -35,8 +35,11 @@ const BUILD_DATE = process.env.BUILD_DATE || '2026-11-09';
 
 // ---------- derived content ----------
 const icsDate = (local) => local.replace(/[-:]/g, '') + '00';
+const dayAfter = (local) => { const d = new Date(`${local.slice(0, 10)}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10).replace(/-/g, ''); };
+const dayOnly = (local) => local.slice(0, 10).replace(/-/g, '');
 function gcal(ev, lang, base) {
-  const q = new URLSearchParams({ action: 'TEMPLATE', text: ev.title, dates: `${icsDate(ev.start)}/${icsDate(ev.end)}`, ctz: 'America/Toronto', details: `${plain(ev.summary)}\n${base}${ev.url}`, location: plain(ev.venue) });
+  const dates = isAllDay(ev) ? `${dayOnly(ev.start)}/${dayAfter(ev.end)}` : `${icsDate(ev.start)}/${icsDate(ev.end)}`;
+  const q = new URLSearchParams({ action: 'TEMPLATE', text: ev.title, dates, ctz: 'America/Toronto', details: `${plain(ev.summary)}\n${base}${ev.url}`, location: plain(ev.venue) });
   return `https://calendar.google.com/calendar/render?${q.toString().replace(/&/g, '&amp;')}`;
 }
 const data = {};
@@ -63,9 +66,12 @@ function fold(line) {
 }
 const VTZ = ['BEGIN:VTIMEZONE', 'TZID:America/Toronto', 'BEGIN:DAYLIGHT', 'TZOFFSETFROM:-0500', 'TZOFFSETTO:-0400', 'TZNAME:EDT', 'DTSTART:19700308T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'END:DAYLIGHT', 'BEGIN:STANDARD', 'TZOFFSETFROM:-0400', 'TZOFFSETTO:-0500', 'TZNAME:EST', 'DTSTART:19701101T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'END:STANDARD', 'END:VTIMEZONE'];
 function vevent(ev, S, lang) {
-  return ['BEGIN:VEVENT', `UID:${ev.id}-${lang}@lapaixducoeur.ca`, `DTSTAMP:${BUILD_DATE.replace(/-/g, '')}T120000Z`, `DTSTART;TZID=America/Toronto:${icsDate(ev.start)}`, `DTEND;TZID=America/Toronto:${icsDate(ev.end)}`, `SUMMARY:${icsEsc(ev.title)}${ev.sample ? (lang === 'fr' ? ' (exemple)' : ' (sample)') : ''}`, `DESCRIPTION:${icsEsc(`${ev.summary}\n\n${S.siteUrl}${ev.url}`)}`, `LOCATION:${icsEsc(ev.venue)}`, `URL:${S.siteUrl}${ev.url}`, 'END:VEVENT'];
+  const when = isAllDay(ev)
+    ? [`DTSTART;VALUE=DATE:${dayOnly(ev.start)}`, `DTEND;VALUE=DATE:${dayAfter(ev.end)}`]
+    : [`DTSTART;TZID=America/Toronto:${icsDate(ev.start)}`, `DTEND;TZID=America/Toronto:${icsDate(ev.end)}`];
+  return ['BEGIN:VEVENT', `UID:${ev.id}-${lang}@lapaixducoeur.ca`, `DTSTAMP:${BUILD_DATE.replace(/-/g, '')}T120000Z`, ...when, `SUMMARY:${icsEsc(ev.title)}${ev.sample ? (lang === 'fr' ? ' (exemple)' : ' (sample)') : ''}`, `DESCRIPTION:${icsEsc(`${ev.summary}\n\n${S.siteUrl}${ev.url}`)}`, `LOCATION:${icsEsc(ev.venue)}`, `URL:${S.siteUrl}${ev.url}`, 'END:VEVENT'];
 }
-const ics = (events, S, lang, name) => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//La Paix du Coeur//Site//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', `X-WR-CALNAME:${name}`, ...VTZ, ...events.flatMap((e) => vevent(e, S, lang)), 'END:VCALENDAR'].map(fold).join('\r\n') + '\r\n';
+const ics = (events, S, lang, name) => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//La Paix du Coeur//Site//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', `X-WR-CALNAME:${icsEsc(name)}`, 'X-WR-TIMEZONE:America/Toronto', `X-PUBLISHED-TTL:PT6H`, 'REFRESH-INTERVAL;VALUE=DURATION:PT6H', ...VTZ, ...events.flatMap((e) => vevent(e, S, lang)), 'END:VCALENDAR'].map(fold).join('\r\n') + '\r\n';
 
 // ---------- render ----------
 const sitemap = [];
@@ -101,10 +107,13 @@ for (const lang of LANGS) {
   // events: detail pages + ics
   D.events.forEach((ev) => {
     const twin = data[O].events.find((e) => e.id === ev.id);
-    emit(lang, 'events', ev.url, twin.url, { body: P.eventPage(lang, { ev }), title: `${ev.title} — ${fmtDate(ev.start.slice(0, 10), lang)} | La Paix du Cœur`, description: plain(ev.summary).slice(0, 158), breadcrumbs: bc(lang, { name: UI[lang].nav.events, path: ROUTES.events[lang] }, { name: ev.title, path: ev.url }), ld: [eventLd(ev, lang, S)] });
+    emit(lang, 'events', ev.url, twin.url, { body: P.eventPage(lang, { ev, S }), title: `${ev.title} — ${fmtDate(ev.start.slice(0, 10), lang)} | La Paix du Cœur`, description: plain(ev.summary).slice(0, 158), breadcrumbs: bc(lang, { name: UI[lang].nav.events, path: ROUTES.events[lang] }, { name: ev.title, path: ev.url }), ld: [eventLd(ev, lang, S)] });
     write(ev.ics.slice(1), ics([ev], S, lang, ev.title));
   });
-  write(`${ROUTES.events[lang].slice(1)}${lang === 'fr' ? 'calendrier' : 'calendar'}.ics`, ics(D.events, S, lang, lang === 'fr' ? 'La Paix du Cœur — Événements' : 'La Paix du Cœur — Events'));
+  const feed = ics(D.events, S, lang, lang === 'fr' ? 'La Paix du Cœur — Événements' : 'La Paix du Cœur — Events');
+  write(ROUTES.feed[lang].slice(1), feed);
+  write(`${ROUTES.events[lang].slice(1)}${lang === 'fr' ? 'calendrier' : 'calendar'}.ics`, feed);
+  if (lang === 'fr') write('calendar.ics', feed);
 
   // news: articles + rss
   D.news.forEach((n, i) => {
@@ -122,7 +131,7 @@ for (const lang of LANGS) {
 function eventLd(e, lang, S) {
   return {
     '@type': 'Event', '@id': `${S.siteUrl}${e.url}#event`, name: e.title, description: plain(e.summary), url: `${S.siteUrl}${e.url}`, inLanguage: UI[lang].locale,
-    startDate: isoWithTz(e.start), endDate: isoWithTz(e.end), eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    startDate: isAllDay(e) ? e.start.slice(0, 10) : isoWithTz(e.start), endDate: isAllDay(e) ? e.end.slice(0, 10) : isoWithTz(e.end), eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: { '@type': 'Place', name: plain(e.venue), address: { '@type': 'PostalAddress', addressLocality: 'Montréal', addressRegion: 'QC', addressCountry: 'CA' } },
     image: [`${S.siteUrl}/assets/og-${lang}.png`], isAccessibleForFree: true,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'CAD', availability: 'https://schema.org/InStock', url: `${S.siteUrl}${e.url}`, validFrom: `${BUILD_DATE}T00:00:00-05:00` },

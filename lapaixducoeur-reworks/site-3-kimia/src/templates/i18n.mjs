@@ -13,6 +13,7 @@ export const ROUTES = {
   give: { fr: '/fr/soutenir/', en: '/en/give/' },
   contact: { fr: '/fr/contact/', en: '/en/contact/' },
   privacy: { fr: '/fr/confidentialite/', en: '/en/privacy/' },
+  feed: { fr: '/fr/calendrier.ics', en: '/en/calendar.ics' },
 };
 
 export const UI = {
@@ -24,6 +25,8 @@ export const UI = {
     sample: 'Exemple — à confirmer', confirmed: 'Fait confirmé', breadcrumb: "Fil d'Ariane",
     allNews: 'Toutes les nouvelles', allEvents: 'Tous les événements', exploreTimeline: 'Explorer la frise', seeMap: 'Voir la carte', seeMissions: 'Découvrir nos missions', seeMedia: 'Ouvrir la médiathèque',
     addCal: 'Ajouter au calendrier (.ics)', google: 'Google Agenda', details: 'Détails', when: 'Quand', where: 'Où', what: 'Type', free: 'Gratuit', register: "S'inscrire comme bénévole", contactUs: 'Nous écrire',
+    tickets: 'Inscription et billets',
+    sub: { kicker: 'Agenda', title: 'S’abonner à nos événements', compactTitle: 'Tous nos événements dans votre agenda', help: 'Les nouveaux événements apparaîtront automatiquement dans votre agenda.', apple: 'Apple / Outlook (ordinateur)', google: 'Google Agenda', outlook: 'Outlook.com', copy: 'Copier le lien', copied: 'Lien copié !', linkLabel: 'Lien du calendrier (.ics)', view: 'Voir dans Google Agenda', cta: 'S’abonner au calendrier' },
     published: 'Publié le', backNews: 'Retour aux nouvelles', prev: 'Article précédent', next: 'Article suivant', share: 'Partager :', copyLink: 'Copier le lien', copied: 'Lien copié !', byEmail: 'Par courriel',
     footer: { explore: 'Explorer', engage: "S'engager", newsletter: 'Infolettre', email: 'Votre courriel', subscribe: "M'abonner", consent: "J'accepte de recevoir l'infolettre de La Paix du Cœur. Je peux me désabonner à tout moment (LCAP).", rights: 'Tous droits réservés.', static: 'Site statique, sans cookie publicitaire.', verse: 'Verset de la semaine', thanks: 'Merci ! Vérifiez votre boîte de réception pour confirmer.' },
     form: { name: 'Nom complet', email: 'Courriel', phone: 'Téléphone', optional: '(facultatif)', subject: 'Sujet', message: 'Message', send: 'Envoyer', consentContact: "J'accepte que mes renseignements servent uniquement à répondre à ma demande.", required: 'Ce champ est obligatoire.', invalidEmail: 'Veuillez entrer un courriel valide.', needConsent: 'Veuillez cocher cette case pour continuer.', hp: 'Ne pas remplir ce champ', thanks: 'Merci ! Votre message est bien envoyé. Nous vous répondrons bientôt.', sending: 'Envoi…', errorsIntro: 'Veuillez corriger les champs indiqués.' },
@@ -44,6 +47,8 @@ export const UI = {
     sample: 'Sample — to confirm', confirmed: 'Confirmed fact', breadcrumb: 'Breadcrumb',
     allNews: 'All news', allEvents: 'All events', exploreTimeline: 'Explore the timeline', seeMap: 'See the map', seeMissions: 'Discover our missions', seeMedia: 'Open the media library',
     addCal: 'Add to calendar (.ics)', google: 'Google Calendar', details: 'Details', when: 'When', where: 'Where', what: 'Type', free: 'Free', register: 'Sign up to volunteer', contactUs: 'Write to us',
+    tickets: 'Registration and tickets',
+    sub: { kicker: 'Calendar', title: 'Subscribe to our events', compactTitle: 'All our events in your calendar', help: 'New events will appear in your calendar automatically.', apple: 'Apple / Outlook desktop', google: 'Google Calendar', outlook: 'Outlook.com', copy: 'Copy link', copied: 'Link copied!', linkLabel: 'Calendar link (.ics)', view: 'View in Google Calendar', cta: 'Subscribe to the calendar' },
     published: 'Published', backNews: 'Back to news', prev: 'Previous article', next: 'Next article', share: 'Share:', copyLink: 'Copy link', copied: 'Link copied!', byEmail: 'By email',
     footer: { explore: 'Explore', engage: 'Get involved', newsletter: 'Newsletter', email: 'Your email', subscribe: 'Subscribe', consent: 'I agree to receive the La Paix du Cœur newsletter. I can unsubscribe at any time (CASL).', rights: 'All rights reserved.', static: 'Static website, no advertising cookies.', verse: 'Verse of the week', thanks: 'Thank you! Check your inbox to confirm.' },
     form: { name: 'Full name', email: 'Email', phone: 'Phone', optional: '(optional)', subject: 'Subject', message: 'Message', send: 'Send', consentContact: 'I agree that my information will be used only to answer my request.', required: 'This field is required.', invalidEmail: 'Please enter a valid email address.', needConsent: 'Please tick this box to continue.', hp: 'Do not fill in this field', thanks: 'Thank you! Your message has been sent. We will reply soon.', sending: 'Sending…', errorsIntro: 'Please correct the highlighted fields.' },

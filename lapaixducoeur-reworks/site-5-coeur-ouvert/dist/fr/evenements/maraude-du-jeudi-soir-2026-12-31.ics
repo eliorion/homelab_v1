@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:gcal-2026-12-31-1588dc5db5@lapaixducoeur.ca
+DTSTAMP:20261109T170000Z
+DTSTART:20261231T233000Z
+DTEND:20270101T023000Z
+SUMMARY:Maraude du jeudi soir (exemple)
+DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
+ es sans-abri du centre-ville. (jeudi 31 décembre 2026)\n\nhttps://lapaixd
+ ucoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-31/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-31
+ /
+ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com
+END:VEVENT
+END:VCALENDAR

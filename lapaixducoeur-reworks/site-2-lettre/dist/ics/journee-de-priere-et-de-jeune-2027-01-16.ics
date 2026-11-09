@@ -1,0 +1,21 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:gcal-2027-01-16-c2c115da40@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART;VALUE=DATE:20270116
+DTEND;VALUE=DATE:20270117
+SUMMARY:Journée de prière et de jeûne / Day of prayer and fasting
+DESCRIPTION:Une journée pour porter les orphelins et les veuves dans la pr
+ ière.\n\n(In French) Une journée pour porter les orphelins et les veuves
+  dans la prière.\n\nhttps://lapaixducoeur.ca/fr/evenements/journee-de-pri
+ ere-et-de-jeune-2027-01-16/
+LOCATION:Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/journee-de-priere-et-de-jeune-20
+ 27-01-16/
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR

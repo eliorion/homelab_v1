@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, cpSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makePicture, hash, slugify, icsCalendar, toUtc, plain, esc, fmtDate } from './src/lib.mjs';
+import { makePicture, hash, slugify, icsCalendar, toUtc, plain, esc, fmtDate, isAllDay } from './src/lib.mjs';
 import { ROUTES, FEEDS, T } from './src/strings.mjs';
 import { layout } from './src/layout.mjs';
 import * as V from './src/views.mjs';
@@ -31,7 +31,8 @@ const slugFor = (item, lang) => item[lang].slug || slugify(item[lang].title);
 
 const events = loadDir('events').map((e) => {
   const b = e.fr;
-  const ev = { id: e.id, fr: e.fr, en: e.en, type: b.type, start: b.start, end: b.end, hood: b.neighbourhood, image: b.image, rsvp: b.rsvp || 'form', shifts: b.shifts || [] };
+  const ev = { id: e.id, fr: e.fr, en: e.en, type: b.type, start: b.start, end: b.end, hood: b.neighbourhood, image: b.image, rsvp: b.rsvp || 'form', shifts: b.shifts || [],
+    sample: Boolean(b.sample), synced: b.source === 'google-calendar', allDay: isAllDay(b.start, b.end) };
   ev.url = Object.fromEntries(LANGS.map((l) => [l, `${ROUTES.events[l]}${slugFor(e, l)}/`]));
   ev.ics = Object.fromEntries(LANGS.map((l) => [l, `${ev.url[l]}${slugFor(e, l)}.ics`]));
   ev.past = toUtc(ev.end) < buildDate;
@@ -80,8 +81,15 @@ write('assets/img/knit-texture.svg', knitSvg({ bg: '#2F4A3F', base: '#355246', m
 /* ------------------------------------------------------------------ pages */
 const nextEvent = events.find((e) => !e.past);
 const webcal = `webcal://${site.replace(/^https?:\/\//, '')}${FEEDS.combined}`;
+const subLinks = (lang) => {
+  const https = `${site}${FEEDS.sub[lang]}`; const wc = https.replace(/^https?:/, 'webcal:');
+  const name = `La Paix du Cœur — ${lang === 'fr' ? 'Activités' : 'Activities'}`;
+  return { name, https, webcal: wc, google: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(wc)}`,
+    outlook: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(https)}&name=${encodeURIComponent(name)}`,
+    view: settings[lang].calendar_google_public_url || '' };
+};
 const ctx = { settings, pages, events, news, media, drops, dropDates, site, buildDate, todayStr, v, nextEvent, webcal,
-  googleSub: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`,
+  googleSub: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`, sub: { fr: subLinks('fr'), en: subLinks('en') },
   picture: makePicture(manifest), imageUrl };
 
 const sitemap = [];
@@ -114,7 +122,7 @@ pair('ethics', (c, l) => V.prosePage(c, l, 'ethics'));
 
 const stamp = buildDate;
 const icsEvent = (e, lang) => ({ uid: `${e.id}@lapaixducoeur.ca`, start: e.start, end: e.end, summary: `${e[lang].title}`,
-  description: `${plain(e[lang].summary)}\n${T[lang].sample}\n${site}${e.url[lang]}`, location: plain(e[lang].address), url: `${site}${e.url[lang]}`, category: T[lang].types[e.type] });
+  description: `${plain(e[lang].summary)}\n${e.sample ? T[lang].sample + '\n' : ''}${site}${e.url[lang]}`, location: plain(e[lang].address), url: `${site}${e.url[lang]}`, category: T[lang].types[e.type] });
 
 for (const e of events) {
   for (const lang of LANGS) {
@@ -139,12 +147,14 @@ for (const lang of LANGS) {
 /* ------------------------------------------------------------------ calendars */
 const upcoming = events.filter((e) => !e.past);
 for (const lang of LANGS) {
-  write(FEEDS.ics[lang].slice(1), icsCalendar({ name: `La Paix du Cœur — ${lang === 'fr' ? 'Activités' : 'Activities'}`, description: settings[lang].tagline, events: upcoming.map((e) => icsEvent(e, lang)), stamp }));
+  const feed = icsCalendar({ name: ctx.sub[lang].name, description: settings[lang].tagline, events: upcoming.map((e) => icsEvent(e, lang)), stamp });
+  write(FEEDS.ics[lang].slice(1), feed);
+  write(FEEDS.sub[lang].slice(1), feed);
 }
 write(FEEDS.combined.slice(1), icsCalendar({
   name: 'La Paix du Cœur — Calendrier / Calendar', description: `${settings.fr.tagline} / ${settings.en.tagline}`, stamp,
   events: upcoming.map((e) => ({ ...icsEvent(e, 'fr'), summary: `${e.fr.title} / ${e.en.title}`,
-    description: `${plain(e.fr.summary)}\n${site}${e.url.fr}\n\n${plain(e.en.summary)}\n${site}${e.url.en}\n\n${T.fr.sample} / ${T.en.sample}`,
+    description: `${plain(e.fr.summary)}\n${site}${e.url.fr}\n\n${plain(e.en.summary)}\n${site}${e.url.en}${e.sample ? `\n\n${T.fr.sample} / ${T.en.sample}` : ''}`,
     category: `${T.fr.types[e.type]} / ${T.en.types[e.type]}` })),
 }));
 

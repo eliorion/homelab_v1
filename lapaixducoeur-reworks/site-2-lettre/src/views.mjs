@@ -428,13 +428,13 @@ ${pageHead(lang, { title: d.title, lede: d.summary, crumbs, seed: 15, cls: 'page
       '@type': 'Event',
       name: d.title,
       description: plain(d.summary),
-      startDate: C.isoLocal(d.start),
-      endDate: C.isoLocal(d.end),
+      startDate: C.isAllDay(d) ? d.start.slice(0, 10) : C.isoLocal(d.start),
+      endDate: C.isAllDay(d) ? d.end.slice(0, 10) : C.isoLocal(d.end),
       eventStatus: 'https://schema.org/EventScheduled',
       eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
       isAccessibleForFree: true,
       inLanguage: lang === 'fr' ? 'fr-CA' : 'en-CA',
-      image: [C.abs(d.image)],
+      image: [C.abs(d.image || '/assets/img/og-default.jpg')],
       url: C.abs(e.url[lang]),
       location: { '@type': 'Place', name: d.location, address: { '@type': 'PostalAddress', addressLocality: d.locality || 'Montréal', addressRegion: 'QC', addressCountry: 'CA' } },
       organizer: { '@id': C.ORG_ID },
@@ -448,6 +448,49 @@ ${pageHead(lang, { title: d.title, lede: d.summary, crumbs, seed: 15, cls: 'page
 <a class="btn btn--small btn--ghost" href="${esc(C.gcal(lang, e))}" rel="noopener" target="_blank">${t.google_cal}</a>`;
   }
 
+  const hours = (lang, d, sep = '–') => (C.isAllDay(d) ? ui(lang).all_day : `${fmtTime(d.start, lang)}${sep}${fmtTime(d.end, lang)}`);
+  const dtAttr = (d) => (C.isAllDay(d) ? d.start.slice(0, 10) : C.isoLocal(d.start));
+
+  function feedLinks(lang) {
+    const t = ui(lang);
+    const https = C.abs(C.FEEDS[lang]);
+    const webcal = https.replace(/^https?:/, 'webcal:');
+    return {
+      https,
+      webcal,
+      google: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`,
+      outlook: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(https)}&name=${encodeURIComponent(t.sub_name)}`,
+      view: site.fr.calendar_google_public_url || '',
+    };
+  }
+
+  function subscribe(lang, compact = false) {
+    const t = ui(lang);
+    const f = feedLinks(lang);
+    const copyBtn = `<button type="button" class="btn btn--small btn--ghost" data-copy data-copy-text="${esc(f.https)}" data-copied="${t.sub_copied}">${icon('copy')}<span>${t.sub_copy}</span></button>`;
+    const view = f.view ? `<a href="${esc(f.view)}" rel="noopener" target="_blank">${t.sub_view_google}</a>` : '';
+    if (compact) {
+      return `<div class="subscribe subscribe--compact">
+<h2 class="subscribe__title">${icon('calendar')} ${t.sub_short}</h2>
+<p class="subscribe__inline"><a href="${f.webcal}">${t.sub_apple}</a> · <a href="${esc(f.google)}" rel="noopener" target="_blank">${t.sub_google}</a> · <a href="${esc(f.outlook)}" rel="noopener" target="_blank">${t.sub_outlook}</a>${view ? ` · ${view}` : ''}</p>
+<p class="subscribe__help">${t.sub_text}</p>
+${copyBtn}
+</div>`;
+    }
+    return `<section class="subscribe paper-card" id="${lang === 'fr' ? 's-abonner' : 'subscribe'}" aria-labelledby="sub-title" data-reveal>
+${seal('subscribe__seal', 31)}
+<h2 id="sub-title">${icon('calendar')} ${t.sub_title}</h2>
+<p class="subscribe__help">${t.sub_text}</p>
+<div class="btn-row">
+<a class="btn btn--small btn--ink" href="${f.webcal}">${icon('calendar')}<span>${t.sub_apple}</span></a>
+<a class="btn btn--small btn--ghost" href="${esc(f.google)}" rel="noopener" target="_blank">${t.sub_google}</a>
+<a class="btn btn--small btn--ghost" href="${esc(f.outlook)}" rel="noopener" target="_blank">${t.sub_outlook}</a>
+</div>
+<p class="copy-row subscribe__copy"><code>${esc(f.https)}</code> ${copyBtn}</p>
+${view ? `<p class="small">${view}</p>` : ''}
+</section>`;
+  }
+
   function eventCard(lang, e, compact = false) {
     const t = ui(lang);
     const d = e.l[lang];
@@ -455,7 +498,7 @@ ${pageHead(lang, { title: d.title, lede: d.summary, crumbs, seed: 15, cls: 'page
 <div class="event-card__date" aria-hidden="true"><span class="event-card__day">${fmtDay(d.start)}</span><span class="event-card__month">${fmtMonth(d.start, lang)}</span></div>
 <div class="event-card__body">
 <h3 class="event-card__title"><a href="${e.url[lang]}">${esc(d.title)}</a></h3>
-<p class="event-card__meta">${icon('clock')} <time datetime="${C.isoLocal(d.start)}">${fmtDate(d.start.slice(0, 10), lang)}, ${fmtTime(d.start, lang)}–${fmtTime(d.end, lang)}</time></p>
+<p class="event-card__meta">${icon('clock')} <time datetime="${dtAttr(d)}">${fmtDate(d.start.slice(0, 10), lang)}, ${hours(lang, d)}</time></p>
 <p class="event-card__meta">${icon('pin')} ${txt(d.location)}</p>
 ${compact ? '' : `<p>${txt(d.summary)}</p><div class="btn-row">${calLinks(lang, e)}</div>`}
 ${d.sample ? sampleBadge(lang) : ''}
@@ -468,6 +511,7 @@ ${d.sample ? sampleBadge(lang) : ''}
     const content = `${pageHead(lang, { kicker: p.kicker, title: p.title, lede: p.intro, crumbs: [{ name: p.kicker, url: R('events', lang) }], seed: 16 })}
 <section class="section"><div class="wrap wrap--mid">
 <div class="event-list">${data.events.length ? data.events.map((e) => eventCard(lang, e)).join('\n') : `<p>${esc(p.empty)}</p>`}</div>
+${subscribe(lang)}
 </div></section>`;
     return L.page({ lang, paths: ROUTES.events, title: p.meta_title, description: p.meta_description, navKey: 'events', crumbs: [{ name: p.kicker, url: R('events', lang) }], content, jsonld: data.events.map((e) => eventLd(lang, e)), image: '/assets/img/og-food-bank-volunteers.jpg' });
   }
@@ -477,27 +521,33 @@ ${d.sample ? sampleBadge(lang) : ''}
     const d = e.l[lang];
     const p = data.pages.events[lang];
     const crumbs = [{ name: p.kicker, url: R('events', lang) }, { name: d.title, url: e.url[lang] }];
+    const demo = !d.registration_url && d.source !== 'google-calendar';
+    const register = d.registration_url
+      ? `<a class="btn btn--ink btn--block" href="${esc(d.registration_url)}" rel="noopener" target="_blank">${t.register}</a>`
+      : demo ? `<button type="button" class="btn btn--ink btn--block" data-demo-notice="${esc(t.register_note)}">${t.register}</button>` : '';
     const content = `${pageHead(lang, { kicker: p.kicker, title: d.title, lede: d.summary, crumbs, seed: 18, extra: d.sample ? sampleBadge(lang) : '' })}
 <section class="section"><div class="wrap event-detail">
 <div class="prose">
-<figure class="article__fig">${pic(d.image, d.image_alt, { sizes: '(min-width: 900px) 600px, 92vw', eager: true })}</figure>
-${md(d.body)}
+${d.image ? `<figure class="article__fig">${pic(d.image, d.image_alt || '', { sizes: '(min-width: 900px) 600px, 92vw', eager: true })}</figure>` : ''}
+${lang === 'en' && d.body === e.l.fr.body ? `<div lang="fr">${md(d.body)}</div>` : md(d.body)}
 </div>
 <aside class="invite" data-reveal>
 ${seal('invite__seal', 27)}
 <dl>
-<dt>${t.event_when}</dt><dd><time datetime="${C.isoLocal(d.start)}">${fmtDate(d.start.slice(0, 10), lang)}</time><br>${fmtTime(d.start, lang)} – ${fmtTime(d.end, lang)}</dd>
+<dt>${t.event_when}</dt><dd><time datetime="${dtAttr(d)}">${fmtDate(d.start.slice(0, 10), lang)}</time><br>${hours(lang, d, ' – ')}</dd>
 <dt>${t.event_where}</dt><dd>${txt(d.location)}</dd>
 </dl>
 <div class="btn-stack">
-<button type="button" class="btn btn--ink btn--block" data-demo-notice="${esc(t.register_note)}">${t.register}</button>
+${register}
 ${calLinks(lang, e)}
 </div>
-<p class="invite__note" role="status" data-demo-out></p>
+${demo ? '<p class="invite__note" role="status" data-demo-out></p>' : ''}
+${subscribe(lang, true)}
 <p><a href="${R('events', lang)}">← ${t.all_events}</a></p>
 </aside>
 </div></section>`;
-    return L.page({ lang, paths: e.url, title: `${d.title} | La Paix du Cœur`, description: plain(d.summary), crumbs, content, jsonld: [eventLd(lang, e)], image: C.og(d.image), navKey: 'events' });
+    const title = e.dupTitle[lang] ? `${d.title} — ${fmtDate(d.start.slice(0, 10), lang)}` : d.title;
+    return L.page({ lang, paths: e.url, title: `${title} | La Paix du Cœur`, description: plain(d.summary), crumbs, content, jsonld: [eventLd(lang, e)], image: C.og(d.image), navKey: 'events' });
   }
 
   // ---------- media ----------
@@ -808,7 +858,7 @@ ${deckle('bottom', 45)}
 <div>
 <h2 class="section__title">${esc(p.agenda_title)}</h2>
 <div class="event-list event-list--compact">${data.events.slice(0, 3).map((e) => eventCard(lang, e, true)).join('')}</div>
-<p><a class="link-arrow" href="${R('events', lang)}">${t.all_events} ${icon('arrow')}</a></p>
+<p class="btn-row"><a class="link-arrow" href="${R('events', lang)}">${t.all_events} ${icon('arrow')}</a> <a class="link-quiet" href="${R('events', lang)}#${lang === 'fr' ? 's-abonner' : 'subscribe'}">${icon('calendar')} ${t.sub_title}</a></p>
 </div>
 <div>
 <h2 class="section__title">${esc(p.news_title)}</h2>

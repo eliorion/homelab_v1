@@ -5,16 +5,15 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
 UID:2026-12-12-louange@lapaixducoeur.ca
-DTSTAMP:20261109T233135Z
+DTSTAMP:20261109T170000Z
 DTSTART:20261213T000000Z
 DTEND:20261213T023000Z
 SUMMARY:Soirée de louange et de témoignages (exemple)
-DESCRIPTION:Chants\, prière et récits de l’année\, au profit de la c
- ampagne de Noël.\n\nhttps://lapaixducoeur.ca/fr/evenements/soiree-louan
- ge-temoignages-noel/
+DESCRIPTION:Chants\, prière et récits de l’année\, au profit de la cam
+ pagne de Noël.\n\nhttps://lapaixducoeur.ca/fr/evenements/soiree-louange-t
+ emoignages-noel/
 LOCATION:Église partenaire\, Montréal — Adresse exacte [à confirmer]
-URL:https://lapaixducoeur.ca/fr/evenements/soiree-louange-temoignages-noe
- l/
+URL:https://lapaixducoeur.ca/fr/evenements/soiree-louange-temoignages-noel/
 ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com
 END:VEVENT
 END:VCALENDAR

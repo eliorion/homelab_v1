@@ -24,7 +24,7 @@ function inline(s) {
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
     .replace(/ {2}$/gm, '<br>');
 }
-function md(src = '') {
+function md(src = '', { breaks = false } = {}) {
   const blocks = String(src).replace(/\r/g, '').split(/\n{2,}/);
   const out = blocks.map((b) => {
     const t = b.trim();
@@ -34,7 +34,7 @@ function md(src = '') {
     if (/^[-*]\s/.test(t)) return `<ul>${t.split(/\n/).map((l) => `<li>${inline(l.replace(/^[-*]\s+/, ''))}</li>`).join('')}</ul>`;
     if (/^\d+\.\s/.test(t)) return `<ol>${t.split(/\n/).map((l) => `<li>${inline(l.replace(/^\d+\.\s+/, ''))}</li>`).join('')}</ol>`;
     if (t.startsWith('>')) return `<blockquote><p>${inline(t.replace(/^>\s?/gm, ''))}</p></blockquote>`;
-    return `<p>${inline(t).replace(/\n/g, ' ').replace(/<br> /g, '<br>')}</p>`;
+    return `<p>${inline(t).replace(/\n/g, breaks ? '<br>' : ' ').replace(/<br> /g, '<br>')}</p>`;
   });
   return tbc(out.join('\n'));
 }
@@ -77,6 +77,12 @@ function pic(src, alt, { sizes = '100vw', cls = '', eager = false, imgCls = '' }
 const money = (n, lang, digits = 0) => new Intl.NumberFormat(T[lang].locale, { style: 'currency', currency: 'CAD', maximumFractionDigits: digits, minimumFractionDigits: digits }).format(n).replace('CA', '');
 const num = (n, lang) => new Intl.NumberFormat(T[lang].locale).format(n);
 const fmtDate = (iso, lang, opts = { dateStyle: 'long' }) => new Intl.DateTimeFormat(T[lang].locale, { timeZone: 'America/Toronto', ...opts }).format(new Date(iso.length === 10 ? iso + 'T12:00:00-05:00' : iso));
+const isAllDay = (x) => /T00:00(:00)?/.test(x.start.slice(10, 19)) && /T23:59/.test(x.end.slice(10, 16)) && x.start.slice(0, 10) <= x.end.slice(0, 10);
+const bigImg = (src) => {
+  const name = src.slice(0, -extname(src).length);
+  const v = [1200, 640].find((w) => existsSync(join(ROOT, 'static', `${name}-${w}.jpg`)));
+  return v ? `${name}-${v}.jpg` : src;
+};
 const pick = (item, lang, key) => item?.[lang]?.[key] ?? item?.fr?.[key] ?? item?.[key];
 const L = (item, lang) => ({ ...item.fr, ...item[lang] });
 
@@ -87,6 +93,17 @@ const news = listJSON('content/news').sort((a, b) => pick(b, 'fr', 'date').local
 const events = listJSON('content/events').sort((a, b) => pick(a, 'fr', 'start').localeCompare(pick(b, 'fr', 'start')));
 const media = listJSON('content/media');
 const SITE = S.site_url.replace(/\/$/, '');
+const FEED = { fr: '/fr/calendrier.ics', en: '/en/calendar.ics', both: '/calendar.ics' };
+const feed = (lang) => {
+  const https = `${SITE}${FEED[lang]}`;
+  const webcal = https.replace(/^https?:/, 'webcal:');
+  return {
+    https, webcal,
+    google: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`,
+    outlook: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(https)}&name=${encodeURIComponent(T[lang].calName)}`,
+    view: S.calendar_google_public_url || '',
+  };
+};
 
 // ---------- assets ----------
 rmSync(DIST, { recursive: true, force: true });
@@ -119,7 +136,7 @@ const write = (path, html) => {
   writeFileSync(file, html);
 };
 
-const h = { esc, txt, tbc, md, pic, money, num, fmtDate, pick, L, url, T, S, SITE, ROUTES, hashed, pages, news, events, media, gcal };
+const h = { esc, txt, tbc, md, pic, money, num, fmtDate, pick, L, url, T, S, SITE, ROUTES, hashed, pages, news, events, media, gcal, isAllDay, bigImg, feed };
 
 function render(page) {
   // page: { key, lang, path, alt: {fr, en}, title, description, body, crumbs, jsonld, ogImage, ogType, bodyClass }
@@ -145,11 +162,13 @@ for (const lang of LANGS) {
   for (const e of events) {
     const sub = { fr: pick(e, 'fr', 'slug'), en: pick(e, 'en', 'slug') };
     render({ key: 'events', lang, path: url('events', lang, sub[lang]), alt: alt('events', sub), ...tpl.event(h, ctx, e) });
-    write(`${url('events', lang)}${sub[lang]}.ics`, ics(e, lang));
+    write(`${url('events', lang)}${sub[lang]}.ics`, calendar([vevent(e, lang)], lang));
   }
+  write(FEED[lang], calendar(upcomingEvents().map((e) => vevent(e, lang)), lang, T[lang].calName));
   render({ key: 'media', lang, path: url('media', lang), alt: alt('media'), ...tpl.media(h, ctx) });
   write(`${url('news', lang)}rss.xml`, rss(lang));
 }
+write(FEED.both, calendar(upcomingEvents().map((e) => vevent(e, 'both')), 'fr', 'La Paix du Cœur — événements / events'));
 write('/index.html', tpl.chooser(h));
 write('/404.html', tpl.notFound(h));
 
@@ -164,26 +183,50 @@ function fold(line) {
   out.push(cur);
   return out.join('\r\n');
 }
-function ics(e, lang) {
-  const x = L(e, lang);
-  const link = `${SITE}${url('events', lang, x.slug)}`;
-  const lines = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//La Paix du Coeur//Site//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+function eventId(e) { return basename(e.file, '.json'); }
+function upcomingEvents() { return events.filter((e) => new Date(pick(e, 'fr', 'end')) >= new Date()); }
+function ymd(iso, days = 0) { const d = new Date(`${iso.slice(0, 10)}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10).replace(/-/g, ''); }
+// lang 'both' = bilingual entry for the combined /calendar.ics feed
+function vevent(e, lang) {
+  const both = lang === 'both';
+  const fr = L(e, 'fr'), en = L(e, 'en'), x = both ? fr : L(e, lang);
+  const link = `${SITE}${url('events', both ? 'fr' : lang, x.slug)}`;
+  const sample = (l) => (x.sample ? (l === 'fr' ? ' (exemple)' : ' (sample)') : '');
+  const summary = both
+    ? (fr.title === en.title ? fr.title + sample('fr') : `${fr.title} / ${en.title}${sample('fr')}`)
+    : x.title + sample(lang);
+  const desc = both
+    ? `${[...new Set([fr.summary, en.summary.replace(/^\(In French\) /, '')])].join('\n\n')}\n\n${link}\n${SITE}${url('events', 'en', en.slug)}`
+    : `${x.summary}\n${link}`;
+  const location = both && fr.location_name !== en.location_name ? `${fr.location_name} / ${en.location_name}` : x.location_name;
+  const when = isAllDay(x)
+    ? [`DTSTART;VALUE=DATE:${ymd(x.start)}`, `DTEND;VALUE=DATE:${ymd(x.end, 1)}`]
+    : [`DTSTART:${icsDate(x.start)}`, `DTEND:${icsDate(x.end)}`];
+  return [
     'BEGIN:VEVENT',
-    `UID:${pick(e, 'fr', 'slug')}@lapaixducoeur.ca`,
+    `UID:${eventId(e)}@lapaixducoeur.ca`,
     `DTSTAMP:${icsDate('2026-11-09T12:00:00Z')}`,
-    `DTSTART:${icsDate(x.start)}`, `DTEND:${icsDate(x.end)}`,
-    `SUMMARY:${icsText(x.title + (x.sample ? (lang === 'fr' ? ' (exemple)' : ' (sample)') : ''))}`,
-    `DESCRIPTION:${icsText(x.summary + '\n' + link)}`,
-    `LOCATION:${icsText(x.location_name)}`,
+    ...when,
+    `SUMMARY:${icsText(summary)}`,
+    `DESCRIPTION:${icsText(desc)}`,
+    `LOCATION:${icsText(location)}`,
     `URL:${link}`,
-    'END:VEVENT', 'END:VCALENDAR',
+    'END:VEVENT',
+  ];
+}
+function calendar(vevents, lang, name) {
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', `PRODID:-//La Paix du Coeur//Site//${lang.toUpperCase()}`, 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    ...(name ? [`X-WR-CALNAME:${icsText(name)}`, 'X-WR-TIMEZONE:America/Toronto', 'REFRESH-INTERVAL;VALUE=DURATION:PT12H', 'X-PUBLISHED-TTL:PT12H'] : []),
+    ...vevents.flat(),
+    'END:VCALENDAR',
   ];
   return lines.map(fold).join('\r\n') + '\r\n';
 }
 function gcal(e, lang) {
   const x = L(e, lang);
-  const q = new URLSearchParams({ action: 'TEMPLATE', text: x.title, dates: `${icsDate(x.start)}/${icsDate(x.end)}`, details: `${x.summary}\n${SITE}${url('events', lang, x.slug)}`, location: x.location_name });
+  const dates = isAllDay(x) ? `${ymd(x.start)}/${ymd(x.end, 1)}` : `${icsDate(x.start)}/${icsDate(x.end)}`;
+  const q = new URLSearchParams({ action: 'TEMPLATE', text: x.title, dates, details: `${x.summary}\n${SITE}${url('events', lang, x.slug)}`, location: x.location_name });
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 

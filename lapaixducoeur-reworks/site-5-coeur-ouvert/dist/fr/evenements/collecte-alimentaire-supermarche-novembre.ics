@@ -5,17 +5,17 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
 UID:2026-11-28-collecte@lapaixducoeur.ca
-DTSTAMP:20261109T233135Z
+DTSTAMP:20261109T170000Z
 DTSTART:20261128T150000Z
 DTEND:20261128T210000Z
 SUMMARY:Collecte alimentaire en supermarché (exemple)
-DESCRIPTION:Accueillez les clients à l’entrée et invitez-les à ajout
- er un article pour une famille. Quarts de deux heures.\n\nhttps://lapaix
- ducoeur.ca/fr/evenements/collecte-alimentaire-supermarche-novembre/
-LOCATION:Supermarché partenaire\, Montréal — Adresse exacte [à confi
- rmer]
-URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-supermarc
- he-novembre/
+DESCRIPTION:Accueillez les clients à l’entrée et invitez-les à ajouter
+  un article pour une famille. Quarts de deux heures.\n\nhttps://lapaixduco
+ eur.ca/fr/evenements/collecte-alimentaire-supermarche-novembre/
+LOCATION:Supermarché partenaire\, Montréal — Adresse exacte [à confirm
+ er]
+URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-supermarche
+ -novembre/
 ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com
 END:VEVENT
 END:VCALENDAR

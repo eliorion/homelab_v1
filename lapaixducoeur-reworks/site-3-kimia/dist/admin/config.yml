@@ -78,6 +78,7 @@ collections:
     extension: json
     create: true
     i18n: true
+    description: "Astuce : les événements réguliers (maraudes, collectes) se gèrent plus simplement dans Google Agenda ; ils apparaissent ici automatiquement après la synchronisation. Utilisez ce formulaire pour les événements spéciaux avec photo et texte long."
     identifier_field: title
     slug: "{{fields.start}}-{{slug}}"
     summary: "{{start}} — {{title}}"
@@ -133,6 +134,11 @@ collections:
         label: "Contenu d’exemple"
         widget: boolean
         default: false
+        i18n: duplicate
+      - name: source
+        label: Source
+        widget: hidden
+        required: false
         i18n: duplicate
   - name: media
     label: "Médiathèque / Media"
@@ -284,6 +290,18 @@ collections:
             label: "Newsletter Intro"
             widget: string
             i18n: true
+          - name: calendar_google_public_url
+            label: "Google Agenda — lien public (affichage web)"
+            widget: string
+            i18n: duplicate
+            hint: "Facultatif. Lien « URL publique de cet agenda » dans Google Agenda (Paramètres de l’agenda > Intégrer l’agenda). S’il est rempli, le site affiche « Voir dans Google Agenda »."
+            required: false
+          - name: calendar_ics_source
+            label: "Google Agenda — adresse iCal (synchronisation)"
+            widget: string
+            i18n: duplicate
+            hint: "Réservé à l’équipe : « Adresse publique au format iCal » de l’agenda. La tâche de synchronisation la lit ; elle n’est jamais affichée sur le site."
+            required: false
   - name: pages
     label: Pages
     i18n: true

@@ -1,0 +1,41 @@
+# .github/workflows/publish.yml in the chosen site's own repository (site folder = repo root,
+# with shared/tools/calendar-sync.mjs copied to tools/calendar-sync.mjs).
+# Set --profile below to the chosen concept (site-1-lumiere … site-5-coeur-ouvert).
+# Repo variable CALENDAR_ICS_URL = the Google Calendar "public address in iCal format".
+# Repo secrets CLOUDFLARE_API_TOKEN (Pages:Edit only) and CLOUDFLARE_ACCOUNT_ID.
+name: Publish site
+
+on:
+  push:
+    branches: [main]          # every CMS save (Sveltia commits to main)
+  schedule:
+    - cron: "17 * * * *"      # hourly: picks up Google Calendar changes
+  workflow_dispatch: {}       # "Run workflow" button = publish now
+
+concurrency:
+  group: publish
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Sync events from Google Calendar
+        if: ${{ vars.CALENDAR_ICS_URL != '' }}
+        run: node tools/calendar-sync.mjs --site . --profile site-4-nord --ics "${{ vars.CALENDAR_ICS_URL }}"
+      - name: Build
+        run: node build.mjs
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=lapaixducoeur --branch=main

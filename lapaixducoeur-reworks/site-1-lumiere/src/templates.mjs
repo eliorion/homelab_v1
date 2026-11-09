@@ -299,7 +299,7 @@ function eventCard(h, lang, e, { compact = false } = {}) {
   const d = new Date(x.start);
   const day = h.fmtDate(x.start, lang, { day: 'numeric' });
   const mon = h.fmtDate(x.start, lang, { month: 'short' }).replace('.', '');
-  const time = `${h.fmtDate(x.start, lang, { hour: 'numeric', minute: '2-digit' })} – ${h.fmtDate(x.end, lang, { hour: 'numeric', minute: '2-digit' })}`;
+  const time = timeRange(h, lang, x);
   const ics = `${h.url('events', lang)}${x.slug}.ics`;
   return `<article class="event-card ${compact ? 'is-compact' : ''}">
     <div class="date-block" aria-hidden="true"><span class="db-day">${day}</span><span class="db-mon">${mon}</span><span class="db-year">${d.getUTCFullYear()}</span></div>
@@ -311,6 +311,44 @@ function eventCard(h, lang, e, { compact = false } = {}) {
       ${compact ? '' : `<div class="event-actions"><a class="btn btn-soft btn-sm" href="${ics}" download>${icon('cal')}${t.addCal}</a><a class="btn btn-link btn-sm" href="${h.gcal(e, lang)}" rel="noopener" target="_blank">${t.gcal}${icon('external')}</a>${x.ticket_url ? `<a class="btn btn-link btn-sm" href="${h.esc(x.ticket_url)}" rel="noopener">${t.tickets}</a>` : ''}</div>`}
     </div>
   </article>`;
+}
+
+const timeRange = (h, lang, x) => (h.isAllDay(x) ? h.T[lang].allDay
+  : `${h.fmtDate(x.start, lang, { hour: 'numeric', minute: '2-digit' })} – ${h.fmtDate(x.end, lang, { hour: 'numeric', minute: '2-digit' })}`);
+const calAnchor = (lang) => (lang === 'fr' ? 's-abonner' : 'subscribe');
+
+// Subscribe block: full on the events list, compact in the event sidebar.
+function calSubscribe(h, lang, { compact = false } = {}) {
+  const t = h.T[lang], f = h.feed(lang);
+  const ext = `rel="noopener" target="_blank"`;
+  const copy = `<button class="btn btn-ghost btn-sm" type="button" data-copy-url="${f.https}" data-copied="${t.copied}">${icon('copy')}<span>${t.calCopy}</span></button>`;
+  const view = f.view ? `<a class="btn btn-link btn-sm" href="${h.esc(f.view)}" ${ext}>${t.calViewGoogle}${icon('external')}</a>` : '';
+  if (compact) {
+    return `<div class="cal-sub is-compact">
+      <p class="cal-sub-title">${icon('cal')}${t.calSubscribeShort}</p>
+      <ul class="cal-sub-links">
+        <li><a href="${f.webcal}">${t.calApple}</a></li>
+        <li><a href="${h.esc(f.google)}" ${ext}>${t.calGoogle}</a></li>
+        <li><a href="${h.esc(f.outlook)}" ${ext}>${t.calOutlook}</a></li>
+        ${f.view ? `<li><a href="${h.esc(f.view)}" ${ext}>${t.calViewGoogle}</a></li>` : ''}
+      </ul>
+      ${copy}
+      <p class="fine">${t.calHelp}</p>
+    </div>`;
+  }
+  return `<section class="cal-sub card" id="${calAnchor(lang)}" aria-labelledby="cal-sub-title">
+    <div class="cal-sub-sun" aria-hidden="true"></div>
+    <div class="card-head"><span class="icon-chip">${icon('cal')}</span><h2 class="h3" id="cal-sub-title">${t.calTitle}</h2></div>
+    <p class="cal-sub-intro">${t.calIntro}</p>
+    <div class="cal-sub-actions">
+      <a class="btn btn-primary btn-sm" href="${f.webcal}">${icon('cal')}${t.calApple}</a>
+      <a class="btn btn-soft btn-sm" href="${h.esc(f.google)}" ${ext}>${t.calGoogle}${icon('external')}</a>
+      <a class="btn btn-soft btn-sm" href="${h.esc(f.outlook)}" ${ext}>${t.calOutlook}${icon('external')}</a>
+      ${copy}
+      ${view}
+    </div>
+    <p class="fine cal-sub-help">${icon('check')}<span>${t.calHelp}</span></p>
+  </section>`;
 }
 
 const sectionHead = (h, { eyebrow, title, intro, id, center = false, cls = '' }) => `<div class="section-head ${center ? 'center' : ''} ${cls}">
@@ -385,7 +423,7 @@ ${giftSlider(h, lang, { eyebrow: P.gift_eyebrow, title: P.gift_title, intro: P.g
   <div class="container">
     <div class="split-head"><h2 class="h2" id="latest-title">${t.latest}</h2><a class="btn btn-link" href="${h.url('news', lang)}">${t.allNews}${icon('arrow')}</a></div>
     <div class="news-grid">${h.news.slice(0, 3).map((n) => newsCard(h, lang, n)).join('')}</div>
-    <div class="split-head mt-xl"><h2 class="h2" id="upcoming-title">${t.upcoming}</h2><a class="btn btn-link" href="${h.url('events', lang)}">${t.allEvents}${icon('arrow')}</a></div>
+    <div class="split-head mt-xl"><h2 class="h2" id="upcoming-title">${t.upcoming}</h2><div class="split-links"><a class="btn btn-link" href="${h.url('events', lang)}#${calAnchor(lang)}">${icon('cal')}${t.calSubscribeShort}</a><a class="btn btn-link" href="${h.url('events', lang)}">${t.allEvents}${icon('arrow')}</a></div></div>
     <div class="event-row">${upcoming.map((e) => eventCard(h, lang, e, { compact: true })).join('')}</div>
   </div>
 </section>`;
@@ -786,17 +824,18 @@ export function eventList(h, { lang, t }) {
   const P = h.L(h.pages.listings, lang);
   const body = `
 ${pageHead(h, lang, { title: P.events_heading, intro: P.events_intro })}
-<section class="section-tight"><div class="container"><div class="event-list">${h.events.map((e) => eventCard(h, lang, e)).join('')}</div></div></section>`;
+<section class="section-tight"><div class="container">${calSubscribe(h, lang)}<div class="event-list mt-l">${h.events.map((e) => eventCard(h, lang, e)).join('')}</div></div></section>`;
   return { title: P.events_title, description: P.events_description, body, crumbs: [[t.nav.events, h.url('events', lang)]], jsonld: h.events.map((e) => eventLd(h, lang, e)) };
 }
 
 function eventLd(h, lang, e) {
   const x = h.L(e, lang);
+  const allDay = h.isAllDay(x);
   return {
-    '@type': 'Event', name: x.title, description: x.summary, startDate: x.start, endDate: x.end, inLanguage: h.T[lang].locale,
+    '@type': 'Event', name: x.title, description: x.summary, startDate: allDay ? x.start.slice(0, 10) : x.start, endDate: allDay ? x.end.slice(0, 10) : x.end, inLanguage: h.T[lang].locale,
     eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: { '@type': 'Place', name: x.location_name, address: { '@type': 'PostalAddress', addressLocality: x.locality, addressRegion: 'QC', addressCountry: 'CA' } },
-    image: [`${h.SITE}${x.image.replace(/\.jpg$/, '-1200.jpg')}`], url: `${h.SITE}${h.url('events', lang, x.slug)}`,
+    image: [`${h.SITE}${h.bigImg(x.image)}`], url: `${h.SITE}${h.url('events', lang, x.slug)}`,
     organizer: { '@id': `${h.SITE}/#org` },
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'CAD', availability: 'https://schema.org/InStock', url: x.ticket_url || `${h.SITE}${h.url('events', lang, x.slug)}` },
   };
@@ -815,11 +854,11 @@ export function event(h, { lang, t }, e) {
   <div class="container event-detail">
     <div>
       <div class="photo photo-warm rounded-xl">${h.pic(x.image, x.image_alt, { sizes: '(min-width: 900px) 60vw, 92vw', eager: true })}</div>
-      <div class="prose mt-l">${h.md(x.body)}</div>
+      ${x.body ? `<div class="prose mt-l">${h.md(x.body, { breaks: x.source === 'google-calendar' })}</div>` : ''}
     </div>
     <aside class="card event-side">
       <dl class="facts stacked">
-        <div><dt>${icon('cal')}${t.when}</dt><dd><time datetime="${x.start}">${h.fmtDate(x.start, lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</time><br>${h.fmtDate(x.start, lang, { hour: 'numeric', minute: '2-digit' })} – ${h.fmtDate(x.end, lang, { hour: 'numeric', minute: '2-digit' })}</dd></div>
+        <div><dt>${icon('cal')}${t.when}</dt><dd><time datetime="${x.start}">${h.fmtDate(x.start, lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</time><br>${timeRange(h, lang, x)}</dd></div>
         <div><dt>${icon('pin')}${t.where}</dt><dd>${h.txt(x.location_name)}</dd></div>
       </dl>
       <div class="stack-sm">
@@ -827,11 +866,14 @@ export function event(h, { lang, t }, e) {
         <a class="btn btn-soft btn-block" href="${h.gcal(e, lang)}" rel="noopener" target="_blank">${t.gcal}${icon('external')}</a>
         ${x.ticket_url ? `<a class="btn btn-ghost btn-block" href="${h.esc(x.ticket_url)}" rel="noopener">${t.tickets} <span class="tbc">[${t.tbc}]</span></a>` : `<p class="fine center">${t.free}</p>`}
       </div>
+      ${calSubscribe(h, lang, { compact: true })}
     </aside>
   </div>
   <div class="container"><p class="mt-l"><a class="btn btn-link" href="${h.url('events', lang)}">${t.backEvents}</a></p></div>
 </article>`;
-  return { title: x.title, description: x.summary, body, ogImage: x.image.replace(/\.jpg$/, '-1200.jpg'), crumbs: [[t.nav.events, h.url('events', lang)], [x.title, path]], jsonld: eventLd(h, lang, e) };
+  const shared = h.events.filter((o) => h.L(o, lang).title === x.title).length > 1;
+  const title = shared ? `${x.title} — ${h.fmtDate(x.start, lang, { day: 'numeric', month: 'long', year: 'numeric' })}` : x.title;
+  return { title, description: x.summary, body, ogImage: h.bigImg(x.image), crumbs: [[t.nav.events, h.url('events', lang)], [x.title, path]], jsonld: eventLd(h, lang, e) };
 }
 
 export function media(h, { lang, t }) {

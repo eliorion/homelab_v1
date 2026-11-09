@@ -4,16 +4,16 @@ PRODID:-//La Paix du Coeur//Site//FR
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
-UID:collecte-alimentaire-novembre@lapaixducoeur.ca
-DTSTAMP:20261109T000000Z
+UID:2026-11-21-collecte-alimentaire@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
 DTSTART:20261121T150000Z
 DTEND:20261121T210000Z
 SUMMARY:Collecte alimentaire de novembre / November food drive
 DESCRIPTION:Une journée à l’entrée d’un supermarché pour recueillir
   des denrées non périssables. Bénévoles bienvenus\, même pour une heu
- re. A day at a supermarket entrance collecting non-perishable food. Volunt
- eers welcome\, even for one hour. https://lapaixducoeur.ca/fr/evenements/c
- ollecte-alimentaire-novembre/
+ re.\n\nA day at a supermarket entrance collecting non-perishable food. Vol
+ unteers welcome\, even for one hour.\n\nhttps://lapaixducoeur.ca/fr/evenem
+ ents/collecte-alimentaire-novembre/
 LOCATION:Supermarché partenaire\, Montréal [lieu à confirmer]
 URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-novembre/
 END:VEVENT

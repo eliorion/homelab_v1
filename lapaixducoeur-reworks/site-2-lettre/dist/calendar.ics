@@ -1,0 +1,191 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:La Paix du Cœur — Agenda / Events
+X-WR-TIMEZONE:America/Toronto
+REFRESH-INTERVAL;VALUE=DURATION:PT6H
+X-PUBLISHED-TTL:PT6H
+BEGIN:VEVENT
+UID:2026-11-21-collecte-alimentaire@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20261121T150000Z
+DTEND:20261121T210000Z
+SUMMARY:Collecte alimentaire de novembre / November food drive
+DESCRIPTION:Une journée à l’entrée d’un supermarché pour recueillir
+  des denrées non périssables. Bénévoles bienvenus\, même pour une heu
+ re.\n\nA day at a supermarket entrance collecting non-perishable food. Vol
+ unteers welcome\, even for one hour.\n\nhttps://lapaixducoeur.ca/fr/evenem
+ ents/collecte-alimentaire-novembre/
+LOCATION:Supermarché partenaire\, Montréal [lieu à confirmer]
+URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-novembre/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-11-26-a3cae38092@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20261126T233000Z
+DTEND:20261127T023000Z
+SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
+DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
+ es sans-abri du centre-ville. (jeudi 26 novembre 2026)\n\nHot meals\, warm
+  clothes and a listening ear downtown. (Thursday\, November 26\, 2026)\n\n
+ https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-11-26/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-11-26
+ /
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-03-3626496d3d@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20261203T233000Z
+DTEND:20261204T023000Z
+SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
+DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
+ es sans-abri du centre-ville. (jeudi 3 décembre 2026)\n\nHot meals\, warm
+  clothes and a listening ear downtown. (Thursday\, December 3\, 2026)\n\nh
+ ttps://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-03/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-03
+ /
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-05-c0efdbceba@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20261205T150000Z
+DTEND:20261205T210000Z
+SUMMARY:Collecte alimentaire — Saint-Michel / Food drive — Saint-Michel
+DESCRIPTION:Ajoutez un article à votre panier pour une famille.\n\nAdd one
+  item to your basket for a family.\n\nhttps://lapaixducoeur.ca/fr/evenemen
+ ts/collecte-alimentaire-saint-michel-2026-12-05/
+LOCATION:Épicerie partenaire\, Saint-Michel\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/collecte-alimentaire-saint-miche
+ l-2026-12-05/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-11-4267d7ef1a@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20261212T000000Z
+DTEND:20261212T030000Z
+SUMMARY:Maraude spéciale de Noël / Christmas street outreach
+DESCRIPTION:Édition spéciale avec cadeaux. (vendredi 11 décembre 2026)\n
+ \nSpecial edition with gifts. (Friday\, December 11\, 2026)\n\nhttps://lap
+ aixducoeur.ca/fr/evenements/maraude-speciale-de-noel-2026-12-11/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-speciale-de-noel-2026-12
+ -11/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-17-336e6170d6@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20261217T233000Z
+DTEND:20261218T023000Z
+SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
+DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
+ es sans-abri du centre-ville. (jeudi 17 décembre 2026)\n\nHot meals\, war
+ m clothes and a listening ear downtown. (Thursday\, December 17\, 2026)\n\
+ nhttps://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-17/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-17
+ /
+END:VEVENT
+BEGIN:VEVENT
+UID:2026-12-19-maraude-de-noel@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20261220T000000Z
+DTEND:20261220T040000Z
+SUMMARY:Maraude de Noël / Christmas street outreach
+DESCRIPTION:Soupe chaude\, chaussettes\, cartes de Noël écrites à la mai
+ n et beaucoup d’écoute\, dans les rues de Montréal.\n\nHot soup\, sock
+ s\, handwritten Christmas cards and a lot of listening\, in the streets of
+  Montréal.\n\nhttps://lapaixducoeur.ca/fr/evenements/maraude-de-noel/
+LOCATION:Point de rencontre communiqué aux bénévoles inscrits\, Montréa
+ l
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-de-noel/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-31-1588dc5db5@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20261231T233000Z
+DTEND:20270101T023000Z
+SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
+DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
+ es sans-abri du centre-ville. (jeudi 31 décembre 2026)\n\nHot meals\, war
+ m clothes and a listening ear downtown. (Thursday\, December 31\, 2026)\n\
+ nhttps://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-31/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2026-12-31
+ /
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2027-01-07-c713618948@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20270107T233000Z
+DTEND:20270108T023000Z
+SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
+DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
+ es sans-abri du centre-ville. (jeudi 7 janvier 2027)\n\nHot meals\, warm c
+ lothes and a listening ear downtown. (Thursday\, January 7\, 2027)\n\nhttp
+ s://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-07/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-07
+ /
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2027-01-14-44366e5514@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20270114T233000Z
+DTEND:20270115T023000Z
+SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
+DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
+ es sans-abri du centre-ville. (jeudi 14 janvier 2027)\n\nHot meals\, warm 
+ clothes and a listening ear downtown. (Thursday\, January 14\, 2027)\n\nht
+ tps://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-14/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-14
+ /
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2027-01-16-c2c115da40@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART;VALUE=DATE:20270116
+DTEND;VALUE=DATE:20270117
+SUMMARY:Journée de prière et de jeûne / Day of prayer and fasting
+DESCRIPTION:Une journée pour porter les orphelins et les veuves dans la pr
+ ière.\n\n(In French) Une journée pour porter les orphelins et les veuves
+  dans la prière.\n\nhttps://lapaixducoeur.ca/fr/evenements/journee-de-pri
+ ere-et-de-jeune-2027-01-16/
+LOCATION:Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/journee-de-priere-et-de-jeune-20
+ 27-01-16/
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:2027-01-16-soiree-de-priere@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20270117T000000Z
+DTEND:20270117T020000Z
+SUMMARY:Soirée de prière pour les orphelins / Prayer evening for orphans
+DESCRIPTION:Louange\, lecture des Tehilim et intercession pour les orphelin
+ s\, les veuves et les familles accompagnées.\n\nWorship\, reading of the 
+ Psalms and intercession for orphans\, widows and the families we walk with
+ .\n\nhttps://lapaixducoeur.ca/fr/evenements/soiree-de-priere-pour-les-orph
+ elins/
+LOCATION:Église partenaire\, Montréal [lieu à confirmer]
+URL:https://lapaixducoeur.ca/fr/evenements/soiree-de-priere-pour-les-orphel
+ ins/
+END:VEVENT
+BEGIN:VEVENT
+UID:2027-02-06-atelier-budget@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20270206T150000Z
+DTEND:20270206T170000Z
+SUMMARY:Atelier : budget familial / Workshop: family budgeting
+DESCRIPTION:Deux heures pratiques pour bâtir un budget\, réduire le coût
+  de l’épicerie et préparer les imprévus. Gratuit.\n\nTwo practical ho
+ urs to build a budget\, lower grocery costs and plan for the unexpected. F
+ ree.\n\nhttps://lapaixducoeur.ca/fr/evenements/atelier-budget-familial/
+LOCATION:Salle communautaire\, Montréal [lieu à confirmer]
+URL:https://lapaixducoeur.ca/fr/evenements/atelier-budget-familial/
+END:VEVENT
+END:VCALENDAR

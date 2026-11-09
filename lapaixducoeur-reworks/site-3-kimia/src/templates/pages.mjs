@@ -1,5 +1,5 @@
 import { ROUTES, UI, EVENT_CATS } from './i18n.mjs';
-import { esc, t, md, picture, mediaImg, fmtDate, fmtDay, fmtTime, stampParts, imageUrl, isPhoto } from './lib.mjs';
+import { esc, t, md, picture, mediaImg, fmtDate, fmtDay, fmtTime, timeRange, stampParts, imageUrl, isPhoto } from './lib.mjs';
 import { crumbs } from './layout.mjs';
 import { hoop, emblems, icon, ui, serveMap, stitchedHeart, vine, heartPath, C, mark } from './svg.mjs';
 
@@ -24,11 +24,35 @@ export function eventCard(lang, ev, { headingLevel = 3 } = {}) {
 <div class="stamp" aria-hidden="true"><span class="stamp__m">${s.m}</span><span class="stamp__d">${s.d}</span><span class="stamp__y">${s.y}</span></div>
 <div><div class="card__meta"><span class="badge badge--cat">${EVENT_CATS[lang][ev.category] || ev.category}</span>${sampleBadge(lang, ev.sample)}</div>
 <${h}><a href="${ev.url}">${esc(ev.title)}</a></${h}>
-<div class="event__meta"><span>${ui.cal}<time datetime="${ev.start}">${fmtDay(ev.start, lang)}</time></span><span>${ui.clock}${fmtTime(ev.start, lang)} – ${fmtTime(ev.end, lang)}</span><span>${ui.pin}${t(ev.venue)}</span></div>
+<div class="event__meta"><span>${ui.cal}<time datetime="${ev.start}">${fmtDay(ev.start, lang)}</time></span><span>${ui.clock}${timeRange(ev, lang)}</span><span>${ui.pin}${t(ev.venue)}</span></div>
 <p>${t(ev.summary)}</p>
 <div class="cal-links"><a class="btn btn--sm btn--ghost" href="${ev.ics}" download>${ui.cal}${U.addCal}</a><a class="btn btn--sm btn--ghost" href="${ev.gcal}" rel="noopener" target="_blank">${U.google}<span class="sr-only"> (${lang === 'fr' ? 'nouvel onglet' : 'new tab'})</span></a></div>
 </div></li>`;
 }
+
+// "Subscribe" block: webcal / Google / Outlook.com / copy link for the language's combined feed.
+export function subscribeBlock(lang, S, { compact = false } = {}) {
+  const U = UI[lang], B = U.sub;
+  const https = `${S.siteUrl}${ROUTES.feed[lang]}`;
+  const webcal = https.replace(/^https?:/, 'webcal:');
+  const name = lang === 'fr' ? 'La Paix du Cœur — Événements' : 'La Paix du Cœur — Events';
+  const tab = `<span class="sr-only"> (${lang === 'fr' ? 'nouvel onglet' : 'new tab'})</span>`;
+  const ext = (href, label, cls) => `<a class="btn btn--sm ${cls}" href="${href}" rel="noopener" target="_blank">${label}${tab}</a>`;
+  const links = [
+    `<a class="btn btn--sm${compact ? ' btn--ghost' : ''}" href="${webcal}">${ui.cal}${B.apple}</a>`,
+    ext(`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`, B.google, 'btn--ghost'),
+    ext(`https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(https)}&amp;name=${encodeURIComponent(name)}`, B.outlook, 'btn--ghost'),
+  ].join('');
+  const view = S.calendar_google_public_url ? `<p class="subscribe__view"><a class="link-arrow" href="${esc(S.calendar_google_public_url)}" rel="noopener" target="_blank">${B.view}${tab}${ui.arrow}</a></p>` : '';
+  const copy = `<div class="copy-row"><code>${https}</code><button class="btn btn--sm btn--plum" type="button" data-copy="${https}" data-copied="${B.copied}" hidden>${ui.copy}${B.copy}</button><span class="status" aria-live="polite"></span></div>`;
+  if (compact) {
+    return `<div class="subscribe subscribe--compact"><h3>${B.compactTitle}</h3><div class="cal-links">${links}</div>${copy}<p class="subscribe__help">${B.help}</p>${view}</div>`;
+  }
+  return `<div class="subscribe" id="${lang === 'fr' ? 'abonnement' : 'subscribe'}"><div class="subscribe__in"><p class="kicker">${B.kicker}</p><h2>${B.title}</h2><p class="subscribe__help">${B.help}</p>
+<div class="cal-links">${links}</div>
+<p class="sr-only">${B.linkLabel}</p>${copy}${view}</div></div>`;
+}
+const subscribeAnchor = (lang) => `${ROUTES.events[lang]}#${lang === 'fr' ? 'abonnement' : 'subscribe'}`;
 
 export function newsCard(lang, n) {
   return `<article class="card card--stitch reveal"><div class="card__media">${picture(n.image, n.imageAlt)}</div><div class="card__body">
@@ -75,7 +99,7 @@ ${sec('section--plum on-dark', `<div class="wrap split split--rev"><div class="r
 <div class="btn-row mt-2"><a class="btn btn--mustard" href="${ROUTES.volunteer[lang]}">${U.volunteerCta}${ui.arrow}</a><a class="btn btn--ghost" href="${ROUTES.workshops[lang]}">${U.nav.workshops}</a></div></div></div>`, ' data-knot')}
 
 ${sec('', `<div class="wrap"><div class="two-col two-col--even">
-<div>${head(U.nav.events, esc(P.eventsTitle), '')}<ul class="event-list">${events.slice(0, 3).map((e) => eventCard(lang, e)).join('')}</ul><p class="mt-1"><a class="link-arrow" href="${ROUTES.events[lang]}">${U.allEvents}${ui.arrow}</a></p></div>
+<div>${head(U.nav.events, esc(P.eventsTitle), '')}<ul class="event-list">${events.slice(0, 3).map((e) => eventCard(lang, e)).join('')}</ul><p class="mt-1 btn-row"><a class="link-arrow" href="${ROUTES.events[lang]}">${U.allEvents}${ui.arrow}</a><a class="link-arrow" href="${subscribeAnchor(lang)}">${ui.cal}${U.sub.cta}</a></p></div>
 <div>${head(U.nav.news, esc(P.newsTitle), '')}<div class="grid">${news.slice(0, 2).map((n) => newsCard(lang, n)).join('')}</div><p class="mt-1"><a class="link-arrow" href="${ROUTES.news[lang]}">${U.allNews}${ui.arrow}</a></p></div>
 </div></div>`, ' data-knot')}
 
@@ -226,7 +250,7 @@ ${sec('', `<div class="wrap">${head('', esc(P.rolesTitle), '')}<div class="grid 
 }
 
 /* ---------- EVENTS ---------- */
-export function eventsList(lang, { P, events }) {
+export function eventsList(lang, { P, S, events }) {
   const U = UI[lang];
   const cats = [...new Set(events.map((e) => e.category))];
   return `${pageHero(lang, { trail: trailFor(lang, { name: P.title, path: ROUTES.events[lang] }), title: P.title, intro: P.intro })}
@@ -235,11 +259,11 @@ export function eventsList(lang, { P, events }) {
 <p class="sr-only" aria-live="polite" data-filter-status data-label="${lang === 'fr' ? 'événements affichés' : 'events shown'}"></p>
 <h2 class="sr-only">${P.title}</h2>
 <ul class="event-list mt-2">${events.map((e) => eventCard(lang, e)).join('')}</ul>
-<p class="mt-2"><a class="link-arrow" href="${ROUTES.events[lang]}${lang === 'fr' ? 'calendrier' : 'calendar'}.ics" download>${ui.cal}${lang === 'fr' ? 'S’abonner au calendrier complet (.ics)' : 'Subscribe to the full calendar (.ics)'}</a></p>
+<div class="mt-2">${subscribeBlock(lang, S)}</div>
 </div></section>`;
 }
 
-export function eventPage(lang, { ev }) {
+export function eventPage(lang, { ev, S }) {
   const U = UI[lang];
   const img = ev.image || '';
   return `${pageHero(lang, { trail: trailFor(lang, { name: U.nav.events, path: ROUTES.events[lang] }, { name: ev.title, path: ev.url }), title: ev.title, intro: ev.summary })}
@@ -248,11 +272,13 @@ export function eventPage(lang, { ev }) {
 ${img ? `<div class="illus-frame mt-1"><img src="${img}" width="800" height="600" alt="" loading="lazy"></div>` : ''}
 <div class="prose mt-2">${md(ev.body)}</div></div>
 <aside class="info-box"><h2 class="sr-only">${U.details}</h2><dl>
-<div><dt>${U.when}</dt><dd><time datetime="${ev.start}">${fmtDay(ev.start, lang)}</time><br>${fmtTime(ev.start, lang)} – ${fmtTime(ev.end, lang)}</dd></div>
+<div><dt>${U.when}</dt><dd><time datetime="${ev.start}">${fmtDay(ev.start, lang)}</time><br>${timeRange(ev, lang)}</dd></div>
 <div><dt>${U.where}</dt><dd>${t(ev.venue)}</dd></div>
 <div><dt>${U.what}</dt><dd>${EVENT_CATS[lang][ev.category]} · ${U.free}</dd></div></dl>
 <div class="cal-links"><a class="btn btn--sm" href="${ev.ics}" download>${ui.cal}${U.addCal}</a><a class="btn btn--sm btn--ghost" href="${ev.gcal}" rel="noopener" target="_blank">${U.google}<span class="sr-only"> (${lang === 'fr' ? 'nouvel onglet' : 'new tab'})</span></a></div>
+${ev.ticketUrl ? `<p class="mt-1 mb-0"><a class="btn btn--sm btn--plum" href="${esc(ev.ticketUrl)}" rel="noopener" target="_blank">${U.tickets}<span class="sr-only"> (${lang === 'fr' ? 'nouvel onglet' : 'new tab'})</span></a></p>` : ''}
 <p class="mt-1 mb-0"><a class="link-arrow" href="${ROUTES.volunteer[lang]}">${U.register}${ui.arrow}</a></p>
+${subscribeBlock(lang, S, { compact: true })}
 </aside></div></section>`;
 }
 

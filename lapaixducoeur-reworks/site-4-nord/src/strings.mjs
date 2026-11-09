@@ -18,6 +18,7 @@ export const ROUTES = {
 export const FEEDS = {
   rss: { fr: '/fr/nouvelles/rss.xml', en: '/en/news/rss.xml' },
   ics: { fr: '/fr/evenements/calendrier.ics', en: '/en/events/calendar.ics' },
+  sub: { fr: '/fr/calendrier.ics', en: '/en/calendar.ics' },
   combined: '/calendar.ics',
 };
 
@@ -40,7 +41,8 @@ export const T = {
     all: 'Tous', allF: 'Toutes', seeAll: 'Tout voir', readMore: 'Lire la suite', learnMore: 'En savoir plus',
     upcoming: 'Prochaines sorties', upcomingLead: 'Inscrivez-vous, venez avec un ami, ou ajoutez la date à votre agenda.', fullCalendar: 'Voir le calendrier complet',
     addToCal: 'Ajouter à l’agenda', addGoogle: 'Google Agenda', addIcs: 'Apple, Outlook (.ics)', addOutlook: 'Outlook.com',
-    subscribe: 'S’abonner au calendrier', subscribeLead: 'Toutes nos activités dans votre agenda, mises à jour automatiquement.', subscribeGoogle: 'Ajouter à Google Agenda', subscribeWebcal: 'Apple / Outlook (webcal)', downloadIcs: 'Télécharger le fichier .ics', copyFeed: 'Copier l’adresse du flux',
+    subscribe: 'S’abonner au calendrier', subscribeLead: 'Toutes nos activités dans votre agenda, mises à jour automatiquement.', subscribeGoogle: 'Ajouter à Google Agenda', subscribeWebcal: 'Apple / Outlook (ordinateur)', subscribeOutlookWeb: 'Outlook.com', downloadIcs: 'Télécharger le fichier .ics', downloadIcsBoth: 'Calendrier bilingue (.ics)', copyFeed: 'Copier l’adresse du flux',
+    subscribeHelp: 'Les nouveaux événements apparaîtront automatiquement dans votre agenda.', viewGoogle: 'Voir dans Google Agenda', allDay: 'Toute la journée',
     viewMonth: 'Mois', viewList: 'Liste', viewLabel: 'Affichage', filterType: 'Filtrer par type', prevMonth: 'Mois précédent', nextMonth: 'Mois suivant', today: 'Aujourd’hui',
     eventsShown: (n) => `${n} événement${n > 1 ? 's' : ''} affiché${n > 1 ? 's' : ''}`, noEvents: 'Aucun événement ne correspond à ces filtres.', thisMonth: 'Ce mois-ci', pastEvents: 'Événements passés',
     weekdaysShort: ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'],
@@ -87,7 +89,8 @@ export const T = {
     all: 'All', allF: 'All', seeAll: 'See all', readMore: 'Read more', learnMore: 'Learn more',
     upcoming: 'Coming up', upcomingLead: 'Sign up, bring a friend, or add the date to your calendar.', fullCalendar: 'See the full calendar',
     addToCal: 'Add to calendar', addGoogle: 'Google Calendar', addIcs: 'Apple, Outlook (.ics)', addOutlook: 'Outlook.com',
-    subscribe: 'Subscribe to the calendar', subscribeLead: 'All our activities in your own calendar, updated automatically.', subscribeGoogle: 'Add to Google Calendar', subscribeWebcal: 'Apple / Outlook (webcal)', downloadIcs: 'Download the .ics file', copyFeed: 'Copy the feed address',
+    subscribe: 'Subscribe to the calendar', subscribeLead: 'All our activities in your own calendar, updated automatically.', subscribeGoogle: 'Add to Google Calendar', subscribeWebcal: 'Apple / Outlook (desktop)', subscribeOutlookWeb: 'Outlook.com', downloadIcs: 'Download the .ics file', downloadIcsBoth: 'Bilingual calendar (.ics)', copyFeed: 'Copy the feed address',
+    subscribeHelp: 'New events will appear in your calendar automatically.', viewGoogle: 'View in Google Calendar', allDay: 'All day',
     viewMonth: 'Month', viewList: 'List', viewLabel: 'View', filterType: 'Filter by type', prevMonth: 'Previous month', nextMonth: 'Next month', today: 'Today',
     eventsShown: (n) => `${n} event${n === 1 ? '' : 's'} shown`, noEvents: 'No events match these filters.', thisMonth: 'This month', pastEvents: 'Past events',
     weekdaysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],

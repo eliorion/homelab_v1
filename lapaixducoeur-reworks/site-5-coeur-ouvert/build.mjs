@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { ROUTES, UI } from './src/i18n.mjs';
-import { readJSON, loadDir, pick, writeFile, copyDir, setStaticRoot, esc, typo } from './src/lib.mjs';
+import { ROUTES, UI, FEEDS } from './src/i18n.mjs';
+import { readJSON, loadDir, pick, writeFile, copyDir, setStaticRoot, esc, typo, isAllDay, localDate } from './src/lib.mjs';
 import { ctx, layout, orgLD } from './src/layout.mjs';
 import * as P from './src/pages.mjs';
 
@@ -70,20 +70,38 @@ for (const n of news) emit(`news:${n.id}`, { fr: P.urlFor('news', n, 'fr'), en: 
 for (const e of events) emit(`event:${e.id}`, { fr: P.urlFor('event', e, 'fr'), en: P.urlFor('event', e, 'en') }, (lang) => P.eventPage(lang, D, e));
 for (const c of campaigns) emit(`campaign:${c.id}`, { fr: P.urlFor('campaign', c, 'fr'), en: P.urlFor('campaign', c, 'en') }, (lang) => P.campaignPage(lang, D, c));
 
-/* 4. iCalendar files */
+/* 4. iCalendar files: one per event per language, plus subscribable feeds */
 const icsEsc = (s) => typo(String(s), 'x').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
 const icsDate = (iso) => new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-const fold = (line) => { const out = []; let s = line; while (Buffer.byteLength(s) > 73) { let i = 73; while (Buffer.byteLength(s.slice(0, i)) > 73) i--; out.push(s.slice(0, i)); s = ` ${s.slice(i)}`; } out.push(s); return out.join('\r\n'); };
+const icsDay = (iso, plus = 0) => { const d = new Date(`${localDate(iso)}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + plus); return d.toISOString().slice(0, 10).replace(/-/g, ''); };
+const fold = (line) => {
+  const out = []; let cur = '';
+  for (const ch of line) {
+    if (Buffer.byteLength(cur + ch) > 75) { out.push(cur); cur = ` ${ch}`; } else cur += ch;
+  }
+  out.push(cur);
+  return out.join('\r\n');
+};
+const ics = (lines) => `${lines.map(fold).join('\r\n')}\r\n`;
+const calHead = (name) => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//La Paix du Coeur//Site//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+  ...(name ? [`X-WR-CALNAME:${icsEsc(name)}`, 'X-WR-TIMEZONE:America/Toronto', 'REFRESH-INTERVAL;VALUE=DURATION:PT6H', 'X-PUBLISHED-TTL:PT6H'] : [])];
+function vevent(ev, lang) {
+  const e = pick(ev, lang);
+  const url = P.urlFor('event', ev, lang);
+  const where = e.address && e.address !== e.location ? `${e.location} — ${e.address}` : e.location;
+  const when = isAllDay(e) ? [`DTSTART;VALUE=DATE:${icsDay(e.start)}`, `DTEND;VALUE=DATE:${icsDay(e.end, 1)}`] : [`DTSTART:${icsDate(e.start)}`, `DTEND:${icsDate(e.end)}`];
+  return ['BEGIN:VEVENT', `UID:${ev.id}@lapaixducoeur.ca`, `DTSTAMP:${icsDate(ctx.now.toISOString())}`, ...when,
+    `SUMMARY:${icsEsc(e.title)}${e.sample ? icsEsc(lang === 'fr' ? ' (exemple)' : ' (sample)') : ''}`, `DESCRIPTION:${icsEsc(`${e.summary}\n\n${SITE}${url}`)}`,
+    `LOCATION:${icsEsc(where)}`, `URL:${SITE}${url}`, 'ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com', 'END:VEVENT'];
+}
 for (const ev of events) {
   for (const lang of LANGS) {
-    const e = pick(ev, lang);
-    const url = P.urlFor('event', ev, lang);
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//La Paix du Coeur//Site//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
-      `UID:${ev.id}@lapaixducoeur.ca`, `DTSTAMP:${icsDate(ctx.now.toISOString())}`, `DTSTART:${icsDate(e.start)}`, `DTEND:${icsDate(e.end)}`,
-      `SUMMARY:${icsEsc(e.title)}${e.sample ? icsEsc(lang === 'fr' ? ' (exemple)' : ' (sample)') : ''}`, `DESCRIPTION:${icsEsc(`${e.summary}\n\n${SITE}${url}`)}`,
-      `LOCATION:${icsEsc(`${e.location} — ${e.address}`)}`, `URL:${SITE}${url}`, 'ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com', 'END:VEVENT', 'END:VCALENDAR'];
-    writeFile(path.join(DIST, url.replace(/\/$/, '.ics')), `${lines.map(fold).join('\r\n')}\r\n`);
+    writeFile(path.join(DIST, P.urlFor('event', ev, lang).replace(/\/$/, '.ics')), ics([...calHead(), ...vevent(ev, lang), 'END:VCALENDAR']));
   }
+}
+const upcoming = P.upcomingEvents(D);
+for (const [file, lang] of [[FEEDS.fr, 'fr'], [FEEDS.en, 'en'], [FEEDS.all, 'fr']]) {
+  writeFile(path.join(DIST, file), ics([...calHead(UI[lang].feedName), ...upcoming.flatMap((ev) => vevent(ev, lang)), 'END:VCALENDAR']));
 }
 
 /* 5. RSS per language */
@@ -167,4 +185,4 @@ writeFile(path.join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?
 ${sitemap.flatMap((alt) => LANGS.map((l) => `<url><loc>${SITE}${alt[l]}</loc><lastmod>${today}</lastmod><xhtml:link rel="alternate" hreflang="fr-CA" href="${SITE}${alt.fr}"/><xhtml:link rel="alternate" hreflang="en-CA" href="${SITE}${alt.en}"/><xhtml:link rel="alternate" hreflang="x-default" href="${SITE}${alt.xdefault || alt.fr}"/></url>`)).join('\n')}
 </urlset>
 `);
-console.log(`Built ${count} pages + root + 404, ${events.length * 2} .ics, 2 RSS feeds, sitemap (${sitemap.length * 2 + 1} URLs) -> dist/`);
+console.log(`Built ${count} pages + root + 404, ${events.length * 2} .ics + 3 feeds (${upcoming.length} upcoming), 2 RSS feeds, sitemap (${sitemap.length * 2 + 1} URLs) -> dist/`);

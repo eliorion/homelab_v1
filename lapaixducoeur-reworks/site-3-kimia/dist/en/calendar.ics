@@ -1,0 +1,227 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:La Paix du Cœur — Events
+X-WR-TIMEZONE:America/Toronto
+X-PUBLISHED-TTL:PT6H
+REFRESH-INTERVAL;VALUE=DURATION:PT6H
+BEGIN:VTIMEZONE
+TZID:America/Toronto
+BEGIN:DAYLIGHT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+TZNAME:EDT
+DTSTART:19700308T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+TZNAME:EST
+DTSTART:19701101T020000
+RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:gcal-2026-11-26-a3cae38092-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20261126T183000
+DTEND;TZID=America/Toronto:20261126T213000
+SUMMARY:Thursday-night street outreach (sample)
+DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thurs
+ day\, November 26\, 2026) https://lapaixducoeur.ca/en/events/thursday-ni
+ ght-street-outreach-2026-11-26/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-202
+ 6-11-26/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-03-3626496d3d-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20261203T183000
+DTEND;TZID=America/Toronto:20261203T213000
+SUMMARY:Thursday-night street outreach (sample)
+DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thurs
+ day\, December 3\, 2026) https://lapaixducoeur.ca/en/events/thursday-nig
+ ht-street-outreach-2026-12-03/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-202
+ 6-12-03/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-05-c0efdbceba-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20261205T100000
+DTEND;TZID=America/Toronto:20261205T160000
+SUMMARY:Food drive — Saint-Michel (sample)
+DESCRIPTION:Add one item to your basket for a family. https://lapaixducoe
+ ur.ca/en/events/food-drive-saint-michel-2026-12-05/
+LOCATION:Épicerie partenaire\, Saint-Michel\, Montréal
+URL:https://lapaixducoeur.ca/en/events/food-drive-saint-michel-2026-12-05
+ /
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-11-4267d7ef1a-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20261211T190000
+DTEND;TZID=America/Toronto:20261211T220000
+SUMMARY:Christmas street outreach (sample)
+DESCRIPTION:Special edition with gifts. (Friday\, December 11\, 2026) htt
+ ps://lapaixducoeur.ca/en/events/christmas-street-outreach-2026-12-11/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/en/events/christmas-street-outreach-2026-12-
+ 11/
+END:VEVENT
+BEGIN:VEVENT
+UID:2026-12-collecte-noel-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20261212T100000
+DTEND;TZID=America/Toronto:20261212T160000
+SUMMARY:Christmas food drive (sample)
+DESCRIPTION:Help us fill Christmas baskets for families\, widows and stud
+ ents. Two-hour shifts\, welcome and training on site. https://lapaixduco
+ eur.ca/en/events/christmas-food-drive/
+LOCATION:Partner grocery store\, Montréal location to confirm
+URL:https://lapaixducoeur.ca/en/events/christmas-food-drive/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-17-336e6170d6-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20261217T183000
+DTEND;TZID=America/Toronto:20261217T213000
+SUMMARY:Thursday-night street outreach (sample)
+DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thurs
+ day\, December 17\, 2026) https://lapaixducoeur.ca/en/events/thursday-ni
+ ght-street-outreach-2026-12-17/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-202
+ 6-12-17/
+END:VEVENT
+BEGIN:VEVENT
+UID:2026-12-maraude-noel-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20261224T180000
+DTEND;TZID=America/Toronto:20261224T220000
+SUMMARY:Christmas Eve street outreach (sample)
+DESCRIPTION:A festive evening for those who have none: hot soup\, coffee\
+ , gifts and carols on the streets of Montréal. https://lapaixducoeur.ca
+ /en/events/christmas-eve-street-outreach/
+LOCATION:Downtown Montréal — meeting point shared with registered volu
+ nteers
+URL:https://lapaixducoeur.ca/en/events/christmas-eve-street-outreach/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2026-12-31-1588dc5db5-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20261231T183000
+DTEND;TZID=America/Toronto:20261231T213000
+SUMMARY:Thursday-night street outreach (sample)
+DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thurs
+ day\, December 31\, 2026) https://lapaixducoeur.ca/en/events/thursday-ni
+ ght-street-outreach-2026-12-31/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-202
+ 6-12-31/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2027-01-07-c713618948-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20270107T183000
+DTEND;TZID=America/Toronto:20270107T213000
+SUMMARY:Thursday-night street outreach (sample)
+DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thurs
+ day\, January 7\, 2027) https://lapaixducoeur.ca/en/events/thursday-nigh
+ t-street-outreach-2027-01-07/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-202
+ 7-01-07/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2027-01-14-44366e5514-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20270114T183000
+DTEND;TZID=America/Toronto:20270114T213000
+SUMMARY:Thursday-night street outreach (sample)
+DESCRIPTION:Hot meals\, warm clothes and a listening ear downtown. (Thurs
+ day\, January 14\, 2027) https://lapaixducoeur.ca/en/events/thursday-nig
+ ht-street-outreach-2027-01-14/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/en/events/thursday-night-street-outreach-202
+ 7-01-14/
+END:VEVENT
+BEGIN:VEVENT
+UID:gcal-2027-01-16-c2c115da40-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;VALUE=DATE:20270116
+DTEND;VALUE=DATE:20270117
+SUMMARY:Day of prayer and fasting (sample)
+DESCRIPTION:(In French) Une journée pour porter les orphelins et les veu
+ ves dans la prière. https://lapaixducoeur.ca/en/events/day-of-prayer-an
+ d-fasting-2027-01-16/
+LOCATION:Montréal
+URL:https://lapaixducoeur.ca/en/events/day-of-prayer-and-fasting-2027-01-
+ 16/
+END:VEVENT
+BEGIN:VEVENT
+UID:2027-01-atelier-budget-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20270123T133000
+DTEND;TZID=America/Toronto:20270123T160000
+SUMMARY:Workshop: managing your family budget (sample)
+DESCRIPTION:A practical afternoon to take stock of income\, plan nutritio
+ us groceries and learn about free resources. Free\, with childcare on si
+ te. https://lapaixducoeur.ca/en/events/workshop-family-budgeting/
+LOCATION:Montréal room to confirm
+URL:https://lapaixducoeur.ca/en/events/workshop-family-budgeting/
+END:VEVENT
+BEGIN:VEVENT
+UID:2027-02-atelier-emploi-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20270206T100000
+DTEND;TZID=America/Toronto:20270206T123000
+SUMMARY:Workshop: résumé and interview preparation (sample)
+DESCRIPTION:Write a clear résumé\, introduce yourself with confidence\,
+  practise an interview. For newcomers\, students and parents returning t
+ o work. https://lapaixducoeur.ca/en/events/workshop-resume-interview/
+LOCATION:Montréal room to confirm
+URL:https://lapaixducoeur.ca/en/events/workshop-resume-interview/
+END:VEVENT
+BEGIN:VEVENT
+UID:2027-02-soiree-priere-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20270213T190000
+DTEND;TZID=America/Toronto:20270213T210000
+SUMMARY:Prayer and worship evening (sample)
+DESCRIPTION:An evening to entrust to Elohim the orphans\, widows and fami
+ lies we serve\, and to give thanks together. https://lapaixducoeur.ca/en
+ /events/prayer-and-worship-evening/
+LOCATION:Montréal location to confirm
+URL:https://lapaixducoeur.ca/en/events/prayer-and-worship-evening/
+END:VEVENT
+BEGIN:VEVENT
+UID:2027-03-atelier-devoirs-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20270306T100000
+DTEND;TZID=America/Toronto:20270306T120000
+SUMMARY:Workshop: helping your child with homework (sample)
+DESCRIPTION:Simple tools to support school success at home\, even if your
+  French is still a work in progress. https://lapaixducoeur.ca/en/events/
+ workshop-homework-support/
+LOCATION:Montréal room to confirm
+URL:https://lapaixducoeur.ca/en/events/workshop-homework-support/
+END:VEVENT
+BEGIN:VEVENT
+UID:2027-03-atelier-cuisine-en@lapaixducoeur.ca
+DTSTAMP:20261109T120000Z
+DTSTART;TZID=America/Toronto:20270327T130000
+DTEND;TZID=America/Toronto:20270327T160000
+SUMMARY:Workshop: affordable\, nutritious cooking (sample)
+DESCRIPTION:Cook three complete\, low-cost meals together using seasonal 
+ produce and food-bank staples. https://lapaixducoeur.ca/en/events/worksh
+ op-budget-cooking/
+LOCATION:Montréal community kitchen to confirm
+URL:https://lapaixducoeur.ca/en/events/workshop-budget-cooking/
+END:VEVENT
+END:VCALENDAR

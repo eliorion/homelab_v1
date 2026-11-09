@@ -5,13 +5,13 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
 UID:2026-11-28-collecte@lapaixducoeur.ca
-DTSTAMP:20261109T233135Z
+DTSTAMP:20261109T170000Z
 DTSTART:20261128T150000Z
 DTEND:20261128T210000Z
 SUMMARY:Supermarket food drive (sample)
-DESCRIPTION:Welcome shoppers at the door and invite them to add one item 
- for a family. Two-hour shifts.\n\nhttps://lapaixducoeur.ca/en/events/sup
- ermarket-food-drive-november/
+DESCRIPTION:Welcome shoppers at the door and invite them to add one item fo
+ r a family. Two-hour shifts.\n\nhttps://lapaixducoeur.ca/en/events/superma
+ rket-food-drive-november/
 LOCATION:Partner supermarket\, Montréal — Exact address [to confirm]
 URL:https://lapaixducoeur.ca/en/events/supermarket-food-drive-november/
 ORGANIZER;CN=La Paix du Coeur:mailto:lapaixducoeur.ca@gmail.com

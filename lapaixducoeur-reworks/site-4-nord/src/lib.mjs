@@ -62,6 +62,10 @@ export function fmtTime(local, lang) {
   return `${h12}${mm ? ':' + String(mm).padStart(2, '0') : ''} ${hh < 12 ? 'a.m.' : 'p.m.'}`;
 }
 export const fmtRange = (start, end, lang) => `${fmtTime(start, lang)} – ${fmtTime(end, lang)}`;
+/** All-day convention shared with shared/tools/calendar-sync.mjs: start T00:00, end T23:59. */
+export const isAllDay = (start, end) => /T00:00$/.test(start) && /T23:59$/.test(end);
+const nextDay = (local) => { const { y, m, day } = parts(local); return new Date(Date.UTC(y, m - 1, day + 1)).toISOString().slice(0, 10); };
+export const fmtWhen = (start, end, lang) => (isAllDay(start, end) ? (lang === 'fr' ? 'Toute la journée' : 'All day') : fmtRange(start, end, lang));
 export const capFirst = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /* ---------- Calendar (RFC 5545) ---------- */
@@ -90,7 +94,9 @@ export function icsCalendar({ name, description, events, stamp }) {
     'REFRESH-INTERVAL;VALUE=DURATION:PT12H', 'X-PUBLISHED-TTL:PT12H', ...VTIMEZONE];
   for (const e of events) {
     lines.push('BEGIN:VEVENT', `UID:${e.uid}`, `DTSTAMP:${icsUtc(stamp)}`,
-      `DTSTART;TZID=${TZ}:${icsLocal(e.start)}`, `DTEND;TZID=${TZ}:${icsLocal(e.end)}`,
+      ...(isAllDay(e.start, e.end)
+        ? [`DTSTART;VALUE=DATE:${e.start.slice(0, 10).replace(/-/g, '')}`, `DTEND;VALUE=DATE:${nextDay(e.end).replace(/-/g, '')}`]
+        : [`DTSTART;TZID=${TZ}:${icsLocal(e.start)}`, `DTEND;TZID=${TZ}:${icsLocal(e.end)}`]),
       `SUMMARY:${icsEsc(e.summary)}`, `DESCRIPTION:${icsEsc(e.description)}`, `LOCATION:${icsEsc(e.location)}`,
       `URL:${e.url}`, `CATEGORIES:${icsEsc(e.category)}`, 'STATUS:CONFIRMED', 'TRANSP:OPAQUE');
     lines.push('END:VEVENT');
@@ -99,11 +105,14 @@ export function icsCalendar({ name, description, events, stamp }) {
   return lines.map(fold).join('\r\n') + '\r\n';
 }
 export function googleCalUrl({ title, start, end, details, location }) {
-  const q = new URLSearchParams({ action: 'TEMPLATE', text: title, dates: `${icsLocal(start)}/${icsLocal(end)}`, ctz: TZ, details, location });
+  const dates = isAllDay(start, end) ? `${start.slice(0, 10).replace(/-/g, '')}/${nextDay(end).replace(/-/g, '')}` : `${icsLocal(start)}/${icsLocal(end)}`;
+  const q = new URLSearchParams({ action: 'TEMPLATE', text: title, dates, ctz: TZ, details, location });
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 export function outlookCalUrl({ title, start, end, details, location }) {
-  const q = new URLSearchParams({ path: '/calendar/action/compose', rru: 'addevent', subject: title, startdt: isoWithOffset(start), enddt: isoWithOffset(end), body: details, location });
+  const allday = isAllDay(start, end);
+  const q = new URLSearchParams({ path: '/calendar/action/compose', rru: 'addevent', subject: title,
+    startdt: allday ? start.slice(0, 10) : isoWithOffset(start), enddt: allday ? nextDay(end) : isoWithOffset(end), ...(allday ? { allday: 'true' } : {}), body: details, location });
   return `https://outlook.live.com/calendar/0/deeplink/compose?${q}`;
 }
 

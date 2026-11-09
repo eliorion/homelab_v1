@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//La Paix du Coeur//Site//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:gcal-2027-01-14-44366e5514@lapaixducoeur.ca
+DTSTAMP:20261109T233518Z
+DTSTART:20270114T233000Z
+DTEND:20270115T023000Z
+SUMMARY:Maraude du jeudi soir / Thursday-night street outreach
+DESCRIPTION:Repas chauds\, vêtements chauds et écoute auprès des personn
+ es sans-abri du centre-ville. (jeudi 14 janvier 2027)\n\nHot meals\, warm 
+ clothes and a listening ear downtown. (Thursday\, January 14\, 2027)\n\nht
+ tps://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-14/
+LOCATION:Sortie du métro Atwater\, Montréal
+URL:https://lapaixducoeur.ca/fr/evenements/maraude-du-jeudi-soir-2027-01-14
+ /
+END:VEVENT
+END:VCALENDAR

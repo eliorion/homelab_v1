@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Imports the association's public Google Calendar (iCal feed) into a site's content/events/.
-// Usage: node calendar-sync.mjs --site <site-dir> --ics <https-url|file> [--days 365] [--dry-run]
+// Usage: node calendar-sync.mjs --site <site-dir> --ics <https-url|file> [--profile site-N-name] [--days 365] [--dry-run]
+// --profile is required when the folder is not named after a site (e.g. --site . in its own repo).
 // Only files named gcal-*.json are created or deleted; events typed in the CMS are never touched.
 import { readFileSync, writeFileSync, readdirSync, unlinkSync, existsSync } from 'node:fs';
 import { join, basename, resolve } from 'node:path';
@@ -237,7 +238,7 @@ const ALT = {
 };
 
 // ---------- main ----------
-const siteKey = basename(siteDir);
+const siteKey = args.profile || basename(siteDir);
 const site = SITES[siteKey];
 if (!site) { console.error(`unknown site ${siteKey}; known: ${Object.keys(SITES).join(', ')}`); process.exit(2); }
 

@@ -1,3 +1,4 @@
+export const FEEDS = { fr: '/fr/calendrier.ics', en: '/en/calendar.ics', all: '/calendar.ics' };
 export const ROUTES = {
   home: { fr: '/fr/', en: '/en/' },
   about: { fr: '/fr/a-propos/', en: '/en/about/' },
@@ -32,6 +33,10 @@ export const UI = {
     addCal: 'Ajouter au calendrier', icsFile: 'Fichier .ics (Apple, Outlook)', gcal: 'Google Agenda',
     when: 'Quand', where: 'Où', price: 'Entrée', tickets: 'Billets sur Zeffy', ticketsSoon: 'Billetterie Zeffy [à confirmer]',
     share: 'Partager', copyLink: 'Copier le lien', copied: 'Copié !', copy: 'Copier',
+    allDay: 'Toute la journée', subKicker: 'S’abonner', subTitle: 'Tout l’agenda, dans votre calendrier.',
+    subHelp: 'Les nouveaux événements apparaîtront automatiquement dans votre agenda.', subLink: 'S’abonner à l’agenda',
+    subApple: 'Apple · Outlook', subGoogle: 'Google Agenda', subOutlookCom: 'Outlook.com', subCopy: 'Copier le lien du calendrier',
+    subView: 'Voir dans Google Agenda', feedName: 'La Paix du Cœur — Événements', feedLabel: 'Adresse du calendrier',
     raised: 'recueillis', goal: 'objectif', donors: 'donateurs', daysLeft: 'jours', hours: 'heures', minutes: 'minutes', seconds: 'secondes',
     countdownTo: 'Avant Noël', ended: 'Campagne terminée', active: 'En cours', closed: 'Terminée',
     giveNow: 'Faire un don', seeCampaign: 'Voir la campagne', viewAll: 'Voir tout',
@@ -97,6 +102,10 @@ export const UI = {
     addCal: 'Add to calendar', icsFile: '.ics file (Apple, Outlook)', gcal: 'Google Calendar',
     when: 'When', where: 'Where', price: 'Entry', tickets: 'Tickets on Zeffy', ticketsSoon: 'Zeffy ticketing [to confirm]',
     share: 'Share', copyLink: 'Copy link', copied: 'Copied!', copy: 'Copy',
+    allDay: 'All day', subKicker: 'Subscribe', subTitle: 'The whole calendar, in your calendar.',
+    subHelp: 'New events will appear in your calendar automatically.', subLink: 'Subscribe to the calendar',
+    subApple: 'Apple · Outlook', subGoogle: 'Google Calendar', subOutlookCom: 'Outlook.com', subCopy: 'Copy calendar link',
+    subView: 'View in Google Calendar', feedName: 'La Paix du Cœur — Events', feedLabel: 'Calendar address',
     raised: 'raised', goal: 'goal', donors: 'donors', daysLeft: 'days', hours: 'hours', minutes: 'minutes', seconds: 'seconds',
     countdownTo: 'Until Christmas', ended: 'Campaign ended', active: 'Live', closed: 'Ended',
     giveNow: 'Give now', seeCampaign: 'See the campaign', viewAll: 'View all',

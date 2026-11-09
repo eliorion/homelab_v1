@@ -25,7 +25,7 @@ export function inline(s, lang) {
   return out;
 }
 
-export function md(src = '', lang = 'fr', { h = 2 } = {}) {
+export function md(src = '', lang = 'fr', { h = 2, breaks = false } = {}) {
   const blocks = String(src).replace(/\r/g, '').split(/\n{2,}/);
   return blocks.map((b) => {
     b = b.trim();
@@ -40,7 +40,7 @@ export function md(src = '', lang = 'fr', { h = 2 } = {}) {
         ? `<blockquote class="pull"><p>${inline(m[1], lang)}</p><cite>${inline(m[2], lang)}</cite></blockquote>`
         : `<blockquote class="pull"><p>${inline(txt, lang)}</p></blockquote>`;
     }
-    return `<p>${inline(b.replace(/\n/g, ' '), lang)}</p>`;
+    return `<p>${breaks ? b.split('\n').map((l) => inline(l.trim(), lang)).join('<br>') : inline(b.replace(/\n/g, ' '), lang)}</p>`;
   }).join('\n');
 }
 
@@ -88,6 +88,12 @@ export function fmtDate(iso, lang, opts = { day: 'numeric', month: 'long', year:
 export function fmtTime(iso, lang) {
   return new Intl.DateTimeFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', { timeZone: TZ, hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
 }
+export function localHM(iso) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+}
+export const localDate = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
+// All-day events (Google Calendar sync) are stored as 00:00 -> 23:59 Montréal time.
+export const isAllDay = (e) => localHM(e.start) === '00:00' && localHM(e.end) === '23:59';
 export function money(n, lang) {
   return new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
 }
