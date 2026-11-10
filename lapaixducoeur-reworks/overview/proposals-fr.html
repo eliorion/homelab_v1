@@ -1,0 +1,558 @@
+<title>Propositions La Paix du Cœur</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single reading column (max 1080px) with full-bleed tinted bands per part; proposals are stacked "case" blocks with desktop + phone captures. */
+:root {
+  --bg: #F6F7F2;
+  --surface: #FFFFFF;
+  --ink: #1A221B;
+  --muted: #586459;
+  --line: #DCE2D6;
+  --accent: #2D6A0F;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E5EFDC;
+  --warn: #8A5A12;
+  --warn-soft: #FBF0D9;
+  --band: #EEF2E8;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111612; --surface: #19201A; --ink: #E7EEE4; --muted: #A2AFA0; --line: #2C362C;
+    --accent: #8FCB6C; --accent-ink: #0F1A0B; --accent-soft: #213019; --warn: #F0C46E; --warn-soft: #3A2E15; --band: #151C16;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111612; --surface: #19201A; --ink: #E7EEE4; --muted: #A2AFA0; --line: #2C362C;
+  --accent: #8FCB6C; --accent-ink: #0F1A0B; --accent-soft: #213019; --warn: #F0C46E; --warn-soft: #3A2E15; --band: #151C16;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+section { padding-block: 56px; }
+.band { background: var(--band); border-block: 1px solid var(--line); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.12; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.3rem; font-weight: 700; }
+p { margin: 0; max-width: 65ch; }
+.eyebrow { font: 600 0.75rem/1 var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.lede { font-size: 1.15rem; color: var(--muted); }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.muted { color: var(--muted); }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+
+/* hero */
+header.top { padding-block: 48px 40px; }
+.hero-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; align-items: end; }
+.verse { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; font-style: italic; color: var(--muted); }
+.verse b { display: block; font-style: normal; font-weight: 600; font-size: 0.8rem; letter-spacing: 0.06em; margin-top: 6px; color: var(--ink); }
+.goals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 28px; }
+.goal { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.goal strong { display: block; font-size: 0.95rem; }
+.goal span { font-size: 0.85rem; color: var(--muted); }
+nav.jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+nav.jump a { text-decoration: none; color: var(--ink); border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 999px; font-size: 0.88rem; }
+nav.jump a:hover { border-color: var(--accent); color: var(--accent); }
+
+/* proposals */
+.proposal { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 32px; padding-block: 40px; border-top: 1px solid var(--line); }
+.proposal:first-of-type { border-top: 0; }
+.shots { position: relative; padding-right: 70px; padding-bottom: 30px; }
+.shots img { display: block; border-radius: 10px; border: 1px solid var(--line); box-shadow: 0 12px 30px -18px rgba(0,0,0,.35); background: var(--surface); }
+.shots .desk { width: 100%; height: auto; aspect-ratio: 960 / 600; object-fit: cover; object-position: top; }
+.shots .phone { position: absolute; right: 0; bottom: 0; width: 26%; max-width: 150px; height: auto; aspect-ratio: 300 / 650; object-fit: cover; object-position: top; border-radius: 16px; border: 4px solid var(--ink); }
+.num { font: 700 0.85rem/1 var(--mono); color: var(--muted); }
+.proposal h3 { font-size: 1.7rem; margin-top: 6px; }
+.proposal .en { color: var(--muted); font-size: 0.95rem; }
+.swatches { display: flex; gap: 6px; margin-top: 2px; }
+.swatches i { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); display: block; }
+.kv { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 6px 12px; font-size: 0.93rem; }
+.kv dt { color: var(--muted); font-weight: 500; }
+.kv dd { margin: 0; }
+ul.feat { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; font-size: 0.93rem; }
+.best { background: var(--accent-soft); border-radius: 10px; padding: 10px 14px; font-size: 0.92rem; }
+.best b { color: var(--accent); }
+.live { align-self: flex-start; display: inline-flex; align-items: center; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none; }
+.live:hover { filter: brightness(1.08); }
+.langswitch { position: absolute; top: 16px; right: max(16px, env(safe-area-inset-right, 0px)); font-size: 0.85rem; font-weight: 600; text-decoration: none; border: 1px solid var(--line); background: var(--surface); padding: 5px 12px; border-radius: 999px; }
+header.top { position: relative; }
+
+/* matrix */
+.tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-top: 24px; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 0.9rem; }
+th, td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+thead th { font-family: var(--display); font-size: 0.95rem; background: var(--band); position: sticky; top: 0; }
+tbody tr:last-child td { border-bottom: 0; }
+td.c { text-align: center; width: 11%; }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+.ring { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent); }
+.dash { color: var(--muted); }
+tr.group td { background: var(--band); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 0.85rem; color: var(--muted); margin-top: 12px; align-items: center; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* foundation */
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tile h3 { font-size: 1.05rem; }
+.tile p, .tile li { font-size: 0.9rem; color: var(--muted); }
+.tile ul { margin: 0; padding-left: 1.1em; }
+
+/* flow diagram */
+.flow { margin-top: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; overflow-x: auto; }
+.flow svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.flow .box { fill: var(--band); stroke: var(--line); }
+.flow .box.hl { fill: var(--accent-soft); stroke: var(--accent); }
+.flow text { fill: var(--ink); font-family: var(--body); font-size: 13px; }
+.flow .t { font-family: var(--display); font-size: 15px; font-weight: 700; }
+.flow .s { fill: var(--muted); font-size: 12px; }
+.flow .arrow { stroke: var(--accent); stroke-width: 2; fill: none; marker-end: url(#ah); }
+.flow .lbl { fill: var(--accent); font-size: 11.5px; font-weight: 600; }
+.flow #ah path { fill: var(--accent); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 24px; }
+pre.example { margin: 0; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 16px; font: 0.82rem/1.55 var(--mono); overflow-x: auto; white-space: pre; }
+pre.example .k { color: var(--accent); }
+.howto { width: 100%; min-width: 0; }
+.howto td:first-child { font-weight: 500; }
+.when { white-space: nowrap; color: var(--muted); }
+
+/* roadmap */
+.phase { margin-top: 28px; }
+.phase-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ideas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.idea { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.idea h4 { margin: 0; font: 600 0.98rem/1.3 var(--body); }
+.idea p { font-size: 0.86rem; color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 4px; }
+.tag { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--band); color: var(--muted); border: 1px solid var(--line); }
+.tag.lo { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.tag.hi { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.filters button { font: 500 0.85rem var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* questions */
+ol.q { margin: 18px 0 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }
+.tbc { background: var(--warn-soft); color: var(--warn); font-size: 0.78rem; font-weight: 600; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+footer { padding-block: 32px 48px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); }
+
+@media (max-width: 860px) {
+  .hero-grid, .proposal, .two { grid-template-columns: minmax(0, 1fr); }
+  .grid3, .ideas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .grid3, .ideas, .goals { grid-template-columns: minmax(0, 1fr); }
+  section { padding-block: 40px; }
+  .shots { padding-right: 52px; }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<header class="top">
+  <a class="langswitch" href="https://claude.ai/artifact/FoBxBBs9i7P5HFTnaGKmus" target="_blank" rel="noopener" lang="en">English version</a>
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="stack">
+        <span class="eyebrow">La Paix du Cœur · Kimia Na Motema · Montréal, depuis 2014</span>
+        <h1>Cinq façons de faire du site une voix pour les orphelins</h1>
+        <p class="lede">Cinq refontes complètes et bilingues (français&nbsp;/&nbsp;anglais) de lapaixducoeur.ca. Toutes reposent sur la même base sécuritaire, pensée pour être trouvée sur Google. Chacune a son propre style et mise sur une manière différente de rejoindre les gens.</p>
+      </div>
+      <p class="verse">«&nbsp;Défendez le faible et l’orphelin, rendez justice à l’affligé et au pauvre.&nbsp;»<b>Tehilim (Psaumes) 82:3</b></p>
+    </div>
+    <div class="goals" aria-label="Ce que l’association a demandé">
+      <div class="goal"><strong>Moderne et professionnel</strong><span>Cinq directions artistiques, chacune avec sa typographie, ses couleurs et ses animations.</span></div>
+      <div class="goal"><strong>Plus sécuritaire</strong><span>Site statique, sans base de données ni page de connexion à attaquer, avec des règles de sécurité dans le navigateur. Les numéros de compte bancaire ne sont plus publiés.</span></div>
+      <div class="goal"><strong>Trouvé sur Google</strong><span>Des pages françaises et anglaises séparées, un titre unique pour chaque page, des informations lisibles par les moteurs de recherche et un plan du site.</span></div>
+      <div class="goal"><strong>Facile à mettre à jour</strong><span>Les événements viennent de Google Agenda ; nouvelles, photos, vidéos et audio se gèrent dans une page d’administration simple.</span></div>
+      <div class="goal"><strong>L’amour et la compassion d’abord</strong><span>Des récits enracinés dans la foi, qui respectent la dignité des personnes montrées, autour du logo du cœur dans les mains.</span></div>
+      <div class="goal"><strong>Mobiliser, pas seulement informer</strong><span>Don, prière, bénévolat, événements et campagnes sont intégrés à chaque page.</span></div>
+    </div>
+    <nav class="jump" aria-label="Sections">
+      <a href="#propositions">Les 5 propositions</a>
+      <a href="#comparer">Comparer les fonctions</a>
+      <a href="#fondation">La base commune</a>
+      <a href="#contenu">Ajouter du contenu et l’agenda</a>
+      <a href="#suite">Fonctions à ajouter</a>
+      <a href="#questions">Questions pour l’association</a>
+    </nav>
+  </div>
+</header>
+
+<section id="propositions" class="band">
+  <div class="wrap">
+    <div class="stack">
+      <span class="eyebrow">Les propositions</span>
+      <h2>Une même mission, cinq personnalités</h2>
+      <p class="muted">Chaque proposition est un vrai site fonctionnel, d’environ 40 à 70 pages par langue, vérifié automatiquement sur téléphone et sur ordinateur. Cliquez sur <b>Visiter le site</b> pour le parcourir en français ou en anglais. Les chiffres, noms et dates que l’association n’a pas encore confirmés sont signalés par la mention <span class="tbc">Exemple — à confirmer</span> ; rien n’est inventé.</p>
+    </div>
+
+    <article class="proposal" id="p1">
+      <div class="shots">
+        <img class="desk" src="img/site-1-lumiere.jpg" width="960" height="600" alt="Accueil de la proposition 1 sur ordinateur : page lumineuse, titre « Allumer l’espérance, un cœur à la fois », enfants souriants dans une photo en arche">
+        <img class="phone" src="img/site-1-lumiere-m.jpg" width="300" height="650" alt="La proposition 1 sur téléphone">
+      </div>
+      <div class="stack">
+        <span class="num">01</span>
+        <h3>Lumière d’espérance</h3>
+        <span class="en">Un site lumineux, tourné vers le don</span>
+        <div class="swatches" aria-hidden="true"><i style="background:#FFFBF5"></i><i style="background:#F2B544"></i><i style="background:#F08A6B"></i><i style="background:#2D6A0F"></i></div>
+        <dl class="kv">
+          <dt>Style</dt><dd>Lumineux et plein d’espoir : un dégradé de lever de soleil, une typographie ronde et chaleureuse, une douce lumière qui suit la souris.</dd>
+          <dt>Priorité</dt><dd>Le don et la transparence.</dd>
+        </dl>
+        <ul class="feat">
+          <li>Formulaire de don où chaque montant indique ce qu’il permet ; don mensuel sélectionné par défaut ; possibilité de donner en l’honneur de quelqu’un</li>
+          <li>«&nbsp;Le Cercle du Cœur&nbsp;», un cercle de donateurs mensuels avec un objectif de membres</li>
+          <li>Un curseur « Où va votre don » qui montre la répartition entre les quatre domaines d’aide</li>
+          <li>Page Transparence : rapport annuel en page web, engagement de protection, FAQ sur les reçus fiscaux</li>
+        </ul>
+        <p class="best"><b>À choisir si</b> la priorité est d’obtenir des dons réguliers et fiables.</p>
+        <a class="live" href="https://claude.ai/artifact/YBNseFxzaiq9javHu9a916" target="_blank" rel="noopener">Visiter le site →</a>
+      </div>
+    </article>
+
+    <article class="proposal" id="p2">
+      <div class="shots">
+        <img class="desk" src="img/site-2-lettre.jpg" width="960" height="600" alt="Accueil de la proposition 2 sur ordinateur : une lettre manuscrite sur papier crème qui commence par « Chère amie, cher ami », avec une photo polaroïd collée">
+        <img class="phone" src="img/site-2-lettre-m.jpg" width="300" height="650" alt="La proposition 2 sur téléphone">
+      </div>
+      <div class="stack">
+        <span class="num">02</span>
+        <h3>Lettre d’amour</h3>
+        <span class="en">Un site intime, comme une lettre</span>
+        <div class="swatches" aria-hidden="true"><i style="background:#FAF5EC"></i><i style="background:#1F2A44"></i><i style="background:#C9786A"></i><i style="background:#4E7A2E"></i></div>
+        <dl class="kv">
+          <dt>Style</dt><dd>Intime, comme une lettre écrite à la main : papier, encre, sceaux de cire et un cœur qui se dessine tout seul.</dd>
+          <dt>Priorité</dt><dd>Les histoires et la foi.</dd>
+        </dl>
+        <ul class="feat">
+          <li>Un carnet d’histoires classées par thème ; récits longs racontés avec dignité (prénoms seulement)</li>
+          <li>Le balado «&nbsp;Les voix du cœur&nbsp;», avec transcriptions dans les deux langues</li>
+          <li>Un mur de prière et d’espérance modéré, avec un bouton «&nbsp;J’ai prié&nbsp;»</li>
+          <li>Lettres d’encouragement, toujours remises par l’équipe ; verset de la semaine</li>
+        </ul>
+        <p class="best"><b>À choisir si</b> le cœur de l’œuvre est la prière, la présence et le témoignage.</p>
+        <a class="live" href="https://claude.ai/artifact/RSv633XD7uqzn3kPuo95Lp" target="_blank" rel="noopener">Visiter le site →</a>
+      </div>
+    </article>
+
+    <article class="proposal" id="p3">
+      <div class="shots">
+        <img class="desk" src="img/site-3-kimia.jpg" width="960" height="600" alt="Accueil de la proposition 3 sur ordinateur : illustration d’un cercle à broder avec un cœur cousu tenu par deux mains, titre « Recoudre l’espérance, un point à la fois »">
+        <img class="phone" src="img/site-3-kimia-m.jpg" width="300" height="650" alt="La proposition 3 sur téléphone">
+      </div>
+      <div class="stack">
+        <span class="num">03</span>
+        <h3>Kimia</h3>
+        <span class="en">La paix du cœur, en lingala</span>
+        <div class="swatches" aria-hidden="true"><i style="background:#C2603D"></i><i style="background:#8FA98A"></i><i style="background:#E0A93B"></i><i style="background:#4A2545"></i></div>
+        <dl class="kv">
+          <dt>Style</dt><dd>Illustrations faites main, broderie et motifs textiles ; un fil coud la page au fil du défilement.</dd>
+          <dt>Priorité</dt><dd>La mission et son parcours.</dd>
+        </dl>
+        <ul class="feat">
+          <li>Une ligne du temps interactive, de 2014 à aujourd’hui</li>
+          <li>Les quatre domaines d’aide en cartes illustrées qui se retournent</li>
+          <li>Une carte « Où nous servons » qui montre seulement des régions, jamais de lieux précis, pour protéger les enfants</li>
+          <li>Inscription des bénévoles en quatre étapes, selon leurs talents ; galerie</li>
+        </ul>
+        <p class="best"><b>À choisir si</b> peu de photos peuvent être publiées en toute sécurité : l’illustration porte alors le récit.</p>
+        <a class="live" href="https://claude.ai/artifact/R42QTKeeReJ73mcghqc361" target="_blank" rel="noopener">Visiter le site →</a>
+      </div>
+    </article>
+
+    <article class="proposal" id="p4">
+      <div class="shots">
+        <img class="desk" src="img/site-4-nord.jpg" width="960" height="600" alt="Accueil de la proposition 4 sur ordinateur : bandeau vert sapin avec une neige légère, titre « Une main tendue, chaque semaine, dans nos quartiers »">
+        <img class="phone" src="img/site-4-nord-m.jpg" width="300" height="650" alt="La proposition 4 sur téléphone">
+      </div>
+      <div class="stack">
+        <span class="num">04</span>
+        <h3>Chaleur du Nord</h3>
+        <span class="en">Un site calme, ancré à Montréal</span>
+        <div class="swatches" aria-hidden="true"><i style="background:#F4F4F1"></i><i style="background:#2F4A3F"></i><i style="background:#B5332E"></i><i style="background:#E8DFD0"></i></div>
+        <dl class="kv">
+          <dt>Style</dt><dd>Calme, nordique et bien québécois : sapin, érable, bouleau, motifs de tricot et une neige douce en hiver.</dd>
+          <dt>Priorité</dt><dd>Mobiliser la communauté locale.</dd>
+        </dl>
+        <ul class="feat">
+          <li>Un agenda des événements et des maraudes, par mois ou en liste, auquel on peut s’abonner</li>
+          <li>Un repère des collectes alimentaires par quartier</li>
+          <li>Des quarts de bénévolat qui affichent les places restantes</li>
+          <li>Des trousses pour les Églises, les écoles et les entreprises ; une infolettre au choix des sujets</li>
+        </ul>
+        <p class="best"><b>À choisir si</b> l’œuvre se vit surtout chaque semaine, sur le terrain, à Montréal.</p>
+        <a class="live" href="https://claude.ai/artifact/631FkZCyh5cBkWWrCKHtTm" target="_blank" rel="noopener">Visiter le site →</a>
+      </div>
+    </article>
+
+    <article class="proposal" id="p5">
+      <div class="shots">
+        <img class="desk" src="img/site-5-coeur-ouvert.jpg" width="960" height="600" alt="Accueil de la proposition 5 sur ordinateur : immense titre noir condensé « Défendez le faible et l’orphelin », accents corail et photos en noir et blanc">
+        <img class="phone" src="img/site-5-coeur-ouvert-m.jpg" width="300" height="650" alt="La proposition 5 sur téléphone">
+      </div>
+      <div class="stack">
+        <span class="num">05</span>
+        <h3>Cœur ouvert</h3>
+        <span class="en">Un site audacieux, fait pour les campagnes</span>
+        <div class="swatches" aria-hidden="true"><i style="background:#F5F1EA"></i><i style="background:#141414"></i><i style="background:#E8503A"></i><i style="background:#B23A26"></i></div>
+        <dl class="kv">
+          <dt>Style</dt><dd>Une mise en page de magazine audacieuse : titres géants, photos en noir et blanc, une seule couleur corail, et le mot ESPOIR qui grandit au défilement.</dd>
+          <dt>Priorité</dt><dd>La sensibilisation et les campagnes.</dd>
+        </dl>
+        <ul class="feat">
+          <li>Campagne de Noël 2026 : thermomètre de collecte, compte à rebours, dons jumelés, catalogue de cadeaux</li>
+          <li>Pages d’ambassadeurs pour collecter à l’occasion d’un anniversaire, d’une course ou avec un groupe d’Église</li>
+          <li>Un générateur de cartes de versets à télécharger en image pour les réseaux sociaux</li>
+          <li>Un espace vidéo et une trousse média</li>
+        </ul>
+        <p class="best"><b>À choisir si</b> le but est de grandir, de mener des campagnes et de faire parler de l’œuvre.</p>
+        <a class="live" href="https://claude.ai/artifact/UNz1KbSMX64pmLQAsZ9eha" target="_blank" rel="noopener">Visiter le site →</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section id="comparer">
+  <div class="wrap">
+    <div class="stack">
+      <span class="eyebrow">Comparer</span>
+      <h2>Ce que chaque proposition fait déjà</h2>
+      <p class="muted">Les fonctions passent facilement d’une proposition à l’autre. Choisir un style n’empêche pas de reprendre des fonctions des autres.</p>
+    </div>
+    <div class="legend" aria-hidden="true">
+      <span><i class="dot"></i> Fonction principale de la proposition</span>
+      <span><i class="ring"></i> Incluse, version plus simple</span>
+      <span><b class="dash">—</b> Pas encore incluse</span>
+    </div>
+    <div class="tablebox" role="region" aria-label="Comparaison des fonctions" tabindex="0">
+      <table>
+        <thead><tr><th scope="col">Fonction</th><th scope="col" class="c">1 Lumière</th><th scope="col" class="c">2 Lettre</th><th scope="col" class="c">3 Kimia</th><th scope="col" class="c">4 Nord</th><th scope="col" class="c">5 Cœur ouvert</th></tr></thead>
+        <tbody>
+          <tr class="group"><td colspan="6">Dons</td></tr>
+          <tr><td>Formulaire de don où chaque montant indique ce qu’il permet (Zeffy + Interac)</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td></tr>
+          <tr><td>Cercle de donateurs mensuels</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td></tr>
+          <tr><td>« Où va votre don » et page Transparence</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td></tr>
+          <tr><td>Campagne avec barre de progression et catalogue de cadeaux</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td></tr>
+          <tr><td>Pages de collecte des ambassadeurs</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td></tr>
+          <tr class="group"><td colspan="6">Histoires et foi</td></tr>
+          <tr><td>Carnet d’histoires</td><td class="c dash">—</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td></tr>
+          <tr><td>Balado ou audio avec transcriptions</td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td></tr>
+          <tr><td>Mur de prière et d’espérance</td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td></tr>
+          <tr><td>Cartes de versets à partager</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td></tr>
+          <tr class="group"><td colspan="6">Communauté</td></tr>
+          <tr><td>Événements avec « Ajouter à mon agenda »</td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td></tr>
+          <tr><td>Abonnement à l’agenda de l’association + synchronisation Google Agenda</td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td></tr>
+          <tr><td>Inscription des bénévoles</td><td class="c"><i class="ring" role="img" aria-label="incluse"></i></td><td class="c dash">—</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c dash">—</td></tr>
+          <tr><td>Repère des collectes alimentaires</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c dash">—</td></tr>
+          <tr><td>Trousses pour les Églises et les écoles</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c dash">—</td></tr>
+          <tr><td>Ligne du temps et carte sans lieux précis</td><td class="c dash">—</td><td class="c dash">—</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td><td class="c dash">—</td><td class="c dash">—</td></tr>
+          <tr><td>Trousse média</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c dash">—</td><td class="c"><i class="dot" role="img" aria-label="principale"></i></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="fondation" class="band">
+  <div class="wrap">
+    <div class="stack">
+      <span class="eyebrow">La base commune</span>
+      <h2>Ce que chaque proposition corrige</h2>
+      <p class="muted">L’analyse du site actuel a relevé un titre de page vide sur chaque page, alors que Google en a besoin pour bien afficher le site. Elle a aussi trouvé les numéros de compte bancaire publiés en clair, aucune version anglaise, aucun moyen de donner en ligne et des pages d’essai WordPress oubliées.</p>
+    </div>
+    <div class="grid3">
+      <div class="tile"><h3>Sécurité</h3><ul><li>Aucune base de données, aucune extension WordPress ni page de connexion sur le site public : beaucoup moins de prise pour une attaque</li><li>Règles de sécurité dans le navigateur (HTTPS seulement, politique de contenu stricte) et une plateforme de don qui gère tous les paiements par carte</li><li>Coordonnées bancaires données seulement sur demande</li></ul></div>
+      <div class="tile"><h3>Recherche et partage</h3><ul><li>Des adresses <code>/fr/</code> et <code>/en/</code> séparées et reliées, pour que Google montre la bonne langue</li><li>Un titre et une description uniques sur chaque page, et une image d’aperçu quand on partage un lien</li><li>Des informations lisibles par les moteurs de recherche sur l’organisme, les événements et les nouvelles, et un plan du site</li></ul></div>
+      <div class="tile"><h3>Rapidité et accessibilité</h3><ul><li>Environ 15&nbsp;Ko de JavaScript par page ; images légères</li><li>Les vidéos se chargent seulement au clic</li><li>Conçu selon la norme d’accessibilité WCAG 2.2 AA : navigation au clavier, bons contrastes, animations réduites sur demande</li></ul></div>
+      <div class="tile"><h3>Vie privée (Loi 25)</h3><ul><li>Politique de confidentialité bilingue avec un responsable de la protection des renseignements <span class="tbc">à confirmer</span></li><li>Statistiques de visite sans témoins (cookies) : aucune bannière de consentement nécessaire</li><li>Règles de consentement pour les photos d’enfants</li></ul></div>
+      <div class="tile"><h3>Éthique</h3><ul><li>L’espérance avant le besoin, jamais la pitié</li><li>Prénoms seulement ; aucun lieu précis</li><li>Un engagement public à raconter les histoires de façon éthique</li></ul></div>
+      <div class="tile"><h3>Coût</h3><p>Environ 20&nbsp;$ par année pour le nom de domaine. L’hébergement Cloudflare Pages est gratuit. Zeffy ne prend aucuns frais aux organismes de bienfaisance et émet les reçus fiscaux de l’ARC automatiquement.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="contenu">
+  <div class="wrap">
+    <div class="stack">
+      <span class="eyebrow">Ajouter du contenu</span>
+      <h2>Deux outils familiers, sans programmeur</h2>
+      <p class="muted">Les événements viennent d’un <b>Google Agenda</b> que l’équipe sait déjà utiliser, même depuis un téléphone. Tout le reste (nouvelles, histoires, photos, vidéos, audio, textes des pages) se modifie dans un formulaire simple à l’adresse <code>/admin</code>, avec le français et l’anglais côte à côte, et un bouton de traduction qui prépare un premier jet.</p>
+    </div>
+
+    <div class="flow" role="img" aria-label="Schéma : l’équipe ajoute les événements dans Google Agenda et le contenu dans l’administration du site. Une publication automatique, chaque heure, synchronise l’agenda et reconstruit le site. Les visiteurs s’abonnent et voient les événements apparaître dans leur propre agenda Apple, Google ou Outlook.">
+      <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>
+        <rect class="box" x="10" y="20" width="210" height="110" rx="12"/>
+        <text class="t" x="28" y="52">Google Agenda</text>
+        <text class="s" x="28" y="76">Maraudes hebdomadaires,</text>
+        <text class="s" x="28" y="94">collectes, ateliers, prière</text>
+        <text class="s" x="28" y="112">Modifiable sur téléphone</text>
+        <rect class="box" x="10" y="170" width="210" height="110" rx="12"/>
+        <text class="t" x="28" y="202">Administration (/admin)</text>
+        <text class="s" x="28" y="226">Nouvelles, histoires, photos,</text>
+        <text class="s" x="28" y="244">vidéos, audio, textes</text>
+        <text class="s" x="28" y="262">Français + anglais côte à côte</text>
+        <rect class="box hl" x="300" y="95" width="290" height="110" rx="12"/>
+        <text class="t" x="318" y="127">Publication automatique</text>
+        <text class="s" x="318" y="151">Chaque heure et à chaque enregistrement :</text>
+        <text class="s" x="318" y="169">agenda → construction → mise en ligne</text>
+        <text class="s" x="318" y="187">Bouton « Publier maintenant » aussi</text>
+        <rect class="box" x="670" y="20" width="300" height="110" rx="12"/>
+        <text class="t" x="688" y="52">Site web, FR + EN</text>
+        <text class="s" x="688" y="76">Événements : pages, liste, calendrier,</text>
+        <text class="s" x="688" y="94">informations prêtes pour Google</text>
+        <text class="s" x="688" y="112">Bouton S’abonner sur chaque événement</text>
+        <rect class="box hl" x="670" y="170" width="300" height="110" rx="12"/>
+        <text class="t" x="688" y="202">L’agenda de chaque sympathisant</text>
+        <text class="s" x="688" y="226">Apple, Google, Outlook : abonnement</text>
+        <text class="s" x="688" y="244">unique, les événements s’ajoutent seuls</text>
+        <text class="s" x="688" y="262">(le meilleur outil de rappel qui soit)</text>
+        <path class="arrow" d="M220 75 C 265 75, 265 130, 296 135"/>
+        <path class="arrow" d="M220 225 C 265 225, 265 170, 296 165"/>
+        <text class="lbl" x="226" y="62">flux iCal public</text>
+        <text class="lbl" x="226" y="250">enregistré sur GitHub</text>
+        <path class="arrow" d="M590 135 C 630 135, 630 75, 666 75"/>
+        <path class="arrow" d="M820 130 L 820 166"/>
+        <text class="lbl" x="830" y="153">flux d’agenda</text>
+      </svg>
+    </div>
+
+    <div class="two">
+      <div class="stack">
+        <h3>Comment l’équipe écrit un événement dans Google Agenda</h3>
+        <p class="muted">On écrit le titre en français, puis une barre verticale, puis l’anglais. La description contient le texte français, puis une ligne avec seulement <code>EN</code>, puis le texte anglais. Des lignes facultatives ajoutent une catégorie, un lien d’inscription ou un point de rencontre. Les événements marqués <b>Privé</b> n’apparaissent jamais sur le site.</p>
+<pre class="example" aria-label="Exemple d’événement dans Google Agenda">Titre :   Maraude du jeudi soir | Thursday-night street outreach
+Répéter : chaque semaine le jeudi, 18 h 30 – 21 h 30
+Lieu :    Sortie du métro Atwater, Montréal
+
+Repas chauds et écoute auprès des personnes
+sans-abri du centre-ville.
+<span class="k">Catégorie:</span> maraude
+<span class="k">Inscription:</span> https://www.zeffy.com/…
+<span class="k">EN</span>
+Hot meals and a listening ear downtown.</pre>
+        <p class="muted">L’outil gère les répétitions hebdomadaires et mensuelles, une date annulée, une date déplacée, les événements d’une journée entière et les changements d’heure. Il a été testé sur les cinq propositions.</p>
+      </div>
+      <div class="stack">
+        <h3>« Je veux… »</h3>
+        <div class="tablebox" role="region" aria-label="Où ajouter chaque type de contenu" tabindex="0">
+          <table class="howto">
+            <thead><tr><th scope="col">Je veux…</th><th scope="col">Où</th><th scope="col">En ligne</th></tr></thead>
+            <tbody>
+              <tr><td>Ajouter une maraude hebdomadaire ou une collecte</td><td>Google Agenda</td><td class="when">≤ 1 heure</td></tr>
+              <tr><td>Annuler ou déplacer une seule date</td><td>Google Agenda, cette date seulement</td><td class="when">≤ 1 heure</td></tr>
+              <tr><td>Annoncer un gala avec photo et billets</td><td>/admin → Événements</td><td class="when">~2 min</td></tr>
+              <tr><td>Publier une nouvelle avec photos</td><td>/admin → Nouvelles</td><td class="when">~2 min</td></tr>
+              <tr><td>Ajouter une vidéo</td><td>YouTube, puis coller le lien dans /admin</td><td class="when">~2 min</td></tr>
+              <tr><td>Ajouter un épisode de balado</td><td>Hébergeur de balado, puis coller le lien + la transcription</td><td class="when">~2 min</td></tr>
+              <tr><td>Changer le verset de la semaine</td><td>/admin → Réglages</td><td class="when">~2 min</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted">Un guide pas à pas pour l’équipe accompagne les sites, avec la liste de vérification du consentement pour les photos d’enfants.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="suite" class="band">
+  <div class="wrap">
+    <div class="stack">
+      <span class="eyebrow">Feuille de route</span>
+      <h2>Fonctions qui pourraient être ajoutées</h2>
+      <p class="muted">Des idées issues de la recherche qui ne sont pas encore construites, regroupées selon le bon moment pour les ajouter. L’effort est relatif : <b>petit</b>, c’est quelques heures de travail ; <b>grand</b>, c’est un projet en soi.</p>
+    </div>
+    <div class="filters" role="group" aria-label="Filtrer les idées par domaine">
+      <button type="button" data-f="all" aria-pressed="true">Toutes</button>
+      <button type="button" data-f="give" aria-pressed="false">Dons</button>
+      <button type="button" data-f="reach" aria-pressed="false">Rayonnement</button>
+      <button type="button" data-f="people" aria-pressed="false">Communauté</button>
+      <button type="button" data-f="ops" aria-pressed="false">Gestion du site</button>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><h3>Au lancement</h3><span class="muted">Nécessaire pour mettre en ligne en confiance</span></div>
+      <div class="ideas">
+        <div class="idea" data-a="give"><h4>Brancher les vrais formulaires Zeffy</h4><p>Don, don mensuel et billetterie, avec reçus fiscaux de l’ARC automatiques en français et en anglais.</p><div class="tags"><span class="tag lo">Petit</span><span class="tag">Dons</span></div></div>
+        <div class="idea" data-a="ops"><h4>Faire fonctionner les formulaires</h4><p>Contact, bénévolat, prière et infolettre envoyés au courriel de l’équipe, avec une protection invisible contre les pourriels.</p><div class="tags"><span class="tag lo">Petit</span><span class="tag">Gestion</span></div></div>
+        <div class="idea" data-a="reach"><h4>Fiche Google Business + Search Console</h4><p>Apparaître sur Google Maps et dans les recherches locales ; soumettre le plan du site pour que Google trouve chaque page.</p><div class="tags"><span class="tag lo">Petit</span><span class="tag">Visibilité</span></div></div>
+        <div class="idea" data-a="ops"><h4>Rediriger les anciennes adresses</h4><p>Les anciens liens WordPress continuent de fonctionner et Google transfère leur classement aux nouvelles pages.</p><div class="tags"><span class="tag lo">Petit</span><span class="tag">Gestion</span></div></div>
+        <div class="idea" data-a="ops"><h4>De vraies photos, avec consentement</h4><p>Remplacer les images de banque par des moments vécus par l’association, selon la liste de vérification sur la dignité.</p><div class="tags"><span class="tag">Moyen</span><span class="tag">Gestion</span></div></div>
+        <div class="idea" data-a="people"><h4>Rappels aux bénévoles</h4><p>Les personnes inscrites à une maraude reçoivent le quart dans leur agenda et un courriel de rappel la veille.</p><div class="tags"><span class="tag">Moyen</span><span class="tag">Communauté</span></div></div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><h3>Les six premiers mois</h3><span class="muted">Élargir l’auditoire et le soutien régulier</span></div>
+      <div class="ideas">
+        <div class="idea" data-a="reach"><h4>Google Ad Grants</h4><p>Jusqu’à 10&nbsp;000&nbsp;$ US par mois d’annonces Google gratuites pour les organismes de bienfaisance enregistrés, avec des campagnes françaises et anglaises séparées.</p><div class="tags"><span class="tag">Moyen</span><span class="tag">Visibilité</span></div></div>
+        <div class="idea" data-a="reach"><h4>Le lingala comme troisième langue</h4><p>Les pages principales en lingala, pour honorer <i>Kimia na motema</i> et rejoindre la communauté congolaise de Montréal.</p><div class="tags"><span class="tag">Moyen</span><span class="tag">Rayonnement</span></div></div>
+        <div class="idea" data-a="people"><h4>Chaîne communautaire WhatsApp</h4><p>Une chaîne de diffusion pour les appels aux maraudes et les sujets de prière, accessible depuis le site.</p><div class="tags"><span class="tag lo">Petit</span><span class="tag">Communauté</span></div></div>
+        <div class="idea" data-a="give"><h4>Dons en l’honneur de quelqu’un + cartes</h4><p>Donner au nom d’une personne aimée, qui reçoit une belle carte. Très porteur à Noël et pour les anniversaires.</p><div class="tags"><span class="tag">Moyen</span><span class="tag">Dons</span></div></div>
+        <div class="idea" data-a="give"><h4>Codes QR pour les collectes</h4><p>Une affiche à l’entrée de l’épicerie mène à un don en un geste et aux prochaines dates.</p><div class="tags"><span class="tag lo">Petit</span><span class="tag">Dons</span></div></div>
+        <div class="idea" data-a="reach"><h4>Infolettre au contenu automatique</h4><p>Un courriel mensuel construit à partir des dernières nouvelles et des prochains événements, envoyé dans la langue de chaque abonné.</p><div class="tags"><span class="tag">Moyen</span><span class="tag">Rayonnement</span></div></div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-head"><h3>Plus tard</h3><span class="muted">Des liens plus profonds avec les sympathisants</span></div>
+      <div class="ideas">
+        <div class="idea" data-a="give"><h4>Espace donateurs</h4><p>Les donateurs mensuels retrouvent leurs reçus, un bilan annuel « votre impact » et des nouvelles réservées aux membres.</p><div class="tags"><span class="tag hi">Grand</span><span class="tag">Dons</span></div></div>
+        <div class="idea" data-a="give"><h4>Parrainer un programme</h4><p>Parrainer un foyer, une année scolaire ou un programme de repas plutôt qu’un seul enfant : plus éthique et plus simple à gérer.</p><div class="tags"><span class="tag hi">Grand</span><span class="tag">Dons</span></div></div>
+        <div class="idea" data-a="reach"><h4>Assistant FAQ bilingue</h4><p>Répond aux questions des visiteurs (reçus fiscaux, bénévolat, prochaine maraude) uniquement à partir du contenu du site.</p><div class="tags"><span class="tag">Moyen</span><span class="tag">Rayonnement</span></div></div>
+        <div class="idea" data-a="people"><h4>Application à installer pour les fidèles</h4><p>Ajouter le site à l’écran d’accueil, lire les histoires hors ligne, recevoir les avis d’événements sans passer par un magasin d’applications.</p><div class="tags"><span class="tag">Moyen</span><span class="tag">Communauté</span></div></div>
+        <div class="idea" data-a="give"><h4>Dons planifiés et en milieu de travail</h4><p>Des pages sur les legs, l’assurance vie et les dons jumelés par l’employeur, très répandus chez les donateurs québécois.</p><div class="tags"><span class="tag lo">Petit</span><span class="tag">Dons</span></div></div>
+        <div class="idea" data-a="reach"><h4>« Que sont-ils devenus ? »</h4><p>Avec leur consentement, des nouvelles de jeunes adultes aidés par l’association, pour montrer le changement au fil des années.</p><div class="tags"><span class="tag">Moyen</span><span class="tag">Rayonnement</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="questions">
+  <div class="wrap">
+    <div class="stack">
+      <span class="eyebrow">Prochaine étape</span>
+      <h2>Ce dont nous avons besoin de l’association</h2>
+      <p class="muted">Les réponses remplaceront chaque mention <span class="tbc">à confirmer</span> et décideront quelle proposition deviendra le vrai site.</p>
+    </div>
+    <ol class="q">
+      <li>Quelle proposition vous ressemble le plus ? Et quelles fonctions des autres aimeriez-vous y ajouter ?</li>
+      <li>L’association est-elle un organisme de bienfaisance enregistré auprès de l’ARC ? Si oui, quel est son numéro, et émet-elle des reçus fiscaux ?</li>
+      <li>Qui fait partie de l’équipe ou du conseil d’administration, et qui sera responsable de la protection des renseignements personnels selon la Loi 25 ?</li>
+      <li>Quels pays ou quelles villes servez-vous en dehors de Montréal ?</li>
+      <li>De vrais chiffres, des témoignages et des photos prises avec consentement.</li>
+      <li>Qui gérera le Google Agenda, et qui publiera les nouvelles ? Nous leur donnerons accès et les accompagnerons.</li>
+      <li>Utilisez-vous déjà Zeffy, des réseaux sociaux, une infolettre ou une chaîne YouTube ?</li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">Préparé en novembre 2026 pour La Paix du Cœur / Kimia Na Motema, Montréal. Les captures d’écran proviennent des prototypes fonctionnels ; tout le contenu d’exemple est signalé sur les sites.</div>
+</footer>
+
+<script>
+(function () {
+  document.documentElement.lang = 'fr-CA';
+  var buttons = document.querySelectorAll('.filters button');
+  var ideas = document.querySelectorAll('.idea');
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var f = b.getAttribute('data-f');
+      buttons.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      ideas.forEach(function (i) { i.hidden = f !== 'all' && i.getAttribute('data-a') !== f; });
+    });
+  });
+})();
+</script>

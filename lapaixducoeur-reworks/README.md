@@ -36,7 +36,8 @@ Each site has screenshots in `screenshots/` and its own `README.md`, which cover
 - [`shared/tools/calendar-sync.mjs`](shared/tools/calendar-sync.mjs): imports the association's public Google Calendar into any site's `content/events/`. It handles repeating events, cancelled or moved dates, all-day events, and bilingual titles and descriptions. Test feed: `shared/tools/fixtures/google-calendar-sample.ics`.
 - [`shared/deploy/publish.yml`](shared/deploy/publish.yml): GitHub Actions template. Each run syncs the calendar, builds the site and deploys it to Cloudflare Pages. It runs hourly and on every CMS save, and has a manual "Run workflow" button.
 - Every site publishes subscribable feeds (`/calendar.ics`, `/fr/calendrier.ics`, `/en/calendar.ics`) and shows a "S'abonner à l'agenda / Subscribe" block (Apple, Google, Outlook, copy link).
-- [`overview/proposals.html`](overview/proposals.html): source of the client-facing overview page.
+- [`overview/proposals.html`](overview/proposals.html) (English) and [`overview/proposals-fr.html`](overview/proposals-fr.html) (French): the client-facing overview pages.
+- [`overview/covers/`](overview/covers/): the cover page of each live preview. [`shared/tools/make-portable.py`](shared/tools/make-portable.py) turns a site's `dist/` into a copy with relative links that works without a web root, e.g. `python3 shared/tools/make-portable.py site-1-lumiere /tmp/out`. The previews were published this way; calendar files, forms, YouTube and `/admin` don't work in them.
 
 ```bash
 node shared/tools/calendar-sync.mjs --site site-4-nord --ics "<Google Calendar public iCal URL>"

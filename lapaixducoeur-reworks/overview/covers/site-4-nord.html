@@ -1,0 +1,43 @@
+<title>Chaleur du Nord — Aperçu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root { --bg:#F6F7F2; --surface:#FFFFFF; --ink:#1A221B; --muted:#586459; --line:#DCE2D6; --accent:#2F4A3F; --accent-ink:#FFFFFF; --warn:#8A5A12; --warn-soft:#FBF0D9; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#111612; --surface:#19201A; --ink:#E7EEE4; --muted:#A2AFA0; --line:#2C362C; --accent:#9CC2AE; --accent-ink:#111612; --warn:#F0C46E; --warn-soft:#3A2E15; color-scheme:dark; } }
+:root[data-theme="dark"] { --bg:#111612; --surface:#19201A; --ink:#E7EEE4; --muted:#A2AFA0; --line:#2C362C; --accent:#9CC2AE; --accent-ink:#111612; --warn:#F0C46E; --warn-soft:#3A2E15; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { background:var(--bg); color:var(--ink); font:400 16px/1.6 "Inter",system-ui,sans-serif; }
+main { max-width:980px; margin:0 auto; padding-block:40px 56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:grid; gap:28px; }
+.eyebrow { font-weight:600; font-size:.75rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+h1 { font:700 clamp(2rem,6vw,3.2rem)/1.05 "Bricolage Grotesque",system-ui,sans-serif; margin:6px 0 4px; letter-spacing:-.02em; text-wrap:balance; }
+.en { color:var(--muted); font-size:1.05rem; }
+p { margin:0; max-width:62ch; }
+.desc { display:grid; gap:4px; }
+.desc p + p { color:var(--muted); }
+.cta { display:flex; flex-wrap:wrap; gap:10px; }
+.btn { display:inline-flex; align-items:center; gap:8px; padding:12px 18px; border-radius:999px; font-weight:600; text-decoration:none; border:2px solid var(--accent); }
+.btn.primary { background:var(--accent); color:var(--accent-ink); }
+.btn.ghost { color:var(--accent); background:transparent; }
+.btn:focus-visible { outline:3px solid var(--ink); outline-offset:3px; }
+.shot { display:block; border-radius:14px; overflow:hidden; border:1px solid var(--line); box-shadow:0 20px 40px -24px rgba(0,0,0,.4); }
+.shot img { display:block; width:100%; height:auto; }
+.quick { font-size:.92rem; color:var(--muted); }
+.quick a { color:var(--accent); }
+.note { background:var(--warn-soft); color:var(--warn); border-radius:10px; padding:12px 14px; font-size:.88rem; display:grid; gap:4px; }
+</style>
+<main>
+  <header>
+    <span class="eyebrow">La Paix du Cœur · Proposition 04 / Proposal 04</span>
+    <h1>Chaleur du Nord</h1>
+    <span class="en">Northern Warmth</span>
+  </header>
+  <div class="desc"><p>Calme et québécois : agenda des maraudes, collectes, bénévolat.</p><p lang="en">Calm, Québec feel: outreach calendar, food drives, volunteering.</p></div>
+  <div class="cta">
+    <a class="btn primary" href="fr/index.html">Visiter le site en français →</a>
+    <a class="btn ghost" href="en/index.html" lang="en">Visit in English →</a>
+  </div>
+  <a class="shot" href="fr/index.html" aria-label="Ouvrir la page d’accueil en français"><img src="cover.jpg" width="960" height="600" alt="Page d’accueil de la proposition Chaleur du Nord sur ordinateur"></a>
+  <p class="quick">Aller directement à / Jump to: <a href="fr/evenements/index.html">Agenda</a> · <a href="en/events/index.html" lang="en">Events</a></p>
+  <p class="quick">← <a href="https://claude.ai/artifact/LZnc1MruCEb1vj2QGVRXPi" target="_blank" rel="noopener">Les 5 propositions</a> · <a href="https://claude.ai/artifact/FoBxBBs9i7P5HFTnaGKmus" target="_blank" rel="noopener" lang="en">All 5 proposals</a></p>
+  <div class="note"><p><strong>Prototype.</strong> Les chiffres, noms et dates marqués « Exemple — à confirmer » sont fictifs. Dans cet aperçu, les vidéos YouTube, les formulaires, les fichiers d’agenda (.ics) et l’espace /admin ne sont pas actifs.</p><p lang="en">Figures, names and dates marked “Sample — to confirm” are placeholders. In this preview, YouTube videos, forms, calendar (.ics) files and the /admin editor are not active.</p></div>
+</main>
