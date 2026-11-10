@@ -38,6 +38,7 @@ Each site has screenshots in `screenshots/` and its own `README.md`, which cover
 - Every site publishes subscribable feeds (`/calendar.ics`, `/fr/calendrier.ics`, `/en/calendar.ics`) and shows a "S'abonner à l'agenda / Subscribe" block (Apple, Google, Outlook, copy link).
 - [`overview/proposals.html`](overview/proposals.html) (English) and [`overview/proposals-fr.html`](overview/proposals-fr.html) (French): the client-facing overview pages.
 - [`overview/covers/`](overview/covers/): the cover page of each live preview. [`shared/tools/make-portable.py`](shared/tools/make-portable.py) turns a site's `dist/` into a copy with relative links that works without a web root, e.g. `python3 shared/tools/make-portable.py site-1-lumiere /tmp/out`. The previews were published this way; calendar files, forms, YouTube and `/admin` don't work in them.
+- [`shared/tools/make-bundle.py`](shared/tools/make-bundle.py) puts the French and English overviews and all five sites into one folder. It produces `artifact/` (a single artifact under the 511-file limit) and `offline/` (unzip and double-click `index.html`; fonts are embedded). Run `python3 shared/tools/make-bundle.py . /tmp/bundle`.
 
 ```bash
 node shared/tools/calendar-sync.mjs --site site-4-nord --ics "<Google Calendar public iCal URL>"
