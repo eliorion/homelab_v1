@@ -18,6 +18,10 @@ spec:
       memory: 1Gi
   imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
   postgresql:
+    parameters:
+      # A replica that stops streaming may hold at most this much WAL; past it the slot is invalidated and
+      # CNPG re-clones the replica, instead of the primary filling its disk.
+      max_slot_wal_keep_size: "4GB"
     synchronous:
       method: any
       number: 1
@@ -31,6 +35,8 @@ spec:
     initdb:
       database: seaweedfs
       owner: seaweedfs
+  # 20Gi (was 10Gi), 2026-11-10: the primary filled 10Gi with 7.1 GB of WAL held for replica db-4, whose pod
+  # had disappeared, and SeaweedFS went down. max_slot_wal_keep_size below caps that for good.
   storage:
     storageClass: ssd
-    size: 10Gi
+    size: 20Gi
