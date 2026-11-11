@@ -58,7 +58,7 @@ graph LR
   only by Tailscale — no site-to-site VPN, no forwarded port, no public S3
   endpoint. The tailnet identity is what the transport authenticates.
 - **One in-cluster endpoint**: `http://garage-s3.garage-gw.svc.cluster.local:3900`.
-  The CNPG barman sidecars (`fbref-db`, `ai-gateway-db`) and the etcd CronJob all
+  The CNPG barman sidecars (`ai-gateway-db` and the others) and the etcd CronJob all
   go through it. Nothing in the cluster should dial a raw `100.x` address —
   HAProxy is not a tailnet member and load-balances + health-checks the three
   egress Services `garage-node-{a,b,c}.tailscale.svc`
@@ -89,7 +89,6 @@ CLI, talos-backup). Current settings:
 |---|---|
 | etcd-backup | `infrastructure/services/staging/etcd-backup/configmap.yaml` (`AWS_REGION`) |
 | `ai-gateway-db` | `infrastructure/services/staging/databases/ai-gateway/objectstore.yaml` (`instanceSidecarConfiguration.env`) |
-| `fbref-db` | `apps/staging/databases/fbref/objectstore.yaml` (same) |
 
 ## Buckets and keys
 
@@ -98,7 +97,7 @@ One bucket per consumer, one key scoped to that bucket — no shared credentials
 | Bucket | Consumer | Credential Secret |
 |---|---|---|
 | `homelab-staging-etcd-backup` | Talos etcd snapshots | `etcd-backup-s3.enc.yaml` |
-| `cnpg-staging-fbref` | `fbref-db` CNPG | `garage-backup-credentials` (ns `fbref`) |
+| `cnpg-staging-fbref` | None since 2026-11-11, when `fbref-db` moved to R2. Holds the archive up to that date | Removed from git |
 | `cnpg-staging-ai-gateway` | `ai-gateway-db` CNPG | `ai-gateway-garage-backup-credentials` (ns `ai-gateway`) |
 
 Barman's layout inside a bucket is `<serverName>/base/` + `<serverName>/wals/`.

@@ -12,7 +12,7 @@ Four clusters are protected:
 |---|---|---|---|---|
 | `keycloak-db` | `identity` | Cloudflare R2 | `keycloak-cnpg-staging` | Keycloak realms, users, sessions |
 | `asp-db` | `asp` | Cloudflare R2 | `asp-cnpg-staging` | Automarket scraper data |
-| `fbref-db` | `fbref` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-fbref` | fbref scraper data, the largest DB in the cluster |
+| `fbref-db` | `fbref` | Cloudflare R2 (Garage until 2026-11-11) | `scout-cnpg-staging` | fbref scraper data, the largest DB in the cluster |
 | `ai-gateway-db` | `ai-gateway` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-ai-gateway` | Bifrost providers, virtual keys, routing rules |
 | `openbao-db` | `openbao` | **Garage** (off-cluster, via the gateway) | `cnpg-staging-openbao` | OpenBao's storage (every application credential), encrypted by its barrier: a restore also needs the unseal key from SOPS. Restore order in `infrastructure/services/base/openbao/README.md` |
 
@@ -86,8 +86,8 @@ the `identity` namespace that can also rewrite the asp archive — which is the
 archive you would be restoring from on the day you need both.
 
 ```
-keycloak-cnpg-staging/     asp-cnpg-staging/     cnpg-staging-fbref/     cnpg-staging-ai-gateway/
-└── keycloak-db/           └── asp-db/           └── fbref-db/           └── ai-gateway-db/
+keycloak-cnpg-staging/     asp-cnpg-staging/     scout-cnpg-staging/     cnpg-staging-ai-gateway/
+└── keycloak-db/           └── asp-db/           └── fbref-db-v2/        └── ai-gateway-db/
     ├── base/                  ├── base/             ├── base/               ├── base/
     └── wals/                  └── wals/             └── wals/               └── wals/
 ```
@@ -155,10 +155,14 @@ env:
 Because of this history, a **restore drill is mandatory** after enabling backups
 in an environment — a backup that cannot restore is worthless.
 
-## Second backend: Garage (fbref)
+## Second backend: Garage
 
-`fbref-db` backs up to an **off-cluster Garage** cluster instead of R2. Same
-plugin, different ObjectStore (`garage-store`, `apps/staging/databases/fbref/`):
+`ai-gateway-db`, `openbao-db` and the other clusters listed in
+`infrastructure/services/staging/garage-gateway/configure/buckets.txt` back up
+to an **off-cluster Garage** cluster instead of R2. Same plugin, different
+ObjectStore. `fbref-db` was the first of them and moved to R2 on 2026-11-11
+(bucket `scout-cnpg-staging`, see `apps/base/databases/fbref/README.md`); its
+old bucket `cnpg-staging-fbref` still holds the archive up to that date.
 
 - **Endpoint**: the in-cluster HAProxy gateway
   `http://garage-s3.garage-gw.svc.cluster.local:3900`, which fails over across
@@ -167,8 +171,7 @@ plugin, different ObjectStore (`garage-store`, `apps/staging/databases/fbref/`):
 - **No server-side encryption**: Garage has no SSE-S3/AES256 (SSE-C only), unlike
   R2 — the ObjectStore sets `wal`/`data` `compression: gzip` and **omits**
   `encryption:`. Setting AES256 would fail every upload.
-- **Bucket**: `cnpg-staging-fbref` (barman layout `fbref-db/base|wals/`), key
-  scoped to it (`garage-backup-credentials.enc.yaml`).
+- **Bucket**: one per cluster, `cnpg-staging-<name>`, key scoped to it.
 - Same defensive boto3 checksum-compat env as R2.
 
 ## Flux deployment order
@@ -327,6 +330,9 @@ test cluster cannot archive back onto the source's chain):
 - Restored DB matched the source **exactly**: **3488 MB**, 10 public tables,
   `player_stats` ~9.7M rows, `url_queue` ~275K, `players` ~30K.
 - Source `fbref-db` stayed 2/2 healthy throughout; test cluster + PVC deleted after.
+
+`fbref-db` has archived to R2 since 2026-11-11 and **no restore drill has run
+against `scout-cnpg-staging` yet**.
 
 Confirms the Garage bucket can rebuild a fresh cluster end-to-end. Re-run after
 any change to the Garage gateway/egress path. (etcd snapshot restore is a

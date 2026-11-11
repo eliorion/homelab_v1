@@ -30,7 +30,7 @@ subjects:
     name: garage-config
     namespace: garage-gw
 ---
-# Read TWO Secrets in fbref: the keys for buckets cnpg-staging-fbref and cnpg-staging-scout-customer.
+# Read ONE Secret in fbref: the key for bucket cnpg-staging-scout-customer.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -39,7 +39,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
-    resourceNames: ["garage-backup-credentials", "scout-customer-garage-backup"]
+    resourceNames: ["scout-customer-garage-backup"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

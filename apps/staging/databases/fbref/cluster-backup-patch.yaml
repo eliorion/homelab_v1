@@ -12,5 +12,5 @@ spec:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true
       parameters:
-        barmanObjectName: garage-store
+        barmanObjectName: r2-store
         serverName: fbref-db-v2

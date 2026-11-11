@@ -17,13 +17,13 @@ resources:
   - scout-quackback-widget.enc.yaml
   # ml_ro / model_rw logins and the pipelines' MLflow login, from OpenBao (asp docs/25).
   - externalsecrets.yaml
-  # CNPG -> Garage backup (bucket cnpg-staging-fbref, via the in-cluster gateway).
-  - garage-backup-credentials.enc.yaml
+  # CNPG -> Cloudflare R2 backup (bucket scout-cnpg-staging).
+  - r2-backup-credentials.enc.yaml
   - objectstore.yaml
   - scheduledbackup.yaml
 
 patches:
-  # Attach the Barman Cloud plugin -> Garage (WAL archiver + daily base backup).
+  # Attach the Barman Cloud plugin -> R2 (WAL archiver + daily base backup).
   - path: cluster-backup-patch.yaml
     target:
       kind: Cluster

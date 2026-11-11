@@ -1,47 +1,33 @@
 apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore
 metadata:
-  name: garage-store
+  name: r2-store
 spec:
   retentionPolicy: "3d"
   configuration:
-    destinationPath: "s3://cnpg-staging-fbref"
-    # In-cluster HAProxy gateway -> Tailscale egress -> Garage nodes.
-    endpointURL: "http://garage-s3.garage-gw.svc.cluster.local:3900"
+    destinationPath: "s3://scout-cnpg-staging"
+    endpointURL: "https://07e577de68147de704bb467debe46e21.r2.cloudflarestorage.com"
     s3Credentials:
       accessKeyId:
-        name: garage-backup-credentials
+        name: r2-backup-credentials
         key: ACCESS_KEY_ID
       secretAccessKey:
-        name: garage-backup-credentials
+        name: r2-backup-credentials
         key: ACCESS_KEY_SECRET
     wal:
-      # zstd: 7% smaller than gzip and ~3x less CPU per segment (measured 2026-10-28).
       compression: zstd
-      # NO `encryption:` here. Garage does not support SSE-S3/AES256 (SSE-C
-      # only) -- setting AES256 would fail every WAL/base upload.
+      encryption: AES256
     data:
-      # snappy, not gzip: barman gzips the base tar on ONE core at level 9, which capped
-      # the upload at ~1.6 MB/s (4-5h per base) while Garage took 24-65 MB/s. Larger
-      # files, much shorter window for a failure to hit.
+      # snappy, not gzip: barman gzips the base tar on ONE core at level 9 (4-5h per base).
       compression: snappy
-      # Uploads only: barman compresses on ONE core either way. snappy is network-bound
-      # (~2 MB/s per connection on Garage nodes a/b, ~0.4 on c), so 8 parallel parts
-      # carry ~6-10 MB/s instead of 2-5 (est., 2026-10-29: 55 GB in ~2 h instead of 3-9 h).
+      encryption: AES256
       jobs: 8
-      # On a standby, backup start otherwise waits for a restartpoint spread over
-      # 0.9 x checkpoint_timeout (27 min at 30min). Those restartpoints write 2-5k buffers.
+      # Without it a backup taken on the standby waits up to 0.9 x checkpoint_timeout to start.
       immediateCheckpoint: true
   instanceSidecarConfiguration:
+    # Required for Cloudflare R2: without both, backup AND restore fail with
+    # XAmzContentSHA256Mismatch (plugin-barman-cloud #411).
     env:
-      # Garage's own region -- must match it. A wrong region 400s the HeadBucket
-      # `barman-cloud-check-wal-archive` issues while the archive is EMPTY:
-      # invisible here, fatal when restoring into a fresh cluster.
-      - name: AWS_REGION
-        value: garage
-      - name: AWS_DEFAULT_REGION
-        value: garage
-      # boto3 >= 1.36 data-integrity checksum compat (plugin-barman-cloud #411).
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required
       - name: AWS_RESPONSE_CHECKSUM_VALIDATION

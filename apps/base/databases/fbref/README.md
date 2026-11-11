@@ -7,7 +7,7 @@ reader — nao, pgAdmin, Grafana and fbref-mcp — connects to the
 `fbref-db-ro.fbref.svc.cluster.local` replica endpoint instead. It is the
 largest database in the cluster and the one that actually grows. The schema is
 owned by Flyway, not by the cluster manifest, and the whole thing is archived
-to the off-cluster Garage object store with point-in-time recovery.
+to Cloudflare R2 with point-in-time recovery.
 
 ## How it is wired
 
@@ -39,18 +39,18 @@ Staging overlay (`apps/staging/databases/fbref/`):
   holding the passwords the CNPG managed roles `grafana_ro` and `mcp_ro` are
   given. `fbref-mcp-ro` is also read by the fbref-mcp Deployment as its
   `DATABASE_URL` credential.
-- `garage-backup-credentials.enc.yaml` — the Garage S3 key used by the barman
-  sidecars. `garage-backup-credentials.enc.yaml.exemple` is the plaintext
-  template for recreating it.
-- `objectstore.yaml` — the barman-cloud `ObjectStore` `garage-store`: 3d
-  retention, `s3://cnpg-staging-fbref`, endpoint
-  `http://garage-s3.garage-gw.svc.cluster.local:3900`, gzip on WAL and data,
-  `jobs: 2`, plus the sidecar environment.
-- `scheduledbackup.yaml` — `ScheduledBackup` `fbref-db-daily`, `0 0 3 * * *`,
+- `r2-backup-credentials.enc.yaml` — the R2 API token (Object Read & Write on
+  `scout-cnpg-staging` only) used by the barman sidecars.
+  `r2-backup-credentials.enc.yaml.exemple` is the plaintext template for
+  recreating it.
+- `objectstore.yaml` — the barman-cloud `ObjectStore` `r2-store`: 3d
+  retention, `s3://scout-cnpg-staging`, the R2 account endpoint, zstd on WAL,
+  snappy on data, AES256 on both, `jobs: 8`, plus the sidecar environment.
+- `scheduledbackup.yaml` — `ScheduledBackup` `fbref-db-daily`, `0 0 1 * * *`,
   `immediate: true`, `method: plugin`.
 - `cluster-backup-patch.yaml` — attaches the `barman-cloud.cloudnative-pg.io`
-  plugin to the Cluster as the WAL archiver, `barmanObjectName: garage-store`,
-  `serverName: fbref-db`.
+  plugin to the Cluster as the WAL archiver, `barmanObjectName: r2-store`,
+  `serverName: fbref-db-v2`.
 - `cluster-storage-patch.yaml` — JSON 6902 patch: `storageClass: ssd-cnpg` (one
   local LINSTOR replica per instance), `storage.size` replaced with `400Gi`, and
   `affinity` that pins the two instances to node-2 and node-3 with
@@ -110,7 +110,7 @@ homelab node. `16GB` is a soft limit — an unarchived backlog still grows `pg_w
 it, which is why `CNPGWALArchiveBacklog` and `CNPGWALGenerationHigh` exist. Crash
 recovery now replays up to 16GB of WAL instead of 1GB.
 15min -> 30min on 2026-10-28: full-page images were still 27% of WAL bytes, and every
-WAL byte is archived to off-site Garage (~55GB/day). Crash recovery stays bounded by
+WAL byte is archived off-site (~55GB/day; to Garage then, to R2 now). Crash recovery stays bounded by
 `max_wal_size`.
 
 **No `postInit` bootstrap.** The schema is owned by Flyway (the
@@ -153,7 +153,7 @@ on (`fbref-db-1` → node-2, `fbref-db-3` → node-3).
 
 One Longhorn replica is not one copy of the data. CNPG runs two instances, each
 on its own volume on a different node, with streaming replication between them,
-plus a daily Barman base backup and continuous WAL archiving to Garage. Losing a
+plus a daily Barman base backup and continuous WAL archiving to R2. Losing a
 node loses one instance's volume; CNPG re-provisions it and re-syncs from the
 survivor. Six Longhorn copies of a 74GB scraped, re-derivable dataset was the
 largest single consumer in a 2.3TB cluster. Nexus already runs this way for the
@@ -171,30 +171,32 @@ replica per instance, `allowRemoteVolumeAccess: "false"`, instances pinned to
 node-2 and node-3, never sharing one. The class and its rules are in
 [`../../../../infrastructure/controllers/base/linstor/README.md`](../../../../infrastructure/controllers/base/linstor/README.md).
 
-**Garage instead of R2.** fbref is the one CNPG cluster archived to the
-off-cluster Garage store rather than Cloudflare R2, reached through the
-in-cluster HAProxy gateway and Tailscale egress — the same single endpoint the
-etcd backup uses. Garage has no SSE-S3, so the ObjectStore omits `encryption:`
-entirely. Connectivity was verified with `barman-cloud-backup-list` (exit 0)
-before the plugin was attached. See
-[`documentations/03-backups.md`](../../../../documentations/03-backups.md) and
-[`documentations/12-garage-object-storage.md`](../../../../documentations/12-garage-object-storage.md).
+**R2 instead of Garage** (2026-11-11). fbref archived to the off-cluster Garage
+store until this date, through the in-cluster HAProxy gateway and Tailscale
+egress. It now archives to Cloudflare R2, bucket `scout-cnpg-staging`, with a
+token scoped to that bucket, like `asp-db` and `keycloak-db`. `serverName`
+stayed `fbref-db-v2`: the R2 bucket was empty, so there was no archive to
+collide with. The Garage bucket `cnpg-staging-fbref` was left as it was —
+`garage-config` never deletes — and holds the archive up to the switch. Its
+line in `buckets.txt` and its SOPS key are gone from git, so reading it again
+means restoring both from history. Delete the bucket on a Garage node once an
+R2 base backup has been restored from. See
+[`documentations/03-backups.md`](../../../../documentations/03-backups.md).
 
-**`AWS_REGION: garage`.** barman-cloud was signing HeadBucket for `us-east-1`
-while Garage's region is `garage`, which is what produced the earlier `exit
-status 4` archiving failure; with the region set, ContinuousArchiving is True
-and WAL recycles. It is not a live bug on this cluster any more — the one call
-that rejects a mismatched region is the HeadBucket that
-`barman-cloud-check-wal-archive` issues for the *first* WAL only, and this
-archive is non-empty — but it is a restore-time landmine, because bootstrapping
-a fresh cluster off this bucket starts with an empty archive again. That is
-exactly how `ai-gateway-db` filled its disk. The
-`AWS_REQUEST_CHECKSUM_CALCULATION` / `AWS_RESPONSE_CHECKSUM_VALIDATION` pair is
-defensive: the same class of boto3 >= 1.36 data-integrity checksum rejection
-seen with R2 (plugin-barman-cloud issue 411), harmless if Garage accepts them.
-Path style was verified — boto3 uses path style for a custom endpoint, and
-`barman-cloud-backup-list` against this bucket through the gateway returned
-cleanly.
+**Compression and parallelism.** WAL is `zstd`: 7% smaller than gzip and about
+3x less CPU per segment (measured 2026-10-28). Base backups are `snappy`, not
+gzip: barman gzips the base tar on one core at level 9, which capped the upload
+at ~1.6 MB/s (4-5h per base); snappy gives larger files and a much shorter
+window for a failure to hit. `jobs: 8` parallelises the upload only. It was
+sized against Garage's ~2 MB/s per connection and has not been re-measured on
+R2. `immediateCheckpoint: true` because a backup taken on the standby otherwise
+waits for a restartpoint spread over 0.9 x `checkpoint_timeout` (27 min).
+
+**Sidecar environment.** `AWS_REQUEST_CHECKSUM_CALCULATION` /
+`AWS_RESPONSE_CHECKSUM_VALIDATION` = `when_required` are mandatory on R2:
+boto3 >= 1.36 sends data-integrity checksums that R2 rejects with
+`XAmzContentSHA256Mismatch`, on backup and on restore (plugin-barman-cloud
+issue 411). The `AWS_REGION: garage` pair the Garage store needed left with it.
 
 **Reflector annotations.** `inheritedMetadata` is CNPG's only hook for
 annotating the Secrets the operator generates, in particular the `-app`
@@ -231,10 +233,11 @@ central reflector source.
   conflict with recovery`.
 - The `app` managed role must keep `createrole: true` or Flyway V3 fails on a
   fresh initdb.
-- The ObjectStore must not set `encryption:`. Garage supports SSE-C only, not
-  SSE-S3/AES256, and AES256 would fail every WAL and base upload.
-- `AWS_REGION` and `AWS_DEFAULT_REGION` must both stay `garage`. A wrong region
-  is silent on this cluster and fatal on a restore into a fresh one.
+- The two `AWS_*_CHECKSUM_*` sidecar variables must stay. Without them every
+  upload and every restore fails on R2 with `XAmzContentSHA256Mismatch`.
+- **R2 bills what Garage did not.** About 55GB of WAL a day plus one ~55GB base
+  a day at `3d` retention; a longer retention or a WAL volume that climbs back
+  shows up on the Cloudflare invoice.
 - `db-init-configmap.yaml` is deliberately absent from `kustomization.yaml`.
   Adding it back would reintroduce a schema source that competes with Flyway.
 - The `-app` Secret leaves this namespace only because of the reflector
@@ -264,14 +267,11 @@ central reflector source.
   is already in "Not enough disk space". CNPG's low-disk guard returns before it
   reaches PVC reconciliation, so the Cluster carries the new size and the PVCs
   stay at the old one. Patch them by hand — see "Operating it".
-- **A Garage outage fills this volume.** Failing WAL archiving is not just a
+- **An R2 outage or a revoked token fills this volume.** Failing WAL archiving is not just a
   missing backup: PostgreSQL retains every unarchived segment. Watch
   `ContinuousArchiving` on the Cluster, not only the disk.
-- The etcd Garage key has **no** fbref access. The backup key must be a
-  dedicated Garage key scoped to the fbref bucket.
-- The header comments still sitting in `garage-backup-credentials.enc.yaml`
-  name the bucket `homelab-staging-fbref`, but the bucket the ObjectStore
-  actually reads and writes is `cnpg-staging-fbref`.
+- `scout-customer-db` lives in this namespace too and still archives to Garage
+  (`apps/staging/databases/scout-customer/`); only `fbref-db` moved to R2.
 - `*.enc.yaml` files are SOPS ciphertext; edit them only through `sops`.
 
 ## Operating it
@@ -315,22 +315,27 @@ kubectl -n fbref patch cluster fbref-db --subresource=status --type=merge \
   -p '{"status":{"targetPrimary":"fbref-db-<new>"}}'
 ```
 
-Recreate the Garage backup credential from the template. The `garage` commands
-run on a Garage node — the admin API is not exposed through the in-cluster
-gateway:
+Recreate the R2 backup credential from the template. Create the token in the
+Cloudflare dashboard (R2, API tokens, Object Read & Write, bucket
+`scout-cnpg-staging` only):
 
 ```bash
-garage bucket create cnpg-staging-fbref
-garage key create fbref-cnpg-staging
-garage bucket allow --read --write cnpg-staging-fbref --key fbref-cnpg-staging
-cp garage-backup-credentials.enc.yaml.exemple garage-backup-credentials.enc.yaml
+cp r2-backup-credentials.enc.yaml.exemple r2-backup-credentials.enc.yaml
 # fill in the key id + secret, then encrypt in place
-sops -e -i garage-backup-credentials.enc.yaml
+sops -e -i r2-backup-credentials.enc.yaml
 ```
 
-Restore procedure and the 2026-07-26 restore drill for this exact cluster
-(bootstrap-recovery of `fbref-db` out of `cnpg-staging-fbref` into a throwaway
-`fbref-restore-test` cluster) are in
+Take a base backup now instead of waiting for 01:00 UTC (`immediate: true` only
+fires when the `ScheduledBackup` is created):
+
+```bash
+kubectl cnpg backup fbref-db -n fbref --method plugin \
+  --plugin-name barman-cloud.cloudnative-pg.io
+```
+
+Restore procedure and the 2026-07-26 restore drill for this cluster
+(bootstrap-recovery of `fbref-db` out of the Garage bucket it used then, into a
+throwaway `fbref-restore-test` cluster) are in
 [`documentations/03-backups.md`](../../../../documentations/03-backups.md).
 
 ### Overlays
@@ -338,5 +343,5 @@ Restore procedure and the 2026-07-26 restore drill for this exact cluster
 Only a `staging` overlay exists (`apps/staging/databases/fbref/`). Base on its own gives the Namespace
 and a Cluster with the default storage class and `10Gi`, no backups and no
 secrets. Staging adds the `ssd-cnpg` storage class, `400Gi` and the node pinning, the barman-cloud
-plugin and the Garage `ObjectStore` + `ScheduledBackup`, the two managed-role
+plugin and the R2 `ObjectStore` + `ScheduledBackup`, the two managed-role
 password Secrets, and the reflector permit annotations.

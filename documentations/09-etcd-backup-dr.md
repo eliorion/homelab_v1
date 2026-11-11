@@ -87,7 +87,7 @@ which load-balances + TCP-health-checks across three Garage nodes reached over
 `infrastructure/controllers/staging/tailscale-operator/egress-proxies.yaml`). The
 Talos nodes are **not** on the tailnet — the operator's userspace proxy pods are.
 A **restore runs off-cluster** and goes **direct** to a Garage tailnet node (the
-gateway is in-cluster only). fbref's CNPG backup rides the same gateway (`03`).
+gateway is in-cluster only). The Garage-backed CNPG backups ride the same gateway (`03`).
 
 ### Encryption
 
@@ -460,7 +460,7 @@ in etcd. A complete DR proof therefore also restores each database from its back
 with `bootstrap.recovery` (the drill in `03-backups.md`).
 
 That CNPG object store is **split across both backends**: `keycloak-db` and
-`asp-db` archive to Cloudflare R2, while `fbref-db` and `ai-gateway-db` archive to
+`asp-db` archive to Cloudflare R2 (`fbref-db` too since 2026-11-11), while `ai-gateway-db` and others archive to
 Garage through the same `garage-s3.garage-gw.svc:3900` gateway this etcd stack
 uses (`03-backups.md`, `12-garage-object-storage.md`). Three CNPG clusters have no
 off-cluster backup at all (`n8n-db`, `scraper-db`, `dbtools-db`), so a Case 2
@@ -471,7 +471,7 @@ Two consequences for this drill:
 - Garage is now a **shared dependency** of the control-plane backup and half the
   data-tier backups. A Garage outage degrades both at once, which is exactly the
   correlation an offsite second copy would break.
-- A restore of `fbref-db` or `ai-gateway-db` runs through the same tailnet path as
+- A restore of `ai-gateway-db` runs through the same tailnet path as
   an etcd restore, so the three offsite prerequisites below cover both.
 
 ### What a pass looks like — capture it
