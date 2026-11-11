@@ -26,6 +26,37 @@ spec:
     remediation:
       retries: 3
       strategy: rollback
+  # Cap what the BUILD containers may hold. They are NOT in this pod's cgroup: a privileged
+  # container gets the host's cgroup tree on cgroup v2, so the engine creates them under the
+  # HOST's /sys/fs/cgroup/buildkit, where the pod's memory limit never applied. See README,
+  # "Build memory". The chart renders no postStart hook, hence the post-renderer.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: StatefulSet
+              name: dagger-engine
+            patch: |
+              apiVersion: apps/v1
+              kind: StatefulSet
+              metadata:
+                name: dagger-engine
+              spec:
+                template:
+                  spec:
+                    containers:
+                      - name: dagger-engine
+                        lifecycle:
+                          postStart:
+                            exec:
+                              command:
+                                - sh
+                                - -ec
+                                - |
+                                  g=/sys/fs/cgroup/buildkit
+                                  mkdir -p "$g"
+                                  echo 6G > "$g/memory.high"
+                                  echo 8G > "$g/memory.max"
   values:
     # Yields pod dagger-engine-0: must match DAGGER_RUNNER_HOST and rbac.yaml resourceNames.
     fullnameOverride: dagger

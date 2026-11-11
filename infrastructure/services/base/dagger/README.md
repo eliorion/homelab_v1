@@ -268,6 +268,23 @@ is re-pulled.
   half the node. 13Gi stays above the 11.5GiB observed peak. The request is what keeps the scheduler from
   filling cp1 around the engine; it must fit cp1's free allocatable, or the pod stays
   `Pending` behind its required affinity and CI has no engine.
+- **Build memory: capped at 8Gi on the HOST cgroup `/buildkit`, by a `postStart` hook.** The pod's
+  memory limit only ever held the engine daemon. A privileged container has no cgroup namespace
+  of its own on cgroup v2: it sees the host's `/sys/fs/cgroup`, and BuildKit creates every build
+  container under `<root>/buildkit/`, beside `kubepods`, not inside this pod (measured 2026-11-11
+  from inside the pod: 152 groups under the host's `/buildkit`; the pod's own cgroup is
+  `/kubepods/burstable/pod<uid>`). So builds, test databases and browsers were uncapped and
+  uncounted, which is what every cp1 memory storm above was missing: on 2026-11-11 cp1 fell to
+  0.9GiB available, froze for 3 minutes (no metrics, load 4983 on the first sample back), and
+  the runner whose session died hung until its job timeout. The hook writes `memory.high` 6G
+  (reclaim and throttle first) and `memory.max` 8G: past it the kernel kills a process INSIDE
+  `/buildkit`, a build, never the daemon, so one job goes red with exit 137 instead of the node
+  going down. 8Gi is what cp1 has left: 31GiB minus the daemon's 13Gi limit, ~7GiB of other pods
+  and ~3GiB for kubelet, containerd and etcd. Read `/sys/fs/cgroup/buildkit/memory.peak` from the
+  pod to size it on fact. The chart has no `postStart` value (only `preStop`), hence the
+  HelmRelease post-renderer; the engine image has no `unshare`, so giving the engine its own
+  cgroup namespace would take a custom image. The groups live on the host: they outlast the pod
+  and are gone at a node reboot, when the hook writes them again.
 - **Priority: PriorityClass `ci-engine` (100000, `priorityclass.yaml`).** Every application pod
   runs at the default 0, the system classes at 2e9. So when the engine is `Pending` (a reschedule,
   a node restart), the scheduler may preempt lower-priority pods on cp1 to fit its request instead
