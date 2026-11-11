@@ -71,4 +71,6 @@ spec:
     # 100Gi (was 20Gi, 2026-10-19): one staged DVSA MOT year outgrows 20Gi (a 2024 results zip is 4.8 GB packed; its
     # tests and items staged are larger than the whole volume), and the backfill loads one year at a time, then purges it
     # once its Parquet archive verifies. CNPG resizes the PVCs in place (resizeInUseVolumes). asp docs/16 section 4.
-    size: 100Gi
+    # 150Gi (was 100Gi), 2026-11-11: the primary ran out of disk while MOT 2023 was staging on top of 2022, and
+    # PostgreSQL stopped. Two staged years plus their WAL do not fit in 100Gi.
+    size: 150Gi
