@@ -55,8 +55,8 @@ spec:
                                 - |
                                   g=/sys/fs/cgroup/buildkit
                                   mkdir -p "$g"
-                                  echo 6G > "$g/memory.high"
-                                  echo 8G > "$g/memory.max"
+                                  echo 10G > "$g/memory.high"
+                                  echo 12G > "$g/memory.max"
   values:
     # Yields pod dagger-engine-0: must match DAGGER_RUNNER_HOST and rbac.yaml resourceNames.
     fullnameOverride: dagger

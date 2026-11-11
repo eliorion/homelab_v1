@@ -268,7 +268,7 @@ is re-pulled.
   half the node. 13Gi stays above the 11.5GiB observed peak. The request is what keeps the scheduler from
   filling cp1 around the engine; it must fit cp1's free allocatable, or the pod stays
   `Pending` behind its required affinity and CI has no engine.
-- **Build memory: capped at 8Gi on the HOST cgroup `/buildkit`, by a `postStart` hook.** The pod's
+- **Build memory: capped at 12Gi on the HOST cgroup `/buildkit`, by a `postStart` hook.** The pod's
   memory limit only ever held the engine daemon. A privileged container has no cgroup namespace
   of its own on cgroup v2: it sees the host's `/sys/fs/cgroup`, and BuildKit creates every build
   container under `<root>/buildkit/`, beside `kubepods`, not inside this pod (measured 2026-11-11
@@ -276,12 +276,13 @@ is re-pulled.
   `/kubepods/burstable/pod<uid>`). So builds, test databases and browsers were uncapped and
   uncounted, which is what every cp1 memory storm above was missing: on 2026-11-11 cp1 fell to
   0.9GiB available, froze for 3 minutes (no metrics, load 4983 on the first sample back), and
-  the runner whose session died hung until its job timeout. The hook writes `memory.high` 6G
-  (reclaim and throttle first) and `memory.max` 8G: past it the kernel kills a process INSIDE
+  the runner whose session died hung until its job timeout. The hook writes `memory.high` 10G
+  (reclaim and throttle first) and `memory.max` 12G: past it the kernel kills a process INSIDE
   `/buildkit`, a build, never the daemon, so one job goes red with exit 137 instead of the node
-  going down. 8Gi is what cp1 has left: 31GiB minus the daemon's 13Gi limit, ~7GiB of other pods
-  and ~3GiB for kubelet, containerd and etcd. Read `/sys/fs/cgroup/buildkit/memory.peak` from the
-  pod to size it on fact. The chart has no `postStart` value (only `preStop`), hence the
+  going down. 12Gi is the measured need: `/sys/fs/cgroup/buildkit/memory.peak` read 12.5GiB on 2026-11-11 after
+  a month of 12 members in flight, and a freshly booted cp1 has ~25GiB available (the node runtime
+  had leaked to 14.8GiB, 2,264 shim processes, before that reboot: at 18 shims it holds 1.3GiB).
+  Read `memory.peak` again before changing it. The chart has no `postStart` value (only `preStop`), hence the
   HelmRelease post-renderer; the engine image has no `unshare`, so giving the engine its own
   cgroup namespace would take a custom image. The groups live on the host: they outlast the pod
   and are gone at a node reboot, when the hook writes them again.
