@@ -18,6 +18,10 @@ spec:
         key: ACCESS_KEY_SECRET
     wal:
       compression: gzip
+      # Archive up to 4 WAL files at once. One at a time, a slow Garage (8 s to 3.5 min per
+      # file after its metadata disks filled, 2026-11-13) drained a 690-file backlog at ~16/h
+      # net, about 40 h; scraper-db writes ~15 segments/h, so a slower Garage would fill its disk.
+      maxParallel: 4
       # NO `encryption:` here. Garage does not support SSE-S3/AES256.
     data:
       compression: gzip
