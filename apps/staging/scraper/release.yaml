@@ -140,8 +140,11 @@ spec:
     # (solver.proxyEgressPorts / engine.proxyEgressPorts). With it on, engine and solver pods
     # egress only to the gateway. Chart default is false; requires scraper-engine >= v0.54.0
     # and scraper-backend >= v0.36.0 (both on staging since 2026-11-13).
+    # OFF again 2026-11-13: through the gateway FlareSolverr's proxy needs credentials, which it
+    # loads as a Chrome extension, and Cloudflare challenges then fail (b, tailscale: 0 solved of
+    # 17). Back on once solver sessions reach their pool without credentials (asp follow-up).
     gateway:
-      enabled: true
+      enabled: false
     # NOTE: no `keda:` block. KEDA is a HARD REQUIREMENT of the chart — no enable
     # flag, no fixed-replica mode. The operator comes from infra-keda
     # (infrastructure/controllers/base/keda); without it this release fails to
