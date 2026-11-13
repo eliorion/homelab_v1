@@ -16,5 +16,7 @@ spec:
       # No postInit: OpenBao creates its two tables (openbao_kv_store, openbao_ha_locks) itself.
   storage:
     # WAL runway if Garage is unreachable: the HA lock writes continuously, ~2 days at 10Gi
-    # (2Gi lasted ~7h). Garage down longer than that = OpenBao down.
-    size: 10Gi
+    # (2Gi lasted ~7h). Garage down longer than that = OpenBao down. It happened: Garage's
+    # metadata disks were full from 2026-11-11 to 11-13 and the 10Gi primary filled, taking
+    # OpenBao, every SecretStore and the Flux chain behind them down. 20Gi = ~4 days.
+    size: 20Gi
