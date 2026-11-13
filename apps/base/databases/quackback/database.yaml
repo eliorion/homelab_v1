@@ -21,4 +21,7 @@ spec:
         - CREATE EXTENSION IF NOT EXISTS pg_trgm
 
   storage:
-    size: 5Gi
+    # 5Gi filled with WAL the archiver could not ship (Garage metadata disks full on nodes b and c
+    # since 2026-11-11, so every Garage-backed WAL archive fails); a full volume keeps Postgres down,
+    # and a down Postgres cannot archive the backlog once Garage is back. Same fix as advisor-db #347.
+    size: 10Gi
