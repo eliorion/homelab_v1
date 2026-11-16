@@ -25,6 +25,10 @@ spec:
     synchronous:
       method: any
       number: 1
+      # preferred, like every other cluster: with no standby streaming, commit locally instead of
+      # waiting. 2026-11-11 both standbys lost their WAL after cp1 went down, the primary held 97
+      # writes in SyncRep, and the filers (so the whole S3 store) could not start.
+      dataDurability: preferred
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true
