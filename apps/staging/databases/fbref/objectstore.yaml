@@ -21,7 +21,22 @@ spec:
       # snappy, not gzip: barman gzips the base tar on ONE core at level 9 (4-5h per base).
       compression: snappy
       encryption: AES256
-      jobs: 8
+      # Every base backup to R2 failed from 2026-11-11 to 11-16, after 1h50 of upload, with
+      #   InvalidPart (CompleteMultipartUpload): All non-trailing parts must have the same length.
+      # R2 wants the parts of a multipart upload equal but the last; barman (3.18, cloud.py
+      # CloudTarUploader.write) closes a part once its buffer is PAST the chunk size, and with
+      # snappy it writes compressed blocks of any length, so every part is a different size.
+      # (gzip and no compression go through tar's fixed 64 KiB blocks and would give equal
+      # parts: gzip at 4-5h a base, none at twice the bytes.)
+      # So no archive may hold more than ONE non-trailing part: an archive is closed once past
+      # --max-archive-size and can exceed it by one file, a 1 GB relation segment at most, so
+      # 512MB + ~1.07GB stays under two 1GB chunks: at most [1 GB + a block, the rest].
+      additionalCommandArgs:
+        - "--min-chunk-size=1GB"
+        - "--max-archive-size=512MB"
+      # 3, was 8: parts wait as files in the sidecar's TMPDIR (the node's own disk, 47 GB free on
+      # 2026-11-16) and barman holds up to 2 x jobs + 1 of them: 7 parts of ~1 GB, not 17.
+      jobs: 3
       # Without it a backup taken on the standby waits up to 0.9 x checkpoint_timeout to start.
       immediateCheckpoint: true
   instanceSidecarConfiguration:
