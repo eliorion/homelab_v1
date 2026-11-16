@@ -85,3 +85,13 @@ provisioning:
   diskSelector:
     match: system_disk
   maxSize: 240GB
+---
+# cp1 is the CI engine's node: the Dagger engine is pinned here (required nodeAffinity, its cache
+# on cp1's thin pool; infrastructure/services/base/dagger/release.yaml), and it needs the cores.
+# PreferNoSchedule, not NoSchedule: the scheduler places everything else on cp2/cp3 while they
+# have room and still uses cp1 when they do not, and nothing already here is evicted by the taint
+# itself (DaemonSets, the static control plane, CNPG instances whose node-local volume lives here
+# keep running). The descheduler's LowNodeUtilization moves the rest off as cp1 runs over 80%.
+machine:
+  nodeTaints:
+    eliorion.fr/ci-engine: "true:PreferNoSchedule"
