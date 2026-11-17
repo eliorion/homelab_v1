@@ -41,6 +41,18 @@ spec:
           # Keep the minor on the staging cluster's; the e2e lane refuses to run otherwise.
           image:
             tag: v1.36.0
+          # One replica, so the controller-manager's leader lease protects nothing, and losing it
+          # killed the whole vcluster: vcluster 0.37.1 appends --leader-elect=true
+          # (pkg/k8s/k8s.go:159) and exits the container when the controller-manager exits
+          # (k8s.go:215). When kine stalls past the 10 s renew deadline, the lease is lost, then
+          # "leaderelection lost", "error running controller-manager: exit status 1", and a
+          # restart. Live 2026-11-16/17: 159 -> 316 restarts in two days, one every ~7-10 min,
+          # while cp3 was out of memory; every E2E run was cut short. A flag named in extraArgs
+          # replaces the built-in one (MergeArgs, pkg/util/command/command.go:23-50), so a stall
+          # now makes the virtual API slow instead of taking it down.
+          controllerManager:
+            extraArgs:
+              - --leader-elect=false
       statefulSet:
         resources:
           requests:
