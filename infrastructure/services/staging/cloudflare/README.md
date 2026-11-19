@@ -282,6 +282,21 @@ Quackback's NetworkPolicy admits nothing else, so a route to :3000 answers 502. 
 Access application** (owner, 2026-10-21: Keycloak is the only login). Quackback cannot serve under
 a path, so Scout's `/feedback` redirects here (asp fbref-webapp).
 
+### 7. `scraper-mcp.eliorion.fr` — the scraper platform's MCP server
+
+| Field | Value |
+|---|---|
+| Subdomain / Domain | `scraper-mcp` / `eliorion.fr` |
+| Path | *(empty — the whole host)* |
+| Service | `http://scraper-mcp.scraper.svc.cluster.local:8080` |
+| HTTP Host Header | *(leave empty — pass the original through)* |
+
+Same shape and same reasons as section 1: the pod validates `Host` itself (421 on a rewrite), and
+the whole host is routed for `/.well-known/oauth-protected-resource/mcp`. Its login is the
+`staging-apps` realm (client `scraper-mcp`), and access is the group `scraper-mcp-users`, enforced
+by the pod. Publish this route only once the running scraper-mcp image enforces that group
+(asp #990 released): an older image accepts any account of that realm, where sign-up is open.
+
 ## Cloudflare Access — the login in front of nao
 
 Keycloak cannot be nao's own identity provider: self-hosted `getnao/nao` runs
