@@ -153,3 +153,27 @@ spec:
         annotations:
           tailscale.com/expose: "true"
           tailscale.com/hostname: scraper-admin-ui
+    # scraper-mcp, public through the Cloudflare tunnel (https://scraper-mcp.eliorion.fr/mcp, no
+    # Ingress object). Login on the staging-apps realm; access = the scraper-mcp-users group.
+    # Needs scraper-mcp with MCP_AUTH_REQUIRED_GROUP (asp #990): an older image ignores the group
+    # and would let ANY account of this open-sign-up realm call the tools.
+    mcp:
+      enabled: true
+      auth:
+        enabled: true
+        # Compared to `iss` by exact string: no trailing slash.
+        issuerUrl: https://staging-keycloak.eliorion.fr/realms/staging-apps
+        # = the aud stamped by the scraper-mcp client's audience mapper (realm-apps.yaml).
+        resourceUrl: https://scraper-mcp.eliorion.fr/mcp
+        requiredGroup: scraper-mcp-users
+      # Host is matched exactly; the in-cluster entries keep the helm test (and so every
+      # upgrade) from failing on HTTP 421.
+      allowedHosts:
+        - scraper-mcp.eliorion.fr
+        - scraper-mcp:8080
+        - scraper-mcp.scraper.svc.cluster.local:8080
+        - localhost:*
+      # Browser origins of the hosted connectors; a missing Origin (CLI clients) always passes.
+      originAllowlist:
+        - https://claude.ai
+        - https://chatgpt.com

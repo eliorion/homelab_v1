@@ -325,6 +325,64 @@ clients:
           "access.token.claim": "false"
           "userinfo.token.claim": "true"
 
+  # scraper-mcp (asp services/scraper/mcp): the LLM tool surface over the scraper platform,
+  # https://scraper-mcp.eliorion.fr/mcp. The MCP is a RESOURCE server: it verifies these tokens
+  # and refuses any whose `groups` claim lacks scraper-mcp-users (MCP_AUTH_REQUIRED_GROUP), since
+  # sign-up here is open and an account alone is not permission. Pre-registered rather than
+  # dynamic client registration, which this realm does not open to anonymous callers. Public +
+  # PKCE: claude.ai's custom connector (Advanced settings: this client ID) and Claude Code
+  # (`--client-id scraper-mcp --callback-port 33418`).
+  - clientId: scraper-mcp
+    name: Scraper MCP
+    description: MCP clients of asp services/scraper/mcp; access is the scraper-mcp-users group
+    protocol: openid-connect
+    enabled: true
+    publicClient: true
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    attributes:
+      "pkce.code.challenge.method": "S256"
+    redirectUris:
+      - https://claude.ai/api/mcp/auth_callback
+      - http://localhost:33418/*
+      - http://127.0.0.1:33418/*
+    webOrigins:
+      - https://claude.ai
+    defaultClientScopes:
+      - email
+      - profile
+      - roles
+      - web-origins
+      - acr
+      - basic
+    optionalClientScopes: []
+    fullScopeAllowed: false
+    consentRequired: false
+    protocolMappers:
+      # The MCP requires aud = its resource URL (MCP_AUTH_RESOURCE_URL). On the CLIENT, not on a
+      # default scope: only tokens issued to this client carry it, so a Scout token is no key here.
+      - name: scraper-mcp-audience
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        consentRequired: false
+        config:
+          "included.custom.audience": https://scraper-mcp.eliorion.fr/mcp
+          "id.token.claim": "false"
+          "access.token.claim": "true"
+      # Flat names: the MCP matches scraper-mcp-users (and strips a leading "/").
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          "claim.name": groups
+          "full.path": "false"
+          "id.token.claim": "false"
+          "access.token.claim": "true"
+          "userinfo.token.claim": "false"
+
   # Quackback (apps/base/quackback), the feedback site: its own login, a "custom OIDC" provider
   # set in Quackback's admin UI (stored encrypted in its DB; there is no env for it), the only
   # sign-in method there. Who may reach Quackback at all is decided BEFORE it, by feedback-gate
@@ -459,6 +517,10 @@ groups:
   # THE QUEUE: every self-registered account starts here (defaultGroups), and NOTHING reads it.
   # Listing its members is the list of pending requests; approving moves an account to scout-users.
   - name: scout-requests
+  # ENFORCED by scraper-mcp itself (MCP_AUTH_REQUIRED_GROUP): a token without it gets 401 on every
+  # tool. Granted per person by the owner; never a defaultGroups entry. A member can make the
+  # platform fetch any URL through the residential egress pools.
+  - name: scraper-mcp-users
   - name: agent-platform-viewers
   - name: agent-platform-operators
   - name: agent-platform-admins
