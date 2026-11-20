@@ -1,0 +1,29 @@
+# The advisor's WRITE-ONLY key on bucket ml-lake (asp docs/27 D10): the MOT backfill uploads each year's
+# Parquet archive under advisor/ before purging the staged rows, and can read nothing, because the advisor
+# namespace must not hold the lake's read key (every domain's data is in that one bucket).
+# Template: ml-lake-advisor-writer.enc.yaml.exemple. Reflection: ml-lake-advisor-writer.reflection.yaml (plain).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: s3-ml-lake-advisor
+    namespace: flux-system
+type: Opaque
+stringData:
+    ML_LAKE_ADVISOR_S3_ACCESS_KEY: ENC[AES256_GCM,data:BUYXSlJr/1Aj4aDlxrDCj4gDtkLfFVoL,iv:shUeHmscwZLK9jY/0CDLaT06cgitQbdcwNCYMG2Xi7I=,tag:GMCFVDNxDzl6JhDEiXoSEw==,type:str]
+    ML_LAKE_ADVISOR_S3_SECRET_KEY: ENC[AES256_GCM,data:SrT3UxVv0BREZaJns7m6imZDdA/oQzStWmqk2pIsfU1Lx0+a6joDQG2N/HdpPHA/zc/2zc6t/xfCW4ScZYTBPA==,iv:v2zB6HLnlkXeUhdOok++n/OWdht6RzZ7uKUE1ulGbJs=,tag:XkPkXbDwv+AfuzdNSjeoDQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBjeld2WHBBY2toWEpWZzNB
+            TWxseGsvSHd0aXdONmZlQUEwcUIxZjFjQTA0Cm13bHpUOGRpeUhQL3Nsb014RG9I
+            Ry9tQThoSnVYaEJVdlo1Ni9GenY5ZEkKLS0tIEdraFFhRnQ4MU56ZVFiTlcyR0lK
+            OHdjY0p2eFp2TkdDUytBb3FMMVZCaHMKpTljITNnu7PHz1JhbZSQxkZmIntrbeks
+            vITaMy8IYao62eLzVVyvKboL+p/VfmHkrv5LHBsclFhpGumjXMS3Lg==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age137z0k38fp0keu5ns4005e7cv4qlwt320wyf96y48a57sv42k6v9szh5ng3
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-11-16T13:10:55Z"
+    mac: ENC[AES256_GCM,data:kqzD5CPW3Wz0Lb4Z5JTApk3qEpnMh1qJwk3VHejbjaz1sAzKwLVS+3Zxnvm5LAvf8hRHiKqpYwS7hdbJgVvsGfTrLAmRWg/MWQ9zzgTDamy+vCJ7BaRWGlTsMryBK3CGoa/ihjeLWRZNeA7tvHyvZxld1SgzNdXhmL+amBG0MSg=,iv:NBaPyNSTJy2+IBKVkGOd+EJK9DrsSlOTuB3Cs8lqblQ=,tag:eijl/4rrb0M4tDLG32MCiA==,type:str]
+    mac_only_encrypted: true
+    version: 3.13.3
