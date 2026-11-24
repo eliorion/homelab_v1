@@ -78,12 +78,11 @@ spec:
           review: {secretName: advisor-review-login}  # pragma: allowlist secret
           publish: {secretName: advisor-publish-login}  # pragma: allowlist secret
     components:
+      # SITES comes from the chart (k8s/charts/advisor/values.yaml): every host the seed collects. The staging
+      # override that paused caradisiac (2026-11-04) also hid every site added since (Traficom, Norway PKK), so
+      # their URLs waited unsubmitted; removed 2026-11-24, owner decision 2026-11-09: collect every listed site.
       advisor-engine:
         enabled: true
-        env:
-          # caradisiac is paused with the pipeline (2026-11-04): 95% of stored documents were never parsed and its
-          # later thread pages look unread. honestjohn and planete-citroen never produced anything.
-          SITES: "www.largus.fr,www.forum-peugeot.com,forum.quechoisir.org,www.fiches-auto.fr,www.adac.de,data.economie.gouv.fr,api.nhtsa.gov,opendata.rdw.nl,open.data.dvsa.gov.uk,www.utac-otc.com"
       # The review queue, on the tailnet only (review-ingress-tailscale.yaml). The proxy's identity
       # header names the reviewer; never set this to a header a client could send on its own.
       advisor-review:
